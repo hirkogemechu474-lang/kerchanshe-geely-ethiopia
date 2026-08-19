@@ -2,11 +2,11 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Menu, Search, User, ChevronDown, Car, Zap } from 'lucide-react';
+import { Menu, Search, User, ChevronDown, Car, Zap, Globe } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import { SearchModal } from './SearchModal';
-import { useTranslation } from '@/lib/i18n';
+import { useLanguage, useTranslation } from '@/lib/i18n';
 import type { VehicleRecord } from '@/lib/vehicleData';
 
 interface HeaderProps {
@@ -32,7 +32,9 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const setLanguage = useLanguage((state) => state.setLanguage);
+  const isEnglish = language === 'en';
 
   // Pre-loaded menu data — fetched once, reused on every hover
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
@@ -111,14 +113,22 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   return (
     <header className="bg-white border-b border-line sticky top-0 z-50">
       <div className="max-w-[1280px] mx-auto px-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 py-3">
+        <div className="flex items-center justify-between gap-3 py-3">
           {/* Logo */}
-          <Link href="/" className="flex items-center" onClick={closeAllMenus}>
-            <div className="text-2xl font-bold text-navy">GEELY</div>
+          <Link href="/" className="flex items-center gap-2.5 group" onClick={closeAllMenus}>
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-extrabold text-base shadow-sm group-hover:shadow-md transition-shadow">
+              G
+            </div>
+            <div className="leading-none">
+              <div className="text-[19px] font-extrabold tracking-tight text-navy">GEELY</div>
+              <div className="text-[9px] font-bold tracking-[0.3em] text-geely-blue mt-1">
+                ETHIOPIA
+              </div>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex flex-1 items-center gap-3 text-sm min-w-0 overflow-x-auto whitespace-nowrap py-1">
+          <nav className="hidden lg:flex flex-1 items-center justify-center gap-1 text-sm whitespace-nowrap">
             {mainNavItems.map((item) => (
               <div
                 key={item.label}
@@ -141,7 +151,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               >
                 {item.hasDropdown ? (
                   <button
-                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-3 py-2 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-2 py-2 transition-colors whitespace-nowrap"
                     onClick={() => {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
@@ -158,7 +168,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                 ) : (
                   <Link
                     href={item.href}
-                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-3 py-2 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-2 py-2 transition-colors whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
                     {item.icon}
@@ -182,9 +192,19 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               <User size={18} />
             </Link>
 
+            <button
+              onClick={() => setLanguage(isEnglish ? 'am' : 'en')}
+              className="hidden md:flex items-center gap-1.5 text-[11px] font-medium text-steel hover:text-navy border border-line rounded-full px-2.5 py-1 whitespace-nowrap"
+            >
+              <Globe size={13} />
+              <span>English</span>
+              <span className="text-steel/40">|</span>
+              <span>አማርኛ</span>
+            </button>
+
             <Link
               href="/quote"
-              className="inline-flex h-10 sm:min-w-[150px] items-center justify-center bg-gold text-navy px-3 sm:px-5 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors"
+              className="inline-flex h-9 sm:min-w-[110px] items-center justify-center bg-gold text-navy px-3 sm:px-4 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors whitespace-nowrap"
               onClick={closeAllMenus}
             >
               {t('common.getQuote')}
@@ -192,7 +212,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
 
             <Link
               href="/test-drive"
-              className="inline-flex h-10 sm:min-w-[150px] items-center justify-center bg-navy text-white px-3 sm:px-5 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors"
+              className="inline-flex h-9 sm:min-w-[120px] items-center justify-center bg-navy text-white px-3 sm:px-4 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors whitespace-nowrap"
               onClick={closeAllMenus}
             >
               {t('common.bookTestDrive')}

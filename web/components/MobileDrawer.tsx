@@ -85,7 +85,17 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <div className="text-2xl font-bold text-navy">GEELY</div>
+                <Link href="/" onClick={onClose} className="flex items-center gap-2.5 group">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-extrabold text-base shadow-sm">
+                    G
+                  </div>
+                  <div className="leading-none">
+                    <div className="text-[19px] font-extrabold tracking-tight text-navy">GEELY</div>
+                    <div className="text-[9px] font-bold tracking-[0.3em] text-geely-blue mt-1">
+                      ETHIOPIA
+                    </div>
+                  </div>
+                </Link>
                 <button
                   onClick={onClose}
                   className="p-2 text-steel hover:text-navy"

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
-import { ArrowUpRight, Filter, SlidersHorizontal } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowUpRight, SlidersHorizontal } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   formatVehiclePrice,
   type VehicleBrand,
@@ -13,11 +13,18 @@ import {
 } from "@/lib/vehicleData";
 
 function publicMediaUrl(url: string | null | undefined) {
-  if (!url) return '';
+  if (!url) return "";
   if (/^https?:\/\//i.test(url)) return url;
-  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ||
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : '');
+  const adminUrl =
+    process.env.NEXT_PUBLIC_ADMIN_URL ||
+    (process.env.NODE_ENV === "development" ? "http://localhost:3001" : "");
   return `${adminUrl}${url}`;
+}
+
+function categorySlugOf(vehicle: VehicleRecord): string {
+  if (vehicle.vehicleCategory?.slug) return vehicle.vehicleCategory.slug;
+  if (vehicle.categoryId) return vehicle.categoryId;
+  return (vehicle.category || "").toLowerCase();
 }
 
 export default function ModelsPage() {
@@ -102,25 +109,27 @@ export default function ModelsPage() {
     });
   }, [categories, selectedBrand]);
 
-  const sortedVehicles = [...vehicles].sort((a, b) => {
-    const priceA = a.finalPrice || a.basePrice;
-    const priceB = b.finalPrice || b.basePrice;
+  const sortedVehicles = useMemo(() => {
+    return [...vehicles].sort((a, b) => {
+      const priceA = a.finalPrice || a.basePrice;
+      const priceB = b.finalPrice || b.basePrice;
 
-    switch (sortBy) {
-      case "price-asc":
-        return priceA - priceB;
-      case "price-desc":
-        return priceB - priceA;
-      case "name":
-        return a.name.localeCompare(b.name);
-      default:
-        return 0;
-    }
-  });
+      switch (sortBy) {
+        case "price-asc":
+          return priceA - priceB;
+        case "price-desc":
+          return priceB - priceA;
+        case "name":
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  }, [vehicles, sortBy]);
 
   const vehicleCountByCategory = useMemo(() => {
     return vehicles.reduce<Record<string, number>>((acc, vehicle) => {
-      const key = vehicle.vehicleCategory?.slug || vehicle.categoryId || vehicle.category;
+      const key = categorySlugOf(vehicle);
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
@@ -128,217 +137,255 @@ export default function ModelsPage() {
 
   return (
     <MainLayout>
-      <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
-            EXPLORE OUR RANGE
+      {/* Page hero */}
+      <div className="bg-navy text-white relative overflow-hidden">
+        <div className="pointer-events-none absolute right-[-80px] top-[-80px] w-72 h-72 rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute right-[40px] bottom-[-120px] w-80 h-80 rounded-full border border-white/10" />
+        <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-16 md:py-20">
+          <div className="text-[13px] tracking-[0.2em] text-gold font-bold mb-4 uppercase">
+            Explore Our Range
           </div>
-          <h1 className="disp text-4xl sm:text-5xl font-bold mb-4">Geely Models</h1>
-          <p className="text-[#d8e4f5] text-base max-w-2xl">
-            Discover the complete Geely lineup. Every model, badge, image, and price is loaded from the database and managed in the admin panel.
+          <h1 className="disp text-4xl sm:text-5xl md:text-[52px] font-extrabold leading-tight mb-4 max-w-3xl">
+            Geely Models
+          </h1>
+          <p className="text-[#c3d2ea] text-base max-w-2xl leading-relaxed">
+            Discover the complete Geely lineup — from urban SUVs to refined sedans and electric
+            vehicles. Every model is loaded live from the database and managed in the admin panel.
           </p>
         </div>
       </div>
 
-      <div className="border-b border-line bg-ice">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 text-steel text-sm font-semibold">
-                  <Filter size={18} />
-                  Brand:
-                </div>
-                <select
-                  value={selectedBrand}
-                  onChange={(event) => setSelectedBrand(event.target.value)}
-                  className="px-4 py-2 rounded text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue"
-                >
-                  <option value="all">All Brands</option>
-                  {brands.map((brand) => (
-                    <option key={brand.id} value={brand.slug}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-steel text-sm font-semibold">
-                  <SlidersHorizontal size={18} />
-                  Sort:
-                </div>
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-                  className="px-4 py-2 rounded text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue"
-                >
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="name">Name: A to Z</option>
-                </select>
-              </div>
+      {/* Filter bar */}
+      <div className="border-b border-line bg-white sticky top-[65px] z-30">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Brand filter */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-steel">
+                Brand
+              </label>
+              <select
+                value={selectedBrand}
+                onChange={(event) => setSelectedBrand(event.target.value)}
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+              >
+                <option value="all">All Brands</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.slug}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            {/* Sort */}
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-steel">
+                <SlidersHorizontal size={16} />
+                Sort
+              </label>
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+              >
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name">Name: A to Z</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Category tabs */}
+          <div className="flex items-center gap-2.5 flex-wrap mt-5">
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
+                selectedCategory === "all"
+                  ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
+                  : "bg-white text-navy border-line hover:border-geely-blue hover:text-geely-blue"
+              }`}
+            >
+              All Models
+              <span className={`ml-2 text-[11px] ${selectedCategory === "all" ? "text-white/70" : "text-steel"}`}>
+                {vehicles.length}
+              </span>
+            </button>
+            {categoryOptions.map((category) => (
               <button
-                onClick={() => setSelectedCategory("all")}
-                className={`px-4 py-2 rounded text-sm font-semibold transition-all ${
-                  selectedCategory === "all"
-                    ? "bg-navy text-white"
-                    : "bg-white text-navy border border-line hover:bg-navy hover:text-white"
+                key={category.id}
+                onClick={() => setSelectedCategory(category.slug)}
+                className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
+                  selectedCategory === category.slug
+                    ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
+                    : "bg-white text-navy border-line hover:border-geely-blue hover:text-geely-blue"
                 }`}
               >
-                All Models ({vehicles.length})
+                {category.name}
+                <span className={`ml-2 text-[11px] ${selectedCategory === category.slug ? "text-white/70" : "text-steel"}`}>
+                  {vehicleCountByCategory[category.slug] || 0}
+                </span>
               </button>
-              {categoryOptions.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.slug)}
-                  className={`px-4 py-2 rounded text-sm font-semibold transition-all ${
-                    selectedCategory === category.slug
-                      ? "bg-navy text-white"
-                      : "bg-white text-navy border border-line hover:bg-navy hover:text-white"
-                  }`}
-                >
-                  {category.name} ({vehicleCountByCategory[category.slug] || 0})
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <section className="py-16">
+      {/* Vehicle grid */}
+      <section className="py-14 md:py-16">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-geely-blue border-t-transparent mb-4"></div>
-                <p className="text-steel">Loading vehicles...</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="skeleton h-[320px] rounded-2xl" />
+              ))}
             </div>
           ) : sortedVehicles.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-steel text-lg">No vehicles found matching your filters.</p>
+              <p className="text-steel text-lg mb-6">No models available in this category yet.</p>
+              <button
+                onClick={() => {
+                  setSelectedBrand("all");
+                  setSelectedCategory("all");
+                }}
+                className="inline-block bg-geely-blue text-white text-sm font-bold px-7 py-3 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                View All Models
+              </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-              {sortedVehicles.map((vehicle, index) => {
-                const imageUrl = publicMediaUrl(vehicle.heroImageUrl) || publicMediaUrl(Array.isArray(vehicle.images) ? vehicle.images[0] : null) || null;
-                const specs = (vehicle.specifications || {}) as any;
-                const badge = vehicle.badge || (vehicle.isFeatured ? "Featured" : "");
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${selectedBrand}-${selectedCategory}-${sortBy}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
+              >
+                {sortedVehicles.map((vehicle) => {
+                  const imageUrl =
+                    publicMediaUrl(vehicle.heroImageUrl) ||
+                    publicMediaUrl(Array.isArray(vehicle.images) ? vehicle.images[0] : null) ||
+                    null;
+                  const specs = (vehicle.specifications || {}) as any;
+                  const badge = vehicle.badge || (vehicle.isFeatured ? "Featured" : "");
+                  const label = vehicle.vehicleCategory?.name || vehicle.category;
 
-                return (
-                  <motion.div
-                    key={vehicle.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="border border-line rounded-lg overflow-hidden hover:border-geely-blue hover:shadow-[0_10px_24px_rgba(11,37,69,0.08)] transition-all group"
-                  >
-                    <div className="relative h-[200px] bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-[11px] text-steel text-center px-4 overflow-hidden">
-                      {imageUrl ? (
-                        <img src={imageUrl} alt={vehicle.name} className="w-full h-full object-cover transition duration-700 ease-out group-hover:scale-110" />
-                      ) : (
-                        <span>{vehicle.name} - exterior 3/4 studio shot</span>
-                      )}
-                      <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-navy/75 via-transparent to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <span className="flex items-center gap-2 text-sm font-bold text-white">Explore {vehicle.name} <ArrowUpRight size={17} /></span>
-                      </div>
-                      {badge && (
-                        <div className="absolute top-3 right-3 bg-gold text-white text-[10px] font-bold px-3 py-1 rounded-full">
-                          {badge}
+                  return (
+                    <div
+                      key={vehicle.id}
+                      className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-line hover:border-geely-blue hover:shadow-[0_16px_40px_rgba(11,37,69,0.10)] transition-all"
+                    >
+                      <Link
+                        href={`/models/${vehicle.slug}`}
+                        className="relative aspect-[4/3] bg-[#eef2f7] overflow-hidden block"
+                      >
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={vehicle.name}
+                            loading="lazy"
+                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[11px] text-steel px-6 text-center">
+                            {vehicle.name}
+                          </div>
+                        )}
+                        {badge && (
+                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-navy text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                            {badge}
+                          </span>
+                        )}
+                      </Link>
+
+                      <div className="p-5 flex flex-col flex-1">
+                        <div className="text-[11px] uppercase tracking-[0.14em] text-steel font-semibold">
+                          {label}
                         </div>
-                      )}
-                    </div>
+                        <h3 className="disp text-[19px] text-navy font-bold mt-1.5 group-hover:text-geely-blue transition-colors">
+                          {vehicle.name}
+                        </h3>
 
-                    <div className="p-5">
-                      <div className="text-[11px] text-gold font-bold tracking-wider mb-2 uppercase">
-                        {vehicle.vehicleCategory?.name || vehicle.category}
-                      </div>
-                      <h3 className="text-[19px] text-navy font-bold mb-1 group-hover:text-geely-blue transition-colors">
-                        {vehicle.name}
-                      </h3>
-                      <div className="text-[12px] text-steel mb-3">
-                        {vehicle.brand?.name || "Geely"}
-                      </div>
-                      {vehicle.description && (
-                        <p className="text-[12px] text-steel mb-3 line-clamp-2">{vehicle.description}</p>
-                      )}
+                        {specs?.dimensions && (
+                          <div className="flex gap-4 mt-3 text-[11px] text-steel">
+                            {specs.dimensions.seatingCapacity && (
+                              <div>
+                                <span className="font-semibold text-navy">{specs.dimensions.seatingCapacity}</span> Seats
+                              </div>
+                            )}
+                            {specs.engine?.transmission && (
+                              <div>
+                                <span className="font-semibold text-navy">{specs.engine.transmission}</span>
+                              </div>
+                            )}
+                            {specs.engine?.fuelType && (
+                              <div>
+                                <span className="font-semibold text-navy">{specs.engine.fuelType}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                      {specs?.dimensions && (
-                        <div className="flex gap-4 mb-4 text-[11px] text-steel">
-                          {specs.dimensions.seatingCapacity && (
-                            <div>
-                              <span className="font-semibold">{specs.dimensions.seatingCapacity}</span> Seats
-                            </div>
-                          )}
-                          {specs.engine?.transmission && (
-                            <div>
-                              <span className="font-semibold">{specs.engine.transmission}</span>
-                            </div>
-                          )}
-                          {specs.engine?.fuelType && (
-                            <div>
-                              <span className="font-semibold">{specs.engine.fuelType}</span>
-                            </div>
+                        <div className="mt-4 pt-4 border-t border-line">
+                          {vehicle.hidePrice ? (
+                            <Link
+                              href={`/quote?model=${vehicle.slug}`}
+                              className="text-[13px] font-bold text-geely-blue hover:underline"
+                            >
+                              Price on request
+                            </Link>
+                          ) : (
+                            <>
+                              <div className="text-[11px] uppercase tracking-wider text-steel font-semibold mb-1">
+                                Starting from
+                              </div>
+                              <div className="text-xl font-extrabold text-navy">
+                                {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
+                              </div>
+                            </>
                           )}
                         </div>
-                      )}
 
-                      <div className="text-[13px] text-steel mb-4 border-t border-line pt-4">
-                        {vehicle.hidePrice ? (
+                        <div className="flex gap-3 mt-auto pt-5 border-t border-line">
                           <Link
                             href={`/quote?model=${vehicle.slug}`}
-                            className="text-ink font-bold text-lg hover:text-geely-blue transition-colors"
+                            className="flex-1 text-center text-[12px] font-bold py-[10px] rounded-lg bg-navy text-white hover:bg-geely-blue transition-colors"
                           >
-                            Price on request
+                            Get a Quote
                           </Link>
-                        ) : (
-                          <>
-                            Starting from{" "}
-                            <span className="text-ink font-bold text-lg">
-                              {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex gap-3">
-                        <Link
-                          href={`/quote?model=${vehicle.slug}`}
-                          className="flex-1 text-center text-[12px] font-bold py-[10px] rounded bg-navy text-white hover:bg-opacity-90 transition-all"
-                        >
-                          Get a Quote
-                        </Link>
-                        <Link
-                          href={`/models/${vehicle.slug}`}
-                          className="flex-1 text-center text-[12px] font-bold py-[10px] rounded border border-line text-navy hover:bg-ice transition-all"
-                        >
-                          View Details
-                        </Link>
+                          <Link
+                            href={`/models/${vehicle.slug}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1 text-center text-[12px] font-bold py-[10px] rounded-lg border border-line text-navy hover:border-geely-blue hover:text-geely-blue transition-colors"
+                          >
+                            Details
+                            <ArrowUpRight size={14} />
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </section>
 
-      <div className="bg-ice border-t border-line py-12">
+      {/* Compare CTA */}
+      <div className="bg-[#0d1b3a] text-white py-14">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 text-center">
-          <h3 className="disp text-2xl text-navy font-bold mb-3">Can't decide?</h3>
-          <p className="text-steel text-sm mb-6">
+          <h3 className="disp text-2xl md:text-3xl font-extrabold mb-3">Can't decide?</h3>
+          <p className="text-[#c3d2ea] text-sm md:text-[15px] mb-7 max-w-xl mx-auto">
             Compare up to 3 vehicles side-by-side to find the perfect match for your needs.
           </p>
           <Link
             href="/compare"
-            className="inline-block bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+            className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:opacity-90 transition-opacity"
           >
             Compare Models
+            <span aria-hidden>&rarr;</span>
           </Link>
         </div>
       </div>

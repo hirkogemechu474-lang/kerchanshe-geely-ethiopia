@@ -61,7 +61,6 @@ export const en: Translations = {
   },
   
   header: {
-    aKerchansheCompany: 'A Kerchanshe Group Company',
     customerService: 'Customer Service',
     language: 'Language',
   },
@@ -199,7 +198,7 @@ export const en: Translations = {
     location: 'Showroom Location',
     message: 'Additional Message',
     consent: 'I agree to be contacted by Geely Ethiopia regarding my test drive booking',
-    submitting: 'Submitting to Zoho CRM...',
+    submitting: 'Submitting...',
     bookNow: 'Book Test Drive',
     successTitle: 'Test Drive Booked Successfully!',
     successMessage: 'Thank you for booking a test drive with Geely Ethiopia. Our team will contact you within 24 hours.',
@@ -405,7 +404,7 @@ export const am: Translations = {
     location: 'የማሳያ ክፍል ቦታ',
     message: 'ተጨማሪ መልዕክት',
     consent: 'የሙከራ መንዳት ቦታ ስለያዝሁ ጂሊ ኢትዮጵያ እንዲያነጋግረኝ እስማማለሁ',
-    submitting: 'ወደ Zoho CRM በመላክ ላይ...',
+    submitting: 'በመላክ ላይ...',
     bookNow: 'የሙከራ መንዳት ያስይዙ',
     successTitle: 'የሙከራ መንዳት በተሳካ ሁኔታ ተይዟል!',
     successMessage: 'ከጂሊ ኢትዮጵያ ጋር የሙከራ መንዳት ስላስያዙ እናመሰግናለን። ቡድናችን በ24 ሰዓታት ውስጥ ያነጋግርዎታል።',

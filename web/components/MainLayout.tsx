@@ -4,7 +4,6 @@ import React from 'react';
 import { useState } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { UtilityBar } from './UtilityBar';
 import { MobileDrawer } from './MobileDrawer';
 
 interface MainLayoutProps {
@@ -17,7 +16,6 @@ export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-ice">
-      <UtilityBar />
       <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
       <MobileDrawer
         isOpen={mobileMenuOpen}

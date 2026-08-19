@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/MainLayout";
 import HeroSection from "@/components/home/HeroSection";
+import ModelsShowcase from "@/components/home/ModelsShowcase";
 import SpotlightStrip from "@/components/home/SpotlightStrip";
 import dynamic from "next/dynamic";
 import PromotionsBanner from "@/components/home/PromotionsBanner";
@@ -9,11 +10,9 @@ import { Metadata } from "next";
 // Keep the above-the-fold path small. These sections retain SSR markup but
 // their interactive client code is loaded in separate chunks as needed.
 const AboutSection = dynamic(() => import("@/components/home/AboutSection"), { ssr: true });
-const FeaturesSection = dynamic(() => import("@/components/home/FeaturesSection"), { ssr: true });
 const StatisticsSection = dynamic(() => import("@/components/home/StatisticsSection"), { ssr: true });
 const ShowcaseSection = dynamic(() => import("@/components/home/ShowcaseSection"), { ssr: true });
 const ServicesSection = dynamic(() => import("@/components/home/ServicesSection"), { ssr: true });
-const FeaturedVehicles = dynamic(() => import("@/components/home/FeaturedVehicles"), { ssr: true });
 const CTAStrip = dynamic(() => import("@/components/home/CTAStrip"), { ssr: true });
 const TrustSection = dynamic(() => import("@/components/home/TrustSection"), { ssr: true });
 const DealerLocatorPreview = dynamic(() => import("@/components/home/DealerLocatorPreview"), { ssr: true });
@@ -71,14 +70,13 @@ export default function HomePage() {
       />
 
       <HeroSection />
+      <ModelsShowcase />
       <PromotionsBanner />
       <SpotlightStrip />
       <AboutSection />
-      <FeaturesSection />
-      <StatisticsSection />
       <ShowcaseSection />
+      <StatisticsSection />
       <ServicesSection />
-      <FeaturedVehicles />
       <CTAStrip />
       <TrustSection />
       <DealerLocatorPreview />

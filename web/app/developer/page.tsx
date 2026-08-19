@@ -37,7 +37,7 @@ const developerSkills = [
   { name: 'Next.js & React', detail: 'Modern page architecture, reusable components, and customer journeys.' },
   { name: 'TypeScript', detail: 'Typed interfaces and safer application development across the platform.' },
   { name: 'Prisma & PostgreSQL', detail: 'Structured data models connecting vehicles, leads, dealers, and operations.' },
-  { name: 'API Integration', detail: 'Connected public and admin APIs for content, forms, financing, and CRM workflows.' },
+  { name: 'API Integration', detail: 'Connected public and admin APIs for content, forms, and financing workflows.' },
   { name: 'Responsive UI', detail: 'Mobile-first interfaces designed for real customer devices and screen sizes.' },
   { name: 'SEO & Performance', detail: 'Metadata, sitemap, structured content, and performance-conscious page design.' },
 ];

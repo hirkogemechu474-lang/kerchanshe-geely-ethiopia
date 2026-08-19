@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube, Linkedin, Music,
-  Clock, Award, Headphones, ExternalLink, Send, Car, Shield, Wrench, MessageCircle,
+  Clock, Award, Headphones, ExternalLink, Send, Shield, MessageCircle,
 } from 'lucide-react';
 
 interface SocialMediaLinks {
@@ -117,12 +117,12 @@ export function Footer() {
   ];
 
   const serviceLinks = [
-    { name: 'Book Test Drive', href: '/test-drive', icon: Car },
-    { name: 'Service Booking', href: '/service', icon: Wrench },
-    { name: 'Purchase', href: '/financing', icon: Award },
-    { name: 'Warranty', href: '/warranty', icon: Shield },
-    { name: 'Spare Parts', href: '/parts', icon: Wrench },
-    { name: 'Trade-In', href: '/trade-in', icon: Car },
+    { name: 'Book Test Drive', href: '/test-drive' },
+    { name: 'Service Booking', href: '/service' },
+    { name: 'Purchase', href: '/financing' },
+    { name: 'Warranty', href: '/warranty' },
+    { name: 'Spare Parts', href: '/parts' },
+    { name: 'Trade-In', href: '/trade-in' },
   ];
 
   const companyLinks = [
@@ -283,11 +283,13 @@ export function Footer() {
           {/* Vehicles */}
           <div className="lg:col-span-2">
             <FooterColTitle>Vehicles</FooterColTitle>
-            <ul className="space-y-2.5 mt-5">
+            <ul className="mt-5 space-y-2.5">
               {vehicleLinks.map((l) => (
                 <li key={l.name}>
-                  <Link href={l.href} className="group inline-flex items-center gap-1.5 text-sm text-blue-100/85 hover:text-gold transition">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gold/40 group-hover:bg-gold transition" />
+                  <Link
+                    href={l.href}
+                    className="text-sm text-blue-100/85 hover:text-gold transition-colors"
+                  >
                     {l.name}
                   </Link>
                 </li>
@@ -298,18 +300,17 @@ export function Footer() {
           {/* Services */}
           <div className="lg:col-span-2">
             <FooterColTitle>Services</FooterColTitle>
-            <ul className="space-y-2.5 mt-5">
-              {serviceLinks.map((l) => {
-                const Icon = l.icon;
-                return (
-                  <li key={l.name}>
-                    <Link href={l.href} className="group flex items-start gap-2.5 text-sm text-blue-100/85 hover:text-gold transition">
-                      <Icon size={15} className="mt-0.5 text-blue-200/40 group-hover:text-gold shrink-0" />
-                      {l.name}
-                    </Link>
-                  </li>
-                );
-              })}
+            <ul className="mt-5 space-y-2.5">
+              {serviceLinks.map((l) => (
+                <li key={l.name}>
+                  <Link
+                    href={l.href}
+                    className="text-sm text-blue-100/85 hover:text-gold transition-colors"
+                  >
+                    {l.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

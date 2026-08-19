@@ -484,7 +484,7 @@ export default function TestDrivePage() {
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
-                      Submitting to Zoho CRM...
+                      Submitting...
                     </span>
                   ) : (
                     "Book Test Drive"
