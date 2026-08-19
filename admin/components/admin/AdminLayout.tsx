@@ -17,7 +17,6 @@ import {
   Newspaper,
   MessageSquare,
   Users,
-  Repeat,
   Settings,
   Menu,
   X,
@@ -37,6 +36,11 @@ import {
   Share2,
   Cookie,
   UserCircle2,
+  Gauge,
+  ClipboardList,
+  LayoutGrid,
+  UserCog,
+  ShieldCheck,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/lib/auth/types';
 
@@ -127,6 +131,19 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    id: 'workshop',
+    label: 'Workshop',
+    icon: Wrench,
+    items: [
+      { name: 'Live Dashboard', href: '/admin/workshop/dashboard', icon: Gauge, permission: 'canViewJobCards' },
+      { name: 'Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
+      { name: 'Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canViewJobCards' },
+      { name: 'Bay Scheduling Board', href: '/admin/workshop/bays', icon: LayoutGrid, permission: 'canViewJobCards' },
+      { name: 'Technicians', href: '/admin/workshop/technicians', icon: UserCog, permission: 'canManageTechnicians' },
+      { name: 'Manage Bays', href: '/admin/workshop/bays/manage', icon: Settings, permission: 'canManageBays' },
+    ],
+  },
+  {
     id: 'network',
     label: 'Network & Parts',
     icon: MapPin,
@@ -144,7 +161,6 @@ const navSections: NavSection[] = [
     icon: Settings,
     items: [
       { name: 'User Management', href: '/admin/users', icon: Users, permission: 'canManageUsers' },
-      { name: 'CRM Integration', href: '/admin/crm', icon: Repeat, permission: 'canManageIntegrations' },
       { name: 'Site Settings', href: '/admin/settings', icon: Settings, permission: 'canManageSettings' },
       { name: '  ↳ About Page Content', href: '/admin/settings/about', icon: UserCircle2, permission: 'canManageContent' },
       { name: '  ↳ Vehicle Purchases & Payment Banks', href: '/admin/financing', icon: CreditCard, permission: 'canManageSettings' },

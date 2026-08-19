@@ -6,6 +6,8 @@ export enum AdminRole {
   SALES = 'sales',
   SERVICE = 'service',
   MARKETING = 'marketing',
+  SERVICE_ADVISOR = 'service_advisor',
+  SERVICE_MANAGER = 'service_manager',
   // Public portal roles — NO admin panel access
   CUSTOMER = 'customer',
   DEALER = 'dealer',
@@ -15,65 +17,71 @@ export interface AdminPermissions {
   // Content Management
   canManageContent: boolean;
   canViewContent: boolean;
-  
+
   // Vehicle Management
   canManageVehicles: boolean;
   canViewVehicles: boolean;
-  
+
   // Test Drives
   canManageTestDrives: boolean;
   canViewTestDrives: boolean;
-  
+
   // Quotations
   canManageQuotations: boolean;
   canViewQuotations: boolean;
-  
+
   // Dealers
   canManageDealers: boolean;
   canViewDealers: boolean;
-  
+
   // Service Bookings
   canManageServiceBookings: boolean;
   canViewServiceBookings: boolean;
   canManageService: boolean; // Alias for canManageServiceBookings
-  
+
   // Spare Parts
   canManageSpareParts: boolean;
   canViewSpareParts: boolean;
-  
+
   // Promotions
   canManagePromotions: boolean;
   canViewPromotions: boolean;
-  
+
   // Reviews
   canModerateReviews: boolean;
   canViewReviews: boolean;
-  
+
   // News
   canManageNews: boolean;
   canViewNews: boolean;
-  
+
   // Messages
   canManageMessages: boolean;
   canViewMessages: boolean;
-  
+
   // Analytics & Reports
   canViewAnalytics: boolean;
   canExportReports: boolean;
   canViewReports: boolean; // Alias for canViewAnalytics
-  
+
   // Users
   canManageUsers: boolean;
   canViewUsers: boolean;
-  
-  // CRM & Integrations
-  canManageCRM: boolean;
-  canViewCRM: boolean;
-  canManageIntegrations: boolean; // For CRM and other integrations
-  
+
   // Settings
   canManageSettings: boolean;
   canViewSettings: boolean;
+
+  // Workshop & Job Cards (SWMS)
+  canViewJobCards: boolean;
+  canManageJobCards: boolean;
+  canManageBays: boolean;
+  canManageTechnicians: boolean;
+  canPerformQC: boolean;
+
+  // Parts Issued Against a Job Card + Warranty Claims (SWMS Phase 2)
+  canManagePartsIssue: boolean; // issue/backorder/cancel a JobCardPart line (parts-counter action)
+  canApproveWarrantyClaims: boolean; // move a claim through Under Review -> Approved/Rejected/Reimbursed
 }
 
 export interface AdminUser {
@@ -119,11 +127,15 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: true,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: true,
     canManageSettings: true,
     canViewSettings: true,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: true,
+    canManageTechnicians: true,
+    canPerformQC: true,
+    canManagePartsIssue: true,
+    canApproveWarrantyClaims: true,
   },
   [AdminRole.ADMIN]: {
     // Same as super_admin - full permissions
@@ -155,11 +167,15 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: true,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: true,
     canManageSettings: true,
     canViewSettings: true,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: true,
+    canManageTechnicians: true,
+    canPerformQC: true,
+    canManagePartsIssue: true,
+    canApproveWarrantyClaims: true,
   },
   [AdminRole.MANAGER]: {
     canManageContent: true,
@@ -190,11 +206,15 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: true,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: true,
+    canManageTechnicians: true,
+    canPerformQC: true,
+    canManagePartsIssue: true,
+    canApproveWarrantyClaims: true,
   },
   [AdminRole.SALES]: {
     canManageContent: false,
@@ -225,11 +245,15 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
+    canViewJobCards: false,
+    canManageJobCards: false,
+    canManageBays: false,
+    canManageTechnicians: false,
+    canPerformQC: false,
+    canManagePartsIssue: false,
+    canApproveWarrantyClaims: false,
   },
   [AdminRole.SERVICE]: {
     canManageContent: false,
@@ -260,11 +284,15 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: false,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: false,
+    canManageTechnicians: false,
+    canPerformQC: false,
+    canManagePartsIssue: false,
+    canApproveWarrantyClaims: false,
   },
   [AdminRole.MARKETING]: {
     canManageContent: true,
@@ -295,11 +323,102 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: false,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
+    canViewJobCards: false,
+    canManageJobCards: false,
+    canManageBays: false,
+    canManageTechnicians: false,
+    canPerformQC: false,
+    canManagePartsIssue: false,
+    canApproveWarrantyClaims: false,
+  },
+
+  // ── Workshop roles (SWMS) ──────────────────────────────────────────────────
+  // Service Advisor: runs the front desk — write-up, diagnosis capture,
+  // customer approval, assigning technician/bay, requesting parts, drafting
+  // and submitting warranty claims — but cannot sign off QC, issue parts at
+  // the counter, or approve/reject a warranty claim.
+  [AdminRole.SERVICE_ADVISOR]: {
+    canManageContent: false,
+    canViewContent: false,
+    canManageVehicles: false,
+    canViewVehicles: true,
+    canManageTestDrives: false,
+    canViewTestDrives: false,
+    canManageQuotations: false,
+    canViewQuotations: false,
+    canManageDealers: false,
+    canViewDealers: true,
+    canManageServiceBookings: true,
+    canViewServiceBookings: true,
+    canManageService: true,
+    canManageSpareParts: false,
+    canViewSpareParts: true,
+    canManagePromotions: false,
+    canViewPromotions: false,
+    canModerateReviews: false,
+    canViewReviews: false,
+    canManageNews: false,
+    canViewNews: false,
+    canManageMessages: true,
+    canViewMessages: true,
+    canViewAnalytics: true,
+    canExportReports: false,
+    canViewReports: true,
+    canManageUsers: false,
+    canViewUsers: false,
+    canManageSettings: false,
+    canViewSettings: false,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: false,
+    canManageTechnicians: false,
+    canPerformQC: false,
+    canManagePartsIssue: false,
+    canApproveWarrantyClaims: false,
+  },
+  // Service Manager: owns the whole workshop floor — bay/technician roster,
+  // QC sign-off, parts issue at the counter, warranty claim approval, and the
+  // workshop KPI dashboard.
+  [AdminRole.SERVICE_MANAGER]: {
+    canManageContent: false,
+    canViewContent: true,
+    canManageVehicles: false,
+    canViewVehicles: true,
+    canManageTestDrives: false,
+    canViewTestDrives: true,
+    canManageQuotations: false,
+    canViewQuotations: true,
+    canManageDealers: false,
+    canViewDealers: true,
+    canManageServiceBookings: true,
+    canViewServiceBookings: true,
+    canManageService: true,
+    canManageSpareParts: true,
+    canViewSpareParts: true,
+    canManagePromotions: false,
+    canViewPromotions: false,
+    canModerateReviews: false,
+    canViewReviews: false,
+    canManageNews: false,
+    canViewNews: false,
+    canManageMessages: true,
+    canViewMessages: true,
+    canViewAnalytics: true,
+    canExportReports: true,
+    canViewReports: true,
+    canManageUsers: false,
+    canViewUsers: false,
+    canManageSettings: false,
+    canViewSettings: false,
+    canViewJobCards: true,
+    canManageJobCards: true,
+    canManageBays: true,
+    canManageTechnicians: true,
+    canPerformQC: true,
+    canManagePartsIssue: true,
+    canApproveWarrantyClaims: true,
   },
 
   // ── Public portal roles ────────────────────────────────────────────────────
@@ -320,8 +439,10 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: false, canViewMessages: false,
     canViewAnalytics: false, canExportReports: false, canViewReports: false,
     canManageUsers: false, canViewUsers: false,
-    canManageCRM: false, canViewCRM: false, canManageIntegrations: false,
     canManageSettings: false, canViewSettings: false,
+    canViewJobCards: false, canManageJobCards: false,
+    canManageBays: false, canManageTechnicians: false, canPerformQC: false,
+    canManagePartsIssue: false, canApproveWarrantyClaims: false,
   },
 
   [AdminRole.DEALER]: {
@@ -339,8 +460,10 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: false, canViewMessages: false,
     canViewAnalytics: false, canExportReports: false, canViewReports: false,
     canManageUsers: false, canViewUsers: false,
-    canManageCRM: false, canViewCRM: false, canManageIntegrations: false,
     canManageSettings: false, canViewSettings: false,
+    canViewJobCards: false, canManageJobCards: false,
+    canManageBays: false, canManageTechnicians: false, canPerformQC: false,
+    canManagePartsIssue: false, canApproveWarrantyClaims: false,
   },
 };
 
@@ -360,6 +483,8 @@ export const ADMIN_ROLES: AdminRole[] = [
   AdminRole.SALES,
   AdminRole.SERVICE,
   AdminRole.MARKETING,
+  AdminRole.SERVICE_ADVISOR,
+  AdminRole.SERVICE_MANAGER,
 ];
 
 export function isAdminRole(role: string): boolean {

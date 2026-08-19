@@ -180,6 +180,208 @@ model ServiceBooking {
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  jobCard       JobCard?
+}
+
+// ─── Workshop & Job Card Management (SWMS Phase 1) ─────────────────────────
+
+enum TechnicianSkillLevel {
+  JUNIOR
+  INTERMEDIATE
+  SENIOR
+  MASTER
+}
+
+enum BayType {
+  GENERAL
+  DIAGNOSTIC
+  ALIGNMENT
+  QUICK_SERVICE
+  PDI
+}
+
+enum BayStatus {
+  FREE
+  OCCUPIED
+  OUT_OF_SERVICE
+}
+
+enum JobCardStatus {
+  DRAFT_CHECKIN
+  AWAITING_BAY
+  DIAGNOSIS_ESTIMATE
+  AWAITING_APPROVAL
+  IN_PROGRESS
+  PARTS_WAITING
+  QUALITY_CONTROL
+  INVOICED_CLOSED
+  CANCELLED
+}
+
+model Technician {
+  id                 String               @id @default(uuid())
+  name               String
+  phone              String?
+  skillLevel         TechnicianSkillLevel @default(JUNIOR)
+  certificationLevel String?
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  jobCards           JobCard[]
+}
+
+model ServiceBay {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  bayType   BayType   @default(GENERAL)
+  status    BayStatus @default(FREE)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  jobCards  JobCard[]
+}
+
+model JobCard {
+  id                   String                 @id @default(uuid())
+  jobCardNo            String                 @unique
+  plateNo              String
+  vin                  String?
+  vehicleModel         String?
+  vehicleYear          Int?
+  mileage              Int?
+  customerName         String
+  customerPhone        String
+  customerEmail        String?
+  complaintText        String                 @db.Text
+  diagnosisNotes       String?                @db.Text
+  estimateAmount       Float?
+  isWarrantyOrGoodwill Boolean                @default(false)
+  customerApprovedAt   DateTime?
+  // Manually entered by the advisor from the vehicle's warranty papers at
+  // write-up (BRD FR-501). No Customer<->Vehicle ownership model exists in
+  // this codebase yet, so this is a deliberately lightweight substitute —
+  // see docs/SWMS-INTEGRATION-BACKLOG.md before building a fuller model.
+  warrantyStartDate    DateTime?
+  warrantyEndDate      DateTime?
+  technicianId         String?
+  technician           Technician?            @relation(fields: [technicianId], references: [id])
+  bayId                String?
+  bay                  ServiceBay?            @relation(fields: [bayId], references: [id])
+  scheduledStart       DateTime?
+  scheduledEnd         DateTime?
+  status               JobCardStatus          @default(DRAFT_CHECKIN)
+  qcPassed             Boolean?
+  qcNotes              String?                @db.Text
+  qcById               String?
+  invoiceAmount        Float?
+  serviceBookingId     String?                @unique
+  serviceBooking       ServiceBooking?        @relation(fields: [serviceBookingId], references: [id])
+  openTs               DateTime               @default(now())
+  closeTs              DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  statusHistory        JobCardStatusHistory[]
+  jobCardParts         JobCardPart[]
+  warrantyClaims       WarrantyClaim[]
+
+  @@index([status])
+  @@index([technicianId])
+  @@index([bayId])
+}
+
+model JobCardStatusHistory {
+  id          String         @id @default(uuid())
+  jobCardId   String
+  jobCard     JobCard        @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  fromStatus  JobCardStatus?
+  toStatus    JobCardStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime       @default(now())
+
+  @@index([jobCardId])
+}
+
+model Counter {
+  name  String @id
+  value Int    @default(0)
+}
+
+// ─── Parts Issued Against a Job Card + Warranty Claims (SWMS Phase 2) ──────
+
+enum JobCardPartStatus {
+  REQUESTED
+  ISSUED
+  BACKORDERED
+  CANCELLED
+}
+
+model JobCardPart {
+  id            String            @id @default(uuid())
+  jobCardId     String
+  jobCard       JobCard           @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  sparePartId   String
+  sparePart     SparePart         @relation(fields: [sparePartId], references: [id])
+  quantity      Int
+  unitPrice     Float // snapshot of SparePart.price at request time
+  status        JobCardPartStatus @default(REQUESTED)
+  isWarranty    Boolean           @default(false)
+  requestedById String
+  issuedById    String?
+  requestedAt   DateTime          @default(now())
+  issuedAt      DateTime?
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([jobCardId])
+  @@index([sparePartId])
+}
+
+enum WarrantyClaimStatus {
+  DRAFTED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REIMBURSED
+}
+
+model WarrantyClaim {
+  id              String                       @id @default(uuid())
+  claimNo         String                       @unique
+  jobCardId       String
+  jobCard         JobCard                      @relation(fields: [jobCardId], references: [id])
+  defectCode      String
+  component       String?
+  diagnosticCodes String?
+  description     String?                      @db.Text
+  photoUrls       Json                         @default("[]") // Array of uploaded photo URLs
+  status          WarrantyClaimStatus          @default(DRAFTED)
+  oemPortalRef    String?
+  approvedAmount  Float?
+  rejectionReason String?                      @db.Text
+  submittedById   String?
+  submittedAt     DateTime?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  statusHistory   WarrantyClaimStatusHistory[]
+
+  @@index([jobCardId])
+  @@index([status])
+}
+
+model WarrantyClaimStatusHistory {
+  id          String               @id @default(uuid())
+  claimId     String
+  claim       WarrantyClaim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fromStatus  WarrantyClaimStatus?
+  toStatus    WarrantyClaimStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime             @default(now())
+
+  @@index([claimId])
 }
 
 // Spare Parts
@@ -194,6 +396,7 @@ model SparePart {
   imageUrl       String?
   brand          String?
   stock          Int           @default(0)
+  reservedQty    Int           @default(0) // committed to open JobCardPart REQUESTED lines
   reorderPoint   Int           @default(10)
   price          Float
   supplier       String
@@ -202,6 +405,7 @@ model SparePart {
   displayOrder   Int           @default(0)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  jobCardParts   JobCardPart[]
 }
 
 // Parts Request / Quote (submitted from the /parts cart)
@@ -698,25 +902,6 @@ model FAQ {
   isFeatured   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
-
-// CRM Lead Retry Queue
-// Stores failed Zoho CRM submissions for background retry
-model PendingLead {
-  id           String   @id @default(uuid())
-  payload      Json // The full lead payload to retry
-  attemptCount Int      @default(0)
-  lastError    String? // Last error message for debugging
-  status       String   @default("pending") // pending, retrying, failed, succeeded
-  leadType     String? // test-drive | quote | contact | service
-  email        String? // Indexed for duplicate detection
-  phone        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  nextRetryAt  DateTime @default(now())
-
-  @@index([status, nextRetryAt])
-  @@index([email])
 }
 
 // URL Redirect Management

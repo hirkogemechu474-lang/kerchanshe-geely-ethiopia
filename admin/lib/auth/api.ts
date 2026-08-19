@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession, type Session } from 'next-auth';
 import { authOptions } from './config';
 import { isAdminRole } from './types';
 
-type AdminSession = Awaited<ReturnType<typeof getServerSession>>;
+// `Awaited<ReturnType<typeof getServerSession>>` resolves to the last
+// overload of next-auth's overloaded `getServerSession`, which loses the
+// module-augmented `Session.user` shape declared in types/next-auth.d.ts.
+// Using the `Session` type directly keeps `.user` (id/role/permissions) typed.
+type AdminSession = Session | null;
 
 /**
  * Guard for admin API route handlers.
