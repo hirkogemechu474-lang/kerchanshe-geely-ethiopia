@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Eye, ArrowLeft, Image as ImageIcon, Video, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { Card, Button, LinkButton } from '@/components/admin/ui';
 
 interface HeroSectionFormProps {
   heroId?: string;
@@ -161,7 +162,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Information */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
         
         <div className="space-y-4">
@@ -208,10 +209,10 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
             />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Media */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Background Media</h2>
         
         <div className="space-y-4">
@@ -485,10 +486,10 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
             </>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Call to Action */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Call to Action Button</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -518,10 +519,10 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
             />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Settings</h2>
         
         <div className="space-y-4">
@@ -554,7 +555,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
             </label>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Actions */}
       <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-6">

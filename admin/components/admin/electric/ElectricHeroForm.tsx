@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, X } from 'lucide-react';
 import MediaUploadComponent from './MediaUploadComponent';
+import { Button } from '@/components/admin/ui';
 
 interface HeroSection {
   id: string;
@@ -295,21 +296,13 @@ export default function ElectricHeroForm({ heroId }: ElectricHeroFormProps) {
 
       {/* Submit Buttons */}
       <div className="flex gap-3 pt-6 border-t">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting}>
           <Save className="w-4 h-4" />
           {submitting ? 'Saving...' : 'Save Hero Section'}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancel
-        </button>
+        </Button>
       </div>
 
       {/* Preview */}

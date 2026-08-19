@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import ElectricHeroForm from '@/components/admin/electric/ElectricHeroForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 
 
@@ -47,16 +48,14 @@ export default async function EditHeroPage() {
         Back to Electric Management
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Hero Section</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Customize the main Electric page hero banner
-        </p>
-      </div>
+      <PageHeader
+        title="Edit Hero Section"
+        description="Customize the main Electric page hero banner"
+      />
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <ElectricHeroForm heroId={hero?.id} />
-      </div>
+      </Card>
     </div>
   );
 }

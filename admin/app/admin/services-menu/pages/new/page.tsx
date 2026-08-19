@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import ServicePageForm from '@/components/admin/services/ServicePageForm';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'New Service Page - Services Menu',
@@ -15,16 +16,14 @@ export default function NewPagePage() {
       <div className="flex items-center gap-4">
         <Link
           href="/admin/services-menu/pages"
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Service Page</h1>
-          <p className="text-gray-600 mt-1">
-            Create a new page with detailed service information
-          </p>
-        </div>
+        <PageHeader
+          title="Create Service Page"
+          description="Create a new page with detailed service information"
+        />
       </div>
 
       {/* Info Box */}
@@ -41,9 +40,9 @@ export default function NewPagePage() {
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <Card>
         <ServicePageForm mode="create" />
-      </div>
+      </Card>
     </div>
   );
 }

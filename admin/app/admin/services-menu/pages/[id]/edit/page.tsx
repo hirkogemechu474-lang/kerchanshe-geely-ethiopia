@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import ServicePageForm from '@/components/admin/services/ServicePageForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, LinkButton, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'Edit Service Page - Services Menu',
@@ -32,32 +33,27 @@ export default async function EditPagePage({ params }: { params: Promise<{ id: s
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/services-menu/pages"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Edit Service Page</h1>
-            <p className="text-gray-600 mt-1">
-              Update "{page.title}"
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <Link
+          href="/admin/services-menu/pages"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div className="flex-1">
+          <PageHeader
+            title="Edit Service Page"
+            description={`Update "${page.title}"`}
+            actions={
+              page.isPublished && (
+                <LinkButton href={`/services/${page.slug}`} target="_blank" rel="noopener noreferrer" variant="secondary">
+                  <ExternalLink className="w-4 h-4" />
+                  View Live Page
+                </LinkButton>
+              )
+            }
+          />
         </div>
-        {page.isPublished && (
-          <a
-            href={`/services/${page.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <ExternalLink className="w-4 h-4" />
-            View Live Page
-          </a>
-        )}
       </div>
 
       {/* Info Box */}
@@ -73,9 +69,9 @@ export default async function EditPagePage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <Card>
         <ServicePageForm page={page} mode="edit" />
-      </div>
+      </Card>
     </div>
   );
 }

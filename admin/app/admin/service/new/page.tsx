@@ -1,6 +1,6 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import Link from 'next/link';
 import { ArrowLeft, Wrench, CalendarDays, User, CarFront } from 'lucide-react';
+import { PageHeader, LinkButton, Button, Card } from '@/components/admin/ui';
 
 export default async function NewServiceBookingPage() {
   await requirePermission('canManageServiceBookings');
@@ -8,16 +8,13 @@ export default async function NewServiceBookingPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/service" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <LinkButton href="/admin/service" variant="ghost" size="sm" className="p-2">
           <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">New Service Booking</h1>
-          <p className="mt-1 text-sm text-gray-500">Create a service appointment or work order</p>
-        </div>
+        </LinkButton>
+        <PageHeader title="New Service Booking" description="Create a service appointment or work order" />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+      <Card className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="space-y-2 text-sm text-gray-700">
             <span className="flex items-center gap-2 font-medium"><User className="w-4 h-4" />Customer</span>
@@ -38,14 +35,12 @@ export default async function NewServiceBookingPage() {
         </div>
 
         <div className="flex gap-3">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            Save Booking
-          </button>
-          <Link href="/admin/service" className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">
+          <Button>Save Booking</Button>
+          <LinkButton href="/admin/service" variant="secondary">
             Cancel
-          </Link>
+          </LinkButton>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

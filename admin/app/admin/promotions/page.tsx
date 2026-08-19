@@ -1,19 +1,13 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import Link from 'next/link';
-import { Zap } from 'lucide-react';
 import PromotionsList from '@/components/admin/PromotionsList';
+import { PageHeader } from '@/components/admin/ui';
 
 export default async function AdminPromotionsPage() {
   await requirePermission('canManageContent');
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Promotions</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Create and manage promotional campaigns
-        </p>
-      </div>
+      <PageHeader title="Promotions" description="Create and manage promotional campaigns" />
 
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
         <h3 className="font-semibold text-purple-900 mb-2">⚡ Promotion Management</h3>

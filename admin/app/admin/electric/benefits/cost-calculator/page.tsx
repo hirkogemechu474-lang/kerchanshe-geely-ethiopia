@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import ElectricBenefitForm from '@/components/admin/electric/ElectricBenefitForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, Card } from '@/components/admin/ui';
 async function getOrCreateBenefit() {
   try {
     let benefit = await prisma.electricPage.findFirst({
@@ -44,19 +45,14 @@ export default async function CostCalculatorPage() {
         Back to Electric Management
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Cost Calculator Page</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Manage the cost calculator content and appearance
-        </p>
-      </div>
+      <PageHeader title="Cost Calculator Page" description="Manage the cost calculator content and appearance" />
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <ElectricBenefitForm
           benefitId={benefit?.id}
           benefitType="cost-calculator"
         />
-      </div>
+      </Card>
     </div>
   );
 }

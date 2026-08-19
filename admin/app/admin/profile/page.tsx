@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth/middleware';
-import { UserCircle2, Mail, Shield, Clock3 } from 'lucide-react';
+import { Mail, Shield, Clock3 } from 'lucide-react';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export default async function ProfilePage() {
   const session = await requireAuth();
@@ -7,13 +8,10 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Your Profile</h1>
-        <p className="mt-1 text-sm text-gray-500">View account details and session information</p>
-      </div>
+      <PageHeader title="Your Profile" description="View account details and session information" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <Card className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-semibold">
               {user.name.charAt(0)}
@@ -28,12 +26,12 @@ export default async function ProfilePage() {
             <div className="flex items-center gap-2"><Shield className="w-4 h-4" />Account permissions inherited from role</div>
             <div className="flex items-center gap-2"><Clock3 className="w-4 h-4" />Active session in progress</div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <Card className="space-y-4">
           <h2 className="font-semibold text-gray-900">Session Summary</h2>
           <p className="text-sm text-gray-600">This screen is a lightweight profile landing page for the admin shell.</p>
-        </div>
+        </Card>
       </div>
     </div>
   );

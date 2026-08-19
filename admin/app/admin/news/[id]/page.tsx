@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, User, Eye, Tag, Edit, Trash2, ArrowLeft, Globe, Save, ImageIcon } from "lucide-react";
 import Link from "next/link";
+import { Card, Button, Badge, type Tone } from "@/components/admin/ui";
 
 interface NewsArticle {
   id: string;

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import ElectricItemForm from '@/components/admin/electric/ElectricItemForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'Edit Item - Electric Menu',
@@ -43,11 +44,8 @@ export default async function EditElectricItemPage({ params }: { params: Promise
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Electric Menu Item</h1>
-          <p className="text-gray-600 mt-1">
-            Update "{item.title}" item details
-          </p>
+        <div className="flex-1">
+          <PageHeader title="Edit Electric Menu Item" description={`Update "${item.title}" item details`} />
         </div>
       </div>
 
@@ -63,9 +61,9 @@ export default async function EditElectricItemPage({ params }: { params: Promise
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <Card>
         <ElectricItemForm item={item} mode="edit" />
-      </div>
+      </Card>
     </div>
   );
 }

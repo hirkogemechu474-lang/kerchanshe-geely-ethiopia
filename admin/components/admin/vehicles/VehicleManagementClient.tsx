@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Download, Edit, Trash2, Eye, Copy } from 'lucide-react';
+import { Search, Download, Edit, Trash2, Eye } from 'lucide-react';
+import { Card, Button, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyState } from '@/components/admin/ui';
 
 interface Vehicle {
   id: string;
@@ -94,10 +95,10 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     }
   }
 
-  function getStockStatus(stock: number) {
-    if (stock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-700' };
-    if (stock <= 5) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-700' };
-    return { label: 'In Stock', color: 'bg-green-100 text-green-700' };
+  function getStockStatus(stock: number): { label: string; tone: 'red' | 'orange' | 'green' } {
+    if (stock === 0) return { label: 'Out of Stock', tone: 'red' };
+    if (stock <= 5) return { label: 'Low Stock', tone: 'orange' };
+    return { label: 'In Stock', tone: 'green' };
   }
 
   const formatPrice = (price: number) => {
@@ -113,9 +114,9 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
   const endIndex = Math.min(currentPage * pageSize, total);
 
   return (
-    <>
+    <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <Card>
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -127,10 +128,10 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <Button variant="secondary">
             <Download className="w-5 h-5" />
             Export
-          </button>
+          </Button>
         </div>
 
         {/* Filters */}
@@ -164,180 +165,157 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
             </select>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Vehicle List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {loading ? (
+      {loading ? (
+        <Card>
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent mb-4"></div>
               <p className="text-gray-600">Loading vehicles...</p>
             </div>
           </div>
-        ) : vehicles.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No vehicles found</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vehicle
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Model / SKU
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {vehicles.map((vehicle) => {
-                    const stockStatus = getStockStatus(vehicle.stock);
-                    const displayPrice = vehicle.finalPrice || vehicle.basePrice;
-                    const imageUrl = vehicle.heroImageUrl || 
-                                    (Array.isArray(vehicle.images) && vehicle.images[0]) || 
-                                    null;
+        </Card>
+      ) : vehicles.length === 0 ? (
+        <Card padding="none">
+          <EmptyState title="No vehicles found" />
+        </Card>
+      ) : (
+        <>
+          <TableCard>
+            <THead>
+              <tr>
+                <Th>Vehicle</Th>
+                <Th>Model / SKU</Th>
+                <Th>Category</Th>
+                <Th>Price</Th>
+                <Th>Stock</Th>
+                <Th>Status</Th>
+                <Th className="text-right">Actions</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {vehicles.map((vehicle) => {
+                const stockStatus = getStockStatus(vehicle.stock);
+                const displayPrice = vehicle.finalPrice || vehicle.basePrice;
+                const imageUrl = vehicle.heroImageUrl ||
+                                (Array.isArray(vehicle.images) && vehicle.images[0]) ||
+                                null;
 
-                    return (
-                      <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
-                              {imageUrl ? (
-                                <img 
-                                  src={imageUrl} 
-                                  alt={vehicle.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                  IMG
-                                </div>
-                              )}
+                return (
+                  <Tr key={vehicle.id}>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={vehicle.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                              IMG
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{vehicle.name}</div>
-                              <div className="text-sm text-gray-500">{vehicle.year}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{vehicle.model}</div>
-                          {vehicle.sku && (
-                            <div className="text-xs text-gray-500">{vehicle.sku}</div>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {vehicle.category}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          <div>{formatPrice(displayPrice)}</div>
-                          {vehicle.hidePrice && (
-                            <div className="text-xs font-normal text-amber-600">Hidden on website</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {vehicle.stock} units
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`}>
-                            {stockStatus.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/admin/vehicles/${vehicle.id}`}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                            <Link
-                              href={`/admin/vehicles/${vehicle.id}/edit`}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(vehicle.id, vehicle.name)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{vehicle.name}</div>
+                          <div className="text-sm text-gray-500">{vehicle.year}</div>
+                        </div>
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="text-gray-900">{vehicle.model}</div>
+                      {vehicle.sku && (
+                        <div className="text-xs text-gray-500">{vehicle.sku}</div>
+                      )}
+                    </Td>
+                    <Td className="text-gray-500">{vehicle.category}</Td>
+                    <Td className="font-medium text-gray-900">
+                      <div>{formatPrice(displayPrice)}</div>
+                      {vehicle.hidePrice && (
+                        <div className="text-xs font-normal text-amber-600">Hidden on website</div>
+                      )}
+                    </Td>
+                    <Td>{vehicle.stock} units</Td>
+                    <Td>
+                      <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
+                    </Td>
+                    <Td className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/vehicles/${vehicle.id}`}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/admin/vehicles/${vehicle.id}/edit`}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(vehicle.id, vehicle.name)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </TBody>
+          </TableCard>
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{startIndex}</span> to{' '}
-                <span className="font-medium">{endIndex}</span> of{' '}
-                <span className="font-medium">{total}</span> results
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1 rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-                {totalPages > 5 && <span className="px-2">...</span>}
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
+          {/* Pagination */}
+          <Card className="flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Showing <span className="font-medium">{startIndex}</span> to{' '}
+              <span className="font-medium">{endIndex}</span> of{' '}
+              <span className="font-medium">{total}</span> results
             </div>
-          </>
-        )}
-      </div>
-    </>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+              {totalPages > 5 && <span className="px-2 self-center">...</span>}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
+    </div>
   );
 }

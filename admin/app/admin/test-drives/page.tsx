@@ -1,10 +1,10 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import Link from 'next/link';
 import { Plus, Calendar as CalendarIcon, List, Filter } from 'lucide-react';
 import TestDriveStats from '@/components/admin/test-drives/TestDriveStats';
 import TestDriveList from '@/components/admin/test-drives/TestDriveList';
 import TestDriveCalendar from '@/components/admin/test-drives/TestDriveCalendar';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, LinkButton, Card, Button } from '@/components/admin/ui';
 
 export default async function TestDrivesPage({
   searchParams,
@@ -53,59 +53,45 @@ export default async function TestDrivesPage({
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Test Drive Management</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Schedule and manage customer test drive bookings
-          </p>
-        </div>
-        <Link
-          href="/admin/test-drives/new"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Schedule Test Drive
-        </Link>
-      </div>
+      <PageHeader
+        title="Test Drive Management"
+        description="Schedule and manage customer test drive bookings"
+        actions={
+          <LinkButton href="/admin/test-drives/new">
+            <Plus className="w-4 h-4" />
+            Schedule Test Drive
+          </LinkButton>
+        }
+      />
 
       {/* Stats */}
       <TestDriveStats stats={stats} />
 
       {/* View Toggle */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <Card padding="sm">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <Link
+            <LinkButton
               href="/admin/test-drives?view=list"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                activeView === 'list'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              variant={activeView === 'list' ? 'primary' : 'secondary'}
             >
-              <List className="w-5 h-5" />
+              <List className="w-4 h-4" />
               List View
-            </Link>
-            <Link
+            </LinkButton>
+            <LinkButton
               href="/admin/test-drives?view=calendar"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                activeView === 'calendar'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              variant={activeView === 'calendar' ? 'primary' : 'secondary'}
             >
-              <CalendarIcon className="w-5 h-5" />
+              <CalendarIcon className="w-4 h-4" />
               Calendar View
-            </Link>
+            </LinkButton>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Filter className="w-5 h-5" />
+          <Button variant="secondary">
+            <Filter className="w-4 h-4" />
             Filters
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Content */}
       {activeView === 'calendar' ? <TestDriveCalendar events={calendarEvents} /> : <TestDriveList testDrives={testDrives} />}

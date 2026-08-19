@@ -1,5 +1,6 @@
 import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
+import { PageHeader, Card, Button } from '@/components/admin/ui';
 import {
   CreditCard,
   Phone,
@@ -165,20 +166,16 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Configure CMS content, integrations, and content that appears on the public website.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full border border-green-200">
+      <PageHeader
+        title="System Settings"
+        description="Configure CMS content, integrations, and content that appears on the public website."
+        actions={
+          <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full border border-green-200 text-xs">
             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
             All saved changes appear live on the website immediately
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div>
         <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">
@@ -188,29 +185,27 @@ export default async function SettingsPage() {
           {settingsSections.map((section) => {
             const Icon = section.icon;
             return (
-              <Link
-                key={section.title}
-                href={section.href}
-                className={`group relative bg-white rounded-2xl p-6 border ${section.borderAccent} hover:shadow-xl hover:shadow-${section.accent}/10 hover:-translate-y-1 transition-all duration-300`}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${section.color} shadow-lg shadow-${section.accent}/30 flex items-center justify-center`}>
-                    <Icon className="w-7 h-7 text-white" />
+              <Link key={section.title} href={section.href} className="group block h-full">
+                <Card interactive className={`relative h-full ${section.borderAccent}`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${section.color} shadow-lg flex items-center justify-center`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${section.accent} ${section.bgAccent} px-2.5 py-1 rounded-full border ${section.borderAccent}`}>
+                      {section.badge}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${section.accent} ${section.bgAccent} px-2.5 py-1 rounded-full border ${section.borderAccent}`}>
-                    {section.badge}
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1.5 group-hover:text-blue-700 transition-colors">
-                  {section.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  {section.description}
-                </p>
-                <div className={`flex items-center gap-1.5 text-sm font-semibold ${section.accent} group-hover:gap-2 transition-all`}>
-                  Open Settings
-                  <ChevronRight className="w-4 h-4" />
-                </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1.5 group-hover:text-blue-700 transition-colors">
+                    {section.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                    {section.description}
+                  </p>
+                  <div className={`flex items-center gap-1.5 text-sm font-semibold ${section.accent} group-hover:gap-2 transition-all`}>
+                    Open Settings
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </Card>
               </Link>
             );
           })}
@@ -225,42 +220,48 @@ export default async function SettingsPage() {
           {quickSections.map((section) => {
             const Icon = section.icon;
             const isAnchor = section.href.startsWith('#');
-            const Wrapper: any = isAnchor ? 'div' : Link;
-            return (
-              <Wrapper
-              key={section.title}
-              {...(isAnchor ? { id: section.href.substring(1) } : { href: section.href })}
-              className={`group relative bg-white rounded-2xl p-5 border border-gray-200 ${!isAnchor ? 'hover:shadow-xl hover:shadow-gray-300/50 hover:-translate-y-1 transition-all duration-300' : ''}`}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${section.color} shadow-md shadow-${section.accent}/20 flex items-center justify-center`}>
-                  <Icon className="w-5 h-5 text-white" />
+            const content = (
+              <Card
+                interactive={!isAnchor}
+                className="group relative h-full"
+                {...(isAnchor ? { id: section.href.substring(1) } : {})}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${section.color} shadow-md flex items-center justify-center`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{section.title}</h3>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{section.title}</h3>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-4">
-                {section.description}
-              </p>
-              {!isAnchor ? (
-                <div className={`flex items-center gap-1.5 text-sm font-semibold ${section.accent} group-hover:gap-2 transition-all`}>
-                  Configure
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 italic">
-                  Configure below
-                </div>
-              )}
-            </Wrapper>
+                <p className="text-sm text-gray-600 mb-4">
+                  {section.description}
+                </p>
+                {!isAnchor ? (
+                  <div className={`flex items-center gap-1.5 text-sm font-semibold ${section.accent} group-hover:gap-2 transition-all`}>
+                    Configure
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 italic">
+                    Configure below
+                  </div>
+                )}
+              </Card>
+            );
+            return isAnchor ? (
+              <div key={section.title}>{content}</div>
+            ) : (
+              <Link key={section.title} href={section.href} className="block h-full">
+                {content}
+              </Link>
             );
           })}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div id="smtp" className="bg-white rounded-xl border border-gray-200 p-6">
+        <Card id="smtp">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
               <Mail className="w-6 h-6 text-white" />
@@ -325,16 +326,12 @@ export default async function SettingsPage() {
             </div>
           </div>
           <div className="mt-5 flex items-center gap-3">
-            <button className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 shadow-md shadow-green-500/20 font-medium">
-              Test & Save
-            </button>
-            <button className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium">
-              Send Test Email
-            </button>
+            <Button>Test &amp; Save</Button>
+            <Button variant="secondary">Send Test Email</Button>
           </div>
-        </div>
+        </Card>
 
-        <div id="whatsapp" className="bg-white rounded-xl border border-gray-200 p-6">
+        <Card id="whatsapp">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
               <MessageCircle className="w-6 h-6 text-white" />
@@ -387,13 +384,11 @@ export default async function SettingsPage() {
             </div>
           </div>
           <div className="mt-5">
-            <button className="w-full px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 shadow-md shadow-purple-500/20 font-medium">
-              Save Configuration
-            </button>
+            <Button className="w-full">Save Configuration</Button>
           </div>
-        </div>
+        </Card>
 
-        <div id="payments" className="bg-white rounded-xl border border-gray-200 p-6">
+        <Card id="payments">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
               <CreditCard className="w-6 h-6 text-white" />
@@ -444,13 +439,11 @@ export default async function SettingsPage() {
             </div>
           </div>
           <div className="mt-5">
-            <button className="w-full px-5 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 shadow-md shadow-orange-500/20 font-medium">
-              Save Gateway
-            </button>
+            <Button className="w-full">Save Gateway</Button>
           </div>
-        </div>
+        </Card>
 
-        <div id="apikeys" className="bg-white rounded-xl border border-gray-200 p-6">
+        <Card id="apikeys">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
               <Key className="w-6 h-6 text-white" />
@@ -491,26 +484,14 @@ export default async function SettingsPage() {
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Zoho CRM / API Refresh Token
-              </label>
-              <input
-                type="password"
-                placeholder="Zoho OAuth token..."
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
           </div>
           <div className="mt-5">
-            <button className="w-full px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 shadow-md shadow-red-500/20 font-medium">
-              Save API Keys
-            </button>
+            <Button className="w-full">Save API Keys</Button>
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div id="notifications" className="bg-white rounded-xl border border-gray-200 p-6">
+      <Card id="notifications">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
             <Bell className="w-6 h-6 text-white" />
@@ -555,11 +536,9 @@ export default async function SettingsPage() {
           </div>
         </div>
         <div className="mt-5">
-          <button className="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-lg hover:from-yellow-600 hover:to-amber-700 shadow-md shadow-yellow-500/20 font-medium">
-            Save Preferences
-          </button>
+          <Button>Save Preferences</Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

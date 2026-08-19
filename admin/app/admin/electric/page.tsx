@@ -39,6 +39,7 @@ import {
 import ElectricPageList from '@/components/admin/electric/ElectricPageList';
 import ElectricMenuList from '@/components/admin/electric/ElectricMenuList';
 import ChargingStationList from '@/components/admin/electric/ChargingStationList';
+import { PageHeader, Button, LinkButton, Card, Badge } from '@/components/admin/ui';
 
 interface ElectricPage {
   id: string;
@@ -270,52 +271,30 @@ export default function ElectricManagementPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg shadow-green-500/20">
-            <Zap className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-              Electric Pages Management
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Manage all 6 electric vehicle informational pages and charging infrastructure
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <Link
-            href="/admin/electric/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg shadow-sm hover:from-green-700 hover:to-green-800 transition-all font-medium text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Page
-          </Link>
-          <button
-            onClick={handleBulkPublish}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-sm hover:from-blue-700 hover:to-blue-800 transition-all font-medium text-sm"
-          >
-            <Globe className="w-4 h-4" />
-            Publish All
-          </button>
-          <button
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Electric Pages Management"
+        description="Manage all 6 electric vehicle informational pages and charging infrastructure"
+        actions={
+          <>
+            <Button variant="secondary" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <LinkButton href="/admin/electric/new">
+              <Plus className="w-4 h-4" />
+              Add Page
+            </LinkButton>
+            <Button variant="secondary" onClick={handleBulkPublish}>
+              <Globe className="w-4 h-4" />
+              Publish All
+            </Button>
+            <Button variant="secondary" onClick={handleExport}>
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+          </>
+        }
+      />
 
       {/* Analytics Dashboard */}
       <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/50 shadow-lg p-6">
@@ -446,7 +425,7 @@ export default function ElectricManagementPage() {
       {/* Quick Stats Dashboard Row */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Pages */}
-        <div className="group relative bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden shadow-sm">
+        <Card padding="none" className="group relative p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-green-400 to-emerald-600 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700" />
           <div className="relative">
             <div className="flex items-start justify-between mb-3">
@@ -461,10 +440,10 @@ export default function ElectricManagementPage() {
             <div className="mt-1 text-sm font-semibold text-gray-900">Total Pages</div>
             <div className="text-xs text-gray-500 mt-0.5">All EV content</div>
           </div>
-        </div>
+        </Card>
 
         {/* Published */}
-        <div className="group relative bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden shadow-sm">
+        <Card padding="none" className="group relative p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-400 to-blue-600 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700" />
           <div className="relative">
             <div className="flex items-start justify-between mb-3">
@@ -479,10 +458,10 @@ export default function ElectricManagementPage() {
             <div className="mt-1 text-sm font-semibold text-gray-900">Published</div>
             <div className="text-xs text-gray-500 mt-0.5">Live on website</div>
           </div>
-        </div>
+        </Card>
 
         {/* Drafts */}
-        <div className="group relative bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden shadow-sm">
+        <Card padding="none" className="group relative p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-amber-400 to-amber-600 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700" />
           <div className="relative">
             <div className="flex items-start justify-between mb-3">
@@ -497,10 +476,10 @@ export default function ElectricManagementPage() {
             <div className="mt-1 text-sm font-semibold text-gray-900">Drafts</div>
             <div className="text-xs text-gray-500 mt-0.5">Awaiting review</div>
           </div>
-        </div>
+        </Card>
 
         {/* Charging Stations */}
-        <div className="group relative bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden shadow-sm">
+        <Card padding="none" className="group relative p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-violet-400 to-violet-600 opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700" />
           <div className="relative">
             <div className="flex items-start justify-between mb-3">
@@ -515,7 +494,7 @@ export default function ElectricManagementPage() {
             <div className="mt-1 text-sm font-semibold text-gray-900">Charging Stations</div>
             <div className="text-xs text-gray-500 mt-0.5">Network locations</div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Quick Actions Panel */}
@@ -598,20 +577,16 @@ export default function ElectricManagementPage() {
                         <p className="text-xs text-gray-500 mt-0.5">{card.description}</p>
                       </div>
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        isPublished
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-gray-50 text-gray-600 border-gray-200'
-                      }`}
-                    >
-                      {isPublished ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
-                      {isPublished ? 'Published' : 'Draft'}
-                    </span>
+                    <Badge tone={isPublished ? 'green' : 'gray'}>
+                      <span className="inline-flex items-center gap-1">
+                        {isPublished ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <XCircle className="w-3 h-3" />
+                        )}
+                        {isPublished ? 'Published' : 'Draft'}
+                      </span>
+                    </Badge>
                   </div>
 
                   <div className="mb-4">
@@ -672,7 +647,7 @@ export default function ElectricManagementPage() {
       </div>
 
       {/* Quick Links Section with Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <Card padding="none" className="overflow-hidden">
         <div className="border-b border-gray-200 px-2 pt-2 sm:px-4 sm:pt-4">
           <div className="flex gap-1 sm:gap-2">
             <button
@@ -707,7 +682,7 @@ export default function ElectricManagementPage() {
             <ElectricMenuList />
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Charging Stations Preview */}
       <div>
@@ -724,9 +699,9 @@ export default function ElectricManagementPage() {
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <ChargingStationList />
-        </div>
+        </Card>
       </div>
 
       {/* Informational Help Box */}

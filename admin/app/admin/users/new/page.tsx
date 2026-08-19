@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Mail, Lock, Shield, Building } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader, Card, Button } from '@/components/admin/ui';
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -90,10 +91,7 @@ export default function NewUserPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New User</h1>
-          <p className="mt-1 text-sm text-gray-500">Add a new admin user to the system</p>
-        </div>
+        <PageHeader title="Create New User" description="Add a new admin user to the system" />
       </div>
 
       {error && (
@@ -108,7 +106,8 @@ export default function NewUserPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200">
+      <Card padding="none">
+        <form onSubmit={handleSubmit}>
         <div className="p-6 space-y-6">
           {/* Full Name */}
           <div>
@@ -208,6 +207,8 @@ export default function NewUserPage() {
               <option value="sales">Sales - Handle sales & quotations</option>
               <option value="service">Service - Manage service bookings</option>
               <option value="marketing">Marketing - Content & promotions</option>
+              <option value="service_advisor">Service Advisor - Job cards & write-up</option>
+              <option value="service_manager">Service Manager - Workshop, bays & QC</option>
             </select>
           </div>
 
@@ -248,23 +249,20 @@ export default function NewUserPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between rounded-b-lg">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
           <Link
             href="/admin/users"
             className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4" />
             {loading ? 'Creating...' : 'Create User'}
-          </button>
+          </Button>
         </div>
-      </form>
+        </form>
+      </Card>
     </div>
   );
 }

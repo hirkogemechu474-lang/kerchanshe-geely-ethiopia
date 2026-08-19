@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Mail, Shield, Building, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader, Card, Button } from '@/components/admin/ui';
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -137,10 +138,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit User</h1>
-          <p className="mt-1 text-sm text-gray-500">Update user information and permissions</p>
-        </div>
+        <PageHeader title="Edit User" description="Update user information and permissions" />
       </div>
 
       {error && (
@@ -155,7 +153,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200">
+      <Card padding="none">
+        <form onSubmit={handleSubmit}>
         <div className="p-6 space-y-6">
           {/* Full Name */}
           <div>
@@ -212,6 +211,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <option value="sales">Sales - Handle sales & quotations</option>
               <option value="service">Service - Manage service bookings</option>
               <option value="marketing">Marketing - Content & promotions</option>
+              <option value="service_advisor">Service Advisor - Job cards & write-up</option>
+              <option value="service_manager">Service Manager - Workshop, bays & QC</option>
             </select>
           </div>
 
@@ -252,16 +253,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between rounded-b-lg">
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting || saving}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
+          <Button type="button" variant="danger" onClick={handleDelete} disabled={deleting || saving}>
             <Trash2 className="w-4 h-4" />
             {deleting ? 'Deleting...' : 'Delete User'}
-          </button>
+          </Button>
           <div className="flex items-center gap-3">
             <Link
               href="/admin/users"
@@ -269,17 +265,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             >
               Cancel
             </Link>
-            <button
-              type="submit"
-              disabled={saving || deleting}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button type="submit" disabled={saving || deleting}>
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </Card>
     </div>
   );
 }

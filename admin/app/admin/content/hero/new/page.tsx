@@ -1,4 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
+import { PageHeader } from '@/components/admin/ui';
 import HeroSectionForm from '@/components/admin/hero/HeroSectionForm';
 
 export default async function NewHeroPage() {
@@ -6,12 +7,7 @@ export default async function NewHeroPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Create Hero Section</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Add a new hero banner to the homepage carousel
-        </p>
-      </div>
+      <PageHeader title="Create Hero Section" description="Add a new hero banner to the homepage carousel" />
 
       <HeroSectionForm />
     </div>

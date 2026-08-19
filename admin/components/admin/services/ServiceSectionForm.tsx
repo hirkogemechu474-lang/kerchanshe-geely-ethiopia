@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import FileUpload from '@/components/admin/FileUpload';
+import { PageHeader, LinkButton, Button, Card } from '@/components/admin/ui';
 
 interface ServiceSection {
   id?: string;
@@ -117,30 +118,24 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/services-menu" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEdit ? 'Edit Section' : 'New Section'}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {isEdit ? 'Update section information' : 'Create a new menu section for the Services dropdown'}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <Link href="/admin/services-menu" className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div className="flex-1">
+          <PageHeader
+            title={isEdit ? 'Edit Section' : 'New Section'}
+            description={isEdit ? 'Update section information' : 'Create a new menu section for the Services dropdown'}
+            actions={
+              isEdit && (
+                <Button variant="danger" onClick={handleDelete} disabled={loading}>
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </Button>
+              )
+            }
+          />
         </div>
-        {isEdit && (
-          <button
-            onClick={handleDelete}
-            disabled={loading}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </button>
-        )}
       </div>
 
       {error && (
@@ -150,9 +145,9 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Section Information</h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -248,7 +243,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
               </label>
             </div>
           </div>
-        </div>
+        </Card>
 
         <div className="flex gap-3">
           <button

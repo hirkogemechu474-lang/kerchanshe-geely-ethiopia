@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import ElectricSectionForm from '@/components/admin/electric/ElectricSectionForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'Edit Section - Electric Menu',
@@ -39,11 +40,8 @@ export default async function EditElectricSectionPage({ params }: { params: Prom
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Electric Section</h1>
-          <p className="text-gray-600 mt-1">
-            Update "{section.title}" section details
-          </p>
+        <div className="flex-1">
+          <PageHeader title="Edit Electric Section" description={`Update "${section.title}" section details`} />
         </div>
       </div>
 
@@ -59,9 +57,9 @@ export default async function EditElectricSectionPage({ params }: { params: Prom
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <Card>
         <ElectricSectionForm section={section} mode="edit" />
-      </div>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import ElectricPageForm from '@/components/admin/electric/ElectricPageForm';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,15 +21,15 @@ export default async function EditElectricPage({ params }: PageProps) {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Electric Page</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Update electric mobility page content
-          </p>
-        </div>
+        <PageHeader
+          title="Edit Electric Page"
+          description="Update electric mobility page content"
+        />
       </div>
 
-      <ElectricPageForm pageId={id} mode="edit" />
+      <Card>
+        <ElectricPageForm pageId={id} mode="edit" />
+      </Card>
     </div>
   );
 }

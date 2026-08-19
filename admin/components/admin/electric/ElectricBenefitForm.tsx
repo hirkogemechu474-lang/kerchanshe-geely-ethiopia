@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Save, X, Plus, Calculator, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/admin/ui';
 
 interface BenefitPage {
   id: string;
@@ -441,16 +442,16 @@ export default function ElectricBenefitForm({ benefitId, benefitType }: Electric
               />
             </div>
             <div className="flex items-end">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   setCalculatorDefaults(DEFAULT_CALCULATOR_DEFAULTS);
                   setCalculatorFaqs(DEFAULT_CALCULATOR_FAQS);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
               >
                 Reset to Defaults
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -550,21 +551,13 @@ export default function ElectricBenefitForm({ benefitId, benefitType }: Electric
 
       {/* Submit Buttons */}
       <div className="flex gap-3 pt-6 border-t">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting}>
           <Save className="w-4 h-4" />
           {submitting ? 'Saving...' : 'Save Benefit Page'}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

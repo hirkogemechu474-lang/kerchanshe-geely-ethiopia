@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Calendar, Percent, Tag } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader, Card, Button, LinkButton } from '@/components/admin/ui';
 
 export default function NewPromotionPage() {
   const router = useRouter();
@@ -64,10 +65,7 @@ export default function NewPromotionPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Promotion</h1>
-          <p className="mt-1 text-sm text-gray-500">Set up a new promotional campaign</p>
-        </div>
+        <PageHeader title="Create New Promotion" description="Set up a new promotional campaign" />
       </div>
 
       {error && (
@@ -82,7 +80,8 @@ export default function NewPromotionPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200">
+      <Card padding="none" className="overflow-hidden">
+        <form onSubmit={handleSubmit}>
         <div className="p-6 space-y-6">
           {/* Campaign Name */}
           <div>
@@ -199,23 +198,17 @@ export default function NewPromotionPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between rounded-b-lg">
-          <Link
-            href="/admin/promotions"
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-          >
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <LinkButton href="/admin/promotions" variant="secondary">
             Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </LinkButton>
+          <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4" />
             {loading ? 'Creating...' : 'Create Promotion'}
-          </button>
+          </Button>
         </div>
-      </form>
+        </form>
+      </Card>
     </div>
   );
 }

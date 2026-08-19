@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2, Loader2 } from 'lucide-react';
 import FileUpload from '@/components/admin/FileUpload';
+import { Card, Button, LinkButton, PageHeader } from '@/components/admin/ui';
 
 interface Dealer {
   id?: string;
@@ -179,29 +180,29 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/dealers" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{isEdit ? 'Edit Dealer' : 'Add New Dealer'}</h1>
-            <p className="mt-1 text-sm text-gray-500">{isEdit ? 'Update dealer information and settings' : 'Create a new dealer location'}</p>
-          </div>
-        </div>
-        {isEdit && (
-          <button onClick={handleDelete} disabled={loading} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50">
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title={isEdit ? 'Edit Dealer' : 'Add New Dealer'}
+        description={isEdit ? 'Update dealer information and settings' : 'Create a new dealer location'}
+        actions={
+          <>
+            <Link href="/admin/dealers" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            {isEdit && (
+              <Button variant="danger" onClick={handleDelete} disabled={loading}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Logo & Gallery */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Media & Logo</h2>
           <div className="space-y-6">
             <div>
@@ -213,10 +214,10 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               <FileUpload value={gallery} onChange={(v) => setGallery(v as string[])} multiple label="gallery" />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Basic Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -236,10 +237,10 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               <textarea value={formData.description} onChange={(e) => set('description', e.target.value)} rows={3} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Describe this dealer location..." />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Address & Location */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Address & Location</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -275,10 +276,10 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               <input type="text" value={formData.longitude} onChange={(e) => set('longitude', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="e.g., 38.7525" />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Contact */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -298,10 +299,10 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               <input type="url" value={formData.website} onChange={(e) => set('website', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="https://geelyethiopia.com" />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Services */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Services Offered</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {availableServices.map((service) => {
@@ -314,20 +315,20 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Working Hours */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Working Hours</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Weekdays</label><input type="text" value={formData.weekdays} onChange={(e) => set('weekdays', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="8:00 AM - 6:00 PM" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Saturday</label><input type="text" value={formData.saturday} onChange={(e) => set('saturday', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="9:00 AM - 5:00 PM" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Sunday</label><input type="text" value={formData.sunday} onChange={(e) => set('sunday', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Closed" /></div>
           </div>
-        </div>
+        </Card>
 
         {/* Facilities */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Facilities</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[['showroom', 'Showroom'], ['serviceCenter', 'Service Center'], ['partsShop', 'Parts Shop'], ['testDriveArea', 'Test Drive Area'], ['customerLounge', 'Customer Lounge'], ['parking', 'Parking']].map(([key, label]) => (
@@ -337,10 +338,10 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               </label>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Stats & Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Stats & Status</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Sales Count</label><input type="number" value={formData.salesCount} onChange={(e) => set('salesCount', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" min="0" /></div>
@@ -351,15 +352,15 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.featured} onChange={(e) => set('featured', e.target.checked)} className="rounded border-gray-300" /><span className="text-sm font-medium text-gray-700">Featured</span></label>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button type="submit" disabled={saving} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <Button type="submit" disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Saving...' : isEdit ? 'Update Dealer' : 'Create Dealer'}
-          </button>
-          <Link href="/admin/dealers" className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</Link>
+          </Button>
+          <LinkButton href="/admin/dealers" variant="secondary">Cancel</LinkButton>
         </div>
       </form>
     </div>

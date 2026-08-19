@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import ElectricBenefitForm from '@/components/admin/electric/ElectricBenefitForm';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 
 
@@ -47,19 +48,14 @@ export default async function GovernmentIncentivesPage() {
         Back to Electric Management
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Government Incentives Page</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Manage government incentives and subsidies content
-        </p>
-      </div>
+      <PageHeader title="Government Incentives Page" description="Manage government incentives and subsidies content" />
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card>
         <ElectricBenefitForm
           benefitId={benefit?.id}
           benefitType="government-incentives"
         />
-      </div>
+      </Card>
     </div>
   );
 }

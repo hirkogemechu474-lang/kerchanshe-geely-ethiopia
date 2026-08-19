@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Edit, Trash2, Eye, Calendar, Zap, Plus } from 'lucide-react';
+import { Button, LinkButton, Card, EmptyState, Badge } from '@/components/admin/ui';
 
 interface Promotion {
   id: string;
@@ -77,44 +78,20 @@ export default function PromotionsList() {
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
+          <Button size="sm" variant={filter === 'all' ? 'primary' : 'secondary'} onClick={() => setFilter('all')}>
             All ({promotions.length})
-          </button>
-          <button
-            onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              filter === 'active'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
+          </Button>
+          <Button size="sm" variant={filter === 'active' ? 'primary' : 'secondary'} onClick={() => setFilter('active')}>
             Active ({promotions.filter(p => isPromotionActive(p) && p.isActive).length})
-          </button>
-          <button
-            onClick={() => setFilter('featured')}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              filter === 'featured'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
+          </Button>
+          <Button size="sm" variant={filter === 'featured' ? 'primary' : 'secondary'} onClick={() => setFilter('featured')}>
             Featured ({promotions.filter(p => p.isFeatured).length})
-          </button>
+          </Button>
         </div>
-        <Link
-          href="/admin/promotions/new"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
+        <LinkButton href="/admin/promotions/new">
           <Plus size={16} />
           New Promotion
-        </Link>
+        </LinkButton>
       </div>
 
       {/* Promotions Grid */}
@@ -122,10 +99,7 @@ export default function PromotionsList() {
         {filteredPromotions.map((promotion) => {
           const active = isPromotionActive(promotion);
           return (
-            <div
-              key={promotion.id}
-              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-            >
+            <Card key={promotion.id} padding="none" interactive className="overflow-hidden">
               {/* Banner Image */}
               <div className="relative h-40 bg-gradient-to-br from-blue-100 to-purple-100">
                 {promotion.bannerImage ? (
@@ -140,13 +114,13 @@ export default function PromotionsList() {
                   </div>
                 )}
                 {promotion.isFeatured && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">
-                    FEATURED
+                  <div className="absolute top-2 right-2">
+                    <Badge tone="orange">FEATURED</Badge>
                   </div>
                 )}
                 {active && (
-                  <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
-                    ACTIVE
+                  <div className="absolute top-2 left-2">
+                    <Badge tone="green">ACTIVE</Badge>
                   </div>
                 )}
               </div>
@@ -163,7 +137,7 @@ export default function PromotionsList() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
                   <Link
                     href={`/admin/promotions/${promotion.id}`}
                     className="flex-1 flex items-center justify-center gap-1 text-sm text-blue-600 hover:text-blue-900 font-medium"
@@ -180,16 +154,15 @@ export default function PromotionsList() {
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {filteredPromotions.length === 0 && (
-        <div className="p-12 text-center bg-white rounded-lg border border-gray-200">
-          <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">No promotions found</p>
-        </div>
+        <Card padding="none">
+          <EmptyState icon={Zap} title="No promotions found" />
+        </Card>
       )}
     </div>
   );

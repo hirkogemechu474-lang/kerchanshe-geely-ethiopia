@@ -2,6 +2,7 @@ import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import ElectricPageForm from '@/components/admin/electric/ElectricPageForm';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export default async function NewElectricPage() {
   await requirePermission('canManageContent');
@@ -15,15 +16,15 @@ export default async function NewElectricPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Electric Page</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Build a new electric mobility content page
-          </p>
-        </div>
+        <PageHeader
+          title="Create Electric Page"
+          description="Build a new electric mobility content page"
+        />
       </div>
 
-      <ElectricPageForm mode="create" />
+      <Card>
+        <ElectricPageForm mode="create" />
+      </Card>
     </div>
   );
 }

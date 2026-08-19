@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import FileUpload from '@/components/admin/FileUpload';
+import { Card, Button, LinkButton, PageHeader } from '@/components/admin/ui';
 
 interface Brand {
   id: string;
@@ -143,30 +144,24 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/categories" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEdit ? 'Edit Category' : 'Add New Category'}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {isEdit ? 'Update vehicle category information' : 'Create a new vehicle category'}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <Link href="/admin/categories" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div className="flex-1">
+          <PageHeader
+            title={isEdit ? 'Edit Category' : 'Add New Category'}
+            description={isEdit ? 'Update vehicle category information' : 'Create a new vehicle category'}
+            actions={
+              isEdit ? (
+                <Button variant="danger" onClick={handleDelete} disabled={loading}>
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </Button>
+              ) : undefined
+            }
+          />
         </div>
-        {isEdit && (
-          <button
-            onClick={handleDelete}
-            disabled={loading}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </button>
-        )}
       </div>
 
       {error && (
@@ -177,7 +172,7 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -256,10 +251,10 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
               <p className="mt-1 text-xs text-gray-500">Lower numbers appear first</p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Media */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Media</h2>
           <div className="space-y-4">
             <div>
@@ -316,10 +311,10 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
               <p className="mt-1 text-xs text-gray-500">Video will play instead of hero image (MP4 recommended)</p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* SEO */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">SEO Settings</h2>
           <div className="space-y-4">
             <div>
@@ -356,10 +351,10 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -373,25 +368,18 @@ export default function CategoryForm({ category, brands, isEdit = false }: Categ
               <p className="text-xs text-gray-500">Category will be visible to customers when active</p>
             </div>
           </label>
-        </div>
+        </Card>
 
         {/* Form Actions */}
         <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4" />
             {loading ? 'Saving...' : isEdit ? 'Update Category' : 'Create Category'}
-          </button>
+          </Button>
 
-          <Link
-            href="/admin/categories"
-            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-          >
+          <LinkButton href="/admin/categories" variant="secondary">
             Cancel
-          </Link>
+          </LinkButton>
         </div>
       </form>
     </div>

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Edit, Eye, EyeOff, FileText } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, LinkButton, Card, Badge, EmptyState } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'Electric Pages - Admin',
@@ -25,28 +26,25 @@ export default async function ElectricPagesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/electric"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Electric Pages</h1>
-            <p className="text-gray-600 mt-1">
-              Manage content pages for your electric menu items
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center gap-4">
         <Link
-          href="/admin/electric/pages/new"
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          href="/admin/electric"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <Plus className="w-5 h-5" />
-          Create Page
+          <ArrowLeft className="w-5 h-5" />
         </Link>
+        <div className="flex-1">
+          <PageHeader
+            title="Electric Pages"
+            description="Manage content pages for your electric menu items"
+            actions={
+              <LinkButton href="/admin/electric/pages/new">
+                <Plus className="w-5 h-5" />
+                Create Page
+              </LinkButton>
+            }
+          />
+        </div>
       </div>
 
       {/* Info Box */}
@@ -62,24 +60,19 @@ export default async function ElectricPagesPage() {
       </div>
 
       {/* Pages List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <Card padding="none">
         {pages.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <FileText className="w-16 h-16 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No electric pages yet</h3>
-            <p className="text-gray-600 mb-6">
-              Create content pages for your electric menu items
-            </p>
-            <Link
-              href="/admin/electric/pages/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Plus className="w-5 h-5" />
-              Create First Page
-            </Link>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No electric pages yet"
+            description="Create content pages for your electric menu items"
+            action={
+              <LinkButton href="/admin/electric/pages/new">
+                <Plus className="w-5 h-5" />
+                Create First Page
+              </LinkButton>
+            }
+          />
         ) : (
           <div className="divide-y divide-gray-200">
             {pages.map((page: any) => (
@@ -91,15 +84,15 @@ export default async function ElectricPagesPage() {
                         {page.title}
                       </h3>
                       {page.isPublished ? (
-                        <span className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                          <Eye className="w-3 h-3" />
+                        <Badge tone="green">
+                          <Eye className="w-3 h-3 mr-1" />
                           Published
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                          <EyeOff className="w-3 h-3" />
+                        <Badge tone="gray">
+                          <EyeOff className="w-3 h-3 mr-1" />
                           Draft
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <p className="text-gray-600 mb-2">
@@ -140,7 +133,7 @@ export default async function ElectricPagesPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Plus, Car, FolderTree, Settings, LayoutGrid, ListChecks, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import VehicleManagementClient from '@/components/admin/vehicles/VehicleManagementClient';
+import { PageHeader, LinkButton, Card, StatTile } from '@/components/admin/ui';
 
 export default async function VehiclesPage() {
   await requirePermission('canViewVehicles');
@@ -100,26 +101,20 @@ export default async function VehiclesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Vehicle Management</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Add, edit, and organize your vehicle inventory
-          </p>
-        </div>
-        <Link
-          href="/admin/vehicles/new"
-          className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/25 hover:from-blue-700 hover:to-blue-800 transition-all hover:shadow-xl hover:shadow-blue-500/30 font-medium whitespace-nowrap"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">Add New Vehicle</span>
-          <span className="sm:hidden">Add Vehicle</span>
-        </Link>
-      </div>
+      <PageHeader
+        title="Vehicle Management"
+        description="Add, edit, and organize your vehicle inventory"
+        actions={
+          <LinkButton href="/admin/vehicles/new">
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Add New Vehicle</span>
+            <span className="sm:hidden">Add Vehicle</span>
+          </LinkButton>
+        }
+      />
 
       {/* Section Tabs */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-2 shadow-sm">
+      <Card padding="none" className="p-2">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -155,39 +150,17 @@ export default async function VehiclesPage() {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.label}
-              className="group relative bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
-            >
-              <div className={`absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br ${s.gradient} opacity-10 rounded-full group-hover:scale-125 transition-transform duration-500`} />
-              <div className="relative">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.gradient} shadow-md ${s.ring} flex items-center justify-center`}>
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <div className={`text-3xl font-bold tracking-tight ${s.valueColor}`}>
-                  {s.value.toLocaleString()}
-                </div>
-                <div className="mt-0.5 text-sm font-semibold text-gray-900">
-                  {s.label}
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">{s.sub}</div>
-              </div>
-            </div>
-          );
-        })}
+        {statCards.map((s) => (
+          <StatTile key={s.label} label={s.label} value={s.value} icon={s.icon} />
+        ))}
       </div>
 
       {/* Client Component for Search, Filters, and List */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <Card padding="none">
         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ListChecks className="w-5 h-5 text-gray-400" />
@@ -198,7 +171,7 @@ export default async function VehiclesPage() {
           </div>
         </div>
         <VehicleManagementClient initialVehicles={vehicles} totalCount={stats.total} />
-      </div>
+      </Card>
     </div>
   );
 }

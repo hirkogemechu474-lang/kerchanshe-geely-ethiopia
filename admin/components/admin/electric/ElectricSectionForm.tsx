@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/admin/ui';
 
 interface ElectricSectionFormProps {
   section?: {
@@ -104,14 +105,9 @@ export default function ElectricSectionForm({ section, mode }: ElectricSectionFo
     <form onSubmit={handleSubmit} className="space-y-6">
       {mode === 'edit' && (
         <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
+          <Button type="button" variant="danger" onClick={handleDelete} disabled={loading}>
             Delete Section
-          </button>
+          </Button>
         </div>
       )}
 
@@ -229,11 +225,7 @@ export default function ElectricSectionForm({ section, mode }: ElectricSectionFo
 
       {/* Submit Buttons */}
       <div className="flex gap-4 pt-6 border-t">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
+        <Button type="submit" disabled={loading} className="flex-1 py-3">
           {loading ? (
             <span className="flex items-center justify-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -244,15 +236,10 @@ export default function ElectricSectionForm({ section, mode }: ElectricSectionFo
           ) : (
             'Update Section'
           )}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          disabled={loading}
-          className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={loading} className="py-3">
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

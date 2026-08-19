@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Users, Car, Star, Clock, Phone, Mail, Edit, Globe, Image as ImageIcon } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
+import { Card, CardTitle, LinkButton, StatTile, Badge } from '@/components/admin/ui';
 
 
 
@@ -71,60 +72,37 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            dealer.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-          }`}>
-            {dealer.active ? 'Published' : 'Unpublished'}
-          </span>
-          <Link
-            href={`/admin/dealers/${dealer.id}/edit`}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
+          <Badge tone={dealer.active ? 'green' : 'gray'}>{dealer.active ? 'Published' : 'Unpublished'}</Badge>
+          <LinkButton href={`/admin/dealers/${dealer.id}/edit`}>
             <Edit className="w-4 h-4" />
             Edit Dealer
-          </Link>
+          </LinkButton>
         </div>
       </div>
 
       {/* Description */}
       {dealer.description && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Description</h2>
+        <Card>
+          <CardTitle className="text-lg mb-3">Description</CardTitle>
           <p className="text-gray-700 whitespace-pre-line">{dealer.description}</p>
-        </div>
+        </Card>
       )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <MapPin className="w-8 h-8 text-blue-600 mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{dealer.city}</div>
-          <p className="text-sm text-gray-500">Location</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <Car className="w-8 h-8 text-green-600 mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{dealer.salesCount}</div>
-          <p className="text-sm text-gray-500">Total Sales</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <Users className="w-8 h-8 text-purple-600 mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{dealer.staffCount}</div>
-          <p className="text-sm text-gray-500">Staff Members</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <Star className="w-8 h-8 text-yellow-500 mb-3 fill-current" />
-          <div className="text-2xl font-bold text-gray-900">{dealer.rating.toFixed(1)}</div>
-          <p className="text-sm text-gray-500">Customer Rating</p>
-        </div>
+        <StatTile label="Location" value={dealer.city} icon={MapPin} />
+        <StatTile label="Total Sales" value={dealer.salesCount} icon={Car} />
+        <StatTile label="Staff Members" value={dealer.staffCount} icon={Users} />
+        <StatTile label="Customer Rating" value={dealer.rating.toFixed(1)} icon={Star} />
       </div>
 
       {/* Gallery */}
       {gallery.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <Card>
+          <CardTitle className="text-lg mb-4 flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-gray-400" />
             Gallery
-          </h2>
+          </CardTitle>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {gallery.map((img, index) => (
               <img
@@ -135,14 +113,14 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
               />
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contact Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+        <Card>
+          <CardTitle className="text-lg mb-4">Contact Information</CardTitle>
           <div className="space-y-3">
             <div className="flex items-start gap-3 text-sm">
               <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
@@ -173,17 +151,15 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Services Offered */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Services Offered</h2>
+        <Card>
+          <CardTitle className="text-lg mb-4">Services Offered</CardTitle>
           <div className="flex flex-wrap gap-2">
             {services.length > 0 ? (
               services.map((service, index) => (
-                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                  {service}
-                </span>
+                <Badge key={index} tone="blue">{service}</Badge>
               ))
             ) : (
               <span className="text-gray-500 text-sm">No services listed</span>
@@ -192,26 +168,22 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
 
           {activeFacilities.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Facilities</h2>
+              <CardTitle className="text-lg mt-6 mb-3">Facilities</CardTitle>
               <div className="flex flex-wrap gap-2">
                 {activeFacilities.map((f) => (
-                  <span key={f.key} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                    {f.label}
-                  </span>
+                  <Badge key={f.key} tone="green">{f.label}</Badge>
                 ))}
                 {facilities.parking && (
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                    Parking: {facilities.parking}
-                  </span>
+                  <Badge tone="green">Parking: {facilities.parking}</Badge>
                 )}
               </div>
             </>
           )}
-        </div>
+        </Card>
 
         {/* Map Location */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Map Location</h2>
+        <Card>
+          <CardTitle className="text-lg mb-4">Map Location</CardTitle>
           {dealer.latitude && dealer.longitude ? (
             <>
               <div className="h-[220px] rounded-lg overflow-hidden border border-gray-200 mb-3">
@@ -230,27 +202,19 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
           ) : (
             <p className="text-gray-500 text-sm">No map coordinates set. Edit the dealer to add a location.</p>
           )}
-        </div>
+        </Card>
 
         {/* Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
+        <Card>
+          <CardTitle className="text-lg mb-4">Status</CardTitle>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Published</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                dealer.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}>
-                {dealer.active ? 'Yes' : 'No'}
-              </span>
+              <Badge tone={dealer.active ? 'green' : 'red'}>{dealer.active ? 'Yes' : 'No'}</Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Featured</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                dealer.featured ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {dealer.featured ? 'Yes' : 'No'}
-              </span>
+              <Badge tone={dealer.featured ? 'orange' : 'gray'}>{dealer.featured ? 'Yes' : 'No'}</Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Created</span>
@@ -265,7 +229,7 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
               </span>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

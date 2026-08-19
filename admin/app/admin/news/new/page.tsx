@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, FileText, Tag, Calendar, Image as ImageIcon } from 'lucide-react';
+import { Save, FileText, Tag, Calendar, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import { Card, Button, PageHeader } from '@/components/admin/ui';
 
 export default function NewNewsPage() {
   const router = useRouter();
@@ -110,18 +111,7 @@ export default function NewNewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/admin/news"
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create News Article</h1>
-          <p className="mt-1 text-sm text-gray-500">Write and publish a new article</p>
-        </div>
-      </div>
+      <PageHeader title="Create News Article" description="Write and publish a new article" />
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -135,7 +125,8 @@ export default function NewNewsPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200">
+      <form onSubmit={handleSubmit}>
+        <Card padding="none">
         <div className="p-6 space-y-6">
           {/* Title */}
           <div>
@@ -303,22 +294,19 @@ export default function NewNewsPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between rounded-b-lg">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
           <Link
             href="/admin/news"
             className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4" />
             {loading ? 'Creating...' : 'Create Article'}
-          </button>
+          </Button>
         </div>
+      </Card>
       </form>
     </div>
   );

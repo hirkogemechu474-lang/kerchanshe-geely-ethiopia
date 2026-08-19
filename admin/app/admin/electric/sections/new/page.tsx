@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import ElectricSectionForm from '@/components/admin/electric/ElectricSectionForm';
+import { PageHeader, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'New Section - Electric Menu',
@@ -19,11 +20,8 @@ export default function NewElectricSectionPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Electric Section</h1>
-          <p className="text-gray-600 mt-1">
-            Add a new section to your electric menu
-          </p>
+        <div className="flex-1">
+          <PageHeader title="Create Electric Section" description="Add a new section to your electric menu" />
         </div>
       </div>
 
@@ -40,9 +38,9 @@ export default function NewElectricSectionPage() {
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <Card>
         <ElectricSectionForm mode="create" />
-      </div>
+      </Card>
     </div>
   );
 }

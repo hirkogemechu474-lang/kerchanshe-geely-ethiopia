@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Eye, EyeOff, ExternalLink, FileText } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { PageHeader, LinkButton, Card, StatTile, TableCard, THead, TBody, Tr, Th, Td, EmptyState, Badge } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
   title: 'Service Pages - Services Menu',
@@ -25,21 +26,16 @@ export default async function ServicePagesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Service Pages</h1>
-          <p className="text-gray-600 mt-1">
-            Manage content pages for your services
-          </p>
-        </div>
-        <Link
-          href="/admin/services-menu/pages/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Create Page
-        </Link>
-      </div>
+      <PageHeader
+        title="Service Pages"
+        description="Manage content pages for your services"
+        actions={
+          <LinkButton href="/admin/services-menu/pages/new">
+            <Plus className="w-4 h-4" />
+            Create Page
+          </LinkButton>
+        }
+      />
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -54,130 +50,104 @@ export default async function ServicePagesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-gray-900">{pages.length}</div>
-          <div className="text-sm text-gray-600">Total Pages</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">
-            {pages.filter((p: any) => p.isPublished).length}
-          </div>
-          <div className="text-sm text-gray-600">Published</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-gray-400">
-            {pages.filter((p: any) => !p.isPublished).length}
-          </div>
-          <div className="text-sm text-gray-600">Drafts</div>
-        </div>
+        <StatTile label="Total Pages" value={pages.length} />
+        <StatTile label="Published" value={pages.filter((p: any) => p.isPublished).length} />
+        <StatTile label="Drafts" value={pages.filter((p: any) => !p.isPublished).length} />
       </div>
 
       {/* Pages List */}
       {pages.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-          <div className="text-gray-400 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No pages yet</h3>
-          <p className="text-gray-600 mb-6">
-            Create your first service page to get started
-          </p>
-          <Link
-            href="/admin/services-menu/pages/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-5 h-5" />
-            Create First Page
-          </Link>
-        </div>
+        <Card padding="none">
+          <EmptyState
+            icon={FileText}
+            title="No pages yet"
+            description="Create your first service page to get started"
+            action={
+              <LinkButton href="/admin/services-menu/pages/new">
+                <Plus className="w-4 h-4" />
+                Create First Page
+              </LinkButton>
+            }
+          />
+        </Card>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Page
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Slug (URL)
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Updated
-                </th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {pages.map((page: any) => (
-                <tr key={page.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{page.title}</div>
-                    {page.excerpt && (
-                      <div className="text-sm text-gray-500 mt-1 line-clamp-1">
-                        {page.excerpt}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                        /services/{page.slug}
-                      </code>
-                      {page.isPublished && (
-                        <a
-                          href={`/services/${page.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
+        <TableCard>
+          <THead>
+            <tr>
+              <Th>Page</Th>
+              <Th>Slug (URL)</Th>
+              <Th>Status</Th>
+              <Th>Updated</Th>
+              <Th className="text-right">Actions</Th>
+            </tr>
+          </THead>
+          <TBody>
+            {pages.map((page: any) => (
+              <Tr key={page.id}>
+                <Td>
+                  <div className="font-medium text-gray-900">{page.title}</div>
+                  {page.excerpt && (
+                    <div className="text-sm text-gray-500 mt-1 line-clamp-1">
+                      {page.excerpt}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {page.isPublished ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  )}
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                      /services/{page.slug}
+                    </code>
+                    {page.isPublished && (
+                      <a
+                        href={`/services/${page.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </Td>
+                <Td>
+                  {page.isPublished ? (
+                    <Badge tone="green">
+                      <span className="flex items-center gap-1">
                         <Eye className="w-3 h-3" />
                         Published
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    </Badge>
+                  ) : (
+                    <Badge tone="gray">
+                      <span className="flex items-center gap-1">
                         <EyeOff className="w-3 h-3" />
                         Draft
                       </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(page.updatedAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/services-menu/pages/${page.id}/edit`}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit page"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </Badge>
+                  )}
+                </Td>
+                <Td className="text-gray-500">
+                  {new Date(page.updatedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </Td>
+                <Td className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      href={`/admin/services-menu/pages/${page.id}/edit`}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit page"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </Td>
+              </Tr>
+            ))}
+          </TBody>
+        </TableCard>
       )}
 
       {/* Back Link */}

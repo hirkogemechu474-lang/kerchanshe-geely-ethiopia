@@ -12,6 +12,7 @@ import {
   Globe,
   Hash,
 } from 'lucide-react';
+import { Card, Button, PageHeader } from '@/components/admin/ui';
 
 interface BusinessSettings {
   companyName: string;
@@ -170,51 +171,39 @@ export default function BusinessSettingsPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/admin/settings')}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Back to Settings"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
-                <Building className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Business Info</h1>
-                <p className="text-gray-600 text-sm">
-                  Company identity, legal details, operating hours & regional settings
-                </p>
-              </div>
-            </div>
-          </div>
+        <div>
+          <button
+            onClick={() => router.push('/admin/settings')}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Settings
+          </button>
+          <PageHeader
+            title="Business Info"
+            description="Company identity, legal details, operating hours & regional settings"
+            actions={
+              <>
+                {lastSaved && (
+                  <div className="text-xs text-gray-500 flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Last saved: {lastSaved}
+                  </div>
+                )}
 
-          <div className="flex items-center gap-3">
-            {lastSaved && (
-              <div className="text-xs text-gray-500 flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Last saved: {lastSaved}
-              </div>
-            )}
+                {flashMessage && (
+                  <div className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1.5 rounded-full border border-green-200 animate-pulse">
+                    ✓ {flashMessage}
+                  </div>
+                )}
 
-            {flashMessage && (
-              <div className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1.5 rounded-full border border-green-200 animate-pulse">
-                ✓ {flashMessage}
-              </div>
-            )}
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-lg hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 font-medium transition-all"
-            >
-              <Save size={20} />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
+                <Button onClick={handleSave} disabled={saving}>
+                  <Save size={20} />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            }
+          />
         </div>
 
         {error && (
@@ -225,7 +214,7 @@ export default function BusinessSettingsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Card 1: Company Identity */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <Card>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
                 <Building className="w-5 h-5 text-white" />
@@ -307,10 +296,10 @@ export default function BusinessSettingsPage() {
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Card 2: Legal & Tax Numbers */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <Card>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
                 <Badge className="w-5 h-5 text-white" />
@@ -378,10 +367,10 @@ export default function BusinessSettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Card 3: Business Hours */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <Card>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-white" />
@@ -449,10 +438,10 @@ export default function BusinessSettingsPage() {
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Card 4: Regional Settings */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <Card>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center">
                 <Globe className="w-5 h-5 text-white" />
@@ -547,7 +536,7 @@ export default function BusinessSettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
   );
