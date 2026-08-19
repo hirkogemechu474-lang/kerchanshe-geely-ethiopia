@@ -1,0 +1,127 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+
+interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  bannerImage: string | null;
+  ctaButtonText: string | null;
+  ctaButtonLink: string | null;
+  isFeatured: boolean;
+}
+
+export default function PromotionsBanner() {
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
+
+  const fetchPromotions = async () => {
+    try {
+      const response = await fetch('/api/public/promotions?featured=true&limit=5');
+      const result = await response.json();
+      setPromotions(result.promotions || []);
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || promotions.length === 0) {
+    return null;
+  }
+
+  const currentPromo = promotions[currentIndex];
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? promotions.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === promotions.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <section className="py-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="max-w-[1280px] mx-auto px-10">
+        <div className="flex items-center gap-6">
+          {/* Slider */}
+          <div className="flex-1 relative">
+            <div className="relative h-32 md:h-40 rounded-lg overflow-hidden bg-black/20">
+              {currentPromo.bannerImage ? (
+                <img
+                  src={currentPromo.bannerImage}
+                  alt={currentPromo.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Zap size={48} className="text-white/50" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/30"></div>
+              <div className="absolute inset-0 flex flex-col justify-center p-6">
+                <h3 className="text-2xl md:text-3xl font-bold mb-2">{currentPromo.title}</h3>
+                <p className="text-sm md:text-base text-white/90 mb-4 line-clamp-2">
+                  {currentPromo.description}
+                </p>
+                {currentPromo.ctaButtonText && currentPromo.ctaButtonLink && (
+                  <Link
+                    href={currentPromo.ctaButtonLink}
+                    className="inline-block bg-white text-purple-600 font-bold text-sm px-4 py-2 rounded hover:bg-opacity-90 transition-all w-fit"
+                  >
+                    {currentPromo.ctaButtonText}
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            {promotions.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevious}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors"
+                  title="Previous"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors"
+                  title="Next"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Dots */}
+          {promotions.length > 1 && (
+            <div className="flex gap-2">
+              {promotions.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    index === currentIndex ? 'bg-white' : 'bg-white/50'
+                  }`}
+                  title={`Promotion ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

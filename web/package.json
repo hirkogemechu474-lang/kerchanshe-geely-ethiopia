@@ -1,0 +1,51 @@
+{
+  "name": "geely-ethiopia-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "dev:lan": "next dev -H 0.0.0.0 -p 3002",
+    "dev:regen": "npm run db:generate && next dev -p 3002",
+    "dev:regen:lan": "npm run db:generate && next dev -H 0.0.0.0 -p 3002",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3002",
+    "start:lan": "next start -H 0.0.0.0 -p 3002",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "framer-motion": "11.15.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "0.468.0",
+    "next": "15.5.23",
+    "next-auth": "4.24.15",
+    "nodemailer": "^9.0.5",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-hook-form": "7.54.2",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "22.10.2",
+    "@types/nodemailer": "^6.4.14",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "19.0.2",
+    "autoprefixer": "10.4.20",
+    "eslint": "9.17.0",
+    "eslint-config-next": "15.1.6",
+    "postcss": "8.5.1",
+    "prisma": "^5.22.0",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.7.2"
+  },
+  "overrides": {
+    "nodemailer": "^9.0.5",
+    "uuid": "^11.1.1"
+  }
+}

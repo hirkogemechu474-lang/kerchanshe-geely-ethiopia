@@ -1,0 +1,17 @@
+{
+  "name": "geely-ethiopia",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Geely Ethiopia - two independent codebases: web/ (public site, port 3002) and admin/ (panel + Prisma/DB, port 3001). See web/package.json and admin/package.json for scripts.",
+  "scripts": {
+    "dev:web": "npm run dev --prefix web",
+    "dev:admin": "npm run dev --prefix admin",
+    "typecheck": "npm run typecheck --prefix web && npm run typecheck --prefix admin",
+    "lint": "npm run lint --prefix web && npm run lint --prefix admin",
+    "build": "npm run build --prefix web && npm run build --prefix admin",
+    "audit": "npm audit --prefix web --omit=dev --audit-level=critical && npm audit --prefix admin --omit=dev --audit-level=critical",
+    "check": "npm run typecheck && npm run lint",
+    "sync:schema": "node scripts/sync-web-prisma-schema.mjs",
+    "package:deploy": "powershell -ExecutionPolicy Bypass -File scripts/package-deploy.ps1"
+  }
+}

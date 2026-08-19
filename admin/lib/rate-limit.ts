@@ -1,0 +1,203 @@
+/**
+ * In-Memory Rate Limiter for API Routes
+ * 
+ * PRODUCTION NOTE:
+ * This implementation uses an in-memory Map for rate limiting, which works
+ * well for single-instance deployments. For multi-instance/production environments
+ * with load balancing, replace the Map with Redis for distributed rate limiting.
+ * 
+ * Redis Migration:
+ * - Replace `rateLimitStore` Map with Redis client
+ * - Use Redis INCR with EXPIRE for sliding window
+ * - Key format: `rate_limit:{ip}:{route}`
+ * - Example: redis.incr(key).then(count => redis.expire(key, windowMs/1000))
+ */
+
+interface RateLimitConfig {
+  windowMs: number;  // Time window in milliseconds
+  max: number;       // Maximum requests per window
+  message?: string;  // Custom error message
+}
+
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+// In-memory store: Map<string, RateLimitEntry>
+// Key format: "ip:route"
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+/**
+ * Clean up expired entries every 5 minutes to prevent memory leaks
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (entry.resetTime < now) {
+      rateLimitStore.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
+/**
+ * Extract client IP from request headers
+ */
+function getClientIP(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  
+  if (forwarded) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    return forwarded.split(',')[0].trim();
+  }
+  
+  if (realIP) {
+    return realIP;
+  }
+  
+  // Fallback to 'unknown' if no IP found
+  return 'unknown';
+}
+
+/**
+ * Rate limit middleware for API routes
+ * 
+ * @param request - The incoming request
+ * @param config - Rate limit configuration
+ * @returns Response if rate limited, null if allowed
+ * 
+ * @example
+ * ```typescript
+ * // In your API route:
+ * const rateLimitResult = await rateLimit(request, {
+ *   windowMs: 15 * 60 * 1000, // 15 minutes
+ *   max: 5, // 5 requests per window
+ *   message: 'Too many login attempts'
+ * });
+ * 
+ * if (rateLimitResult) {
+ *   return rateLimitResult; // Return 429 response
+ * }
+ * 
+ * // Continue with normal request handling...
+ * ```
+ */
+export async function rateLimit(
+  request: Request,
+  config: RateLimitConfig
+): Promise<Response | null> {
+  const ip = getClientIP(request);
+  const route = new URL(request.url).pathname;
+  const key = `${ip}:${route}`;
+  
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  
+  if (!entry || entry.resetTime < now) {
+    // First request or window expired - create new entry
+    rateLimitStore.set(key, {
+      count: 1,
+      resetTime: now + config.windowMs
+    });
+    return null; // Allow request
+  }
+  
+  if (entry.count >= config.max) {
+    // Rate limit exceeded
+    const retryAfter = Math.ceil((entry.resetTime - now) / 1000); // seconds
+    
+    return new Response(
+      JSON.stringify({
+        error: config.message || 'Too many requests. Please try again later.',
+        retryAfter
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': retryAfter.toString(),
+          'X-RateLimit-Limit': config.max.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': entry.resetTime.toString()
+        }
+      }
+    );
+  }
+  
+  // Increment count and allow request
+  entry.count += 1;
+  rateLimitStore.set(key, entry);
+  
+  return null; // Allow request
+}
+
+/**
+ * Predefined rate limit configurations for common use cases
+ */
+export const rateLimitConfigs = {
+  // Authentication endpoints - strict limits
+  login: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5,
+    message: 'Too many login attempts. Please try again in 15 minutes.'
+  },
+  
+  // Contact/Message forms - prevent spam
+  contactForm: {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 3,
+    message: 'Too many messages sent. Please wait 5 minutes before sending another message.'
+  },
+  
+  // Lead generation forms (test drive, quote)
+  leadForm: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many requests. Please wait 10 minutes before submitting again.'
+  },
+  
+  // Review submissions
+  review: {
+    windowMs: 30 * 60 * 1000, // 30 minutes
+    max: 3,
+    message: 'Too many review submissions. Please wait 30 minutes.'
+  },
+  
+  // Parts requests
+  partsRequest: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many parts requests. Please wait 10 minutes before submitting again.'
+  }
+};
+
+/**
+ * Clear rate limit for a specific IP (useful for testing or manual override)
+ */
+export function clearRateLimit(ip: string, route: string): void {
+  const key = `${ip}:${route}`;
+  rateLimitStore.delete(key);
+}
+
+/**
+ * Get current rate limit status for an IP and route
+ */
+export function getRateLimitStatus(ip: string, route: string): {
+  count: number;
+  remaining: number;
+  resetTime: number;
+} | null {
+  const key = `${ip}:${route}`;
+  const entry = rateLimitStore.get(key);
+  
+  if (!entry || entry.resetTime < Date.now()) {
+    return null;
+  }
+  
+  return {
+    count: entry.count,
+    remaining: Math.max(0, 5 - entry.count), // Assuming max of 5
+    resetTime: entry.resetTime
+  };
+}

@@ -1,0 +1,826 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin Users
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String
+  isActive     Boolean   @default(true)
+  dealerId     String?
+  otpCode      String?
+  otpExpiry    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLogin    DateTime?
+}
+
+// Vehicles
+model VehicleBrand {
+  id           String            @id @default(uuid())
+  name         String            @unique
+  slug         String            @unique
+  description  String?
+  logoUrl      String?
+  isActive     Boolean           @default(true)
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  vehicles     Vehicle[]
+  categories   VehicleCategory[]
+}
+
+model VehicleCategory {
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  description      String?
+  imageUrl         String? // Category image
+  iconUrl          String? // Category icon
+  heroImageUrl     String? // Hero banner image
+  heroVideoUrl     String? // Hero banner video
+  metaTitle        String? // SEO meta title
+  metaDescription  String? // SEO meta description
+  brandId          String?
+  brand            VehicleBrand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  isActive         Boolean            @default(true)
+  displayOrder     Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  vehicles         Vehicle[]
+  FinancingProgram FinancingProgram[]
+}
+
+model Vehicle {
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  model            String
+  year             Int
+  category         String
+  brandId          String?
+  brand            VehicleBrand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  categoryId       String?
+  vehicleCategory  VehicleCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description      String?
+  images           Json // Array of image URLs
+  specifications   Json // Complete specs object (engine, dimensions, features, safety, warranty)
+  basePrice        Float
+  discountAmount   Float?
+  discountType     String?
+  badge            String?
+  taxRate          Float              @default(15)
+  finalPrice       Float?
+  hidePrice        Boolean            @default(false)
+  stock            Int                @default(0)
+  sku              String?            @unique
+  reorderPoint     Int?
+  warehouse        String?
+  location         String?
+  isFeatured       Boolean            @default(false)
+  isActive         Boolean            @default(true)
+  status           String             @default("draft") // draft, published, archived
+  displayOrder     Int                @default(0)
+  heroImageUrl     String? // Link to hero image from media library
+  heroVideoUrl     String? // Link to hero video from media library
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  testDrives       TestDrive[]
+  FinancingProgram FinancingProgram[]
+}
+
+// Test Drives
+model TestDrive {
+  id              String    @id @default(uuid())
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  vehicleId       String
+  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id])
+  preferredDate   DateTime
+  preferredTime   String
+  alternativeDate DateTime?
+  alternativeTime String?
+  location        String
+  salesRepId      String?
+  status          String    @default("pending")
+  specialRequests String?
+  internalNotes   String?
+  emailConfirm    Boolean   @default(true)
+  smsReminder     Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Quotations
+model Quotation {
+  id                String   @id @default(uuid())
+  customerName      String
+  phoneNumber       String
+  email             String
+  vehicleModel      String
+  preferredDealer   String?
+  financingInterest Boolean  @default(false)
+  tradeInInterest   Boolean  @default(false)
+  message           String?  @db.Text
+  status            String   @default("new") // new, contacted, in_progress, converted, closed
+  internalNotes     String?  @db.Text
+  assignedTo        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Dealers
+model Dealer {
+  id           String   @id @default(uuid())
+  name         String
+  type         String // 'showroom', 'service', 'both'
+  description  String?  @db.Text
+  city         String
+  region       String
+  country      String   @default("Ethiopia")
+  address      Json // {street, area, city, region, country, postalCode}
+  latitude     Float
+  longitude    Float
+  contact      Json // {phone, email, whatsapp}
+  website      String?
+  services     Json // Array of service strings
+  workingHours Json // {weekdays, saturday, sunday}
+  facilities   Json // {showroom, serviceCenter, partsShop, testDriveArea, customerLounge, parking}
+  logo         String? // Dealer logo image path
+  gallery      Json     @default("[]") // Array of gallery image paths
+  active       Boolean  @default(true)
+  featured     Boolean  @default(false)
+  salesCount   Int      @default(0)
+  staffCount   Int      @default(0)
+  rating       Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Service Bookings
+model ServiceBooking {
+  id            String   @id @default(uuid())
+  customerName  String
+  customerPhone String
+  customerEmail String
+  vehicleInfo   String
+  serviceType   String
+  date          DateTime
+  technician    String?
+  status        String   @default("scheduled")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Spare Parts
+model SparePart {
+  id             String        @id @default(uuid())
+  name           String
+  sku            String        @unique
+  category       String
+  partCategoryId String?
+  partCategory   PartCategory? @relation(fields: [partCategoryId], references: [id], onDelete: SetNull)
+  description    String?       @db.Text
+  imageUrl       String?
+  brand          String?
+  stock          Int           @default(0)
+  reorderPoint   Int           @default(10)
+  price          Float
+  supplier       String
+  isFeatured     Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  displayOrder   Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+// Parts Request / Quote (submitted from the /parts cart)
+model PartRequest {
+  id        String            @id @default(uuid())
+  name      String
+  company   String?
+  phone     String
+  email     String
+  address   String?           @db.Text
+  notes     String?           @db.Text
+  status    String            @default("new") // new, contacted, in_progress, quoted, closed
+  items     PartRequestItem[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model PartRequestItem {
+  id        String      @id @default(uuid())
+  requestId String
+  request   PartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  partId    String?
+  partName  String
+  partSku   String?
+  unitPrice Float       @default(0)
+  quantity  Int         @default(1)
+  createdAt DateTime    @default(now())
+}
+
+// Parts Page CMS Content (single record manages the /parts page)
+model PartsPageContent {
+  id                  String   @id @default(uuid())
+  heroTitle           String?
+  heroSubtitle        String?
+  heroBannerImage     String?
+  heroBackgroundImage String?
+  introHeading        String?
+  introDescription    String?  @db.Text
+  ctaTitle            String?
+  ctaDescription      String?  @db.Text
+  ctaButtonText       String?
+  ctaButtonLink       String?
+  metaTitle           String?
+  metaDescription     String?
+  metaKeywords        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Parts Categories (shown on /parts page)
+model PartCategory {
+  id           String      @id @default(uuid())
+  name         String
+  slug         String      @unique
+  description  String?     @db.Text
+  imageUrl     String?
+  displayOrder Int         @default(0)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  parts        SparePart[]
+}
+
+// Supported vehicle brands for parts compatibility
+model PartBrand {
+  id           String   @id @default(uuid())
+  name         String
+  imageUrl     String?
+  description  String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Benefits shown on /parts page
+model PartBenefit {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  icon         String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Promotions
+model Promotion {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  bannerImage   String?
+  ctaButtonText String?
+  ctaButtonLink String?
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  startDate     DateTime
+  endDate       DateTime
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Customer Reviews
+model Review {
+  id            String   @id @default(uuid())
+  fullName      String
+  email         String?
+  vehicleModel  String
+  rating        Int // 1-5 stars
+  reviewTitle   String
+  reviewMessage String
+  profileImage  String?
+  status        String   @default("pending") // pending, approved, rejected
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// News Articles
+model NewsArticle {
+  id          String    @id @default(uuid())
+  title       String
+  category    String
+  author      String
+  content     String
+  imageUrl    String? // Featured image for the article
+  excerpt     String? // Short excerpt/summary
+  status      String    @default("draft")
+  publishDate DateTime?
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Messages
+model Message {
+  id        String   @id @default(uuid())
+  from      String
+  email     String
+  subject   String
+  category  String
+  priority  String   @default("medium")
+  status    String   @default("unread")
+  content   String
+  response  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// CRM Sync Logs
+model CRMSyncLog {
+  id          String   @id @default(uuid())
+  provider    String
+  type        String
+  message     String
+  recordCount Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Newsletter subscriptions from the public site footer
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  status    String   @default("subscribed")
+  source    String   @default("website")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Site Settings (Policies & Social Media)
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String // JSON or plain text
+  type      String // 'policy' or 'social' or 'general'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Hero Sections (Homepage Banner Management)
+model HeroSection {
+  id          String   @id @default(uuid())
+  title       String
+  subtitle    String?
+  description String?
+  mediaType   String // IMAGE or VIDEO
+  imageUrl    String?
+  videoUrl    String?
+  posterUrl   String? // Poster image for video (shows before video loads)
+  buttonText  String?
+  buttonLink  String?
+  status      String   @default("draft") // draft, active, inactive
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Media Library (Uploaded Files)
+model MediaAsset {
+  id           String   @id @default(uuid())
+  fileName     String
+  originalName String
+  fileType     String // image, video
+  mimeType     String
+  fileSize     Int
+  url          String
+  thumbnailUrl String?
+  width        Int?
+  height       Int?
+  duration     Int? // For videos (in seconds)
+  altText      String?
+  category     String? // hero, vehicle, gallery, etc.
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 360° Viewer Showcase (Explore Every Angle Section)
+model VehicleShowcase {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  vehicleName String
+  title       String // e.g., "Explore Every Angle"
+  subtitle    String? // e.g., "Experience our vehicles like never before"
+  views       Json // Array of {angle, imageUrl, label}
+  videoUrl    String? // Optional uploaded 360° showcase video
+  ctaText     String? // Call to action button text
+  ctaLink     String? // Call to action button link
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Vehicle Colors
+model VehicleColor {
+  id        String   @id @default(uuid())
+  vehicleId String
+  name      String // e.g., "Pearl White", "Midnight Black"
+  colorCode String // Hex code e.g., "#FFFFFF"
+  imageUrl  String? // Image showing this color
+  price     Float    @default(0) // Additional price for this color
+  inStock   Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Vehicle Accessories
+model VehicleAccessory {
+  id          String   @id @default(uuid())
+  vehicleId   String? // Null means available for all vehicles
+  name        String
+  description String?
+  category    String // e.g., "Interior", "Exterior", "Technology", "Safety"
+  price       Float
+  imageUrl    String?
+  inStock     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Electric Pages (Charging Map, Home Charging, Fast Charging, etc.)
+model ElectricPage {
+  id               String            @id @default(uuid())
+  title            String
+  slug             String            @unique
+  pageType         String // charging-map, home-charging, fast-charging, custom
+  heroTitle        String?
+  heroSubtitle     String?
+  heroImage        String?
+  content          String?           @db.Text // Rich text content
+  sections         Json? // Array of content sections
+  metadata         Json? // SEO metadata, custom fields
+  isPublished      Boolean           @default(false)
+  displayOrder     Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  chargingStations ChargingStation[]
+}
+
+// Charging Stations
+model ChargingStation {
+  id             String        @id @default(uuid())
+  name           String
+  address        String
+  city           String
+  latitude       Float
+  longitude      Float
+  stationType    String // fast-dc, level-2, home
+  chargerCount   Int           @default(1)
+  maxPower       String // e.g., "150kW"
+  connector      Json // Array of connector types
+  availability   String        @default("operational") // operational, maintenance, planned
+  pricing        String?
+  hours          String?
+  amenities      Json? // Array of amenities
+  images         Json? // Array of image URLs
+  electricPageId String?
+  electricPage   ElectricPage? @relation(fields: [electricPageId], references: [id], onDelete: SetNull)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+// Vehicle Packages
+model VehiclePackage {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  name        String // e.g., "Premium Package", "Sport Package"
+  description String?
+  features    Json // Array of feature strings
+  price       Float
+  imageUrl    String?
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Vehicle Interior Options
+model VehicleInterior {
+  id           String   @id @default(uuid())
+  vehicleId    String
+  name         String // e.g., "Black Leather", "Beige Fabric"
+  description  String?
+  materialType String // e.g., "Leather", "Fabric", "Synthetic"
+  imageUrl     String?
+  price        Float    @default(0)
+  isDefault    Boolean  @default(false)
+  inStock      Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Dynamic Mega Menu System
+model MegaMenuSection {
+  id           String         @id @default(uuid())
+  name         String // e.g., "Electric", "Services"
+  slug         String         @unique // e.g., "electric", "services"
+  description  String?
+  isActive     Boolean        @default(true)
+  displayOrder Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  categories   MenuCategory[]
+}
+
+model MenuCategory {
+  id           String          @id @default(uuid())
+  sectionId    String
+  section      MegaMenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String // e.g., "Models", "Charging", "Benefits"
+  slug         String
+  description  String?
+  iconUrl      String?
+  isActive     Boolean         @default(true)
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  items        MenuItem[]
+}
+
+model MenuItem {
+  id            String       @id @default(uuid())
+  categoryId    String
+  category      MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title         String // e.g., "Test Drive", "Geometry EX5"
+  subtitle      String? // Short description
+  description   String? // Longer description
+  iconUrl       String?
+  imageUrl      String?
+  url           String? // Direct URL or route
+  pageReference String? // Reference to CMS page or vehicle
+  referenceType String? // "vehicle", "page", "custom"
+  referenceId   String? // ID of the referenced item
+  isFeatured    Boolean      @default(false)
+  isActive      Boolean      @default(true)
+  displayOrder  Int          @default(0)
+  openInNewTab  Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// Services Menu System
+model ServiceSection {
+  id           String        @id @default(uuid())
+  title        String // e.g., "Sales", "Service & Parts"
+  slug         String        @unique
+  description  String?
+  iconUrl      String?
+  isActive     Boolean       @default(true)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  items        ServiceItem[]
+}
+
+model ServiceItem {
+  id           String         @id @default(uuid())
+  sectionId    String
+  section      ServiceSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String // e.g., "Test Drive", "Service Booking"
+  description  String? // Short description
+  icon         String? // Lucide icon name
+  image        String? // Featured image URL
+  url          String? // Link URL
+  isActive     Boolean        @default(true)
+  isFeatured   Boolean        @default(false)
+  displayOrder Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model ServicePage {
+  id              String   @id @default(uuid())
+  title           String
+  slug            String   @unique
+  excerpt         String? // Short summary
+  content         String?  @db.Text // Rich text content
+  heroImage       String?
+  heroVideo       String?
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Electric Menu System (identical to Services Menu)
+model ElectricSection {
+  id           String         @id @default(uuid())
+  title        String // e.g., "Models", "Charging", "Benefits"
+  slug         String         @unique
+  description  String?
+  icon         String? // Lucide icon name
+  isActive     Boolean        @default(true)
+  displayOrder Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  items        ElectricItem[]
+}
+
+model ElectricItem {
+  id           String            @id @default(uuid())
+  sectionId    String
+  section      ElectricSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String // e.g., "Charging Map", "Cost Calculator"
+  description  String? // Short description
+  icon         String? // Lucide icon name
+  image        String? // Featured image URL
+  url          String? // Link URL
+  pageId       String?           @unique
+  page         ElectricMenuPage?
+  isActive     Boolean           @default(true)
+  isFeatured   Boolean           @default(false)
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ElectricMenuPage {
+  id              String       @id @default(uuid())
+  itemId          String       @unique
+  item            ElectricItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String       @unique
+  excerpt         String? // Short summary
+  content         String?      @db.Text // Rich text content
+  heroImage       String?
+  heroVideo       String?
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// FAQ Management
+model FAQ {
+  id           String   @id @default(uuid())
+  question     String
+  answer       String   @db.Text
+  category     String? // Optional category for grouping
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  isFeatured   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// CRM Lead Retry Queue
+// Stores failed Zoho CRM submissions for background retry
+model PendingLead {
+  id           String   @id @default(uuid())
+  payload      Json // The full lead payload to retry
+  attemptCount Int      @default(0)
+  lastError    String? // Last error message for debugging
+  status       String   @default("pending") // pending, retrying, failed, succeeded
+  leadType     String? // test-drive | quote | contact | service
+  email        String? // Indexed for duplicate detection
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  nextRetryAt  DateTime @default(now())
+
+  @@index([status, nextRetryAt])
+  @@index([email])
+}
+
+// URL Redirect Management
+// Manages 301/302 redirects when model slugs change or pages are retired
+model Redirect {
+  id         String   @id @default(uuid())
+  fromPath   String   @unique // e.g. /models/old-coolray
+  toPath     String // e.g. /models/coolray
+  statusCode Int      @default(301) // 301 (permanent) or 302 (temporary)
+  isActive   Boolean  @default(true)
+  note       String? // Admin note explaining why redirect was created
+  hitCount   Int      @default(0) // How many times this redirect was used
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([fromPath, isActive])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FINANCING SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// A bank / finance partner that provides vehicle loans
+model FinancingBank {
+  id                String             @id @default(uuid())
+  name              String // e.g. "Dashen Bank"
+  slug              String             @unique
+  logoUrl           String?
+  websiteUrl        String?
+  phoneNumber       String?
+  email             String?
+  branchAddress     String?
+  shortDescription  String? // 1-2 line elevator pitch for the partner
+  isActive          Boolean            @default(true)
+  displayOrder      Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  financingPrograms FinancingProgram[]
+
+  @@index([isActive, displayOrder])
+}
+
+// A concrete financing offer (e.g. "Dashen Bank 5-Year 12.5% - Coolray")
+// Frontend "Monthly Payment" is calculated dynamically from vehicle price + these fields
+enum FinancingProgramStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model FinancingProgram {
+  id     String        @id @default(uuid())
+  name   String // Admin-facing label e.g. "Standard 5-Year Plan"
+  slug   String        @unique
+  bankId String
+  bank   FinancingBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  // Core loan terms (editable in admin)
+  interestRate          Decimal @db.Decimal(6, 3) // annual % e.g. 12.500
+  downPaymentPercent    Decimal @db.Decimal(5, 2) // % of vehicle price e.g. 20.00
+  minDownPaymentPercent Decimal @default(10) @db.Decimal(5, 2)
+  maxDownPaymentPercent Decimal @default(70) @db.Decimal(5, 2)
+  tenureMonths          Int // e.g. 60 for 5 years
+  minTenureMonths       Int     @default(12)
+  maxTenureMonths       Int     @default(84)
+
+  processingFeePercent Decimal  @default(2.5) @db.Decimal(5, 2)
+  processingFeeMin     Decimal? @db.Decimal(12, 2) // floor in ETB
+  processingFeeMax     Decimal? @db.Decimal(12, 2) // ceiling in ETB
+  insurancePercent     Decimal  @default(5) @db.Decimal(5, 2)
+
+  // Optionally restrict program to specific vehicle(s) or category
+  vehicleId            String?
+  vehicle              Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  vehicleCategoryId    String?
+  vehicleCategory      VehicleCategory? @relation(fields: [vehicleCategoryId], references: [id], onDelete: SetNull)
+  appliesToAllVehicles Boolean          @default(true) // when true, vehicleId/categoryId are ignored
+
+  // Call-to-Action toggles (per-program, overrides global settings)
+  applyEnabled         Boolean @default(true)
+  applyUrl             String? // e.g. "https://dashenbank.com/auto-loan/apply" OR "/financing/apply?plan=xxx"
+  applyLabel           String? // default: "Apply for Financing"
+  directPayEnabled     Boolean @default(false)
+  directPayUrl         String? // payment gateway / telebirr / bank transfer link
+  directPayLabel       String? // default: "Pay Direct"
+  visitShowroomEnabled Boolean @default(true)
+  visitShowroomUrl     String? // default: "/dealers"
+  visitShowroomLabel   String? // default: "Visit Showroom"
+  scheduleEnabled      Boolean @default(true) // show/hide schedule on program card
+  scheduleUrl          String? // optional: "/schedule?program=xxx"
+
+  // Metadata
+  badgeText       String? // e.g. "Most Popular", "Lowest Rate"
+  highlightBadge  Boolean                @default(false)
+  finePrint       String? // legal text e.g. "Terms and conditions apply"
+  eligibilityNote String? // short eligibility summary
+  status          FinancingProgramStatus @default(DRAFT)
+  publishedAt     DateTime?
+  displayOrder    Int                    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, displayOrder])
+  @@index([bankId, status])
+  @@index([vehicleId, status])
+}
