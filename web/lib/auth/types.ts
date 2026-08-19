@@ -65,12 +65,7 @@ export interface AdminPermissions {
   // Users
   canManageUsers: boolean;
   canViewUsers: boolean;
-  
-  // CRM & Integrations
-  canManageCRM: boolean;
-  canViewCRM: boolean;
-  canManageIntegrations: boolean; // For CRM and other integrations
-  
+
   // Settings
   canManageSettings: boolean;
   canViewSettings: boolean;
@@ -119,9 +114,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: true,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: true,
     canManageSettings: true,
     canViewSettings: true,
   },
@@ -155,9 +147,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: true,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: true,
     canManageSettings: true,
     canViewSettings: true,
   },
@@ -190,9 +179,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: true,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: true,
   },
@@ -225,9 +211,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: true,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
   },
@@ -260,9 +243,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: false,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
   },
@@ -295,9 +275,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewReports: true,
     canManageUsers: false,
     canViewUsers: false,
-    canManageCRM: false,
-    canViewCRM: true,
-    canManageIntegrations: false,
     canManageSettings: false,
     canViewSettings: false,
   },
@@ -320,7 +297,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: false, canViewMessages: false,
     canViewAnalytics: false, canExportReports: false, canViewReports: false,
     canManageUsers: false, canViewUsers: false,
-    canManageCRM: false, canViewCRM: false, canManageIntegrations: false,
     canManageSettings: false, canViewSettings: false,
   },
 
@@ -339,7 +315,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: false, canViewMessages: false,
     canViewAnalytics: false, canExportReports: false, canViewReports: false,
     canManageUsers: false, canViewUsers: false,
-    canManageCRM: false, canViewCRM: false, canManageIntegrations: false,
     canManageSettings: false, canViewSettings: false,
   },
 };

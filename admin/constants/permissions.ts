@@ -43,10 +43,6 @@ export const PERMISSIONS = {
   // Users
   MANAGE_USERS: 'canManageUsers',
   VIEW_USERS:   'canViewUsers',
-  // CRM
-  MANAGE_CRM:          'canManageCRM',
-  VIEW_CRM:            'canViewCRM',
-  MANAGE_INTEGRATIONS: 'canManageIntegrations',
   // Settings
   MANAGE_SETTINGS: 'canManageSettings',
   VIEW_SETTINGS:   'canViewSettings',

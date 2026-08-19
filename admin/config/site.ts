@@ -31,5 +31,4 @@ export const ADMIN_ROUTES = {
   parts:          '/admin/parts',
   electric:       '/admin/electric',
   content:        '/admin/content',
-  crm:            '/admin/crm',
 } as const;

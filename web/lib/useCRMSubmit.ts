@@ -80,24 +80,6 @@ export function useCRMSubmit() {
     }
   };
 
-  const checkLeadExists = async (email?: string, phone?: string): Promise<boolean> => {
-    if (!email && !phone) return false;
-
-    try {
-      const params = new URLSearchParams();
-      if (email) params.append('email', email);
-      if (phone) params.append('phone', phone);
-
-      const response = await fetch(`/api/crm/lead?${params.toString()}`);
-      const data = await response.json();
-
-      return data.exists || false;
-    } catch (err) {
-      console.error('Error checking lead:', err);
-      return false;
-    }
-  };
-
   const reset = () => {
     setLoading(false);
     setError(null);
@@ -106,7 +88,6 @@ export function useCRMSubmit() {
 
   return {
     submitLead,
-    checkLeadExists,
     loading,
     error,
     success,
