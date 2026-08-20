@@ -166,7 +166,8 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           preferredDealer: null,
           financingInterest: data.financingNeeded === 'yes',
           tradeInInterest: data.tradeIn === 'yes',
-          message: [message, configuration ? `Configuration: ${JSON.stringify(configuration)}` : ''].filter(Boolean).join('\n'),
+          message,
+          configuration: configuration || undefined,
         }),
       }).then(async res => {
         const result = await res.json().catch(() => null);

@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
     const financingInterest = body.financingInterest ?? body.financingNeeded === 'yes';
     const tradeInInterest = body.tradeInInterest ?? body.tradeIn === 'yes';
     const message = body.message;
+    // FR-102/103: structured configurator selection, when the customer
+    // arrived via the configurator's "Send Configuration" handoff — see
+    // web/app/quote/page.tsx and web/app/configurator/page.tsx (handleSendConfiguration).
+    const configuration =
+      body.configuration && typeof body.configuration === 'object' ? body.configuration : null;
+    // FR-101 lead source tagging — this route is the digital/website channel.
+    const source = typeof body.source === 'string' && body.source ? body.source : 'website';
 
     if (!customerName || !phoneNumber || !email || !vehicleModel) {
       return NextResponse.json(
@@ -38,6 +45,8 @@ export async function POST(request: NextRequest) {
         financingInterest: financingInterest ?? false,
         tradeInInterest: tradeInInterest ?? false,
         message: message || null,
+        configurationJson: configuration ?? undefined,
+        source,
         status: 'new',
       },
     });
@@ -54,6 +63,13 @@ export async function POST(request: NextRequest) {
         subject: `New quotation request — ${vehicleModel}`,
         details: [
           `Vehicle: ${vehicleModel}`,
+          configuration?.trim ? `Trim: ${configuration.trim}` : '',
+          configuration?.color ? `Color: ${configuration.color}` : '',
+          configuration?.wheels ? `Wheels: ${configuration.wheels}` : '',
+          configuration?.interior ? `Interior: ${configuration.interior}` : '',
+          Array.isArray(configuration?.accessories) && configuration.accessories.length > 0
+            ? `Accessories: ${configuration.accessories.join(', ')}`
+            : '',
           `Financing requested: ${financingInterest ? 'Yes' : 'No'}`,
           `Trade-in requested: ${tradeInInterest ? 'Yes' : 'No'}`,
           preferredDealer ? `Preferred dealer: ${preferredDealer}` : '',
