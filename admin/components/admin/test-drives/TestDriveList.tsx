@@ -27,7 +27,12 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
   }, [testDrives]);
   const updateStatus = async (id: string, status: TestDrive['status']) => {
     const response = await fetch(`/api/admin/test-drives/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-    if (response.ok) setItems((current) => current.map((item) => item.id === id ? { ...item, status } : item));
+    if (response.ok) {
+      setItems((current) => current.map((item) => item.id === id ? { ...item, status } : item));
+      return;
+    }
+    const data = await response.json().catch(() => null);
+    alert(data?.error || 'Failed to update status');
   };
 
   const getStatusBadge = (status: TestDrive['status']) => {

@@ -4,9 +4,10 @@ import { ArrowLeft, Calendar, Car, Clock, Mail, MapPin, Phone, User } from 'luci
 import { requirePermission } from '@/lib/auth/middleware';
 import { prisma } from '@/lib/prisma';
 import { Card, StatusBadge } from '@/components/admin/ui';
+import TestDriveIdCapture from '@/components/admin/test-drives/TestDriveIdCapture';
 
 export default async function TestDriveDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requirePermission('canViewTestDrives');
+  const session = await requirePermission('canViewTestDrives');
   const { id } = await params;
   const testDrive = await prisma.testDrive.findUnique({
     where: { id },
@@ -39,6 +40,18 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
           <div className="flex items-center gap-3"><MapPin className="w-5 h-5 text-gray-400" /><span>{testDrive.location}</span></div>
         </Card>
       </div>
+      <TestDriveIdCapture
+        testDrive={{
+          id: testDrive.id,
+          status: testDrive.status,
+          idDocumentType: testDrive.idDocumentType,
+          idDocumentNumber: testDrive.idDocumentNumber,
+          idPhotoUrl: testDrive.idPhotoUrl,
+          idVerifiedAt: testDrive.idVerifiedAt?.toISOString() || null,
+        }}
+        canManage={session.user.permissions.canViewTestDrives}
+      />
+
       {(testDrive.specialRequests || testDrive.internalNotes) && (
         <Card>
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Notes</h2>
