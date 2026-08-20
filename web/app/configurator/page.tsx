@@ -29,14 +29,36 @@ interface WheelOption {
   image?: string;
 }
 
+interface InteriorOption {
+  id: string;
+  name: string;
+  description: string | null;
+  materialType: string;
+  imageUrl: string | null;
+  price: number;
+  inStock: boolean;
+}
+
+interface AccessoryOption {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+  imageUrl: string | null;
+  inStock: boolean;
+}
+
 export default function ConfiguratorPage() {
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleRecord | null>(null);
   const [selectedTrim, setSelectedTrim] = useState<TrimOption | null>(null);
   const [selectedColor, setSelectedColor] = useState<ColorOption | null>(null);
   const [selectedWheels, setSelectedWheels] = useState<WheelOption | null>(null);
+  const [selectedInterior, setSelectedInterior] = useState<InteriorOption | null>(null);
+  const [selectedAccessories, setSelectedAccessories] = useState<AccessoryOption[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [apiOptions, setApiOptions] = useState<{ trims: TrimOption[]; colors: ColorOption[]; wheels: WheelOption[] } | null>(null);
+  const [apiOptions, setApiOptions] = useState<{ trims: TrimOption[]; colors: ColorOption[]; wheels: WheelOption[]; interiors: InteriorOption[]; accessories: AccessoryOption[] } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +105,8 @@ export default function ConfiguratorPage() {
             image: item.imageUrl || undefined,
           })) : [],
           wheels: [],
+          interiors: Array.isArray(data.interiors) ? data.interiors.filter((item: InteriorOption) => item.inStock) : [],
+          accessories: Array.isArray(data.accessories) ? data.accessories.filter((item: AccessoryOption) => item.inStock) : [],
         } : null);
       })
       .catch(() => active && setApiOptions(null));
@@ -143,7 +167,24 @@ export default function ConfiguratorPage() {
     if (!selectedWheels) {
       setSelectedWheels((apiOptions?.wheels.length ? apiOptions.wheels : wheelOptions)[0] || null);
     }
+    if (!selectedInterior && apiOptions?.interiors.length) {
+      setSelectedInterior(apiOptions.interiors[0]);
+    }
   }, [selectedVehicle, apiOptions]);
+
+  // Interiors/accessories are vehicle-specific — clear stale selections on model change.
+  useEffect(() => {
+    setSelectedInterior(null);
+    setSelectedAccessories([]);
+  }, [selectedVehicle?.id]);
+
+  const toggleAccessory = (accessory: AccessoryOption) => {
+    setSelectedAccessories((current) =>
+      current.find((a) => a.id === accessory.id)
+        ? current.filter((a) => a.id !== accessory.id)
+        : [...current, accessory]
+    );
+  };
 
   // Calculate total price
   useEffect(() => {
@@ -152,9 +193,11 @@ export default function ConfiguratorPage() {
     const trimPrice = selectedTrim?.price || 0;
     const colorPrice = selectedColor?.price || 0;
     const wheelsPrice = selectedWheels?.price || 0;
-    
-    setTotalPrice(basePrice + trimPrice + colorPrice + wheelsPrice);
-  }, [selectedVehicle, selectedTrim, selectedColor, selectedWheels]);
+    const interiorPrice = selectedInterior?.price || 0;
+    const accessoriesPrice = selectedAccessories.reduce((sum, a) => sum + a.price, 0);
+
+    setTotalPrice(basePrice + trimPrice + colorPrice + wheelsPrice + interiorPrice + accessoriesPrice);
+  }, [selectedVehicle, selectedTrim, selectedColor, selectedWheels, selectedInterior, selectedAccessories]);
 
   const formatPrice = (price: number) => {
     return `ETB ${price.toLocaleString()}`;
@@ -167,6 +210,8 @@ export default function ConfiguratorPage() {
       trim: selectedTrim?.name,
       color: selectedColor?.name,
       wheels: selectedWheels?.name,
+      interior: selectedInterior?.name,
+      accessories: selectedAccessories.map((a) => a.name),
       price: totalPrice
     };
     
@@ -191,6 +236,8 @@ export default function ConfiguratorPage() {
       trim: selectedTrim?.name,
       color: selectedColor?.name,
       wheels: selectedWheels?.name,
+      interior: selectedInterior?.name,
+      accessories: selectedAccessories.map((a) => a.name),
       price: totalPrice
     };
     
@@ -199,6 +246,8 @@ export default function ConfiguratorPage() {
 
   const currentTrimOptions = selectedVehicle ? (apiOptions?.trims.length ? apiOptions.trims : (trimOptions[selectedVehicle.id] || trimOptions['coolray'])) : [];
   const activeColorOptions = apiOptions?.colors.length ? apiOptions.colors : colorOptions;
+  const activeInteriorOptions = apiOptions?.interiors || [];
+  const activeAccessoryOptions = apiOptions?.accessories || [];
   const activeWheelOptions = apiOptions?.wheels.length ? apiOptions.wheels : wheelOptions;
 
   return (
@@ -361,6 +410,83 @@ export default function ConfiguratorPage() {
                 ))}
               </div>
             </section>
+
+            {/* Interior Selector */}
+            {activeInteriorOptions.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-navy mb-4">5. Choose Interior</h2>
+                <div className="space-y-3">
+                  {activeInteriorOptions.map((interior) => (
+                    <button
+                      key={interior.id}
+                      onClick={() => setSelectedInterior(interior)}
+                      className={`w-full text-left p-6 rounded-lg border-2 transition-all ${
+                        selectedInterior?.id === interior.id
+                          ? 'border-geely-blue bg-ice shadow-lg'
+                          : 'border-line bg-white hover:border-geely-blue'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-bold text-navy mb-1">{interior.name}</h3>
+                          <p className="text-sm text-steel">{interior.materialType}</p>
+                          {interior.description && (
+                            <p className="text-xs text-steel mt-1">{interior.description}</p>
+                          )}
+                          <p className="text-sm font-bold text-gold mt-2">
+                            {interior.price === 0 ? 'Included' : `+${formatPrice(interior.price)}`}
+                          </p>
+                        </div>
+                        {selectedInterior?.id === interior.id && (
+                          <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
+                            <Check size={14} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Accessories Selector */}
+            {activeAccessoryOptions.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-navy mb-4">6. Add Accessories</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {activeAccessoryOptions.map((accessory) => {
+                    const isSelected = selectedAccessories.some((a) => a.id === accessory.id);
+                    return (
+                      <button
+                        key={accessory.id}
+                        onClick={() => toggleAccessory(accessory)}
+                        className={`text-left p-4 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? 'border-geely-blue bg-ice shadow-lg'
+                            : 'border-line bg-white hover:border-geely-blue'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-xs text-gold font-bold mb-1">{accessory.category}</div>
+                            <h3 className="font-bold text-navy">{accessory.name}</h3>
+                            {accessory.description && (
+                              <p className="text-xs text-steel mt-1">{accessory.description}</p>
+                            )}
+                            <p className="text-sm font-bold text-gold mt-2">+{formatPrice(accessory.price)}</p>
+                          </div>
+                          {isSelected && (
+                            <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
+                              <Check size={14} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Summary Sidebar */}
@@ -410,6 +536,25 @@ export default function ConfiguratorPage() {
                     <span className="text-sm text-steel">Wheels</span>
                     <span className="text-sm font-semibold text-navy">{selectedWheels?.name}</span>
                   </div>
+
+                  {selectedInterior && (
+                    <div className="flex justify-between items-center py-2 border-b border-line">
+                      <span className="text-sm text-steel">Interior</span>
+                      <span className="text-sm font-semibold text-navy">{selectedInterior.name}</span>
+                    </div>
+                  )}
+
+                  {selectedAccessories.length > 0 && (
+                    <div className="py-2 border-b border-line">
+                      <span className="text-sm text-steel">Accessories</span>
+                      {selectedAccessories.map((acc) => (
+                        <div key={acc.id} className="flex justify-between items-center mt-1">
+                          <span className="text-sm font-semibold text-navy">{acc.name}</span>
+                          <span className="text-xs text-steel">+{formatPrice(acc.price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Price Breakdown */}
@@ -437,6 +582,18 @@ export default function ConfiguratorPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-steel">Upgraded Wheels</span>
                         <span className="text-navy">+{formatPrice(selectedWheels.price)}</span>
+                      </div>
+                    )}
+                    {selectedInterior && selectedInterior.price > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-steel">Interior</span>
+                        <span className="text-navy">+{formatPrice(selectedInterior.price)}</span>
+                      </div>
+                    )}
+                    {selectedAccessories.length > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-steel">Accessories ({selectedAccessories.length})</span>
+                        <span className="text-navy">+{formatPrice(selectedAccessories.reduce((sum, a) => sum + a.price, 0))}</span>
                       </div>
                     )}
                   </div>
