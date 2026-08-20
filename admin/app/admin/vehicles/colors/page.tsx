@@ -31,10 +31,23 @@ interface VehicleInterior {
   sortOrder: number;
 }
 
+interface VehicleWheel {
+  id: string;
+  vehicleId: string | null;
+  name: string;
+  size: string;
+  imageUrl: string | null;
+  price: number;
+  isDefault: boolean;
+  inStock: boolean;
+  sortOrder: number;
+}
+
 const EMPTY_COLOR_FORM = { name: '', colorCode: '#FFFFFF', imageUrl: '', price: 0, inStock: true, isDefault: false, sortOrder: 0 };
 const EMPTY_INTERIOR_FORM = { name: '', description: '', materialType: '', imageUrl: '', price: 0, inStock: true, isDefault: false, sortOrder: 0 };
+const EMPTY_WHEEL_FORM = { name: '', size: '', imageUrl: '', price: 0, inStock: true, isDefault: false, global: false, sortOrder: 0 };
 
-type Resource = 'colors' | 'interiors';
+type Resource = 'colors' | 'interiors' | 'wheels';
 
 export default function VehicleColorsPage() {
   const [resource, setResource] = useState<Resource>('colors');
@@ -42,21 +55,25 @@ export default function VehicleColorsPage() {
 
   const [colors, setColors] = useState<VehicleColor[]>([]);
   const [interiors, setInteriors] = useState<VehicleInterior[]>([]);
+  const [wheels, setWheels] = useState<VehicleWheel[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [editingColor, setEditingColor] = useState<VehicleColor | null>(null);
   const [editingInterior, setEditingInterior] = useState<VehicleInterior | null>(null);
+  const [editingWheel, setEditingWheel] = useState<VehicleWheel | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [colorForm, setColorForm] = useState(EMPTY_COLOR_FORM);
   const [interiorForm, setInteriorForm] = useState(EMPTY_INTERIOR_FORM);
+  const [wheelForm, setWheelForm] = useState(EMPTY_WHEEL_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!vehicleId) { setColors([]); setInteriors([]); return; }
+    if (!vehicleId) { setColors([]); setInteriors([]); setWheels([]); return; }
     void fetchColors(vehicleId);
     void fetchInteriors(vehicleId);
+    void fetchWheels(vehicleId);
   }, [vehicleId]);
 
   async function fetchColors(id: string) {
@@ -79,11 +96,23 @@ export default function VehicleColorsPage() {
     }
   }
 
+  async function fetchWheels(id: string) {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/vehicle-wheels?vehicleId=${id}`);
+      if (res.ok) setWheels((await res.json()).wheels || []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function openCreate() {
     setEditingColor(null);
     setEditingInterior(null);
+    setEditingWheel(null);
     setColorForm(EMPTY_COLOR_FORM);
     setInteriorForm(EMPTY_INTERIOR_FORM);
+    setWheelForm(EMPTY_WHEEL_FORM);
     setShowForm(true);
   }
 
@@ -102,6 +131,15 @@ export default function VehicleColorsPage() {
       name: interior.name, description: interior.description || '', materialType: interior.materialType,
       imageUrl: interior.imageUrl || '', price: interior.price, inStock: interior.inStock,
       isDefault: interior.isDefault, sortOrder: interior.sortOrder,
+    });
+    setShowForm(true);
+  }
+
+  function openEditWheel(wheel: VehicleWheel) {
+    setEditingWheel(wheel);
+    setWheelForm({
+      name: wheel.name, size: wheel.size, imageUrl: wheel.imageUrl || '', price: wheel.price,
+      inStock: wheel.inStock, isDefault: wheel.isDefault, global: wheel.vehicleId === null, sortOrder: wheel.sortOrder,
     });
     setShowForm(true);
   }
@@ -148,6 +186,28 @@ export default function VehicleColorsPage() {
     }
   }
 
+  async function saveWheel() {
+    if (!vehicleId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const url = editingWheel ? `/api/admin/vehicle-wheels/${editingWheel.id}` : '/api/admin/vehicle-wheels';
+      const method = editingWheel ? 'PUT' : 'POST';
+      const { global, ...rest } = wheelForm;
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...rest, vehicleId: global ? null : vehicleId }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Save failed');
+      setShowForm(false);
+      await fetchWheels(vehicleId);
+    } catch (e: any) {
+      setError(e.message || 'Unable to save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function removeColor(color: VehicleColor) {
     if (!vehicleId) return;
     if (!confirm(`Delete color "${color.name}"?`)) return;
@@ -162,11 +222,18 @@ export default function VehicleColorsPage() {
     await fetchInteriors(vehicleId);
   }
 
+  async function removeWheel(wheel: VehicleWheel) {
+    if (!vehicleId) return;
+    if (!confirm(`Delete wheel option "${wheel.name}"?`)) return;
+    await fetch(`/api/admin/vehicle-wheels/${wheel.id}`, { method: 'DELETE' });
+    await fetchWheels(vehicleId);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Colors"
-        description="Manage per-vehicle color and interior options — shown live in the public configurator"
+        description="Manage per-vehicle color, interior, and wheel options — shown live in the public configurator"
       />
 
       {!vehicleId ? (
@@ -184,6 +251,10 @@ export default function VehicleColorsPage() {
                 onClick={() => setResource('interiors')}
                 className={`px-4 py-2 text-sm font-medium ${resource === 'interiors' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
               >Interior Options</button>
+              <button
+                onClick={() => setResource('wheels')}
+                className={`px-4 py-2 text-sm font-medium ${resource === 'wheels' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+              >Wheels</button>
             </div>
           </div>
 
@@ -191,7 +262,7 @@ export default function VehicleColorsPage() {
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg p-3 text-sm">{error}</div>
           )}
 
-          {resource === 'colors' ? (
+          {resource === 'colors' && (
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Colors</h3>
@@ -236,7 +307,9 @@ export default function VehicleColorsPage() {
                 </TBody>
               </TableCard>
             </Card>
-          ) : (
+          )}
+
+          {resource === 'interiors' && (
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Interior Options</h3>
@@ -271,6 +344,56 @@ export default function VehicleColorsPage() {
                           <div className="flex justify-end gap-2">
                             <button onClick={() => openEditInterior(interior)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeInterior(interior)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </Td>
+                      </Tr>
+                    ))
+                  )}
+                </TBody>
+              </TableCard>
+            </Card>
+          )}
+
+          {resource === 'wheels' && (
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Wheels</h3>
+                <Button onClick={openCreate}><Plus className="w-4 h-4" />Add Wheel Option</Button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Shows this vehicle&apos;s own wheel options plus any marked &quot;available for all vehicles&quot;.
+              </p>
+              <TableCard>
+                <THead>
+                  <tr>
+                    <Th>Name</Th>
+                    <Th>Size</Th>
+                    <Th>Price</Th>
+                    <Th>Scope</Th>
+                    <Th>Status</Th>
+                    <Th className="text-right">Actions</Th>
+                  </tr>
+                </THead>
+                <TBody>
+                  {loading ? (
+                    <EmptyTableRow colSpan={6} message="Loading wheel options..." />
+                  ) : wheels.length === 0 ? (
+                    <EmptyTableRow colSpan={6} message="No wheel options yet for this vehicle" />
+                  ) : (
+                    wheels.map((wheel) => (
+                      <Tr key={wheel.id}>
+                        <Td className="font-medium text-gray-900 dark:text-gray-100">
+                          {wheel.name}
+                          {wheel.isDefault && <span className="ml-2"><Badge tone="blue">Default</Badge></span>}
+                        </Td>
+                        <Td className="text-gray-500 dark:text-gray-400">{wheel.size}</Td>
+                        <Td className="text-gray-500 dark:text-gray-400">{wheel.price ? `+${wheel.price}` : '—'}</Td>
+                        <Td><Badge tone={wheel.vehicleId === null ? 'purple' : 'gray'}>{wheel.vehicleId === null ? 'All vehicles' : 'This vehicle'}</Badge></Td>
+                        <Td><Badge tone={wheel.inStock ? 'green' : 'red'}>{wheel.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
+                        <Td className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => openEditWheel(wheel)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => removeWheel(wheel)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>
                       </Tr>
@@ -402,16 +525,75 @@ export default function VehicleColorsPage() {
         </Modal>
       )}
 
+      {showForm && resource === 'wheels' && (
+        <Modal title={editingWheel ? 'Edit Wheel Option' : 'Add Wheel Option'} onClose={() => setShowForm(false)} maxWidth="max-w-md">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+              <input value={wheelForm.name} onChange={(e) => setWheelForm({ ...wheelForm, name: e.target.value })}
+                placeholder="e.g. Sport Alloy"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size</label>
+              <input value={wheelForm.size} onChange={(e) => setWheelForm({ ...wheelForm, size: e.target.value })}
+                placeholder={'e.g. 16", 17", 18"'}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image</label>
+              <div className="flex items-center gap-3">
+                {wheelForm.imageUrl && <img src={wheelForm.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />}
+                <Button variant="secondary" onClick={() => setShowMediaBrowser(true)} type="button">
+                  <ImageIcon className="w-4 h-4" />{wheelForm.imageUrl ? 'Change' : 'Choose'} Image
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Extra Price</label>
+                <input type="number" value={wheelForm.price} onChange={(e) => setWheelForm({ ...wheelForm, price: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort Order</label>
+                <input type="number" value={wheelForm.sortOrder} onChange={(e) => setWheelForm({ ...wheelForm, sortOrder: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm" />
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={wheelForm.inStock} onChange={(e) => setWheelForm({ ...wheelForm, inStock: e.target.checked })} />
+                In stock
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={wheelForm.isDefault} onChange={(e) => setWheelForm({ ...wheelForm, isDefault: e.target.checked })} />
+                Default wheel
+              </label>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input type="checkbox" checked={wheelForm.global} onChange={(e) => setWheelForm({ ...wheelForm, global: e.target.checked })} />
+              Available for all vehicles
+            </label>
+          </div>
+          <ModalActions>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={saveWheel} disabled={saving || !wheelForm.name || !wheelForm.size}>{saving ? 'Saving...' : 'Save'}</Button>
+          </ModalActions>
+        </Modal>
+      )}
+
       <MediaBrowser
         isOpen={showMediaBrowser}
         onClose={() => setShowMediaBrowser(false)}
         onSelect={(url) => {
           if (resource === 'colors') setColorForm((f) => ({ ...f, imageUrl: url }));
-          else setInteriorForm((f) => ({ ...f, imageUrl: url }));
+          else if (resource === 'interiors') setInteriorForm((f) => ({ ...f, imageUrl: url }));
+          else setWheelForm((f) => ({ ...f, imageUrl: url }));
           setShowMediaBrowser(false);
         }}
         fileType="image"
-        title={resource === 'colors' ? 'Select Color Image' : 'Select Interior Image'}
+        title={resource === 'colors' ? 'Select Color Image' : resource === 'interiors' ? 'Select Interior Image' : 'Select Wheel Image'}
       />
     </div>
   );

@@ -99,6 +99,7 @@ model Vehicle {
   accessories      VehicleAccessory[]
   packages         VehiclePackage[]
   interiors        VehicleInterior[]
+  wheels           VehicleWheel[]
 }
 
 // Test Drives
@@ -760,6 +761,24 @@ model VehicleInterior {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Vehicle Wheels (configurator "Choose Wheels" step)
+model VehicleWheel {
+  id        String   @id @default(uuid())
+  vehicleId String? // Null means available for all vehicles
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  name      String // e.g., "Standard Alloy", "Sport Alloy"
+  size      String // e.g., "16\"", "17\"", "18\""
+  imageUrl  String?
+  price     Float    @default(0)
+  isDefault Boolean  @default(false)
+  inStock   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([vehicleId])
 }

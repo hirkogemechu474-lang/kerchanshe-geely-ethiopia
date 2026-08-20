@@ -26,6 +26,9 @@
     "seed:users": "tsx prisma/seed-users.ts",
     "seed:parts": "tsx prisma/seed-parts.ts",
     "seed:vehicle-packages": "tsx prisma/seed-vehicle-packages.ts",
+    "seed:vehicle-accessories": "tsx prisma/seed-vehicle-accessories.ts",
+    "seed:vehicle-colors": "tsx prisma/seed-vehicle-colors.ts",
+    "seed:vehicle-wheels": "tsx prisma/seed-vehicle-wheels.ts",
     "create:admin": "tsx scripts/create-admin.ts",
     "verify": "tsx scripts/verify-seed.ts"
   },

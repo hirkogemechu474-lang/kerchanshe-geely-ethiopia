@@ -104,7 +104,13 @@ export default function ConfiguratorPage() {
             price: item.price,
             image: item.imageUrl || undefined,
           })) : [],
-          wheels: [],
+          wheels: Array.isArray(data.wheels) ? data.wheels.map((item: { id: string; name: string; size: string; price: number; imageUrl?: string | null }) => ({
+            id: item.id,
+            name: item.name,
+            size: item.size,
+            price: item.price,
+            image: item.imageUrl || undefined,
+          })) : [],
           interiors: Array.isArray(data.interiors) ? data.interiors.filter((item: InteriorOption) => item.inStock) : [],
           accessories: Array.isArray(data.accessories) ? data.accessories.filter((item: AccessoryOption) => item.inStock) : [],
         } : null);
@@ -113,59 +119,17 @@ export default function ConfiguratorPage() {
     return () => { active = false; };
   }, [selectedVehicle]);
 
-  // Mock trim options - in production, fetch from CMS
-  const trimOptions: Record<string, TrimOption[]> = {
-    'coolray': [
-      {
-        id: 'comfort',
-        name: 'Comfort',
-        price: 0,
-        features: ['Manual AC', '16" Alloy Wheels', 'Fabric Seats', 'Basic Infotainment']
-      },
-      {
-        id: 'luxury',
-        name: 'Luxury',
-        price: 50000,
-        features: ['Dual-Zone Climate', '17" Alloy Wheels', 'Leather Seats', '10" Touchscreen', 'Panoramic Sunroof']
-      },
-      {
-        id: 'sport',
-        name: 'Sport',
-        price: 85000,
-        features: ['Sport Suspension', '18" Sport Wheels', 'Sport Seats', 'Premium Sound', 'Advanced Safety Package']
-      }
-    ]
-  };
-
-  // Mock color options
-  const colorOptions: ColorOption[] = [
-    { id: 'white', name: 'Pearl White', hex: '#F8F9FA', price: 0 },
-    { id: 'black', name: 'Obsidian Black', hex: '#1A1D23', price: 5000 },
-    { id: 'silver', name: 'Titanium Silver', hex: '#C0C0C0', price: 0 },
-    { id: 'blue', name: 'Ocean Blue', hex: '#0057B8', price: 5000 },
-    { id: 'red', name: 'Crimson Red', hex: '#DC143C', price: 8000 },
-    { id: 'grey', name: 'Storm Grey', hex: '#6C757D', price: 0 }
-  ];
-
-  // Mock wheel options
-  const wheelOptions: WheelOption[] = [
-    { id: '16-standard', name: 'Standard Alloy', size: '16"', price: 0 },
-    { id: '17-premium', name: 'Premium Alloy', size: '17"', price: 12000 },
-    { id: '18-sport', name: 'Sport Alloy', size: '18"', price: 25000 }
-  ];
-
   // Initialize defaults
   useEffect(() => {
     if (!selectedVehicle) return;
-    const modelTrims = apiOptions?.trims.length ? apiOptions.trims : (trimOptions[selectedVehicle.id] || trimOptions['coolray']);
-    if (!selectedTrim) {
-      setSelectedTrim(modelTrims[0]);
+    if (!selectedTrim && apiOptions?.trims.length) {
+      setSelectedTrim(apiOptions.trims[0]);
     }
-    if (!selectedColor) {
-      setSelectedColor((apiOptions?.colors.length ? apiOptions.colors : colorOptions)[0] || null);
+    if (!selectedColor && apiOptions?.colors.length) {
+      setSelectedColor(apiOptions.colors[0]);
     }
-    if (!selectedWheels) {
-      setSelectedWheels((apiOptions?.wheels.length ? apiOptions.wheels : wheelOptions)[0] || null);
+    if (!selectedWheels && apiOptions?.wheels.length) {
+      setSelectedWheels(apiOptions.wheels[0]);
     }
     if (!selectedInterior && apiOptions?.interiors.length) {
       setSelectedInterior(apiOptions.interiors[0]);
@@ -244,11 +208,11 @@ export default function ConfiguratorPage() {
     window.location.href = `/quote?config=${encodeURIComponent(JSON.stringify(config))}`;
   };
 
-  const currentTrimOptions = selectedVehicle ? (apiOptions?.trims.length ? apiOptions.trims : (trimOptions[selectedVehicle.id] || trimOptions['coolray'])) : [];
-  const activeColorOptions = apiOptions?.colors.length ? apiOptions.colors : colorOptions;
+  const currentTrimOptions = apiOptions?.trims || [];
+  const activeColorOptions = apiOptions?.colors || [];
   const activeInteriorOptions = apiOptions?.interiors || [];
   const activeAccessoryOptions = apiOptions?.accessories || [];
-  const activeWheelOptions = apiOptions?.wheels.length ? apiOptions.wheels : wheelOptions;
+  const activeWheelOptions = apiOptions?.wheels || [];
 
   return (
     <MainLayout>
