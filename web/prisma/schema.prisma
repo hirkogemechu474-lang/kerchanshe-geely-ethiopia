@@ -121,26 +121,135 @@ model TestDrive {
   internalNotes   String?
   emailConfirm    Boolean   @default(true)
   smsReminder     Boolean   @default(true)
+  // Digital ID capture (BRD FR-104: "book a test drive with digital ID
+  // capture, so that test drives are tracked and accountable"). Captured by
+  // the Sales Executive when the customer arrives for the drive — see
+  // admin/app/api/admin/test-drives/[id]/route.ts, which blocks the
+  // "completed" status until idPhotoUrl is set.
+  idDocumentType   String?
+  idDocumentNumber String?
+  idPhotoUrl       String?
+  idVerifiedAt     DateTime?
+  idVerifiedById   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
 
 // Quotations
 model Quotation {
-  id                String   @id @default(uuid())
+  id                String      @id @default(uuid())
   customerName      String
   phoneNumber       String
-  email             String
-  vehicleModel      String
+  // Optional: digital ("website") leads always have one (enforced in
+  // web/app/api/quotations/route.ts), but a walk-in lead logged by a Sales
+  // Executive at the counter may only have name + phone at capture time
+  // (BRD FR-101: "at minimum" name and phone).
+  email             String?
+  // Optional: UC-01 alt flow — "If no vehicle model is selected, the lead
+  // is still saved as a general enquiry."
+  vehicleModel      String?
   preferredDealer   String?
-  financingInterest Boolean  @default(false)
-  tradeInInterest   Boolean  @default(false)
-  message           String?  @db.Text
-  status            String   @default("new") // new, contacted, in_progress, converted, closed
-  internalNotes     String?  @db.Text
+  financingInterest Boolean     @default(false)
+  tradeInInterest   Boolean     @default(false)
+  message           String?     @db.Text
+  // FR-101 lead source tagging: 'website' | 'walk-in' | 'referral' | 'phone' | 'other'.
+  // Plain string, matching the existing `status` field's convention rather
+  // than a Prisma enum.
+  source            String      @default("website")
+  // Structured configurator selection (FR-102/103): { vehicle, trim, color,
+  // wheels, interior, accessories: string[], price }, set by
+  // web/app/quote/page.tsx when the customer arrived via the configurator's
+  // "Send Configuration" handoff. Null for quotations submitted without a
+  // configurator session (e.g. a plain "request a quote" form fill).
+  configurationJson Json?
+  status            String      @default("new") // new, contacted, in_progress, converted, closed
+  internalNotes     String?     @db.Text
   assignedTo        String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  salesOrder        SalesOrder?
+}
+
+// ─── Sales Orders & PDI (BRD §6.1 FR-105/106, UC-12) ───────────────────────
+// A Quotation can be converted into (at most) one SalesOrder — quotationId
+// is unique below. Deliberately does NOT do real VIN-level allocation
+// against an OEM/ERP system (BR in FR-101-106: "Vehicle stock allocation
+// (VIN-level) must be checked in real time against the ERP/OEM allocation
+// system") — no such system exists in this codebase (same reasoning as
+// every other ERP-dependent BRD item in docs/SWMS-INTEGRATION-BACKLOG.md).
+// financingStatus is a recorded flag only, per the BRD's own out-of-scope
+// note: "the system records financing status; it does not underwrite
+// financing."
+enum OrderStatus {
+  QUOTED
+  BOOKED
+  FINANCING_PENDING
+  READY_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum FinancingStatus {
+  NOT_APPLICABLE
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+model SalesOrder {
+  id              String                    @id @default(uuid())
+  orderNo         String                    @unique
+  quotationId     String?                   @unique
+  quotation       Quotation?                @relation(fields: [quotationId], references: [id])
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  vehicleModel    String
+  // Carried over from Quotation.configurationJson at conversion time (see
+  // admin/app/api/admin/quotations/[id]/convert-to-order/route.ts) — same
+  // shape, same nullability.
+  configurationJson Json?
+  totalPrice      Float?
+  financingStatus FinancingStatus           @default(NOT_APPLICABLE)
+  status          OrderStatus               @default(QUOTED)
+  orderDate       DateTime                  @default(now())
+  deliveredAt     DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  pdiItems        PdiChecklistItem[]
+  statusHistory   SalesOrderStatusHistory[]
+
+  @@index([status])
+}
+
+// Pre-Delivery Inspection checklist (BR: "An order cannot be marked 'ready
+// for delivery' until the PDI checklist is 100% complete"). A default
+// checklist is seeded when an order is booked — see
+// admin/lib/sales/pdiChecklistTemplate.ts.
+model PdiChecklistItem {
+  id          String     @id @default(uuid())
+  orderId     String
+  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  label       String
+  isChecked   Boolean    @default(false)
+  checkedById String?
+  checkedAt   DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([orderId])
+}
+
+model SalesOrderStatusHistory {
+  id          String      @id @default(uuid())
+  orderId     String
+  order       SalesOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime    @default(now())
+
+  @@index([orderId])
 }
 
 // Dealers
@@ -257,17 +366,28 @@ model JobCard {
   customerName         String
   customerPhone        String
   customerEmail        String?
-  complaintText        String                 @db.Text
+  // Nullable so a kiosk self-check-in (BRD Screen 3, UC-04 alt flow) can
+  // create a bare Draft/Check-in job card before an advisor has captured a
+  // complaint. The state machine (jobCardStateMachine.ts) blocks leaving
+  // DRAFT_CHECKIN until this is filled in.
+  complaintText        String?                @db.Text
   diagnosisNotes       String?                @db.Text
   estimateAmount       Float?
   isWarrantyOrGoodwill Boolean                @default(false)
   customerApprovedAt   DateTime?
-  // Manually entered by the advisor from the vehicle's warranty papers at
-  // write-up (BRD FR-501). No Customer<->Vehicle ownership model exists in
-  // this codebase yet, so this is a deliberately lightweight substitute —
-  // see docs/SWMS-INTEGRATION-BACKLOG.md before building a fuller model.
+  // Populated either manually (walk-in with no matching vehicle record) or
+  // derived server-side from the linked CustomerVehicle at write-up (BRD
+  // FR-501) — see customerVehicleId below and
+  // docs/SWMS-INTEGRATION-BACKLOG.md for the Phase 6 scope decision on why
+  // both paths still exist side by side.
   warrantyStartDate    DateTime?
   warrantyEndDate      DateTime?
+  // Optional link to a persistent vehicle-ownership record (Phase 6). Null
+  // for walk-ins that were never matched/saved to a CustomerVehicle — the
+  // plateNo/vin/customer* fields above remain the source of truth for what
+  // was true on THIS visit either way.
+  customerVehicleId    String?
+  customerVehicle      CustomerVehicle?       @relation(fields: [customerVehicleId], references: [id])
   technicianId         String?
   technician           Technician?            @relation(fields: [technicianId], references: [id])
   bayId                String?
@@ -288,10 +408,12 @@ model JobCard {
   statusHistory        JobCardStatusHistory[]
   jobCardParts         JobCardPart[]
   warrantyClaims       WarrantyClaim[]
+  csiSurveyResponse    CSISurveyResponse?
 
   @@index([status])
   @@index([technicianId])
   @@index([bayId])
+  @@index([customerVehicleId])
 }
 
 model JobCardStatusHistory {
@@ -387,6 +509,72 @@ model WarrantyClaimStatusHistory {
   changedAt   DateTime             @default(now())
 
   @@index([claimId])
+}
+
+// ─── Customer & Vehicle Ownership (BRD FR-501, UC-01 dedupe rule) ──────────
+// Deliberately additive: JobCard keeps its own customerName/customerPhone/
+// customerEmail/plateNo/vin/warrantyStartDate/EndDate fields as the
+// point-in-time record of what was true on that visit. customerVehicleId
+// (on JobCard, above) is an OPTIONAL cross-reference for when a match is
+// found or a new record is saved — a walk-in that's never matched still
+// works exactly as it did before this model existed. See
+// docs/SWMS-INTEGRATION-BACKLOG.md for the Phase 6 scope decision. Named
+// "CustomerVehicle", not "Vehicle" — that name is already taken by the
+// sales-catalog listing model (e.g. "Model X SUV" trim/config), which is an
+// unrelated concept from an individual customer's own VIN-level car.
+model Customer {
+  id        String            @id @default(uuid())
+  fullName  String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  vehicles  CustomerVehicle[]
+
+  // Not @unique: phone is the dedupe lookup key (UC-01 business rule), but
+  // enforcing uniqueness at the DB level risks write failures on legitimate
+  // shared/reused numbers (e.g. a family landline) — dedupe is an
+  // application-level find-or-create, not a hard constraint.
+  @@index([phone])
+}
+
+model CustomerVehicle {
+  id                String     @id @default(uuid())
+  customerId        String
+  customer          Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vin               String?    @unique
+  plateNo           String
+  model             String?
+  trim              String?
+  color             String?
+  isNev             Boolean    @default(false)
+  warrantyStartDate DateTime?
+  warrantyEndDate   DateTime?
+  mileageLastKnown  Int?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  jobCards          JobCard[]
+
+  @@index([customerId])
+  @@index([plateNo])
+}
+
+// Post-visit satisfaction survey (BRD FR-602, UC-16). Triggered automatically
+// when a job card reaches INVOICED_CLOSED (see admin/lib/workshop/csiSurvey.ts);
+// the public, no-login survey page lives in the `web` app and looks the
+// response up by JobCard.id — see docs/SWMS-INTEGRATION-BACKLOG.md. One
+// response per job card (jobCardId is unique), so a resubmission attempt is
+// rejected rather than overwriting the original.
+model CSISurveyResponse {
+  id          String   @id @default(uuid())
+  jobCardId   String   @unique
+  jobCard     JobCard  @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  rating      Int // 1-5
+  comment     String?  @db.Text
+  submittedAt DateTime @default(now())
+
+  @@index([jobCardId])
 }
 
 // Spare Parts
