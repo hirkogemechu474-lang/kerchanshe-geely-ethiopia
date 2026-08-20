@@ -7,7 +7,7 @@ import CategoryForm from '@/components/admin/categories/CategoryForm';
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-  await requirePermission('canManageContent');
+  await requirePermission('canManageVehicles');
 
   const category = await prisma.vehicleCategory.findUnique({
     where: { id: id },

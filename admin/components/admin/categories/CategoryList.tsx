@@ -122,7 +122,7 @@ export default function CategoryList() {
               <Td className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Link
-                    href={`/${category.slug}`}
+                    href={`${process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3002'}/category/${category.slug}`}
                     target="_blank"
                     className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                     title="View page"

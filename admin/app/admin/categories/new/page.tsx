@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 
 export default async function NewCategoryPage() {
-  await requirePermission('canManageContent');
+  await requirePermission('canManageVehicles');
 
   // Fetch brands for dropdown
   const brands = await prisma.vehicleBrand.findMany({
