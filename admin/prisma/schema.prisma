@@ -1009,3 +1009,29 @@ model FinancingProgram {
   @@index([bankId, status])
   @@index([vehicleId, status])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITE NAVIGATION (header main nav + Models mega-menu Quick Actions panel)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum SiteNavPlacement {
+  TOP_NAV
+  MODELS_QUICK_ACTIONS
+}
+
+model SiteNavItem {
+  id            String           @id @default(uuid())
+  placement     SiteNavPlacement
+  label         String
+  subtitle      String? // Quick Actions only
+  icon          String? // name from a fixed lucide-icon allowlist — see web/lib/navIcons.ts
+  href          String
+  openInNewTab  Boolean          @default(false)
+  isHighlighted Boolean          @default(false) // Quick Actions: renders as the dark CTA tile
+  isActive      Boolean          @default(true)
+  displayOrder  Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([placement, isActive, displayOrder])
+}

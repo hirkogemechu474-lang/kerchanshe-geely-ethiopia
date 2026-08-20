@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowUpRight, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  formatVehiclePrice,
   type VehicleBrand,
   type VehicleCategory,
   type VehicleRecord,
@@ -34,7 +33,7 @@ export default function ModelsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"price-asc" | "price-desc" | "name">("price-asc");
+  const [sortBy, setSortBy] = useState<"featured" | "name">("featured");
 
   useEffect(() => {
     void fetchInitialLookups();
@@ -111,18 +110,12 @@ export default function ModelsPage() {
 
   const sortedVehicles = useMemo(() => {
     return [...vehicles].sort((a, b) => {
-      const priceA = a.finalPrice || a.basePrice;
-      const priceB = b.finalPrice || b.basePrice;
-
       switch (sortBy) {
-        case "price-asc":
-          return priceA - priceB;
-        case "price-desc":
-          return priceB - priceA;
         case "name":
           return a.name.localeCompare(b.name);
+        case "featured":
         default:
-          return 0;
+          return (Number(b.isFeatured) - Number(a.isFeatured)) || a.name.localeCompare(b.name);
       }
     });
   }, [vehicles, sortBy]);
@@ -189,8 +182,7 @@ export default function ModelsPage() {
                 onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
                 className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
               >
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="featured">Featured First</option>
                 <option value="name">Name: A to Z</option>
               </select>
             </div>
@@ -329,23 +321,12 @@ export default function ModelsPage() {
                         )}
 
                         <div className="mt-4 pt-4 border-t border-line">
-                          {vehicle.hidePrice ? (
-                            <Link
-                              href={`/quote?model=${vehicle.slug}`}
-                              className="text-[13px] font-bold text-geely-blue hover:underline"
-                            >
-                              Price on request
-                            </Link>
-                          ) : (
-                            <>
-                              <div className="text-[11px] uppercase tracking-wider text-steel font-semibold mb-1">
-                                Starting from
-                              </div>
-                              <div className="text-xl font-extrabold text-navy">
-                                {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
-                              </div>
-                            </>
-                          )}
+                          <Link
+                            href={`/quote?model=${vehicle.slug}`}
+                            className="text-[13px] font-bold text-geely-blue hover:underline"
+                          >
+                            Price on request
+                          </Link>
                         </div>
 
                         <div className="flex gap-3 mt-auto pt-5 border-t border-line">

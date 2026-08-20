@@ -12,10 +12,10 @@ export function Modal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className={`bg-white rounded-xl shadow-xl w-full ${maxWidth} p-5 space-y-4`}
+        className={`bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full ${maxWidth} p-5 space-y-4`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
         {children}
       </div>
     </div>

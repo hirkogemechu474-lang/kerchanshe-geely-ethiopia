@@ -75,11 +75,6 @@ export default function ComparePage() {
     { label: "Year", value: (vehicle) => vehicle.year },
     { label: "Category", value: (vehicle) => vehicle.category },
     {
-      label: "Starting Price",
-      value: (vehicle) => vehicle.finalPrice ?? vehicle.basePrice,
-      lowerIsBetter: true,
-    },
-    {
       label: "Performance",
       value: () => "",
       section: true,
@@ -253,7 +248,6 @@ export default function ComparePage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-3">
               {vehicles.map((vehicle) => {
-                const displayPrice = vehicle.finalPrice ?? vehicle.basePrice;
                 const imageUrl = getImageUrl(vehicle);
                 const isSelected = selectedVehicles.includes(vehicle.id);
 
@@ -285,7 +279,7 @@ export default function ComparePage() {
                       )}
                     </div>
                     <div className="mb-1 text-center text-sm font-bold text-navy">{vehicle.name}</div>
-                    <div className="text-center text-[11px] text-steel">{formatPrice(displayPrice)}</div>
+                    <div className="text-center text-[11px] text-steel">Price on request</div>
                     {isSelected && (
                       <div className="mt-2 flex justify-center">
                         <div className="rounded-full bg-geely-blue p-1 text-white">
@@ -350,9 +344,7 @@ export default function ComparePage() {
                             )}
                           </div>
                           <div className="text-base font-bold">{vehicle.name}</div>
-                          <div className="text-sm text-gold">
-                            {formatPrice(vehicle.finalPrice ?? vehicle.basePrice)}
-                          </div>
+                          <div className="text-sm text-gold">Price on request</div>
                         </div>
                       </th>
                     ))}

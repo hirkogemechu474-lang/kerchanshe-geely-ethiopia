@@ -22,6 +22,8 @@
     "seed:electric": "tsx prisma/seed-electric-menu.ts",
     "seed:financing": "tsx prisma/seed-financing.ts",
     "seed:faq": "tsx prisma/seed-faq.ts",
+    "seed:site-nav": "tsx prisma/seed-site-nav.ts",
+    "seed:users": "tsx prisma/seed-users.ts",
     "seed:parts": "tsx prisma/seed-parts.ts",
     "create:admin": "tsx scripts/create-admin.ts",
     "verify": "tsx scripts/verify-seed.ts"

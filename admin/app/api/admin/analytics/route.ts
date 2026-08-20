@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { getWorkshopSummary } from '@/lib/workshop/dashboardSummary';
 
 export async function GET() {
-  const { response } = await requireAdminApiSession();
+  const { session, response } = await requireAdminApiSession();
   if (response) return response;
 
   try {
@@ -120,6 +121,25 @@ export async function GET() {
       testDrives: vehicle._count.testDrives,
     }));
 
+    // Unified Dashboard: workshop/SWMS + "needs attention" sections are only
+    // fetched (and only returned) for viewers who can actually see them, so a
+    // sales-only session never receives workshop internals and vice versa.
+    const permissions = session!.user.permissions;
+
+    const [workshop, pendingReviewCount, unreadMessageCount] = await Promise.all([
+      permissions.canViewJobCards ? getWorkshopSummary() : Promise.resolve(null),
+      permissions.canModerateReviews ? prisma.review.count({ where: { status: 'pending' } }) : Promise.resolve(0),
+      permissions.canViewMessages ? prisma.message.count({ where: { status: 'unread' } }) : Promise.resolve(0),
+    ]);
+
+    const needsAttention = {
+      pendingQuotations: permissions.canViewQuotations ? pendingQuotations : 0,
+      pendingReviews: pendingReviewCount,
+      unreadMessages: unreadMessageCount,
+      overdueJobCards: workshop?.kpis.overdueCount ?? 0,
+      partsBelowReorder: workshop?.kpis.partsBelowReorder ?? 0,
+    };
+
     // Build response
     const analyticsData = {
       overview: {
@@ -142,6 +162,14 @@ export async function GET() {
       },
       salesByCategory,
       topVehicles: formattedTopVehicles,
+      needsAttention,
+      workshop: workshop
+        ? {
+            kpis: workshop.kpis,
+            bays: workshop.bays,
+            warrantyClaimsByStatus: workshop.warrantyClaimsByStatus,
+          }
+        : null,
     };
 
     return NextResponse.json(analyticsData);

@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 // GET - Fetch single user
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { id } = await params;
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+
+    if (!session!.user.permissions.canViewUsers && !session!.user.permissions.canManageUsers) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    try {
     const user = await prisma.user.findUnique({
       where: { id: id },
       select: {
@@ -43,12 +45,15 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { id } = await params;
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+
+    if (!session!.user.permissions.canManageUsers) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    try {
     const body = await request.json();
     const { name, email, role, dealerId, isActive } = body;
 
@@ -105,12 +110,15 @@ export async function PUT(
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { id } = await params;
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+
+    if (!session!.user.permissions.canManageUsers) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    try {
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: id },
@@ -121,7 +129,7 @@ export async function DELETE(
     }
 
     // Prevent deleting yourself
-    if (session.user.id === id) {
+    if (session!.user.id === id) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 

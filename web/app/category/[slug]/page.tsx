@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
-import { formatVehiclePrice } from "@/lib/vehicleData";
 import { Battery, Zap, MapPin, Clock, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -262,25 +261,12 @@ export default function CategoryPage() {
 
                       {/* Price */}
                       <div className="mb-4">
-                        {vehicle.hidePrice ? (
-                          <Link
-                            href={`/quote?model=${vehicle.slug}`}
-                            className="text-2xl font-bold text-navy hover:text-geely-blue transition-colors"
-                          >
-                            Price on request
-                          </Link>
-                        ) : (
-                          <>
-                            {vehicle.discountAmount > 0 && (
-                              <div className="text-sm text-steel line-through mb-1">
-                                {formatVehiclePrice(vehicle.basePrice)}
-                              </div>
-                            )}
-                            <div className="text-2xl font-bold text-navy">
-                              {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
-                            </div>
-                          </>
-                        )}
+                        <Link
+                          href={`/quote?model=${vehicle.slug}`}
+                          className="text-2xl font-bold text-navy hover:text-geely-blue transition-colors"
+                        >
+                          Price on request
+                        </Link>
                       </div>
 
                       {/* Actions */}

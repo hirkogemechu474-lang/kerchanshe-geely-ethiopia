@@ -34,10 +34,16 @@ export default async function UsersPage() {
         title="User Management"
         description="Manage admin users and permissions"
         actions={
-          <LinkButton href="/admin/users/new">
-            <Plus className="w-5 h-5" />
-            Add User
-          </LinkButton>
+          <>
+            <LinkButton href="/admin/users/roles" variant="secondary">
+              <Shield className="w-4 h-4" />
+              Roles &amp; Permissions
+            </LinkButton>
+            <LinkButton href="/admin/users/new">
+              <Plus className="w-5 h-5" />
+              Add User
+            </LinkButton>
+          </>
         }
       />
 

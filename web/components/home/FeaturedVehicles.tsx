@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { formatVehiclePrice } from "@/lib/vehicleData";
 
 interface Vehicle {
   id: string;
@@ -139,21 +138,12 @@ export default function FeaturedVehicles() {
                       {vehicle.name}
                     </h3>
                     <div className="text-[13px] text-steel mb-4">
-                      {vehicle.hidePrice ? (
-                        <Link
-                          href={`/quote?model=${vehicle.slug}`}
-                          className="text-ink font-bold hover:text-geely-blue transition-colors"
-                        >
-                          Price on request
-                        </Link>
-                      ) : (
-                        <>
-                          Starting from{" "}
-                          <span className="text-ink font-bold">
-                            {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
-                          </span>
-                        </>
-                      )}
+                      <Link
+                        href={`/quote?model=${vehicle.slug}`}
+                        className="text-ink font-bold hover:text-geely-blue transition-colors"
+                      >
+                        Price on request
+                      </Link>
                     </div>
                     <div className="flex gap-3">
                       <Link

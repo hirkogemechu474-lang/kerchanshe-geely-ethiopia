@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Mail, Lock, Shield, Building } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
+import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -210,6 +211,7 @@ export default function NewUserPage() {
               <option value="service_advisor">Service Advisor - Job cards & write-up</option>
               <option value="service_manager">Service Manager - Workshop, bays & QC</option>
             </select>
+            <RolePermissionPreview role={formData.role} />
           </div>
 
           {/* Dealer ID (Optional) */}

@@ -384,14 +384,10 @@ export default async function ElectricPage() {
                   )}
                 </div>
 
-                {featuredEV.finalPrice && (
-                  <div className="bg-white p-4 rounded-lg border-2 border-green-500 mb-6">
-                    <div className="text-sm text-steel mb-1">Starting Price</div>
-                    <div className="text-3xl font-bold text-navy">
-                      ETB {featuredEV.finalPrice.toLocaleString()}
-                    </div>
-                  </div>
-                )}
+                <div className="bg-white p-4 rounded-lg border-2 border-green-500 mb-6">
+                  <div className="text-sm text-steel mb-1">Pricing</div>
+                  <div className="text-xl font-bold text-navy">Price on request</div>
+                </div>
 
                 <div className="flex gap-4 flex-wrap">
                   <Link
@@ -490,18 +486,7 @@ export default async function ElectricPage() {
                       </div>
                     )}
 
-                    {vehicle.finalPrice && (
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-bold text-navy">
-                          ETB {vehicle.finalPrice.toLocaleString()}
-                        </span>
-                        {vehicle.discountAmount && vehicle.basePrice && (
-                          <span className="text-sm text-steel line-through">
-                            ETB {vehicle.basePrice.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className="mb-4 text-sm font-semibold text-geely-blue">Price on request</div>
 
                     <div className="text-geely-blue font-semibold text-sm group-hover:underline">
                       View Details →

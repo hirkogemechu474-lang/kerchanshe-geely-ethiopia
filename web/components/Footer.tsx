@@ -35,6 +35,15 @@ interface HoursSettings {
   note?: string;
 }
 
+// Shape returned by /api/public/business-settings (admin/app/admin/settings/business-settings) —
+// only the fields the footer actually displays.
+interface BusinessHours {
+  weekdays?: string;
+  saturday?: string;
+  sunday?: string;
+  holidays?: string;
+}
+
 const FALLBACK_CONTACT: ContactInfo = {
   headquarters: {
     name: 'Geely Ethiopia — Kerchanshe Auto HQ',
@@ -74,6 +83,7 @@ const FALLBACK_HOURS: HoursSettings = {
 export function Footer() {
   const [socialMedia, setSocialMedia] = useState<SocialMediaLinks>({});
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
+  const [businessHours, setBusinessHours] = useState<BusinessHours | null>(null);
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
   const [emailDraft, setEmailDraft] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -103,6 +113,10 @@ export function Footer() {
             setSocialMedia(flat);
           }
         })
+        .catch(() => {}),
+      fetch('/api/public/business-settings')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d?.businessHours && setBusinessHours(d.businessHours))
         .catch(() => {}),
     ]);
   }, []);
@@ -270,9 +284,12 @@ export function Footer() {
                   <div>
                     <div className="text-blue-200/70 text-xs uppercase tracking-wider font-semibold">Opening Hours</div>
                     <div className="text-white leading-relaxed text-sm space-y-0.5">
-                      <div>{FALLBACK_HOURS.workdays}</div>
-                      <div>{FALLBACK_HOURS.saturday}</div>
-                      <div className="text-blue-100/70">{FALLBACK_HOURS.sunday}</div>
+                      <div>{businessHours?.weekdays || FALLBACK_HOURS.workdays}</div>
+                      <div>{businessHours?.saturday || FALLBACK_HOURS.saturday}</div>
+                      <div className="text-blue-100/70">{businessHours?.sunday || FALLBACK_HOURS.sunday}</div>
+                      {businessHours?.holidays && (
+                        <div className="text-blue-100/70">{businessHours.holidays}</div>
+                      )}
                     </div>
                   </div>
                 </div>

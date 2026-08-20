@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
-import { formatVehiclePrice, type VehicleRecord } from "@/lib/vehicleData";
+import type { VehicleRecord } from "@/lib/vehicleData";
 import { useCRMSubmit } from "@/lib/useCRMSubmit";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { Calendar, Clock, MapPin, CheckCircle, Car, AlertCircle } from "lucide-react";
@@ -344,7 +344,7 @@ export default function TestDrivePage() {
                       <option value="">{vehiclesLoading ? "Loading vehicles..." : "Choose a vehicle"}</option>
                       {vehicles.map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name} - {formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
+                          {vehicle.name}
                         </option>
                       ))}
                     </select>

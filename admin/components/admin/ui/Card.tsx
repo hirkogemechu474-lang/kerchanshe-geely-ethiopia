@@ -16,7 +16,7 @@ export function Card({ className, padding = 'md', interactive, ...props }: CardP
   return (
     <div
       className={cx(
-        'bg-white rounded-xl border border-gray-200 shadow-sm',
+        'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm',
         PADDING[padding],
         interactive && 'transition-shadow hover:shadow-md',
         className
@@ -27,9 +27,9 @@ export function Card({ className, padding = 'md', interactive, ...props }: CardP
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cx('px-6 py-4 border-b border-gray-100', className)} {...props} />;
+  return <div className={cx('px-6 py-4 border-b border-gray-100 dark:border-gray-700', className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cx('font-semibold text-gray-900', className)} {...props} />;
+  return <h2 className={cx('font-semibold text-gray-900 dark:text-gray-100', className)} {...props} />;
 }

@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Car, Zap, Award, Settings, BarChart3 } from 'lucide-react';
-import { env } from '@/lib/env';
-import { formatVehiclePrice, type VehicleRecord } from '@/lib/vehicleData';
+import { ArrowRight, Car, Zap, Award, Settings } from 'lucide-react';
+import type { VehicleRecord } from '@/lib/vehicleData';
+import { resolveNavIcon, type SiteNavItem } from '@/lib/navIcons';
 
 function publicMediaUrl(url: string | null | undefined) {
   if (!url) return '';
@@ -19,9 +19,11 @@ interface VehicleDropdownProps {
   /** Pre-loaded vehicles passed from Header — no fetch needed here */
   vehicles?: VehicleRecord[];
   loading?: boolean;
+  /** Pre-loaded Quick Actions panel items, admin-editable via /admin/site-navigation */
+  quickActions?: SiteNavItem[];
 }
 
-export function VehicleDropdown({ onClose, vehicles = [], loading = false }: VehicleDropdownProps) {
+export function VehicleDropdown({ onClose, vehicles = [], loading = false, quickActions = [] }: VehicleDropdownProps) {
   const [hoveredVehicle, setHoveredVehicle] = useState<VehicleRecord | null>(null);
   const groupedVehicles = useMemo(() => {
     const groups = new Map<string, { label: string; items: VehicleRecord[]; icon: 'car' | 'electric' }>();
@@ -93,7 +95,6 @@ export function VehicleDropdown({ onClose, vehicles = [], loading = false }: Veh
 
                   <div className="space-y-3">
                     {group.items.map((vehicle) => {
-                      const displayPrice = vehicle.finalPrice || vehicle.basePrice;
                       const badge = vehicle.badge || (vehicle.isFeatured ? 'Featured' : '');
 
                       return (
@@ -110,12 +111,7 @@ export function VehicleDropdown({ onClose, vehicles = [], loading = false }: Veh
                                 {vehicle.name}
                               </div>
                               <div className="text-sm text-steel line-clamp-2">
-                                {vehicle.description || 'View full specifications and pricing.'}
-                              </div>
-                              <div className="text-sm font-semibold text-geely-blue mt-1">
-                                {vehicle.hidePrice
-                                  ? "Price on request"
-                                  : formatVehiclePrice(displayPrice)}
+                                {vehicle.description || 'View full specifications and features.'}
                               </div>
                               {badge && (
                                 <div className="inline-flex items-center gap-1 bg-gold text-navy px-2 py-1 rounded-full text-xs font-bold mt-2">
@@ -164,93 +160,41 @@ export function VehicleDropdown({ onClose, vehicles = [], loading = false }: Veh
             <h3 className="font-bold text-navy">Quick Actions</h3>
           </div>
           <div className="space-y-3">
-            {env.features.testDrive && (
-              <Link
-                href="/compare"
-                onClick={onClose}
-                className="block group hover:bg-ice p-3 rounded transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors">Compare Models</div>
-                    <div className="text-sm text-steel">Side-by-side comparison</div>
+            {quickActions.map((action) => {
+              const ActionIcon = resolveNavIcon(action.icon) || ArrowRight;
+              return (
+                <Link
+                  key={action.id}
+                  href={action.href}
+                  onClick={onClose}
+                  target={action.openInNewTab ? '_blank' : undefined}
+                  rel={action.openInNewTab ? 'noopener noreferrer' : undefined}
+                  className={`block group p-3 rounded transition-colors ${
+                    action.isHighlighted
+                      ? 'bg-navy text-white hover:bg-geely-blue'
+                      : 'hover:bg-ice'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-semibold transition-colors ${action.isHighlighted ? '' : 'text-navy group-hover:text-geely-blue'}`}>
+                        {action.label}
+                      </div>
+                      {action.subtitle && (
+                        <div className={`text-sm ${action.isHighlighted ? 'opacity-90' : 'text-steel'}`}>{action.subtitle}</div>
+                      )}
+                    </div>
+                    <ActionIcon size={16} className={action.isHighlighted ? '' : 'text-geely-blue'} />
                   </div>
-                  <BarChart3 size={16} className="text-geely-blue" />
-                </div>
-              </Link>
-            )}
-
-            <Link
-              href="/configure"
-              onClick={onClose}
-              className="block group hover:bg-ice p-3 rounded transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors">Build & Price</div>
-                  <div className="text-sm text-steel">Configure your vehicle</div>
-                </div>
-                <Settings size={16} className="text-geely-blue" />
-              </div>
-            </Link>
-
-            <Link
-              href="/models"
-              onClick={onClose}
-              className="block group hover:bg-geely-blue hover:text-white p-3 rounded transition-colors bg-navy text-white"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">View All Models</div>
-                  <div className="text-sm opacity-90">Complete vehicle lineup</div>
-                </div>
-                <ArrowRight size={16} />
-              </div>
-            </Link>
-
-            <Link
-              href="/financing"
-              onClick={onClose}
-              className="block group hover:bg-ice p-3 rounded transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors">Finance Calculator</div>
-                  <div className="text-sm text-steel">Calculate monthly payments</div>
-                </div>
-                <BarChart3 size={16} className="text-geely-blue" />
-              </div>
-            </Link>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
       </div>
 
-      {/* Featured Banner */}
-      <div className="mt-8 bg-gradient-to-r from-navy to-geely-blue text-white p-6 rounded-lg">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-          <div>
-            <h3 className="text-xl font-bold mb-2">New Year Special Offer</h3>
-            <p className="text-blue-100">Get up to ETB 200,000 off select models. Limited time offer.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href="/offers"
-              onClick={onClose}
-              className="bg-gold text-navy px-6 py-3 rounded font-bold hover:bg-opacity-90 transition-colors text-center"
-            >
-              View Offers
-            </Link>
-            <Link
-              href="/test-drive"
-              onClick={onClose}
-              className="border-2 border-white text-white px-6 py-3 rounded font-bold hover:bg-white hover:text-navy transition-colors text-center"
-            >
-              Schedule Test Drive
-            </Link>
-          </div>
-        </div>
-      </div>
+    
     </div>
   );
 }

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   Save,
   Car,
-  FolderTree,
   Settings,
   ShieldCheck,
   Sofa,
@@ -25,21 +24,11 @@ import {
   FileText,
   GripVertical,
   Image as ImageIcon,
-  Globe,
   Layers,
 } from 'lucide-react';
 
 /* ---------- TYPES ---------- */
-interface VehicleCategory {
-  id: string;
-  name: string;
-  description: string;
-  displayOrder: number;
-  active: boolean;
-}
-
 interface VehicleSettingsData {
-  categories: VehicleCategory[];
   features: {
     safety: string[];
     comfort: string[];
@@ -94,12 +83,6 @@ interface Showcase {
 
 /* ---------- DEFAULTS ---------- */
 const DEFAULT_DATA: VehicleSettingsData = {
-  categories: [
-    { id: '1', name: 'Sedans', description: 'Comfortable daily commuter & family sedans', displayOrder: 1, active: true },
-    { id: '2', name: 'SUVs', description: 'Spacious, rugged SUVs for families and adventure', displayOrder: 2, active: true },
-    { id: '3', name: 'Electric Vehicles', description: 'Zero-emission EVs with impressive range', displayOrder: 3, active: true },
-    { id: '4', name: 'Hatchbacks', description: 'Compact, practical for city driving', displayOrder: 4, active: true },
-  ],
   features: {
     safety: ['ABS + EBD', 'Dual Front Airbags', 'Reverse Camera + Sensors'],
     comfort: ['Automatic Climate Control', 'Leather Upholstery', 'Power-Adjustable Driver Seat'],
@@ -124,10 +107,6 @@ const DEFAULT_DATA: VehicleSettingsData = {
   },
   brochure: { url: '', fileName: '', fileSize: null, uploadedAt: null },
 };
-
-const uid = () =>
-  (crypto?.randomUUID?.() ??
-    'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8));
 
 /* ---------- PAGE ---------- */
 export default function VehicleSettingsPage() {
@@ -163,7 +142,6 @@ export default function VehicleSettingsPage() {
         if (res.ok) {
           const raw = await res.json();
           setData({
-            categories: Array.isArray(raw.categories) ? raw.categories : DEFAULT_DATA.categories,
             features: {
               safety: Array.isArray(raw.features?.safety) ? raw.features.safety : DEFAULT_DATA.features.safety,
               comfort: Array.isArray(raw.features?.comfort) ? raw.features.comfort : DEFAULT_DATA.features.comfort,
@@ -212,9 +190,6 @@ export default function VehicleSettingsPage() {
       setSaving(false);
     }
   };
-
-  const setCategories = (fn: (prev: VehicleCategory[]) => VehicleCategory[]) =>
-    setData((d) => ({ ...d, categories: fn(d.categories) }));
 
   const setFeatureGroup = (
     key: 'safety' | 'comfort' | 'technology' | 'performance',
@@ -429,7 +404,6 @@ export default function VehicleSettingsPage() {
   /* ---------- TABS ---------- */
   const TABS = [
     { id: 'all', label: 'All Sections', icon: Settings, hint: 'Full overview' },
-    { id: 'categories', label: 'Categories', icon: FolderTree, count: data.categories.length, hint: `${data.categories.filter(c => c.active).length} active` },
     { id: 'features', label: 'Features', icon: ShieldCheck, count: Object.values(data.features).flat().length, hint: '4 feature groups' },
     { id: 'specs', label: 'Specifications', icon: Gauge, count: Object.values(data.specifications).flat().length, hint: 'Engine, gearbox, fuel' },
     { id: 'warranty', label: 'Warranty', icon: Award, hint: 'Service intervals' },
@@ -454,7 +428,7 @@ export default function VehicleSettingsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Vehicle Settings</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Category defaults, features, specs, and warranty that appear across the public website
+            Features, specs, and warranty that appear across the public website — vehicle categories are managed under Vehicles → Categories
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -483,9 +457,7 @@ export default function VehicleSettingsPage() {
             const Icon = tab.icon;
             const active = section === tab.id;
             const gradient =
-              tab.id === 'categories'
-                ? 'from-blue-500 to-blue-600'
-                : tab.id === 'features'
+              tab.id === 'features'
                 ? 'from-teal-500 to-teal-600'
                 : tab.id === 'specs'
                 ? 'from-orange-500 to-orange-600'
@@ -495,9 +467,7 @@ export default function VehicleSettingsPage() {
                 ? 'from-fuchsia-500 to-pink-600'
                 : 'from-violet-500 to-violet-600';
             const textColor =
-              tab.id === 'categories'
-                ? 'text-blue-600'
-                : tab.id === 'features'
+              tab.id === 'features'
                 ? 'text-teal-600'
                 : tab.id === 'specs'
                 ? 'text-orange-600'
@@ -507,9 +477,7 @@ export default function VehicleSettingsPage() {
                 ? 'text-fuchsia-600'
                 : 'text-violet-600';
             const bgColor =
-              tab.id === 'categories'
-                ? 'bg-blue-50'
-                : tab.id === 'features'
+              tab.id === 'features'
                 ? 'bg-teal-50'
                 : tab.id === 'specs'
                 ? 'bg-orange-50'
@@ -568,16 +536,6 @@ export default function VehicleSettingsPage() {
             <div className="text-sm">{error}</div>
           </div>
         </div>
-      )}
-
-      {/* CATEGORIES */}
-      {(section === 'all' || section === 'categories') && (
-        <SectionCard id="sec-categories" title="Vehicle Categories" subtitle="Types of vehicles shown in public catalog filters" icon={FolderTree} gradient="from-blue-500 to-blue-600" accent="blue">
-          <CategoryEditor
-            value={data.categories}
-            onChange={(next) => setCategories(() => next)}
-          />
-        </SectionCard>
       )}
 
       {/* FEATURES */}
@@ -1172,172 +1130,6 @@ function SectionCard({
       </div>
       <div className="p-5">{children}</div>
     </section>
-  );
-}
-
-function CategoryEditor({
-  value, onChange,
-}: { value: VehicleCategory[]; onChange: (next: VehicleCategory[]) => void }) {
-  const update = (id: string, patch: Partial<VehicleCategory>) =>
-    onChange(value.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-
-  const add = () =>
-    onChange([
-      ...value,
-      {
-        id: uid(),
-        name: '',
-        description: '',
-        displayOrder: (value.length ? Math.max(...value.map((c) => c.displayOrder)) : 0) + 1,
-        active: true,
-      },
-    ]);
-
-  const remove = (id: string) =>
-    onChange(value.filter((c) => c.id !== id));
-
-  return (
-    <div className="space-y-3">
-      {/* Desktop table */}
-      <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="text-left px-4 py-3 font-semibold w-16">Order</th>
-              <th className="text-left px-4 py-3 font-semibold">Category Name</th>
-              <th className="text-left px-4 py-3 font-semibold">Description</th>
-              <th className="text-center px-4 py-3 font-semibold w-20">Active</th>
-              <th className="text-right px-4 py-3 font-semibold w-16"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {value.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3">
-                  <input
-                    type="number"
-                    min={1}
-                    value={c.displayOrder}
-                    onChange={(e) => update(c.id, { displayOrder: parseInt(e.target.value) || 1 })}
-                    className="w-16 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <input
-                    value={c.name}
-                    onChange={(e) => update(c.id, { name: e.target.value })}
-                    placeholder="SUVs"
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <input
-                    value={c.description}
-                    onChange={(e) => update(c.id, { description: e.target.value })}
-                    placeholder="Short public description"
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={c.active}
-                      onChange={(e) => update(c.id, { active: e.target.checked })}
-                    />
-                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-blue-600"></div>
-                  </label>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => remove(c.id)}
-                    title="Delete category"
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!value.length && (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-500 italic">No categories yet — click button below to add</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile: cards */}
-      <div className="md:hidden space-y-3">
-        {value.map((c, idx) => (
-          <div key={c.id} className="rounded-xl border border-gray-200 p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-                #{idx + 1}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={c.active}
-                    onChange={(e) => update(c.id, { active: e.target.checked })}
-                    className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
-                  />
-                  {c.active ? 'Active' : 'Hidden'}
-                </label>
-                <button
-                  onClick={() => remove(c.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <div className="w-20 shrink-0">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Order</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={c.displayOrder}
-                  onChange={(e) => update(c.id, { displayOrder: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
-                <input
-                  value={c.name}
-                  onChange={(e) => update(c.id, { name: e.target.value })}
-                  placeholder="SUVs"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-              <input
-                value={c.description}
-                onChange={(e) => update(c.id, { description: e.target.value })}
-                placeholder="Short public description"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-          </div>
-        ))}
-        {!value.length && <div className="text-center py-6 text-sm text-gray-500 italic">No categories yet</div>}
-      </div>
-
-      <div className="pt-2">
-        <button
-          onClick={add}
-          className="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl text-sm font-medium text-gray-600 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Category
-        </button>
-      </div>
-    </div>
   );
 }
 

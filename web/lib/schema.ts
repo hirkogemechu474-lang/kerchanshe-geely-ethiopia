@@ -61,7 +61,6 @@ export function getOrganizationSchema() {
       "@type": "Country",
       "name": "Ethiopia"
     },
-    "priceRange": "ETB 800,000 - 3,500,000",
     "paymentAccepted": "Cash, Bank Transfer, Financing",
     "currenciesAccepted": "ETB"
   };
@@ -170,7 +169,6 @@ export function getDealerSchema(dealer: Dealer) {
         "closes": "17:00"
       }
     ] : undefined,
-    "priceRange": "ETB 800,000 - 3,500,000",
     "url": `https://geelyethiopia.com/dealers/${dealer.id}`,
     "parentOrganization": {
       "@type": "AutomotiveBusiness",

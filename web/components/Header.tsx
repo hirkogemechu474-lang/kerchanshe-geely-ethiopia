@@ -1,17 +1,41 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Search, User, ChevronDown, Car, Zap, Globe } from 'lucide-react';
+import { Menu, Search, User, ChevronDown, Car, Globe } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import { SearchModal } from './SearchModal';
 import { useLanguage, useTranslation } from '@/lib/i18n';
 import type { VehicleRecord } from '@/lib/vehicleData';
+import { resolveNavIcon, type SiteNavItem } from '@/lib/navIcons';
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
 }
+
+// href -> special mega-menu/dropdown behavior. Kept as a fixed convention
+// rather than admin-editable data — an admin can add/reorder/hide/relabel any
+// nav item via /admin/site-navigation, but only these three hrefs ever get a
+// dropdown attached, matching what the site actually has content systems for.
+const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; category?: 'models' | 'electric' | 'services' }> = {
+  '/models': { hasDropdown: true, category: 'models' },
+  '/electric': { hasSubmenu: true, category: 'electric' },
+  '/service': { hasSubmenu: true, category: 'services' },
+};
+
+// Matches the seed data in admin/prisma/seed-site-nav.ts — used only as the
+// pre-fetch fallback so the header never renders empty before the first load.
+const DEFAULT_NAV_ITEMS: SiteNavItem[] = [
+  { id: 'models', label: 'Models', href: '/models', icon: null, openInNewTab: false, displayOrder: 1 },
+  { id: 'electric', label: 'Electric', href: '/electric', icon: 'Zap', openInNewTab: false, displayOrder: 2 },
+  { id: 'technology', label: 'Technology', href: '/technology', icon: null, openInNewTab: false, displayOrder: 3 },
+  { id: 'services', label: 'Services', href: '/service', icon: null, openInNewTab: false, displayOrder: 4 },
+  { id: 'dealers', label: 'Dealers', href: '/dealers', icon: null, openInNewTab: false, displayOrder: 5 },
+  { id: 'financing', label: 'Financing', href: '/financing', icon: null, openInNewTab: false, displayOrder: 6 },
+  { id: 'news', label: 'News', href: '/news', icon: null, openInNewTab: false, displayOrder: 7 },
+  { id: 'about', label: 'About', href: '/about', icon: null, openInNewTab: false, displayOrder: 8 },
+];
 
 // ─── Pre-fetch helper ─────────────────────────────────────────────────────────
 // Fetch once at Header mount so every dropdown opens instantly.
@@ -40,6 +64,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
   const [servicesMenu, setServicesMenu]   = useState<MenuSection[]>([]);
   const [electricMenu, setElectricMenu]   = useState<MenuSection[]>([]);
+  const [quickActions, setQuickActions]   = useState<SiteNavItem[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const prefetched = useRef(false);
 
@@ -47,52 +72,50 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
     if (prefetched.current) return;
     prefetched.current = true;
 
-    // Fire all three requests in parallel
+    // Fire all requests in parallel
     Promise.all([
       fetchJSON<{ vehicles: VehicleRecord[] } | VehicleRecord[]>('/api/public/vehicles'),
       fetchJSON<{ sections: MenuSection[] }>('/api/public/services/menu'),
       fetchJSON<{ sections: MenuSection[] }>('/api/public/electric/menu'),
-    ]).then(([vehiclesData, servicesData, electricData]) => {
+      fetchJSON<{ items: SiteNavItem[] }>('/api/public/site-nav?placement=MODELS_QUICK_ACTIONS'),
+    ]).then(([vehiclesData, servicesData, electricData, quickActionsData]) => {
       if (vehiclesData) {
         const list = Array.isArray(vehiclesData) ? vehiclesData : vehiclesData.vehicles ?? [];
         setVehicles(list);
       }
       if (servicesData?.sections) setServicesMenu(servicesData.sections);
       if (electricData?.sections)  setElectricMenu(electricData.sections);
+      if (quickActionsData?.items) setQuickActions(quickActionsData.items);
       setVehiclesLoading(false);
     });
   };
 
-  // Define nav items in useMemo to prevent recreation and hydration issues
-  const mainNavItems = React.useMemo(() => [
-    {
-      label: t('common.models'),
-      href: '/models',
-      hasDropdown: true,
-      category: 'models' as const,
-    },
-    {
-      label: t('common.electric'),
-      href: '/electric',
-      hasSubmenu: true,
-      category: 'electric' as const,
-      icon: <Zap size={16} className="text-green-600" />,
-    },
-    {
-      label: 'Technology',
-      href: '/technology',
-    },
-    {
-      label: 'Services',
-      href: '/service',
-      hasSubmenu: true,
-      category: 'services' as const,
-    },
-    { label: t('common.dealers'),   href: '/dealers' },
-    { label: t('common.financing'), href: '/financing' },
-    { label: t('common.news'),      href: '/news' },
-    { label: 'About',               href: '/about' },
-  ], [t]);
+  // Admin-editable via /admin/site-navigation — starts from the fallback so
+  // the header never renders empty before the first fetch resolves.
+  const [siteNavItems, setSiteNavItems] = useState<SiteNavItem[]>(DEFAULT_NAV_ITEMS);
+
+  useEffect(() => {
+    fetchJSON<{ items: SiteNavItem[] }>('/api/public/site-nav?placement=TOP_NAV')
+      .then((data) => { if (data?.items?.length) setSiteNavItems(data.items); });
+  }, []);
+
+  const mainNavItems = React.useMemo(
+    () =>
+      siteNavItems.map((item) => {
+        const special = SPECIAL_NAV_HREFS[item.href];
+        const IconComponent = resolveNavIcon(item.icon);
+        return {
+          label: item.label,
+          href: item.href,
+          openInNewTab: item.openInNewTab,
+          hasDropdown: special?.hasDropdown,
+          hasSubmenu: special?.hasSubmenu,
+          category: special?.category,
+          icon: IconComponent ? <IconComponent size={16} className="text-green-600" /> : null,
+        };
+      }),
+    [siteNavItems]
+  );
 
   const closeAllMenus = () => {
     setMegaMenuOpen(null);
@@ -168,6 +191,8 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                 ) : (
                   <Link
                     href={item.href}
+                    target={item.openInNewTab ? '_blank' : undefined}
+                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                     className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-2 py-2 transition-colors whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
@@ -235,6 +260,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               onClose={() => setModelsDropdownOpen(false)}
               vehicles={vehicles}
               loading={vehiclesLoading}
+              quickActions={quickActions}
             />
           </div>
         )}

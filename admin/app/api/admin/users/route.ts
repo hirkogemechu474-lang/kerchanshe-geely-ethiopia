@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 // GET - Fetch all users
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
 
+  if (!session!.user.permissions.canViewUsers && !session!.user.permissions.canManageUsers) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -36,12 +37,14 @@ export async function GET(request: NextRequest) {
 
 // POST - Create new user
 export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
 
+  if (!session!.user.permissions.canManageUsers) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  try {
     const body = await request.json();
     const { name, email, password, role, dealerId, isActive } = body;
 

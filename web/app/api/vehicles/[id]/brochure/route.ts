@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { formatVehiclePrice } from '@/lib/vehicleData';
 
 /**
  * GET /api/vehicles/[id]/brochure
@@ -36,14 +35,13 @@ export async function GET(
     ? vehicle.images.filter((image): image is string => typeof image === 'string')
     : [];
   const heroImage = vehicle.heroImageUrl || imageList[0] || '';
-  const displayPrice = vehicle.finalPrice || vehicle.basePrice;
 
   // ── Build spec rows ────────────────────────────────────────────────────────
   const specRows: { label: string; value: string }[] = [
     { label: 'Brand',          value: vehicle.brand?.name || 'Geely' },
     { label: 'Category',       value: vehicle.vehicleCategory?.name || vehicle.category },
     { label: 'Model Year',     value: String(vehicle.year) },
-    { label: 'Starting Price', value: formatVehiclePrice(displayPrice) },
+    { label: 'Pricing',        value: 'Available on request' },
     ...[
       ['Engine',        specs?.engine?.type || specs?.engine],
       ['Power',         specs?.engine?.power || specs?.power],
@@ -327,7 +325,7 @@ export async function GET(
     <div class="cover-brand">${vehicle.brand?.name || 'Geely'} · ${vehicle.vehicleCategory?.name || vehicle.category}</div>
     <h1 class="cover-name">${vehicle.name}</h1>
     ${vehicle.description ? `<p class="cover-desc">${vehicle.description}</p>` : ''}
-    <div class="cover-price">From ${formatVehiclePrice(displayPrice)}</div>
+    <div class="cover-price">Pricing available on request</div>
     <div class="cover-footer">
       <div class="geely-logo">GEELY</div>
       <div>Official Distributor: Kerchanshe Auto · geelyethiopia.com</div>

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MainLayout } from "@/components/MainLayout";
-import { formatVehiclePrice, type VehicleRecord } from "@/lib/vehicleData";
+import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { CheckCircle, FileText, DollarSign, AlertCircle } from "lucide-react";
 
@@ -409,9 +409,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                       <option value="">{vehiclesLoading ? "Loading vehicles..." : "Choose a vehicle"}</option>
                       {vehicles.map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name} - {vehicle.hidePrice
-                            ? 'Price on request'
-                            : formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
+                          {vehicle.name}
                         </option>
                       ))}
                     </select>

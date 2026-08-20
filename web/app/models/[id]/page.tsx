@@ -61,6 +61,23 @@ async function getBrochureSetting() {
   }
 }
 
+const CONTACT_SETTING_KEY = "contact_information";
+const FALLBACK_CONTACT_PHONE = "+251110000000";
+
+// Same admin-managed Contact Information data the footer reads
+// (web/components/Footer.tsx), so this page's "Call Us"/"WhatsApp" links
+// never diverge from the rest of the site.
+async function getContactPhone() {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: CONTACT_SETTING_KEY } });
+    if (!setting?.value) return FALLBACK_CONTACT_PHONE;
+    const parsed = JSON.parse(setting.value);
+    return parsed?.phone?.sales || parsed?.phone?.primary || FALLBACK_CONTACT_PHONE;
+  } catch {
+    return FALLBACK_CONTACT_PHONE;
+  }
+}
+
 export async function generateStaticParams() {
   const vehicles = await prisma.vehicle.findMany({
     where: {
@@ -87,12 +104,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   }
 
-  const displayPrice = vehicle.finalPrice || vehicle.basePrice;
   const pageUrl = `${BASE_URL}/models/${vehicle.slug}`;
 
   return {
     title: `${vehicle.name} | Geely Ethiopia`,
-    description: `${vehicle.description || vehicle.name} Starting from ${formatVehiclePrice(displayPrice)}. Explore specs, features, and book a test drive.`,
+    description: `${vehicle.description || vehicle.name} Explore specs, features, and book a test drive.`,
     keywords: `${vehicle.name}, ${vehicle.category}, Geely Ethiopia, ${vehicle.brand?.name || "Geely"}, ${vehicle.vehicleCategory?.name || vehicle.category}`,
     alternates: {
       canonical: pageUrl,
@@ -124,13 +140,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const vehicle = await getVehicle(id);
-  const brochure = await getBrochureSetting();
+  const [brochure, contactPhone] = await Promise.all([getBrochureSetting(), getContactPhone()]);
 
   if (!vehicle) {
     notFound();
   }
 
   const brochureUrl = publicBrochureUrl(brochure?.url, `/api/vehicles/${vehicle.slug}/brochure`);
+  const contactPhoneHref = `tel:${contactPhone.replace(/[^0-9+]/g, "")}`;
+  const whatsappNumber = contactPhone.replace(/[^0-9]/g, "");
   // Keep the public app compatible with its independently generated Prisma client
   // while reading the optional showcase video added to the shared database schema.
   const showcaseRows = await prisma.$queryRaw<Array<{ views: unknown; videoUrl: string | null }>>(Prisma.sql`
@@ -157,7 +175,6 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
   const publicHeroImageUrl = publicMediaUrl(vehicle.heroImageUrl) || publicImageList[0] || '';
   const publicHeroVideoUrl = publicMediaUrl(vehicle.heroVideoUrl);
   const displayPrice = vehicle.finalPrice || vehicle.basePrice;
-  const formattedPrice = formatVehiclePrice(displayPrice);
   const badge = vehicle.badge || getAvailabilityBadge(vehicle.status || "published").label;
   const badgeColor = getAvailabilityBadge(vehicle.status || "published").color;
   const specs = (vehicle.specifications || {}) as any;
@@ -208,7 +225,6 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
     offers: {
       "@type": "Offer",
       priceCurrency: "ETB",
-      ...(vehicle.hidePrice ? {} : { price: displayPrice }),
       availability: "https://schema.org/InStock",
       seller: {
         "@type": "AutomotiveBusiness",
@@ -275,7 +291,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                   {badge}
                 </div>
                 <div className="text-2xl font-bold">
-                  {vehicle.hidePrice ? "Price on request" : `From ${formattedPrice}`}
+                  Price on request
                 </div>
                 <div className="text-sm text-blue-100">
                   {vehicle.brand?.name || "Geely"}
@@ -353,14 +369,14 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-3 flex flex-wrap gap-4 justify-between items-center">
           <div className="flex gap-5 flex-wrap">
             <a
-              href="tel:+251110000000"
+              href={contactPhoneHref}
               className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-geely-blue transition-colors"
             >
               <Phone size={16} />
               Call Us
             </a>
             <a
-              href={`https://wa.me/251110000000?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicle.name}`)}`}
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicle.name}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-geely-blue transition-colors"
@@ -496,9 +512,9 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                   </span>
                 </div>
                 <div>
-                  <span className="text-steel block mb-1">Starting Price</span>
+                  <span className="text-steel block mb-1">Pricing</span>
                   <span className="font-bold text-geely-blue text-lg">
-                    {vehicle.hidePrice ? "Price on request" : formattedPrice}
+                    Price on request
                   </span>
                 </div>
                 {publicHeroVideoUrl && (
@@ -664,7 +680,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                       {rv.name}
                     </h3>
                     <div className="text-sm text-steel">
-                      {rv.hidePrice ? "Price on request" : <>From <span className="text-ink font-bold">{formatVehiclePrice(rv.finalPrice || rv.basePrice)}</span></>}
+                      Price on request
                     </div>
                   </div>
                 </Link>
@@ -678,7 +694,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
       <StickyCTABar
         vehicleSlug={vehicle.slug}
         vehicleName={vehicle.name}
-        price={formattedPrice}
+        price="Price on request"
         brochureUrl={brochureUrl}
       />
     </MainLayout>

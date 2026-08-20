@@ -9,6 +9,17 @@ const config: Config = {
   ],
   darkMode: 'class',
   theme: {
+    // Bootstrap-style breakpoints, as requested: Mobile <576, Tablet 768-992,
+    // Desktop 992-1200, Extra Large 1200+. Replaces Tailwind's defaults (not
+    // theme.extend) — every existing sm:/md:/lg:/xl: class in the app
+    // retargets to these values app-wide.
+    screens: {
+      sm: '576px',
+      md: '768px',
+      lg: '992px',
+      xl: '1200px',
+      '2xl': '1536px',
+    },
     extend: {
       colors: {
         navy: "#0B2545",

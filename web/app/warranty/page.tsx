@@ -1,10 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
-import { CheckCircle, Shield, Clock, Wrench, FileText, Phone, Mail, MapPin } from "lucide-react";
+import { CheckCircle, Shield, Clock, Wrench, FileText, Phone, Mail, MapPin, Award, Car } from "lucide-react";
+
+interface WarrantySettings {
+  warranty: { vehicle: string; battery: string; paintwork: string; corrosion: string };
+  serviceIntervals: { standard: string; electric: string };
+}
+
+const FALLBACK_WARRANTY: WarrantySettings = {
+  warranty: {
+    vehicle: "5 Years or 150,000 km (whichever comes first)",
+    battery: "8 Years or 160,000 km (for EV battery packs)",
+    paintwork: "3 Years or 100,000 km against perforation",
+    corrosion: "12 Years Against Perforation Corrosion",
+  },
+  serviceIntervals: {
+    standard: "Every 10,000 km or 6 months",
+    electric: "Every 20,000 km or 12 months",
+  },
+};
+
+const FALLBACK_CONTACT = {
+  phone: "+251 91 123 4567",
+  phoneHref: "tel:+251911234567",
+  email: "warranty@geelyethiopia.com",
+};
 
 interface WarrantyClaimData {
   // Owner Information
@@ -38,6 +62,30 @@ export default function WarrantyPage() {
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<WarrantySettings>(FALLBACK_WARRANTY);
+  const [contact, setContact] = useState(FALLBACK_CONTACT);
+
+  useEffect(() => {
+    fetch("/api/public/vehicle-settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.warranty && setSettings(d))
+      .catch(() => {});
+
+    fetch("/api/public/contact-information")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const phone = d?.phone?.service || d?.phone?.primary;
+        const email = d?.email?.support || d?.email?.general;
+        if (phone || email) {
+          setContact((prev) => ({
+            phone: phone || prev.phone,
+            phoneHref: phone ? `tel:${phone.replace(/[^0-9+]/g, "")}` : prev.phoneHref,
+            email: email || prev.email,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const {
     register,
@@ -134,19 +182,15 @@ export default function WarrantyPage() {
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Shield className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">5-Year Coverage</h3>
-              <p className="text-xs text-steel">
-                Comprehensive protection for 5 years
-              </p>
+              <h3 className="font-bold text-navy mb-2">Vehicle Warranty</h3>
+              <p className="text-xs text-steel">{settings.warranty.vehicle}</p>
             </div>
             <div className="bg-white p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Clock className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">150,000 km</h3>
-              <p className="text-xs text-steel">
-                Or 150,000 kilometers, whichever comes first
-              </p>
+              <h3 className="font-bold text-navy mb-2">EV Battery Warranty</h3>
+              <p className="text-xs text-steel">{settings.warranty.battery}</p>
             </div>
             <div className="bg-white p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -275,120 +319,53 @@ export default function WarrantyPage() {
         </div>
       </section>
 
-      {/* Warranty Plans */}
+      {/* Warranty Coverage & Service Intervals */}
       <section className="py-16 bg-ice">
         <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="text-3xl font-bold text-navy text-center mb-12">Warranty Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Basic Warranty */}
+          <h2 className="text-3xl font-bold text-navy text-center mb-2">Warranty Coverage</h2>
+          <p className="text-center text-steel text-sm mb-12">Managed by our team and always kept current here</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-gray-500 to-gray-600 text-white p-6 text-center">
-                <h3 className="text-xl font-bold mb-2">Basic Warranty</h3>
-                <div className="text-3xl font-bold">5 Years</div>
-                <div className="text-sm opacity-90">or 150,000 km</div>
+              <div className="bg-gradient-to-r from-geely-blue to-blue-600 text-white p-5 flex items-center gap-3">
+                <Car size={20} />
+                <h3 className="font-bold">Vehicle Warranty</h3>
               </div>
-              <div className="p-6">
-                <p className="text-sm text-steel mb-4">Included with every new Geely vehicle</p>
-                <ul className="space-y-2 text-sm text-steel">
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Full powertrain coverage</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>All electrical systems</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Safety systems</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>24/7 roadside assistance</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Nationwide dealer network</span>
-                  </li>
-                </ul>
-              </div>
+              <div className="p-5 text-sm text-steel">{settings.warranty.vehicle}</div>
             </div>
-
-            {/* Extended Warranty */}
-            <div className="bg-white rounded-lg overflow-hidden border-2 border-geely-blue hover:shadow-xl transition-all relative">
-              <div className="absolute top-0 right-0 bg-gold text-navy text-xs font-bold px-3 py-1 rounded-bl">
-                POPULAR
-              </div>
-              <div className="bg-gradient-to-r from-geely-blue to-blue-600 text-white p-6 text-center">
-                <h3 className="text-xl font-bold mb-2">Extended Warranty</h3>
-                <div className="text-3xl font-bold">7 Years</div>
-                <div className="text-sm opacity-90">or 200,000 km</div>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-steel mb-4">Extra peace of mind for longer</p>
-                <ul className="space-y-2 text-sm text-steel">
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Everything in Basic</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>+2 years extended coverage</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Transferable to new owner</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Priority service scheduling</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Higher resale value</span>
-                  </li>
-                </ul>
-                <button className="w-full mt-6 bg-geely-blue text-white font-bold py-3 rounded hover:bg-opacity-90 transition-all">
-                  Learn More
-                </button>
-              </div>
-            </div>
-
-            {/* Premium Warranty */}
             <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white p-6 text-center">
-                <h3 className="text-xl font-bold mb-2">Premium Warranty</h3>
-                <div className="text-3xl font-bold">10 Years</div>
-                <div className="text-sm opacity-90">or 300,000 km</div>
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-5 flex items-center gap-3">
+                <Award size={20} />
+                <h3 className="font-bold">EV Battery Warranty</h3>
               </div>
-              <div className="p-6">
-                <p className="text-sm text-steel mb-4">Ultimate protection package</p>
-                <ul className="space-y-2 text-sm text-steel">
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Everything in Extended</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>10-year coverage</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Wear & tear items covered</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>Courtesy vehicle included</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
-                    <span>VIP service treatment</span>
-                  </li>
-                </ul>
-                <button className="w-full mt-6 border-2 border-geely-blue text-geely-blue font-bold py-3 rounded hover:bg-geely-blue hover:text-white transition-all">
-                  Contact Us
-                </button>
+              <div className="p-5 text-sm text-steel">{settings.warranty.battery}</div>
+            </div>
+            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
+              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-5 flex items-center gap-3">
+                <Shield size={20} />
+                <h3 className="font-bold">Paintwork Warranty</h3>
               </div>
+              <div className="p-5 text-sm text-steel">{settings.warranty.paintwork}</div>
+            </div>
+            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
+              <div className="bg-gradient-to-r from-slate-500 to-slate-600 text-white p-5 flex items-center gap-3">
+                <Shield size={20} />
+                <h3 className="font-bold">Corrosion Warranty</h3>
+              </div>
+              <div className="p-5 text-sm text-steel">{settings.warranty.corrosion}</div>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-navy text-center mt-16 mb-8">Recommended Service Intervals</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="bg-white rounded-lg border border-line p-6 text-center">
+              <Wrench className="text-geely-blue mx-auto mb-3" size={24} />
+              <h3 className="font-bold text-navy mb-1">Petrol / Hybrid</h3>
+              <p className="text-sm text-steel">{settings.serviceIntervals.standard}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-line p-6 text-center">
+              <Wrench className="text-geely-blue mx-auto mb-3" size={24} />
+              <h3 className="font-bold text-navy mb-1">Electric Vehicles</h3>
+              <p className="text-sm text-steel">{settings.serviceIntervals.electric}</p>
             </div>
           </div>
         </div>
@@ -415,7 +392,7 @@ export default function WarrantyPage() {
                 File a Claim Online
               </button>
               <a
-                href="tel:+251911234567"
+                href={contact.phoneHref}
                 className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white hover:text-geely-blue transition-all"
               >
                 Call Service Center
@@ -825,8 +802,8 @@ export default function WarrantyPage() {
               </div>
               <h3 className="font-bold text-navy mb-2">Call Us</h3>
               <p className="text-sm text-steel mb-2">Speak with our warranty team</p>
-              <a href="tel:+251911234567" className="text-geely-blue font-semibold hover:underline">
-                +251 91 123 4567
+              <a href={contact.phoneHref} className="text-geely-blue font-semibold hover:underline">
+                {contact.phone}
               </a>
             </div>
 
@@ -836,8 +813,8 @@ export default function WarrantyPage() {
               </div>
               <h3 className="font-bold text-navy mb-2">Email Us</h3>
               <p className="text-sm text-steel mb-2">Get detailed answers</p>
-              <a href="mailto:warranty@geelyethiopia.com" className="text-geely-blue font-semibold hover:underline">
-                warranty@geelyethiopia.com
+              <a href={`mailto:${contact.email}`} className="text-geely-blue font-semibold hover:underline">
+                {contact.email}
               </a>
             </div>
 

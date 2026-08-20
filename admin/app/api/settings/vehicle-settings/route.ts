@@ -1,40 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 const SETTING_KEY = 'vehicle_settings';
 const SETTING_TYPE = 'cms';
 
+// Real vehicle categories (shown in public catalog filters) are managed via
+// the VehicleCategory model at /admin/categories, not here — this Setting
+// blob previously duplicated that with an unused, never-read JSON array.
 const DEFAULT_VEHICLE_SETTINGS = {
-  categories: [
-    {
-      id: '1',
-      name: 'Sedans',
-      description: 'Comfortable and fuel-efficient sedans for daily commuting and family use.',
-      displayOrder: 1,
-      active: true,
-    },
-    {
-      id: '2',
-      name: 'SUVs',
-      description: 'Spacious and rugged SUVs for families and adventurous driving.',
-      displayOrder: 2,
-      active: true,
-    },
-    {
-      id: '3',
-      name: 'Electric Vehicles',
-      description: 'Zero-emission electric vehicles with advanced technology and impressive range.',
-      displayOrder: 3,
-      active: true,
-    },
-    {
-      id: '4',
-      name: 'Hatchbacks',
-      description: 'Compact and practical hatchbacks perfect for city driving.',
-      displayOrder: 4,
-      active: true,
-    },
-  ],
   features: {
     safety: [
       'ABS (Anti-lock Braking System)',
@@ -154,6 +128,9 @@ const DEFAULT_VEHICLE_SETTINGS = {
 };
 
 export async function GET() {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const setting = await prisma.setting.findUnique({
       where: { key: SETTING_KEY },
@@ -179,6 +156,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
+
+  if (!session!.user.permissions.canManageVehicles) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
 

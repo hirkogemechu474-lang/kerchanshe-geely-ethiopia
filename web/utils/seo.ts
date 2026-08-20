@@ -49,7 +49,6 @@ export function getOrganizationSchema() {
       url: 'https://kerchanshe.com',
     },
     areaServed: { '@type': 'Country', name: 'Ethiopia' },
-    priceRange: 'ETB 800,000 - 3,500,000',
     paymentAccepted: 'Cash, Bank Transfer, Financing',
     currenciesAccepted: 'ETB',
   };
@@ -131,7 +130,6 @@ export function getDealerSchema(dealer: Dealer) {
     ...(lat && lng && { geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } }),
     telephone: dealer.phone,
     email: dealer.email,
-    priceRange: 'ETB 800,000 - 3,500,000',
     url: `https://geelyethiopia.com/dealers/${dealer.id}`,
     parentOrganization: { '@type': 'AutomotiveBusiness', name: 'Geely Ethiopia' },
   };

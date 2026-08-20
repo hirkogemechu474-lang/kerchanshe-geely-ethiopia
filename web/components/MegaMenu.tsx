@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { ArrowRight, Car, Zap, Settings } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import type { VehicleRecord } from '@/lib/vehicleData';
-import { formatVehiclePrice } from '@/lib/vehicleData';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -160,9 +159,7 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
                             {vehicle.name}
                           </div>
                           <div className="text-xs text-geely-blue font-medium">
-                            {vehicle.hidePrice
-                              ? "Price on request"
-                              : formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}
+                            Price on request
                           </div>
                         </div>
                         <ArrowRight size={14} className="text-steel group-hover:text-geely-blue transition-colors flex-shrink-0" />
