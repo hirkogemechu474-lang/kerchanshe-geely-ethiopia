@@ -51,6 +51,8 @@ import {
   Palette,
   Images,
   LayoutPanelTop,
+  BarChart3,
+  ShoppingCart,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { useTheme } from './ThemeProvider';
@@ -210,6 +212,7 @@ const navSections: NavSection[] = [
         items: [
           { name: 'Test Drives', href: '/admin/test-drives', icon: Calendar, permission: 'canManageTestDrives' },
           { name: 'Quote Requests', href: '/admin/quotations', icon: FileText, permission: 'canViewQuotations' },
+          { name: 'Sales Orders', href: '/admin/orders', icon: ShoppingCart, permission: 'canViewQuotations' },
           { name: 'Parts Requests', href: '/admin/parts-requests', icon: FileText, permission: 'canManageSpareParts' },
           { name: 'Messages', href: '/admin/messages', icon: MessageSquare, permission: 'canViewMessages' },
         ],
@@ -218,6 +221,7 @@ const navSections: NavSection[] = [
         label: 'Service / Workshop',
         items: [
           { name: 'Live Dashboard', href: '/admin/workshop/dashboard', icon: Gauge, permission: 'canViewJobCards' },
+          { name: 'Management BI Dashboard', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
           { name: 'Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
           { name: 'Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canViewJobCards' },
           { name: 'Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },
