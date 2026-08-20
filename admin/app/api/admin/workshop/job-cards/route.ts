@@ -60,6 +60,11 @@ export async function POST(request: NextRequest) {
       bayId,
       scheduledStart,
       scheduledEnd,
+      // Phase 6 — Customer/Vehicle ownership (BRD FR-501, UC-01, UC-04):
+      customerVehicleId, // advisor confirmed a vehicle-lookup match
+      saveAsNewVehicleRecord, // advisor chose to save this as a new record
+      warrantyStartDate,
+      warrantyEndDate,
     } = body;
 
     if (!plateNo || !customerName || !customerPhone || !complaintText) {
@@ -67,6 +72,44 @@ export async function POST(request: NextRequest) {
         { error: 'plateNo, customerName, customerPhone, and complaintText are required' },
         { status: 400 }
       );
+    }
+
+    // Resolve vehicle-ownership linkage before creating the job card so its
+    // warranty dates can be derived rather than trusted blindly from the
+    // client. Two paths only — never an implicit background match, so the
+    // advisor is always the one who decided this via the lookup UI.
+    let resolvedCustomerVehicleId: string | null = null;
+    let resolvedWarrantyStart = warrantyStartDate ? new Date(warrantyStartDate) : null;
+    let resolvedWarrantyEnd = warrantyEndDate ? new Date(warrantyEndDate) : null;
+
+    if (customerVehicleId) {
+      const matched = await prisma.customerVehicle.findUnique({ where: { id: customerVehicleId } });
+      if (!matched) {
+        return NextResponse.json({ error: 'Selected vehicle record was not found' }, { status: 400 });
+      }
+      resolvedCustomerVehicleId = matched.id;
+      resolvedWarrantyStart = matched.warrantyStartDate;
+      resolvedWarrantyEnd = matched.warrantyEndDate;
+    } else if (saveAsNewVehicleRecord) {
+      // UC-01 dedupe rule: match an existing customer by phone before
+      // creating a duplicate.
+      let customer = await prisma.customer.findFirst({ where: { phone: customerPhone } });
+      if (!customer) {
+        customer = await prisma.customer.create({
+          data: { fullName: customerName, phone: customerPhone, email: customerEmail || null },
+        });
+      }
+      const newVehicle = await prisma.customerVehicle.create({
+        data: {
+          customerId: customer.id,
+          vin: vin || null,
+          plateNo,
+          model: vehicleModel || null,
+          warrantyStartDate: resolvedWarrantyStart,
+          warrantyEndDate: resolvedWarrantyEnd,
+        },
+      });
+      resolvedCustomerVehicleId = newVehicle.id;
     }
 
     // BR-008: a bay cannot be double-booked for overlapping time windows.
@@ -95,6 +138,9 @@ export async function POST(request: NextRequest) {
         customerPhone,
         customerEmail: customerEmail || null,
         complaintText,
+        customerVehicleId: resolvedCustomerVehicleId,
+        warrantyStartDate: resolvedWarrantyStart,
+        warrantyEndDate: resolvedWarrantyEnd,
         technicianId: technicianId || null,
         bayId: bayId || null,
         scheduledStart: scheduledStart ? new Date(scheduledStart) : null,

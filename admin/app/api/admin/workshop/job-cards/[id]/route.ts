@@ -15,6 +15,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       statusHistory: { orderBy: { changedAt: 'asc' } },
       jobCardParts: { include: { sparePart: true }, orderBy: { requestedAt: 'asc' } },
       warrantyClaims: { orderBy: { createdAt: 'desc' } },
+      customerVehicle: {
+        include: {
+          customer: { select: { fullName: true, phone: true } },
+          jobCards: { select: { id: true }, orderBy: { openTs: 'desc' } },
+        },
+      },
     },
   });
 

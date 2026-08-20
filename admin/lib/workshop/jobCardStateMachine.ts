@@ -8,6 +8,7 @@ export interface JobCardTransitionContext {
   isWarrantyOrGoodwill: boolean;
   customerApprovedAt: Date | null;
   qcPassed: boolean | null;
+  complaintText: string | null;
 }
 
 // Forward flow (BRD §14.1): Draft/Check-in -> Diagnosis/Estimate -> Awaiting
@@ -60,6 +61,13 @@ export function assertTransitionAllowed(
 
   if (!FORWARD_TRANSITIONS[from].includes(to)) {
     throw new JobCardTransitionError(`Cannot move a job card from ${from} to ${to}.`);
+  }
+
+  // A kiosk self-check-in (BRD Screen 3) creates a job card with no
+  // complaint yet — an advisor must capture it before the job can move
+  // anywhere except being cancelled.
+  if (from === 'DRAFT_CHECKIN' && to !== 'CANCELLED' && !ctx.complaintText?.trim()) {
+    throw new JobCardTransitionError('Capture the customer complaint before proceeding past check-in.');
   }
 
   // BR-004: cannot start repair work until the customer has approved the

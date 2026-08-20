@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { assertTransitionAllowed, JobCardTransitionError } from '@/lib/workshop/jobCardStateMachine';
+import { sendJobCardMilestoneNotification } from '@/lib/workshop/customerNotifications';
+import { sendCsiSurveyInvite } from '@/lib/workshop/csiSurvey';
 import type { JobCardStatus } from '@prisma/client';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       isWarrantyOrGoodwill: jobCard.isWarrantyOrGoodwill,
       customerApprovedAt: jobCard.customerApprovedAt,
       qcPassed: isQcOutcome ? (qcPassed ?? jobCard.qcPassed) : jobCard.qcPassed,
+      complaintText: jobCard.complaintText,
     });
   } catch (err) {
     if (err instanceof JobCardTransitionError) {
@@ -81,5 +84,32 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return result;
   });
 
-  return NextResponse.json({ jobCard: updated });
+  // FR-601: fire the milestone notification outside the transaction so a
+  // slow/misconfigured provider never blocks or rolls back the status
+  // change itself. sendJobCardMilestoneNotification never throws.
+  const notification = await sendJobCardMilestoneNotification(
+    {
+      customerEmail: jobCard.customerEmail,
+      customerPhone: jobCard.customerPhone,
+      customerName: jobCard.customerName,
+      jobCardNo: jobCard.jobCardNo,
+    },
+    jobCard.status,
+    toStatus
+  );
+
+  // FR-602/UC-16: the CSI survey invite is triggered automatically on
+  // closure — never manually by staff — so it lives here, not on a separate
+  // staff-facing action.
+  const csiSurveyInvite =
+    toStatus === 'INVOICED_CLOSED'
+      ? await sendCsiSurveyInvite({
+          id: jobCard.id,
+          jobCardNo: jobCard.jobCardNo,
+          customerEmail: jobCard.customerEmail,
+          customerName: jobCard.customerName,
+        })
+      : null;
+
+  return NextResponse.json({ jobCard: updated, notification, csiSurveyInvite });
 }

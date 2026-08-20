@@ -59,7 +59,7 @@ interface JobCardData {
   customerName: string;
   customerPhone: string;
   customerEmail: string | null;
-  complaintText: string;
+  complaintText: string | null;
   diagnosisNotes: string | null;
   estimateAmount: number | null;
   isWarrantyOrGoodwill: boolean;
@@ -75,6 +75,11 @@ interface JobCardData {
   statusHistory: StatusHistoryEntry[];
   jobCardParts: JobCardPartLine[];
   warrantyClaims: WarrantyClaimSummary[];
+  customerVehicle: {
+    id: string;
+    customer: { fullName: string; phone: string };
+    jobCards: { id: string }[];
+  } | null;
 }
 
 export default function JobCardDetail({
@@ -93,9 +98,14 @@ export default function JobCardDetail({
   const router = useRouter();
   const [state, setState] = useState(jobCard);
   const [diagnosisNotes, setDiagnosisNotes] = useState(state.diagnosisNotes || '');
+  const [complaintDraft, setComplaintDraft] = useState(state.complaintText || '');
   const [estimateAmount, setEstimateAmount] = useState(state.estimateAmount?.toString() || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notificationFeedback, setNotificationFeedback] = useState<{
+    milestone: string;
+    results: { channel: string; success: boolean; reason?: string }[];
+  } | null>(null);
   const [qcNotes, setQcNotes] = useState('');
   const [partSparePartId, setPartSparePartId] = useState('');
   const [partQuantity, setPartQuantity] = useState('1');
@@ -134,6 +144,7 @@ export default function JobCardDetail({
   const transition = async (toStatus: string, extra: Record<string, unknown> = {}) => {
     setBusy(true);
     setError('');
+    setNotificationFeedback(null);
     try {
       const res = await fetch(`/api/admin/workshop/job-cards/${state.id}/status`, {
         method: 'PATCH',
@@ -142,6 +153,17 @@ export default function JobCardDetail({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Transition failed');
+      if (data.notification) {
+        const results = [...data.notification.results];
+        if (data.csiSurveyInvite) {
+          results.push({
+            channel: 'CSI Survey',
+            success: data.csiSurveyInvite.success,
+            reason: data.csiSurveyInvite.reason,
+          });
+        }
+        setNotificationFeedback({ milestone: data.notification.milestone, results });
+      }
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -218,6 +240,7 @@ export default function JobCardDetail({
     isWarrantyOrGoodwill: state.isWarrantyOrGoodwill,
     customerApprovedAt: state.customerApprovedAt ? new Date(state.customerApprovedAt) : null,
     qcPassed: state.qcPassed,
+    complaintText: state.complaintText,
   });
 
   const isQcStage = state.status === 'QUALITY_CONTROL';
@@ -235,6 +258,14 @@ export default function JobCardDetail({
               {state.mileage ? ` · ${state.mileage.toLocaleString()} km` : ''}
             </p>
             <p className="text-sm text-gray-500">{state.customerName} · {state.customerPhone}{state.customerEmail ? ` · ${state.customerEmail}` : ''}</p>
+            {state.customerVehicle && (
+              <p className="text-xs text-blue-600 mt-1">
+                Linked vehicle record
+                {state.customerVehicle.jobCards.length > 1
+                  ? ` · ${state.customerVehicle.jobCards.length - 1} other visit${state.customerVehicle.jobCards.length - 1 === 1 ? '' : 's'} on file`
+                  : ' · first visit on file'}
+              </p>
+            )}
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${JOB_CARD_STATUS_COLORS[state.status as keyof typeof JOB_CARD_STATUS_COLORS]}`}>
             {JOB_CARD_STATUS_LABELS[state.status as keyof typeof JOB_CARD_STATUS_LABELS]}
@@ -242,11 +273,54 @@ export default function JobCardDetail({
         </div>
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="text-xs font-medium text-gray-500 uppercase mb-1">Customer complaint</div>
-          <p className="text-sm text-gray-800">{state.complaintText}</p>
+          {!state.complaintText && (
+            <p className="text-xs text-orange-600 mb-2">
+              No complaint on file yet — this job card was created via self check-in. Capture it before proceeding.
+            </p>
+          )}
+          {permissions.canManageJobCards ? (
+            <div className="space-y-2">
+              <textarea
+                rows={2}
+                value={complaintDraft}
+                onChange={(e) => setComplaintDraft(e.target.value)}
+                placeholder="What did the customer report?"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              {complaintDraft !== (state.complaintText || '') && (
+                <Button
+                  variant="secondary"
+                  onClick={() => patchFields({ complaintText: complaintDraft })}
+                  disabled={busy || !complaintDraft.trim()}
+                >
+                  Save Complaint
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-800">{state.complaintText || '—'}</p>
+          )}
         </div>
       </Card>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+
+      {notificationFeedback && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded-lg px-4 py-3 space-y-1.5">
+          <p className="font-medium">Customer notification — {notificationFeedback.milestone.replace(/_/g, ' ')}</p>
+          <ul className="space-y-1">
+            {notificationFeedback.results.map((r) => (
+              <li key={r.channel} className="flex items-start gap-2">
+                <span className={`mt-1.5 inline-block w-1.5 h-1.5 rounded-full shrink-0 ${r.success ? 'bg-green-500' : 'bg-orange-400'}`} />
+                <span>
+                  <span className="capitalize font-medium">{r.channel}:</span>{' '}
+                  {r.success ? 'Sent' : r.reason || 'Not sent'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Assignment */}
       <Card className="grid grid-cols-1 md:grid-cols-2 gap-4">

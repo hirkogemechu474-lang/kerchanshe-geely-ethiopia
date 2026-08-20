@@ -16,6 +16,12 @@ export default async function JobCardDetailPage({ params }: { params: Promise<{ 
         statusHistory: { orderBy: { changedAt: 'asc' } },
         jobCardParts: { include: { sparePart: true }, orderBy: { requestedAt: 'asc' } },
         warrantyClaims: { orderBy: { createdAt: 'desc' } },
+        customerVehicle: {
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+            jobCards: { select: { id: true }, orderBy: { openTs: 'desc' } },
+          },
+        },
       },
     }),
     prisma.technician.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
