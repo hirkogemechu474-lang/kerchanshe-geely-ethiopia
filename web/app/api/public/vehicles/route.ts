@@ -17,7 +17,12 @@ export async function GET(request: Request) {
     };
 
     if (category && category !== 'all') {
-      where.category = category;
+      // `category` may be a real VehicleCategory.slug (the system used by /admin/categories)
+      // or the legacy free-text `category` column on older vehicles — match either.
+      where.OR = [
+        { vehicleCategory: { slug: category } },
+        { category },
+      ];
     }
 
     if (featured === 'true') {
@@ -37,6 +42,9 @@ export async function GET(request: Request) {
         model: true,
         year: true,
         category: true,
+        categoryId: true,
+        vehicleCategory: { select: { id: true, name: true, slug: true } },
+        badge: true,
         description: true,
         images: true,
         specifications: true,

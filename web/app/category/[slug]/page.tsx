@@ -206,9 +206,9 @@ export default function CategoryPage() {
               {category.vehicles.map((vehicle) => {
                 const images = Array.isArray(vehicle.images) ? vehicle.images : [];
                 const mainImage = vehicle.heroImageUrl || images[0] || '/placeholder-vehicle.jpg';
-                const specs = vehicle.specifications || {};
-                const range = specs.range || null;
-                const battery = specs.battery || null;
+                const specs = (vehicle.specifications || {}) as any;
+                const range = specs.engine?.range || specs.performance?.range || null;
+                const battery = specs.engine?.batteryCapacity || specs.performance?.batteryCapacity || null;
 
                 return (
                   <div 

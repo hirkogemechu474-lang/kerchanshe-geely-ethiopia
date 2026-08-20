@@ -356,10 +356,10 @@ export default async function ElectricPage() {
                           <div className="text-xs text-steel font-semibold">Driving Range</div>
                         </div>
                       )}
-                      {(featuredEV.specifications as any).battery?.capacity && (
+                      {(featuredEV.specifications as any).performance?.batteryCapacity && (
                         <div className="bg-white p-4 rounded-lg border border-line">
                           <div className="text-2xl font-bold text-green-600 mb-1">
-                            {(featuredEV.specifications as any).battery.capacity}
+                            {(featuredEV.specifications as any).performance.batteryCapacity}
                           </div>
                           <div className="text-xs text-steel font-semibold">Battery Capacity</div>
                         </div>
@@ -477,10 +477,10 @@ export default async function ElectricPage() {
                             <div className="font-bold text-navy">{(vehicle.specifications as any).performance.range}</div>
                           </div>
                         )}
-                        {(vehicle.specifications as any).battery?.capacity && (
+                        {(vehicle.specifications as any).performance?.batteryCapacity && (
                           <div className="bg-ice p-2 rounded">
                             <div className="text-steel">Battery</div>
-                            <div className="font-bold text-navy">{(vehicle.specifications as any).battery.capacity}</div>
+                            <div className="font-bold text-navy">{(vehicle.specifications as any).performance.batteryCapacity}</div>
                           </div>
                         )}
                       </div>

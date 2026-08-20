@@ -27,6 +27,13 @@ export interface CanonicalSpecSections {
     drivetrain: string;
     fuelType: string;
     fuelEconomy: string;
+    /** EV-specific — also dual-written to legacy `engine.range`/`engine.batteryCapacity`/`engine.acceleration`, which
+     *  `web/app/models/[id]/page.tsx` and `web/app/compare/page.tsx` already read; `web/app/electric/page.tsx` and
+     *  `web/app/category/[slug]/page.tsx` were fixed to read the same fields instead of nonexistent paths they'd
+     *  previously guessed at (a `battery.capacity` object, a flat top-level `specs.range`). */
+    range: string;
+    batteryCapacity: string;
+    acceleration: string;
   };
   safety: {
     airbags: string;
@@ -67,7 +74,7 @@ export interface CanonicalSpecSections {
 }
 
 export const EMPTY_CANONICAL_SECTIONS: CanonicalSpecSections = {
-  performance: { type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '' },
+  performance: { type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '', range: '', batteryCapacity: '', acceleration: '' },
   safety: { airbags: '', abs: '', esc: '', tpms: '', cameras: '', sensors: '', adas: '' },
   technology: { infotainment: '', connectivity: '' },
   interior: { climate: '', seats: '', seatingCapacity: '', cargoVolume: '' },
