@@ -10,6 +10,8 @@ import InventoryManager from './InventoryManager';
 interface VehicleFormProps {
   mode: 'create' | 'edit';
   initialData?: any;
+  /** Opens the wizard directly on this step (e.g. deep-linked from Gallery & Videos or Vehicle Sections). */
+  initialStep?: number;
 }
 
 const EMPTY_SPECIFICATIONS = {
@@ -70,8 +72,8 @@ function normalizeInventory(vehicle: any) {
   };
 }
 
-export default function VehicleForm({ mode, initialData }: VehicleFormProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+export default function VehicleForm({ mode, initialData, initialStep }: VehicleFormProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep && initialStep >= 1 && initialStep <= 5 ? initialStep : 1);
   const [formData, setFormData] = useState({
     // Basic Information
     name: initialData?.name ?? '',

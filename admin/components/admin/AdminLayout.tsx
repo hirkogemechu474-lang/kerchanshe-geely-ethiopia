@@ -46,6 +46,11 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Layers,
+  ListChecks,
+  Palette,
+  Images,
+  LayoutPanelTop,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { useTheme } from './ThemeProvider';
@@ -132,6 +137,12 @@ const navSections: NavSection[] = [
         items: [
           { name: 'All Vehicles', href: '/admin/vehicles', icon: Car, permission: 'canManageVehicles' },
           { name: 'Categories', href: '/admin/categories', icon: FolderTree, permission: 'canManageVehicles' },
+          { name: 'Models & Variants', href: '/admin/vehicles/models-variants', icon: Layers, permission: 'canManageVehicles' },
+          { name: 'Specifications', href: '/admin/vehicles/specifications', icon: Gauge, permission: 'canManageVehicles' },
+          { name: 'Features', href: '/admin/vehicles/features', icon: ListChecks, permission: 'canManageVehicles' },
+          { name: 'Colors', href: '/admin/vehicles/colors', icon: Palette, permission: 'canManageVehicles' },
+          { name: 'Gallery & Videos', href: '/admin/vehicles/gallery', icon: Images, permission: 'canManageVehicles' },
+          { name: 'Vehicle Sections', href: '/admin/vehicles/sections', icon: LayoutPanelTop, permission: 'canManageVehicles' },
           { name: 'Vehicle Settings', href: '/admin/vehicles/settings', icon: Settings, permission: 'canManageVehicles' },
         ],
       },

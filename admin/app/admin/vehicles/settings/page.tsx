@@ -4,16 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Save,
-  Car,
   Settings,
-  ShieldCheck,
-  Sofa,
-  Radio,
-  Gauge,
   Award,
   RefreshCw,
   Plus,
-  X,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -29,18 +23,6 @@ import {
 
 /* ---------- TYPES ---------- */
 interface VehicleSettingsData {
-  features: {
-    safety: string[];
-    comfort: string[];
-    technology: string[];
-    performance: string[];
-  };
-  specifications: {
-    engine: string[];
-    transmission: string[];
-    fuelType: string[];
-    driveType: string[];
-  };
   warranty: {
     vehicle: string;
     battery: string;
@@ -83,18 +65,6 @@ interface Showcase {
 
 /* ---------- DEFAULTS ---------- */
 const DEFAULT_DATA: VehicleSettingsData = {
-  features: {
-    safety: ['ABS + EBD', 'Dual Front Airbags', 'Reverse Camera + Sensors'],
-    comfort: ['Automatic Climate Control', 'Leather Upholstery', 'Power-Adjustable Driver Seat'],
-    technology: ['10.25" Touchscreen', 'Apple CarPlay & Android Auto', 'Bluetooth Audio'],
-    performance: ['Turbocharged Option', '7-Speed DCT', 'Drive Mode Select'],
-  },
-  specifications: {
-    engine: ['1.5T Turbo Petrol - 173 HP'],
-    transmission: ['7-Speed DCT', 'CVT'],
-    fuelType: ['Petrol', 'Battery EV'],
-    driveType: ['Front-Wheel Drive'],
-  },
   warranty: {
     vehicle: '5 Years or 150,000 km (whichever comes first)',
     battery: '8 Years or 160,000 km (EV battery)',
@@ -142,18 +112,6 @@ export default function VehicleSettingsPage() {
         if (res.ok) {
           const raw = await res.json();
           setData({
-            features: {
-              safety: Array.isArray(raw.features?.safety) ? raw.features.safety : DEFAULT_DATA.features.safety,
-              comfort: Array.isArray(raw.features?.comfort) ? raw.features.comfort : DEFAULT_DATA.features.comfort,
-              technology: Array.isArray(raw.features?.technology) ? raw.features.technology : DEFAULT_DATA.features.technology,
-              performance: Array.isArray(raw.features?.performance) ? raw.features.performance : DEFAULT_DATA.features.performance,
-            },
-            specifications: {
-              engine: Array.isArray(raw.specifications?.engine) ? raw.specifications.engine : DEFAULT_DATA.specifications.engine,
-              transmission: Array.isArray(raw.specifications?.transmission) ? raw.specifications.transmission : DEFAULT_DATA.specifications.transmission,
-              fuelType: Array.isArray(raw.specifications?.fuelType) ? raw.specifications.fuelType : DEFAULT_DATA.specifications.fuelType,
-              driveType: Array.isArray(raw.specifications?.driveType) ? raw.specifications.driveType : DEFAULT_DATA.specifications.driveType,
-            },
             warranty: { ...DEFAULT_DATA.warranty, ...(raw.warranty ?? {}) },
             serviceIntervals: { ...DEFAULT_DATA.serviceIntervals, ...(raw.serviceIntervals ?? {}) },
             brochure: { ...DEFAULT_DATA.brochure, ...(raw.brochure ?? {}) },
@@ -190,16 +148,6 @@ export default function VehicleSettingsPage() {
       setSaving(false);
     }
   };
-
-  const setFeatureGroup = (
-    key: 'safety' | 'comfort' | 'technology' | 'performance',
-    fn: (prev: string[]) => string[]
-  ) => setData((d) => ({ ...d, features: { ...d.features, [key]: fn(d.features[key]) } }));
-
-  const setSpecGroup = (
-    key: 'engine' | 'transmission' | 'fuelType' | 'driveType',
-    fn: (prev: string[]) => string[]
-  ) => setData((d) => ({ ...d, specifications: { ...d.specifications, [key]: fn(d.specifications[key]) } }));
 
   async function fetchShowcases() {
     try {
@@ -404,8 +352,6 @@ export default function VehicleSettingsPage() {
   /* ---------- TABS ---------- */
   const TABS = [
     { id: 'all', label: 'All Sections', icon: Settings, hint: 'Full overview' },
-    { id: 'features', label: 'Features', icon: ShieldCheck, count: Object.values(data.features).flat().length, hint: '4 feature groups' },
-    { id: 'specs', label: 'Specifications', icon: Gauge, count: Object.values(data.specifications).flat().length, hint: 'Engine, gearbox, fuel' },
     { id: 'warranty', label: 'Warranty', icon: Award, hint: 'Service intervals' },
     { id: '360', label: '360° View', icon: Layers, count: showcases.length, hint: 'Interactive showcase' },
   ];
@@ -428,7 +374,9 @@ export default function VehicleSettingsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Vehicle Settings</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Features, specs, and warranty that appear across the public website — vehicle categories are managed under Vehicles → Categories
+            Warranty, service intervals, brochure, and 360° showcase that appear across the public website —
+            categories are managed under Vehicles → Categories, feature/spec reference lists under
+            Vehicles → Features / Specifications
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -457,31 +405,19 @@ export default function VehicleSettingsPage() {
             const Icon = tab.icon;
             const active = section === tab.id;
             const gradient =
-              tab.id === 'features'
-                ? 'from-teal-500 to-teal-600'
-                : tab.id === 'specs'
-                ? 'from-orange-500 to-orange-600'
-                : tab.id === 'warranty'
+              tab.id === 'warranty'
                 ? 'from-emerald-500 to-emerald-600'
                 : tab.id === '360'
                 ? 'from-fuchsia-500 to-pink-600'
                 : 'from-violet-500 to-violet-600';
             const textColor =
-              tab.id === 'features'
-                ? 'text-teal-600'
-                : tab.id === 'specs'
-                ? 'text-orange-600'
-                : tab.id === 'warranty'
+              tab.id === 'warranty'
                 ? 'text-emerald-600'
                 : tab.id === '360'
                 ? 'text-fuchsia-600'
                 : 'text-violet-600';
             const bgColor =
-              tab.id === 'features'
-                ? 'bg-teal-50'
-                : tab.id === 'specs'
-                ? 'bg-orange-50'
-                : tab.id === 'warranty'
+              tab.id === 'warranty'
                 ? 'bg-emerald-50'
                 : tab.id === '360'
                 ? 'bg-fuchsia-50'
@@ -536,86 +472,6 @@ export default function VehicleSettingsPage() {
             <div className="text-sm">{error}</div>
           </div>
         </div>
-      )}
-
-      {/* FEATURES */}
-      {(section === 'all' || section === 'features') && (
-        <SectionCard id="sec-features" title="Vehicle Features" subtitle="Shown on vehicle detail pages and filter chips" icon={ShieldCheck} gradient="from-teal-500 to-teal-600" accent="teal">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FeatureGroup
-              title="Safety"
-              icon={ShieldCheck}
-              items={data.features.safety}
-              accent="blue"
-              placeholder="e.g. Tire Pressure Monitoring System"
-              onChange={(next) => setFeatureGroup('safety', () => next)}
-            />
-            <FeatureGroup
-              title="Comfort & Interior"
-              icon={Sofa}
-              items={data.features.comfort}
-              accent="amber"
-              placeholder="e.g. Heated steering wheel"
-              onChange={(next) => setFeatureGroup('comfort', () => next)}
-            />
-            <FeatureGroup
-              title="Technology & Infotainment"
-              icon={Radio}
-              items={data.features.technology}
-              accent="violet"
-              placeholder="e.g. Wireless Apple CarPlay"
-              onChange={(next) => setFeatureGroup('technology', () => next)}
-            />
-            <FeatureGroup
-              title="Performance & Driving"
-              icon={Gauge}
-              items={data.features.performance}
-              accent="orange"
-              placeholder="e.g. Paddle shifters"
-              onChange={(next) => setFeatureGroup('performance', () => next)}
-            />
-          </div>
-        </SectionCard>
-      )}
-
-      {/* SPECIFICATIONS */}
-      {(section === 'all' || section === 'specs') && (
-        <SectionCard id="sec-specs" title="Technical Specifications" subtitle="Available options shown on vehicle pages and filters" icon={Gauge} gradient="from-orange-500 to-orange-600" accent="orange">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FeatureGroup
-              title="Engine Options"
-              icon={Gauge}
-              items={data.specifications.engine}
-              accent="blue"
-              placeholder="e.g. 2.0L Turbo Petrol - 238 HP"
-              onChange={(next) => setSpecGroup('engine', () => next)}
-            />
-            <FeatureGroup
-              title="Transmission Options"
-              icon={Settings}
-              items={data.specifications.transmission}
-              accent="teal"
-              placeholder="e.g. 6-Speed Manual"
-              onChange={(next) => setSpecGroup('transmission', () => next)}
-            />
-            <FeatureGroup
-              title="Fuel / Energy Type"
-              icon={Gauge}
-              items={data.specifications.fuelType}
-              accent="emerald"
-              placeholder="e.g. Plug-in Hybrid (PHEV)"
-              onChange={(next) => setSpecGroup('fuelType', () => next)}
-            />
-            <FeatureGroup
-              title="Drivetrain Options"
-              icon={Car}
-              items={data.specifications.driveType}
-              accent="violet"
-              placeholder="e.g. All-Wheel Drive (AWD)"
-              onChange={(next) => setSpecGroup('driveType', () => next)}
-            />
-          </div>
-        </SectionCard>
       )}
 
       {/* WARRANTY */}
@@ -1130,87 +986,6 @@ function SectionCard({
       </div>
       <div className="p-5">{children}</div>
     </section>
-  );
-}
-
-function FeatureGroup({
-  title, icon: Icon, items, accent, placeholder, onChange,
-}: {
-  title: string;
-  icon: any;
-  items: string[];
-  accent: 'blue' | 'teal' | 'emerald' | 'amber' | 'violet' | 'orange' | 'slate';
-  placeholder: string;
-  onChange: (next: string[]) => void;
-}) {
-  const [draft, setDraft] = useState('');
-  const add = () => {
-    const v = draft.trim();
-    if (!v) return;
-    onChange([...items, v]);
-    setDraft('');
-  };
-  const accentMap: Record<string, string> = {
-    blue: 'from-blue-500 to-blue-600 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100',
-    teal: 'from-teal-500 to-teal-600 bg-teal-50 text-teal-600 border-teal-200 hover:bg-teal-100',
-    emerald: 'from-emerald-500 to-emerald-600 bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100',
-    amber: 'from-amber-500 to-amber-600 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
-    violet: 'from-violet-500 to-violet-600 bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100',
-    orange: 'from-orange-500 to-orange-600 bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100',
-    slate: 'from-slate-500 to-slate-600 bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100',
-  };
-  const cls = accentMap[accent];
-  const [_from, _to, bgColor, textColor, borderColor, hoverBg] = cls.split(' ');
-  return (
-    <div className={`rounded-xl border ${borderColor} bg-white`}>
-      <div className={`flex items-center gap-3 px-4 py-3 border-b ${borderColor} ${bgColor} rounded-t-xl`}>
-        <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${_from} ${_to} flex items-center justify-center shrink-0 shadow-sm`}>
-          <Icon className="w-4.5 h-4.5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className={`font-bold text-sm ${textColor}`}>{title}</div>
-          <div className="text-xs text-gray-500">{items.length} feature{items.length === 1 ? '' : 's'}</div>
-        </div>
-      </div>
-      <div className="p-4 space-y-4">
-        <div className="flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
-            placeholder={placeholder}
-            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-offset-0 focus:ring-blue-500 focus:border-transparent"
-          />
-          <button
-            onClick={add}
-            className={`inline-flex items-center justify-center gap-1 px-3 py-2 ${bgColor} ${textColor} border ${borderColor} rounded-lg text-sm font-medium hover:${hoverBg} transition-colors shrink-0`}
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
-          {items.length === 0 && (
-            <div className="text-xs italic text-gray-400 py-1 px-1">No {title.toLowerCase()} added yet</div>
-          )}
-          {items.map((it, i) => (
-            <div
-              key={i}
-              className={`group inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 ${bgColor} ${textColor} border ${borderColor} rounded-full text-sm transition-all hover:shadow-sm`}
-            >
-              <span className="max-w-[min(48ch,60vw)] truncate">{it}</span>
-              <button
-                onClick={() => onChange(items.filter((_, j) => i !== j))}
-                aria-label="Remove"
-                className={`p-0.5 rounded-full text-current/70 hover:bg-white hover:text-red-600 transition-colors`}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 

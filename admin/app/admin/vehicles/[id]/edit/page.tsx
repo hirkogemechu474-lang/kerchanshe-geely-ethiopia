@@ -5,12 +5,15 @@ import VehicleForm from '@/components/admin/vehicles/VehicleForm';
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ step?: string }>;
 }
 
-export default async function EditVehiclePage({ params }: Props) {
+export default async function EditVehiclePage({ params, searchParams }: Props) {
   await requirePermission('canManageVehicles');
 
   const { id } = await params;
+  const { step } = await searchParams;
+  const initialStep = step ? parseInt(step, 10) : undefined;
 
   // Fetch vehicle from database
   const vehicle = await prisma.vehicle.findUnique({
@@ -32,7 +35,7 @@ export default async function EditVehiclePage({ params }: Props) {
         </div>
       </div>
 
-      <VehicleForm mode="edit" initialData={vehicle} />
+      <VehicleForm mode="edit" initialData={vehicle} initialStep={initialStep} />
     </div>
   );
 }

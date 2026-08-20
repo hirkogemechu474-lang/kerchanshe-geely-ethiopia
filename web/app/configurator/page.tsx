@@ -75,7 +75,13 @@ export default function ConfiguratorPage() {
         if (!active) return;
         setApiOptions(data ? {
           trims: Array.isArray(data.packages) ? data.packages.map((item: { id: string; name: string; price: number; features?: unknown }) => ({ id: item.id, name: item.name, price: item.price, features: Array.isArray(item.features) ? item.features.filter((feature): feature is string => typeof feature === 'string') : [] })) : [],
-          colors: Array.isArray(data.colors) ? data.colors.map((item: ColorOption) => ({ ...item, hex: item.hex || '#E5E7EB' })) : [],
+          colors: Array.isArray(data.colors) ? data.colors.map((item: { id: string; name: string; colorCode?: string; price: number; imageUrl?: string | null }) => ({
+            id: item.id,
+            name: item.name,
+            hex: item.colorCode || '#E5E7EB',
+            price: item.price,
+            image: item.imageUrl || undefined,
+          })) : [],
           wheels: [],
         } : null);
       })
