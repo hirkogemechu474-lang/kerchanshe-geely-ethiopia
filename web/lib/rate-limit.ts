@@ -183,6 +183,14 @@ export const rateLimitConfigs = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 10,
     message: 'Too many check-in attempts. Please ask the front desk for assistance.'
+  },
+
+  // Live VIN-scan lookup at the kiosk — read-only, called on every
+  // scan/keystroke so it needs more headroom than the check-in submission itself.
+  serviceCheckInLookup: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 60,
+    message: 'Too many lookups. Please ask the front desk for assistance.'
   }
 };
 

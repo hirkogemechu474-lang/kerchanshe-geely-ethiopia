@@ -265,6 +265,35 @@ drift.
   `serviceBookingId`; a second check-in with the same phone correctly fell back to a walk-in
   instead of double-linking. All test records deleted afterward.
 
+## Delivered in Phase 13 — VIN Barcode Check-in at the Kiosk
+
+A direct user request, not a BRD line item: "when customer come it checkin by barcode." Clarified
+to mean scanning the vehicle's own VIN barcode (present on most vehicles' dash/doorjamb) rather
+than a booking-confirmation QR code or a loyalty card — the lower-effort option since it needs no
+new code generated/delivered at booking time and reuses the `CustomerVehicle` matching already
+built in Phase 6/7.
+
+| What shipped | Where |
+|---|---|
+| VIN-first kiosk flow | The VIN field is now the lead field, auto-focused on page load, sized and styled for a barcode scanner's output. A physical keyboard-wedge scanner (the common, cheap kind that emulates a keyboard) needs zero special handling — it just types into the focused field and sends Enter, which the field now explicitly listens for. Reaching 17 characters (a VIN's fixed length) also auto-triggers the lookup, so fast manual typing works the same way | `web/app/service-check-in/page.tsx` |
+| Live "do we know this vehicle" lookup | New read-only endpoint, matches `CustomerVehicle` by VIN (case-insensitive, same rule as the existing kiosk/advisor lookups) and returns the customer's name/phone/email/plate if found. On a match, the kiosk shows a "Welcome back" banner and auto-fills the rest of the form — the customer never retypes what's already on file | `web/app/api/service-check-in/lookup/route.ts` |
+| Camera-based scanning fallback | For kiosks without a dedicated hardware scanner (e.g. a plain tablet), a "Scan with camera" button appears only when the browser supports the native `BarcodeDetector` API (Chrome/Edge) — no new npm dependency. Decodes Code 39/128/QR from the device camera and fills the VIN field exactly as a hardware scan would | `web/app/service-check-in/page.tsx` |
+
+**Scope decisions made in Phase 13:**
+- **No schema or backend check-in logic changed.** `POST /api/service-check-in` already accepted
+  a VIN and already matched it against `CustomerVehicle` (Phase 7) — this phase is entirely a
+  front-of-kiosk UX change (a live lookup + reordered/scanner-friendly form) plus one new read-only
+  lookup endpoint. Verified end-to-end against the live database: created a real `CustomerVehicle`,
+  confirmed the lookup matched it (including case-insensitively), submitted a check-in with the
+  scanned VIN, and confirmed the resulting `JobCard` correctly linked `customerVehicleId`. All test
+  records deleted afterward.
+- **No native mobile app or scanner SDK.** Both scanning paths (hardware keyboard-wedge, in-browser
+  camera via `BarcodeDetector`) work inside the existing web kiosk page — no new deployment
+  artifact.
+- **A VIN that doesn't match any record on file is not an error** — the kiosk just says so plainly
+  and lets the customer fill in their details manually, exactly as before this phase for a new
+  customer.
+
 ## Explicitly deferred (not built yet)
 
 | BRD reference | What's missing | Why deferred |
