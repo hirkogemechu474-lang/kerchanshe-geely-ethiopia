@@ -52,12 +52,11 @@ export async function PUT(
       },
     });
 
-    if (status && ['approved', 'converted', 'closed'].includes(status)) {
+    if (status && ['approved', 'converted', 'closed'].includes(status) && quotation.email) {
       try {
-        const vehicle = await prisma.vehicle.findFirst({
-          where: { name: quotation.vehicleModel },
-          select: { id: true },
-        });
+        const vehicle = quotation.vehicleModel
+          ? await prisma.vehicle.findFirst({ where: { name: quotation.vehicleModel }, select: { id: true } })
+          : null;
         const publicWebUrl = process.env.NEXT_PUBLIC_WEB_URL || process.env.WEB_URL || 'http://localhost:3002';
         const paymentUrl = status === 'approved' || status === 'converted'
           ? `${publicWebUrl.replace(/\/$/, '')}/financing/apply?quote=${encodeURIComponent(quotation.id)}${vehicle ? `&vehicle=${encodeURIComponent(vehicle.id)}` : ''}`
@@ -68,7 +67,7 @@ export async function PUT(
           entityType: 'Quote Request',
           status,
           reference: quotation.id,
-          details: `Vehicle: ${quotation.vehicleModel}`,
+          details: `Vehicle: ${quotation.vehicleModel || 'General enquiry'}`,
           actionUrl: paymentUrl,
           actionLabel: 'Proceed with direct vehicle payment',
         });

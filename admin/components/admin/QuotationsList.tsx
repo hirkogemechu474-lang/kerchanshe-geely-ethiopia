@@ -2,26 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Eye, Trash2, Phone, Mail, Calendar, Loader, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Eye, Trash2, Phone, Mail, Calendar, Loader, Download, ShoppingCart } from 'lucide-react';
 
 interface Quotation {
   id: string;
   customerName: string;
   phoneNumber: string;
-  email: string;
-  vehicleModel: string;
+  email: string | null;
+  vehicleModel: string | null;
   preferredDealer: string;
   financingInterest: boolean;
   tradeInInterest: boolean;
   message: string;
   status: string;
+  source: string;
   createdAt: string;
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  'walk-in': 'Walk-in',
+  website: 'Website',
+  referral: 'Referral',
+  phone: 'Phone',
+  other: 'Other',
+};
+
 export default function QuotationsList() {
+  const router = useRouter();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'new' | 'contacted' | 'approved' | 'converted' | 'closed'>('all');
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuotations();
@@ -68,6 +80,28 @@ export default function QuotationsList() {
       }
     } catch (error) {
       console.error('Error updating quotation:', error);
+    }
+  };
+
+  const handleConvertToOrder = async (id: string) => {
+    setConvertingId(id);
+    try {
+      const response = await fetch(`/api/admin/quotations/${id}/convert-to-order`, { method: 'POST' });
+      const data = await response.json();
+      if (response.ok) {
+        router.push(`/admin/orders/${data.order.id}`);
+        return;
+      }
+      if (response.status === 409 && data.orderId) {
+        router.push(`/admin/orders/${data.orderId}`);
+        return;
+      }
+      alert(data.error || 'Failed to create order');
+    } catch (error) {
+      console.error('Error converting quotation to order:', error);
+      alert('Failed to create order');
+    } finally {
+      setConvertingId(null);
     }
   };
 
@@ -205,6 +239,7 @@ export default function QuotationsList() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -223,13 +258,20 @@ export default function QuotationsList() {
                       <Phone size={14} />
                       {quotation.phoneNumber}
                     </a>
-                    <a href={`mailto:${quotation.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
-                      <Mail size={14} />
-                      {quotation.email}
-                    </a>
+                    {quotation.email && (
+                      <a href={`mailto:${quotation.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
+                        <Mail size={14} />
+                        {quotation.email}
+                      </a>
+                    )}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{quotation.vehicleModel}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{quotation.vehicleModel || 'General enquiry'}</td>
+                <td className="px-6 py-4">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                    {SOURCE_LABELS[quotation.source] || quotation.source}
+                  </span>
+                </td>
                 <td className="px-6 py-4">
                   <select
                     value={quotation.status}
@@ -251,7 +293,7 @@ export default function QuotationsList() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <Link
                       href={`/admin/quotations/${quotation.id}`}
                       className="text-blue-600 hover:text-blue-900"
@@ -259,6 +301,16 @@ export default function QuotationsList() {
                     >
                       <Eye size={16} />
                     </Link>
+                    {(quotation.status === 'approved' || quotation.status === 'converted') && (
+                      <button
+                        onClick={() => handleConvertToOrder(quotation.id)}
+                        disabled={convertingId === quotation.id}
+                        className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                        title="Convert to order"
+                      >
+                        {convertingId === quotation.id ? <Loader size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(quotation.id)}
                       className="text-red-600 hover:text-red-900"
