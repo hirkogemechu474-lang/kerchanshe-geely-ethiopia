@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 // GET - Get all FAQs for admin
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const faqs = await prisma.fAQ.findMany({
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
@@ -31,10 +28,8 @@ export async function GET() {
 // POST - Create new FAQ
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const { question, answer, category, displayOrder, isActive, isFeatured } = body;

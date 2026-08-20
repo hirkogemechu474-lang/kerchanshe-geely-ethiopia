@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 // GET - List all benefits pages
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const benefits = await prisma.electricPage.findMany({
       where: {
@@ -28,10 +25,8 @@ export async function GET(request: NextRequest) {
 // POST - Create benefit page
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const {

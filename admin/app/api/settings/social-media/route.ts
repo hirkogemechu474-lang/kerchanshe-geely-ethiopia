@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 // GET social media links
 export async function GET() {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const socialMedia = await prisma.setting.findUnique({
       where: { key: 'social_media_links' }
@@ -33,6 +37,13 @@ export async function GET() {
 
 // POST - Update social media links
 export async function POST(request: NextRequest) {
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
+
+  if (!session!.user.permissions.canManageSettings) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { facebook, instagram, twitter, youtube, linkedin, tiktok } = body;

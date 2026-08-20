@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 // GET - Get single FAQ
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const faq = await prisma.fAQ.findUnique({
       where: { id: id },
@@ -38,10 +35,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // PUT - Update FAQ
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const { question, answer, category, displayOrder, isActive, isFeatured } = body;
@@ -82,10 +77,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // DELETE - Delete FAQ
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     await prisma.fAQ.delete({
       where: { id: id },

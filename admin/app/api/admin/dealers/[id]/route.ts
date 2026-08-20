@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 function parseJson(v: any, fallback: any) {
   if (v == null) return fallback;
@@ -16,10 +15,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { response } = await requireAdminApiSession();
+    if (response) return response;
 
     const dealer = await prisma.dealer.findUnique({ where: { id: id } });
     if (!dealer) {
@@ -37,10 +34,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const existing = await prisma.dealer.findUnique({ where: { id: id } });
@@ -87,10 +82,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { response } = await requireAdminApiSession();
+    if (response) return response;
 
     await prisma.dealer.delete({ where: { id: id } });
     return NextResponse.json({ success: true, message: 'Dealer deleted successfully' });

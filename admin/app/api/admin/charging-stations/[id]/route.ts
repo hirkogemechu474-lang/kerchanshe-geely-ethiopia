@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 // GET - Fetch single charging station
@@ -8,10 +7,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const { id } = await params;
 
@@ -44,10 +41,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const { id } = await params;
     const body = await request.json();
@@ -105,10 +100,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const { id } = await params;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 function slugify(text: string): string {
   return text
@@ -11,6 +12,9 @@ function slugify(text: string): string {
 
 // GET /api/financing/banks
 export async function GET() {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const banks = await prisma.financingBank.findMany({
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
@@ -30,6 +34,9 @@ export async function GET() {
 
 // POST /api/financing/banks — Create new bank
 export async function POST(request: NextRequest) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const body = await request.json();
     const {

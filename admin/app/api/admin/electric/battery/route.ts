@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -9,9 +8,10 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user.permissions.canManageSettings) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+
+    if (!session!.user.permissions.canManageSettings) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -54,9 +54,10 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user.permissions.canManageSettings) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+
+    if (!session!.user.permissions.canManageSettings) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

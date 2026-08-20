@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 const SETTING_KEY = 'about_content';
 const SETTING_TYPE = 'cms';
@@ -230,6 +231,9 @@ async function getStoredOrDefault(): Promise<AboutContent> {
 }
 
 export async function GET() {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     return NextResponse.json(await getStoredOrDefault());
   } catch (error) {
@@ -239,6 +243,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
+
+  if (!session!.user.permissions.canManageSettings) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const value = typeof body === 'string' ? body : JSON.stringify(body);

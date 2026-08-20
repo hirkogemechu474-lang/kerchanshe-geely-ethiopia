@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 interface Params {
@@ -10,10 +9,8 @@ interface Params {
 // PUT – Update a brand
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
 
@@ -38,10 +35,8 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE – Delete a brand
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     await prisma.partBrand.delete({ where: { id: params.id } });
 

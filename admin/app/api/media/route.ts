@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 /**
  * GET /api/media
  * Get all media assets with optional filters
  */
 export async function GET(request: Request) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { searchParams } = new URL(request.url);
     const fileType = searchParams.get('fileType');

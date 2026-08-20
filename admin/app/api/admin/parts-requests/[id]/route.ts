@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { sendStatusEmail } from '@/lib/status-email';
 
 const VALID_STATUSES = ['new', 'contacted', 'in_progress', 'quoted', 'closed'];
@@ -11,10 +10,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Request ID is required' }, { status: 400 });
@@ -41,10 +38,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Request ID is required' }, { status: 400 });
@@ -97,10 +92,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Request ID is required' }, { status: 400 });

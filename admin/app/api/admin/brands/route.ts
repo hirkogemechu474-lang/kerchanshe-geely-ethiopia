@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 function slugify(value: string) {
@@ -13,8 +12,9 @@ function slugify(value: string) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user.permissions.canViewVehicles) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+    if (!session!.user.permissions.canViewVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -39,8 +39,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user.permissions.canManageVehicles) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+    if (!session!.user.permissions.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

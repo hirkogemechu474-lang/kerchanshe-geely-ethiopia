@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 function slugify(value: string) {
@@ -15,8 +14,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user.permissions.canViewVehicles) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+    if (!session!.user.permissions.canViewVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -52,8 +52,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user.permissions.canManageVehicles) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+    if (!session!.user.permissions.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -81,8 +82,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user.permissions.canManageVehicles) {
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
+    if (!session!.user.permissions.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

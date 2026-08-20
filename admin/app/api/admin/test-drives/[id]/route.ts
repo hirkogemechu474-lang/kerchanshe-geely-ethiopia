@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.permissions?.canViewTestDrives) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
+  if (!session!.user.permissions.canViewTestDrives) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
   const { status } = await request.json();
   if (!['pending', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });

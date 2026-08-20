@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 type Params = Promise<{ id: string }>;
 
 export async function GET(_req: NextRequest, { params }: { params: Params }) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     const p = await prisma.financingProgram.findUnique({
@@ -40,6 +44,9 @@ function toDec(v: unknown, digits: number) {
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     const b = await request.json();
@@ -108,6 +115,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Params }) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Params }) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     await prisma.financingProgram.delete({ where: { id } });

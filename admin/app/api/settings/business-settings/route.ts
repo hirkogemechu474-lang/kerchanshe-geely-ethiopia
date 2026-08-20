@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 const SETTING_KEY = 'business_settings';
 const SETTING_TYPE = 'cms';
@@ -27,6 +28,9 @@ const DEFAULT_BUSINESS_SETTINGS = {
 };
 
 export async function GET() {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const setting = await prisma.setting.findUnique({
       where: { key: SETTING_KEY },
@@ -45,6 +49,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response;
+
+  if (!session!.user.permissions.canManageSettings) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
 

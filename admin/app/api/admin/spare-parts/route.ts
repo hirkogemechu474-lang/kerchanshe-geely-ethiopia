@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
 // GET - Fetch all spare parts
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const spareParts = await prisma.sparePart.findMany({
       orderBy: { createdAt: 'desc' },
@@ -26,10 +23,8 @@ export async function GET(request: NextRequest) {
 // POST - Create new spare part
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const { name, sku, category, partCategoryId, description, imageUrl, brand, stock, reorderPoint, price, supplier, isFeatured, displayOrder, isActive } = body;
@@ -79,10 +74,8 @@ export async function POST(request: NextRequest) {
 // PUT - Update spare part
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const { id, name, sku, category, partCategoryId, description, imageUrl, brand, stock, reorderPoint, price, supplier, isFeatured, displayOrder, isActive } = body;
@@ -136,10 +129,8 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete spare part
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

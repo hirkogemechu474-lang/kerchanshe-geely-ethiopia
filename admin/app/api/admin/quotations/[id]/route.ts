@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 interface Params {
   id: string;
@@ -14,10 +13,8 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const quotation = await prisma.quotation.findUnique({
       where: { id: params.id },
@@ -40,10 +37,8 @@ export async function PUT(
   { params }: { params: Params }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     const { status, internalNotes, assignedTo } = body;
@@ -95,10 +90,8 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, response } = await requireAdminApiSession();
+    if (response) return response;
 
     await prisma.quotation.delete({
       where: { id: params.id },

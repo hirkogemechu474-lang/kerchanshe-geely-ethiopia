@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 function parseJson(v: any, fallback: any) {
   if (v == null) return fallback;
@@ -14,10 +13,8 @@ function parseJson(v: any, fallback: any) {
 // GET - List all dealers (supports search + filter)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { response } = await requireAdminApiSession();
+    if (response) return response;
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';
@@ -52,10 +49,8 @@ export async function GET(request: NextRequest) {
 // POST - Create new dealer
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const { response } = await requireAdminApiSession();
+    if (response) return response;
 
     const body = await request.json();
     if (!body.name || !body.city || !body.region) {

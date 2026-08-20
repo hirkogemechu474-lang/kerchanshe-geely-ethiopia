@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 function slugify(text: string): string {
   return text
@@ -13,6 +14,9 @@ type Params = Promise<{ id: string }>;
 
 // GET single bank
 export async function GET(_req: NextRequest, { params }: { params: Params }) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     const bank = await prisma.financingBank.findUnique({ where: { id } });
@@ -35,6 +39,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
 }
 
 async function updateBank(request: NextRequest, params: Params, _partial: boolean) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -64,6 +71,9 @@ async function updateBank(request: NextRequest, params: Params, _partial: boolea
 
 // DELETE bank
 export async function DELETE(_req: NextRequest, { params }: { params: Params }) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { id } = await params;
     await prisma.financingBank.delete({ where: { id } });

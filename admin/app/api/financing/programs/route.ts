@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminApiSession } from '@/lib/auth/api';
 
 function slugify(text: string): string {
   return text
@@ -16,6 +17,9 @@ function toDecimal(v: unknown, d: number): string {
 
 // GET programs (admin sees all statuses) — ?bankId=X&vehicleId=Y&status=Z
 export async function GET(req: NextRequest) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const { searchParams } = new URL(req.url);
     const bankId = searchParams.get('bankId') || undefined;
@@ -47,6 +51,9 @@ export async function GET(req: NextRequest) {
 
 // POST create program
 export async function POST(request: NextRequest) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
+
   try {
     const b = await request.json();
 
