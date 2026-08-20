@@ -169,6 +169,20 @@ export const rateLimitConfigs = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 5,
     message: 'Too many parts requests. Please wait 10 minutes before submitting again.'
+  },
+
+  // Post-visit CSI survey submissions
+  csiSurvey: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many submissions. Please wait 10 minutes before trying again.'
+  },
+
+  // Service self check-in kiosk
+  serviceCheckIn: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 10,
+    message: 'Too many check-in attempts. Please ask the front desk for assistance.'
   }
 };
 
