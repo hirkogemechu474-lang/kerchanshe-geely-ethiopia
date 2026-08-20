@@ -25,6 +25,7 @@
     "seed:site-nav": "tsx prisma/seed-site-nav.ts",
     "seed:users": "tsx prisma/seed-users.ts",
     "seed:parts": "tsx prisma/seed-parts.ts",
+    "seed:vehicle-packages": "tsx prisma/seed-vehicle-packages.ts",
     "create:admin": "tsx scripts/create-admin.ts",
     "verify": "tsx scripts/verify-seed.ts"
   },
