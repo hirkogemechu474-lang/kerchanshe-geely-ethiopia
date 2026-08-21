@@ -1,9 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Eye, Edit, Check, X, Phone, Mail, Calendar, Clock, User, Car, MapPin } from 'lucide-react';
-import { Card, Badge, Button, LinkButton, EmptyState, type Tone } from '@/components/admin/ui';
+import { Card, Badge, EmptyState, Pagination, type Tone } from '@/components/admin/ui';
+
+const PAGE_SIZE = 10;
+
+const STATUS_TONE: Record<TestDrive['status'], Tone> = {
+  pending: 'orange',
+  confirmed: 'green',
+  completed: 'blue',
+  cancelled: 'red',
+  no_show: 'gray',
+};
+
+const STATUS_LABEL: Record<TestDrive['status'], string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No Show',
+};
 
 export interface TestDrive {
   id: string;
@@ -22,9 +40,17 @@ export interface TestDrive {
 
 export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] }) {
   const [items, setItems] = useState<TestDrive[]>([]);
+  const [page, setPage] = useState(1);
   useEffect(() => {
     setItems(testDrives);
+    setPage(1);
   }, [testDrives]);
+
+  const pageItems = useMemo(
+    () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [items, page]
+  );
+
   const updateStatus = async (id: string, status: TestDrive['status']) => {
     const response = await fetch(`/api/admin/test-drives/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     if (response.ok) {
@@ -35,42 +61,27 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
     alert(data?.error || 'Failed to update status');
   };
 
-  const getStatusBadge = (status: TestDrive['status']) => {
-    switch (status) {
-      case 'pending':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">Pending</span>;
-      case 'confirmed':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Confirmed</span>;
-      case 'completed':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Completed</span>;
-      case 'cancelled':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">Cancelled</span>;
-      case 'no_show':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">No Show</span>;
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  if (items.length === 0) {
+    return <EmptyState icon={User} title="No customer test-drive bookings yet" />;
+  }
+
   return (
     <div className="space-y-4">
-      {items.length === 0 && <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-500">No customer test-drive bookings yet.</div>}
-      {items.map((testDrive) => (
-        <div
-          key={testDrive.id}
-          className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-blue-600" />
+      {pageItems.map((testDrive) => (
+        <Card key={testDrive.id} interactive className="space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 shrink-0 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{testDrive.customerName}</h3>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{testDrive.customerName}</h3>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1 text-sm text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1">
                     <Mail className="w-3.5 h-3.5" />
                     {testDrive.customerEmail}
@@ -82,34 +93,34 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
                 </div>
               </div>
             </div>
-            {getStatusBadge(testDrive.status)}
+            <Badge tone={STATUS_TONE[testDrive.status]}>{STATUS_LABEL[testDrive.status]}</Badge>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2 text-sm">
-              <Car className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 font-medium">{testDrive.vehicleModel}</span>
+              <Car className="w-4 h-4 text-gray-400 shrink-0" />
+              <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{testDrive.vehicleModel}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900">{formatDate(testDrive.date)}</span>
+              <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+              <span className="text-gray-900 dark:text-gray-100">{formatDate(testDrive.date)}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900">{testDrive.time}</span>
+              <Clock className="w-4 h-4 text-gray-400 shrink-0" />
+              <span className="text-gray-900 dark:text-gray-100">{testDrive.time}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900">{testDrive.location}</span>
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+              <span className="text-gray-900 dark:text-gray-100 truncate">{testDrive.location}</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center justify-between gap-3 flex-wrap pt-4 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <User className="w-4 h-4" />
-              <span>Assigned to: <span className="font-medium text-gray-900">{testDrive.assignedTo}</span></span>
+              <span>Assigned to: <span className="font-medium text-gray-900 dark:text-gray-100">{testDrive.assignedTo}</span></span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {testDrive.status === 'pending' && (
                 <>
                   <button onClick={() => updateStatus(testDrive.id, 'confirmed')} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
@@ -130,29 +141,22 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
               )}
               <Link
                 href={`/admin/test-drives/${testDrive.id}`}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
               >
                 <Eye className="w-4 h-4" />
               </Link>
               <Link
                 href={`/admin/test-drives/${testDrive.id}/edit`}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <Edit className="w-4 h-4" />
               </Link>
             </div>
           </div>
-        </div>
+        </Card>
       ))}
 
-      {/* Pagination */}
-      <div className="bg-white rounded-lg border border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Showing <span className="font-medium">{items.length}</span> customer booking{items.length === 1 ? '' : 's'}
-        </div>
-        <div className="flex gap-2">
-        </div>
-      </div>
+      <Pagination page={page} pageSize={PAGE_SIZE} total={items.length} onPageChange={setPage} />
     </div>
   );
 }

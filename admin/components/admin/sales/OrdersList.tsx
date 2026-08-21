@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile } from '@/components/admin/ui';
+import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile, Pagination } from '@/components/admin/ui';
 import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/lib/sales/orderStateMachine';
 import { ClipboardList, Truck, Hourglass, CheckCircle2 } from 'lucide-react';
+
+const PAGE_SIZE = 25;
 
 interface OrderRow {
   id: string;
@@ -20,29 +22,34 @@ interface OrderRow {
   pdiProgress: string;
 }
 
+interface Stats {
+  total: number;
+  booked: number;
+  readyForDelivery: number;
+  delivered: number;
+}
+
 export default function OrdersList() {
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
+  const [stats, setStats] = useState<Stats>({ total: 0, booked: 0, readyForDelivery: 0, delivered: 0 });
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
 
-  const load = useCallback(async () => {
-    const res = await fetch('/api/admin/orders');
+  const load = useCallback(async (p: number) => {
+    const res = await fetch(`/api/admin/orders?page=${p}`);
     if (res.ok) {
       const data = await res.json();
       setOrders(data.orders);
+      setStats(data.stats);
+      setTotal(data.total);
     }
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(page);
+  }, [page, load]);
 
   if (!orders) return <div className="text-gray-400 text-sm">Loading orders…</div>;
-
-  const stats = {
-    total: orders.length,
-    booked: orders.filter((o) => o.status === 'BOOKED').length,
-    readyForDelivery: orders.filter((o) => o.status === 'READY_FOR_DELIVERY').length,
-    delivered: orders.filter((o) => o.status === 'DELIVERED').length,
-  };
 
   return (
     <div className="space-y-6">
@@ -93,6 +100,8 @@ export default function OrdersList() {
           {orders.length === 0 && <EmptyTableRow colSpan={7} message="No orders yet. Convert a quotation to create one." />}
         </TBody>
       </TableCard>
+
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
     </div>
   );
 }

@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Trash2, Phone, Mail, Calendar, Loader, Download, ShoppingCart } from 'lucide-react';
+import { Eye, Trash2, Phone, Mail, Calendar, Loader2, ShoppingCart, FileText, Inbox, PhoneCall, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { StatTile, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, Pagination, type Tone } from '@/components/admin/ui';
+
+const PAGE_SIZE = 25;
 
 interface Quotation {
   id: string;
@@ -11,13 +14,20 @@ interface Quotation {
   phoneNumber: string;
   email: string | null;
   vehicleModel: string | null;
-  preferredDealer: string;
-  financingInterest: boolean;
-  tradeInInterest: boolean;
-  message: string;
+  preferredDealer: string | null;
+  message: string | null;
   status: string;
   source: string;
   createdAt: string;
+}
+
+interface Stats {
+  total: number;
+  new: number;
+  contacted: number;
+  approved: number;
+  converted: number;
+  closed: number;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -28,59 +38,67 @@ const SOURCE_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+const STATUS_TONE: Record<string, Tone> = {
+  new: 'red',
+  contacted: 'blue',
+  in_progress: 'orange',
+  approved: 'green',
+  converted: 'green',
+  closed: 'gray',
+};
+
+const TABS: { key: 'all' | 'new' | 'contacted' | 'approved' | 'converted' | 'closed'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'new', label: 'New' },
+  { key: 'contacted', label: 'Contacted' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'converted', label: 'Converted' },
+  { key: 'closed', label: 'Closed' },
+];
+
 export default function QuotationsList() {
   const router = useRouter();
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'new' | 'contacted' | 'approved' | 'converted' | 'closed'>('all');
+  const [quotations, setQuotations] = useState<Quotation[] | null>(null);
+  const [stats, setStats] = useState<Stats>({ total: 0, new: 0, contacted: 0, approved: 0, converted: 0, closed: 0 });
+  const [total, setTotal] = useState(0);
+  const [filter, setFilter] = useState<(typeof TABS)[number]['key']>('all');
+  const [page, setPage] = useState(1);
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchQuotations();
+  const load = useCallback(async (status: string, p: number) => {
+    const params = new URLSearchParams({ page: String(p) });
+    if (status !== 'all') params.set('status', status);
+    const res = await fetch(`/api/admin/quotations?${params.toString()}`);
+    if (res.ok) {
+      const data = await res.json();
+      setQuotations(data.quotations);
+      setStats(data.stats);
+      setTotal(data.total);
+    }
   }, []);
 
-  const fetchQuotations = async () => {
-    try {
-      const response = await fetch('/api/admin/quotations');
-      const data = await response.json();
-      setQuotations(data.quotations || []);
-    } catch (error) {
-      console.error('Error fetching quotations:', error);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    load(filter, page);
+  }, [filter, page, load]);
+
+  const changeFilter = (f: (typeof TABS)[number]['key']) => {
+    setFilter(f);
+    setPage(1);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this quotation?')) return;
-
-    try {
-      const response = await fetch(`/api/admin/quotations/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setQuotations(quotations.filter(q => q.id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting quotation:', error);
-    }
+    const res = await fetch(`/api/admin/quotations/${id}`, { method: 'DELETE' });
+    if (res.ok) load(filter, page);
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const response = await fetch(`/api/admin/quotations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        setQuotations(quotations.map(q => q.id === id ? { ...q, status: newStatus } : q));
-      }
-    } catch (error) {
-      console.error('Error updating quotation:', error);
-    }
+    const res = await fetch(`/api/admin/quotations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) load(filter, page);
   };
 
   const handleConvertToOrder = async (id: string) => {
@@ -105,232 +123,113 @@ export default function QuotationsList() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-red-100 text-red-800';
-      case 'contacted':
-        return 'bg-blue-100 text-blue-800';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'converted':
-        return 'bg-green-100 text-green-800';
-      case 'approved':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredQuotations = filter === 'all'
-    ? quotations
-    : quotations.filter(q => q.status === filter);
-
-  if (loading) {
-    return <div className="flex justify-center p-12"><Loader className="animate-spin" /></div>;
-  }
-
-  const stats = {
-    total: quotations.length,
-    new: quotations.filter(q => q.status === 'new').length,
-    contacted: quotations.filter(q => q.status === 'contacted').length,
-    converted: quotations.filter(q => q.status === 'converted').length,
-    approved: quotations.filter(q => q.status === 'approved').length,
-    closed: quotations.filter(q => q.status === 'closed').length,
-  };
+  if (!quotations) return <div className="text-gray-400 text-sm">Loading quotations…</div>;
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-navy">{stats.total}</div>
-          <p className="text-sm text-gray-600">Total Quotations</p>
-        </div>
-        <div className="bg-white rounded-lg border border-red-200 p-4 text-center">
-          <div className="text-3xl font-bold text-red-600">{stats.new}</div>
-          <p className="text-sm text-gray-600">New</p>
-        </div>
-        <div className="bg-white rounded-lg border border-blue-200 p-4 text-center">
-          <div className="text-3xl font-bold text-blue-600">{stats.contacted}</div>
-          <p className="text-sm text-gray-600">Contacted</p>
-        </div>
-        <div className="bg-white rounded-lg border border-green-200 p-4 text-center">
-          <div className="text-3xl font-bold text-green-600">{stats.converted}</div>
-          <p className="text-sm text-gray-600">Converted</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-300 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-600">{stats.closed}</div>
-          <p className="text-sm text-gray-600">Closed</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <StatTile label="Total" value={stats.total} icon={FileText} />
+        <StatTile label="New" value={stats.new} icon={Inbox} tone={stats.new > 0 ? 'highlight' : 'default'} />
+        <StatTile label="Contacted" value={stats.contacted} icon={PhoneCall} />
+        <StatTile label="Converted" value={stats.converted} icon={ShoppingBag} />
+        <StatTile label="Closed" value={stats.closed} icon={CheckCircle2} />
       </div>
 
-      {/* Filter Buttons */}
       <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          All ({stats.total})
-        </button>
-        <button
-          onClick={() => setFilter('new')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'new'
-              ? 'bg-red-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          New ({stats.new})
-        </button>
-        <button
-          onClick={() => setFilter('contacted')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'contacted'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Contacted ({stats.contacted})
-        </button>
-        <button
-          onClick={() => setFilter('approved')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'approved'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Approved ({stats.approved})
-        </button>
-        <button
-          onClick={() => setFilter('converted')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'converted'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Converted ({stats.converted})
-        </button>
-        <button
-          onClick={() => setFilter('closed')}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            filter === 'closed'
-              ? 'bg-gray-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Closed ({stats.closed})
-        </button>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => changeFilter(tab.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filter === tab.key
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            {tab.label} ({tab.key === 'all' ? stats.total : stats[tab.key as keyof Stats]})
+          </button>
+        ))}
       </div>
 
-      {/* Quotations Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredQuotations.map((quotation) => (
-              <tr key={quotation.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <p className="font-medium text-gray-900">{quotation.customerName}</p>
-                  <p className="text-xs text-gray-500">{quotation.preferredDealer}</p>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="space-y-1">
-                    <a href={`tel:${quotation.phoneNumber}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
-                      <Phone size={14} />
-                      {quotation.phoneNumber}
+      <TableCard>
+        <THead>
+          <tr>
+            <Th>Customer</Th>
+            <Th>Contact</Th>
+            <Th>Model</Th>
+            <Th>Source</Th>
+            <Th>Status</Th>
+            <Th>Date</Th>
+            <Th>Actions</Th>
+          </tr>
+        </THead>
+        <TBody>
+          {quotations.map((quotation) => (
+            <Tr key={quotation.id}>
+              <Td>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{quotation.customerName}</p>
+                {quotation.preferredDealer && <p className="text-xs text-gray-400">{quotation.preferredDealer}</p>}
+              </Td>
+              <Td>
+                <div className="space-y-1">
+                  <a href={`tel:${quotation.phoneNumber}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                    <Phone size={14} /> {quotation.phoneNumber}
+                  </a>
+                  {quotation.email && (
+                    <a href={`mailto:${quotation.email}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                      <Mail size={14} /> {quotation.email}
                     </a>
-                    {quotation.email && (
-                      <a href={`mailto:${quotation.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
-                        <Mail size={14} />
-                        {quotation.email}
-                      </a>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{quotation.vehicleModel || 'General enquiry'}</td>
-                <td className="px-6 py-4">
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                    {SOURCE_LABELS[quotation.source] || quotation.source}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <select
-                    value={quotation.status}
-                    onChange={(e) => handleStatusChange(quotation.id, e.target.value)}
-                    className={`px-2 py-1 rounded text-sm font-medium border-0 cursor-pointer ${getStatusColor(quotation.status)}`}
-                  >
-                    <option value="new">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="approved">Approved</option>
-                    <option value="converted">Converted</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Calendar size={14} />
-                    {new Date(quotation.createdAt).toLocaleDateString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2 items-center">
-                    <Link
-                      href={`/admin/quotations/${quotation.id}`}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="View"
-                    >
-                      <Eye size={16} />
-                    </Link>
-                    {(quotation.status === 'approved' || quotation.status === 'converted') && (
-                      <button
-                        onClick={() => handleConvertToOrder(quotation.id)}
-                        disabled={convertingId === quotation.id}
-                        className="text-green-600 hover:text-green-800 disabled:opacity-50"
-                        title="Convert to order"
-                      >
-                        {convertingId === quotation.id ? <Loader size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
-                      </button>
-                    )}
+                  )}
+                </div>
+              </Td>
+              <Td>{quotation.vehicleModel || <span className="text-gray-400">General enquiry</span>}</Td>
+              <Td>
+                <Badge tone="gray">{SOURCE_LABELS[quotation.source] || quotation.source}</Badge>
+              </Td>
+              <Td>
+                <select
+                  value={quotation.status}
+                  onChange={(e) => handleStatusChange(quotation.id, e.target.value)}
+                  className="border-0 rounded-full text-xs font-medium cursor-pointer bg-transparent"
+                >
+                  {['new', 'contacted', 'in_progress', 'approved', 'converted', 'closed'].map((s) => (
+                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                  ))}
+                </select>
+                <div className="mt-1"><Badge tone={STATUS_TONE[quotation.status] ?? 'gray'}>{quotation.status.replace('_', ' ')}</Badge></div>
+              </Td>
+              <Td className="text-gray-500">
+                <div className="flex items-center gap-1.5">
+                  <Calendar size={14} /> {new Date(quotation.createdAt).toLocaleDateString()}
+                </div>
+              </Td>
+              <Td>
+                <div className="flex gap-3 items-center">
+                  <Link href={`/admin/quotations/${quotation.id}`} className="text-blue-600 dark:text-blue-400 hover:underline" title="View">
+                    <Eye size={16} />
+                  </Link>
+                  {(quotation.status === 'approved' || quotation.status === 'converted') && (
                     <button
-                      onClick={() => handleDelete(quotation.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete"
+                      onClick={() => handleConvertToOrder(quotation.id)}
+                      disabled={convertingId === quotation.id}
+                      className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                      title="Convert to order"
                     >
-                      <Trash2 size={16} />
+                      {convertingId === quotation.id ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  )}
+                  <button onClick={() => handleDelete(quotation.id)} className="text-red-600 hover:text-red-800" title="Delete">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </Td>
+            </Tr>
+          ))}
+          {quotations.length === 0 && <EmptyTableRow colSpan={7} message="No quotations found." />}
+        </TBody>
+      </TableCard>
 
-        {filteredQuotations.length === 0 && (
-          <div className="p-12 text-center text-gray-500">
-            <p>No quotations found</p>
-          </div>
-        )}
-      </div>
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
     </div>
   );
 }

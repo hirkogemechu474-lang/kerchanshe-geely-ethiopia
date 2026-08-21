@@ -54,8 +54,20 @@ export default function WorkshopDashboard() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, REFRESH_MS);
-    return () => clearInterval(interval);
+    // Skip ticks while the tab is backgrounded — no one's watching the
+    // dashboard, so there's no reason to keep hitting the DB every 30s —
+    // and refresh immediately the moment they switch back to it.
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') load();
+    }, REFRESH_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [load]);
 
   if (!data) return <div className="text-gray-400 text-sm">Loading dashboard…</div>;

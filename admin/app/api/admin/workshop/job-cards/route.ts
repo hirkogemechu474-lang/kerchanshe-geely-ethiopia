@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
       bay: { select: { id: true, name: true, bayType: true } },
     },
     orderBy: { openTs: 'desc' },
+    take: 200,
   });
 
   return NextResponse.json({ jobCards });

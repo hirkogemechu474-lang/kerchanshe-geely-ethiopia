@@ -315,6 +315,34 @@ format spec, and a few months of real survey data — while this one was buildab
 - **The list API itself only requires an authenticated admin session, not `canViewJobCards`** — consistent with every other list GET in this codebase (e.g. `vehicle-lookup`, `orders`); the permission check lives at the page level (`requirePermission('canViewJobCards')`) and again explicitly on both PATCH routes. Verified directly: a `sales`-role session could still read `/api/admin/customers` (matching the existing convention) but got a 403 attempting to PATCH a customer or vehicle record.
 - **Verified against the live database, not just typechecked**: created a real `Customer` + `CustomerVehicle` + `JobCard`, confirmed the list search matched by plate and by VIN fragment, confirmed the detail endpoint returned the linked service history, PATCHed both the customer's phone and the vehicle's plate/mileage and confirmed the changes persisted, and confirmed empty-string validation and 403-on-forbidden-role behaved correctly. All test records deleted afterward.
 
+## Cross-cutting: SWMS Design/Responsive/Performance Hardening Pass
+
+Not tied to a BRD FR — a direct user request ("make UI design ... best style, forms and tables
+work in all screen, and ... make performance") scoped, on request, to the SWMS pages only (not the
+rest of the admin panel). An Explore-agent audit across all ~24 SWMS pages found the newest pages
+(Orders, Job Cards, Warranty Claims, Bays, Technicians, the Phase 14 Customers screen) already
+consistently used the shared `admin/components/admin/ui` kit and were responsive; the oldest pages
+(Quotations, Parts Requests, Test Drives — largely pre-dating that kit) had the real gaps.
+
+| What shipped | Where |
+|---|---|
+| New shared `Pagination` component | `admin/components/admin/ui/Pagination.tsx` |
+| Quotations — full rewrite onto the shared kit (`TableCard`/`Badge`/`StatTile`), server-side pagination + status filter, status counts computed table-wide (not just the current page), dark-mode support (previously light-only) | `admin/app/api/admin/quotations/route.ts`, `admin/components/admin/QuotationsList.tsx` |
+| Parts Requests — same treatment: kit-based table/stats, server-side pagination, dark mode | `admin/app/api/admin/parts-requests/route.ts`, `admin/app/admin/parts-requests/page.tsx` |
+| Orders — server-side pagination (was a single unbounded fetch), status-tile counts moved server-side so they stay correct once paginated | `admin/app/api/admin/orders/route.ts`, `admin/components/admin/sales/OrdersList.tsx` |
+| Test Drives — capped the server query (`take: 300`) and added client-side pagination + kit components (`Card`/`Badge`/`EmptyState`) to a list that already imported the kit but never used it, plus dark mode | `admin/app/admin/test-drives/page.tsx`, `admin/components/admin/test-drives/TestDriveList.tsx` |
+| Mobile-overflow fixes: parts line-items table on a job card, and the status-history row (fixed `w-40` label that couldn't wrap) on both Orders and Warranty Claims | `admin/components/admin/workshop/JobCardDetail.tsx`, `admin/components/admin/sales/OrderDetail.tsx`, `admin/components/admin/workshop/WarrantyClaimDetail.tsx` |
+| Workshop Live Dashboard no longer polls every 30s while the browser tab is backgrounded (resumes instantly on refocus) | `admin/components/admin/workshop/WorkshopDashboard.tsx` |
+| Safety cap (`take: 200`) added to the Job Cards GET route — currently unused by any list UI, but was genuinely unbounded | `admin/app/api/admin/workshop/job-cards/route.ts` |
+| Fixed a redundant double-fetch on first load in the Phase 14 Customers list | `admin/components/admin/customers/CustomersList.tsx` |
+
+**Scope decisions:**
+- **SWMS pages only, per explicit user choice** — the rest of the admin panel (CMS/content, vehicle catalog, settings, dealers, promotions, etc.) was out of scope for this pass and was not touched.
+- **Test Drives got client-side pagination over a capped fetch, not full server-side pagination** — it's a server component feeding both a list view and a calendar view from one query; slicing a capped, already-fetched array for the list avoids restructuring that data flow (which the calendar also depends on) while still fixing the "renders hundreds of DOM rows" cost. Quotations/Parts Requests/Orders are simple client-fetched lists with no such constraint, so they got real server-side pagination instead.
+- **Status/stat counts are computed server-side across the whole table, not the current page**, wherever pagination was added — otherwise a stat tile would silently start lying ("New: 3") the moment a list had more than one page.
+- **Detail pages (quotation/parts-request/test-drive/order/job-card detail) were left alone** except for the two specific overflow fixes above — the audit found no responsive or perf issues on them; rewriting working detail pages onto the kit for style-consistency alone wasn't asked for and wasn't done speculatively.
+- **Verified against the live database and the running dev server** (not just typechecked): hit all six touched admin pages authenticated and confirmed 200s with no error markers in the rendered HTML; exercised the new paginated/status-filtered API responses directly (correct `total`/`page`/`stats` math, empty page 2 behaves correctly); ran a full create → status-change → filtered-lookup → delete round trip against a disposable quotation to confirm the rewritten list's mutation flows still work end-to-end. All test records deleted afterward.
+
 ## Explicitly deferred (not built yet)
 
 | BRD reference | What's missing | Why deferred |

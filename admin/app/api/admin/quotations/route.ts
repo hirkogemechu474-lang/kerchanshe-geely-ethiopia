@@ -2,17 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 
-// GET - Fetch all quotations
+// GET - Paginated quotations, optionally filtered by status. Status counts
+// are computed across the whole table (not just the current page/filter) so
+// the tab counts stay accurate once the list itself is paginated.
 export async function GET(request: NextRequest) {
   try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const quotations = await prisma.quotation.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || '';
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const pageSize = 25;
+    const where = status ? { status } : undefined;
 
-    return NextResponse.json({ quotations });
+    const [quotations, total, statusCounts] = await Promise.all([
+      prisma.quotation.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.quotation.count({ where }),
+      prisma.quotation.groupBy({ by: ['status'], _count: true }),
+    ]);
+
+    const countFor = (s: string) => statusCounts.find((c) => c.status === s)?._count ?? 0;
+
+    return NextResponse.json({
+      quotations,
+      total,
+      page,
+      pageSize,
+      stats: {
+        total: statusCounts.reduce((sum, c) => sum + c._count, 0),
+        new: countFor('new'),
+        contacted: countFor('contacted'),
+        approved: countFor('approved'),
+        converted: countFor('converted'),
+        closed: countFor('closed'),
+      },
+    });
   } catch (error) {
     console.error('Error fetching quotations:', error);
     return NextResponse.json({ error: 'Failed to fetch quotations' }, { status: 500 });

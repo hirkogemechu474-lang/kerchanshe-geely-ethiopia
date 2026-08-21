@@ -414,6 +414,7 @@ export default function JobCardDetail({
       <Card className="space-y-4">
         <h2 className="font-semibold text-gray-900">Parts</h2>
         {state.jobCardParts.length > 0 && (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs font-medium text-gray-500 uppercase border-b border-gray-100">
@@ -459,6 +460,7 @@ export default function JobCardDetail({
               ))}
             </tbody>
           </table>
+          </div>
         )}
         {permissions.canManageJobCards && (
           <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-gray-100">

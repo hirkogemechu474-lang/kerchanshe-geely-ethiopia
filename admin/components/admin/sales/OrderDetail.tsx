@@ -227,8 +227,8 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
         <h2 className="font-semibold text-gray-900 mb-3">Status History</h2>
         <ol className="space-y-2">
           {state.statusHistory.map((h) => (
-            <li key={h.id} className="text-sm flex items-center gap-3">
-              <span className="text-gray-400 w-40 shrink-0">{new Date(h.changedAt).toLocaleString()}</span>
+            <li key={h.id} className="text-sm flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-0.5">
+              <span className="text-gray-400 sm:w-40 sm:shrink-0">{new Date(h.changedAt).toLocaleString()}</span>
               <span>
                 {h.fromStatus ? `${ORDER_STATUS_LABELS[h.fromStatus as keyof typeof ORDER_STATUS_LABELS]} → ` : ''}
                 <strong>{ORDER_STATUS_LABELS[h.toStatus as keyof typeof ORDER_STATUS_LABELS]}</strong>

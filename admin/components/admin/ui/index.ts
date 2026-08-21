@@ -6,3 +6,4 @@ export { TableCard, THead, TBody, Tr, Th, Td } from './Table';
 export { EmptyState, EmptyTableRow } from './EmptyState';
 export { StatTile } from './StatTile';
 export { Modal, ModalActions } from './Modal';
+export { Pagination } from './Pagination';

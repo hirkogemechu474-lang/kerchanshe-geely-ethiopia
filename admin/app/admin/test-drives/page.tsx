@@ -17,6 +17,7 @@ export default async function TestDrivesPage({
   const rows = await prisma.testDrive.findMany({
     orderBy: { createdAt: 'desc' },
     include: { vehicle: { select: { name: true } } },
+    take: 300,
   });
   const testDrives = rows.map((row) => ({
     id: row.id,

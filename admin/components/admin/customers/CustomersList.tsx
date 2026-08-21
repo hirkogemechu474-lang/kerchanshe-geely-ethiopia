@@ -28,11 +28,7 @@ export default function CustomersList() {
   }, []);
 
   useEffect(() => {
-    load('');
-  }, [load]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => load(query), 300);
+    const timer = setTimeout(() => load(query), query ? 300 : 0);
     return () => clearTimeout(timer);
   }, [query, load]);
 
