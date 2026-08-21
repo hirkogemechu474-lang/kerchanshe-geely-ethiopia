@@ -23,6 +23,25 @@ model User {
   lastLogin    DateTime?
 }
 
+// Per-role permission overrides on top of the hardcoded defaults in
+// admin/lib/auth/types.ts's ROLE_PERMISSIONS. One row per (role,
+// permissionKey) that an admin has explicitly toggled away from the
+// default — absence of a row means "use the default". Read fresh on every
+// session check (admin/lib/auth/config.ts), so a change takes effect for
+// already-logged-in users on their next request, no re-login required.
+// `super_admin` is deliberately never overridable (enforced in the API
+// route, not here) so there's always one role that can undo a mistake.
+model RolePermissionOverride {
+  id            String   @id @default(uuid())
+  role          String
+  permissionKey String
+  value         Boolean
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+
+  @@unique([role, permissionKey])
+}
+
 // Vehicles
 model VehicleBrand {
   id           String            @id @default(uuid())

@@ -467,10 +467,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
   },
 };
 
-export function getPermissionsForRole(role: AdminRole): AdminPermissions {
-  return ROLE_PERMISSIONS[role];
-}
-
 export function hasPermission(user: AdminUser, permission: keyof AdminPermissions): boolean {
   return user.permissions[permission] === true;
 }

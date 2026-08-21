@@ -343,6 +343,36 @@ consistently used the shared `admin/components/admin/ui` kit and were responsive
 - **Detail pages (quotation/parts-request/test-drive/order/job-card detail) were left alone** except for the two specific overflow fixes above — the audit found no responsive or perf issues on them; rewriting working detail pages onto the kit for style-consistency alone wasn't asked for and wasn't done speculatively.
 - **Verified against the live database and the running dev server** (not just typechecked): hit all six touched admin pages authenticated and confirmed 200s with no error markers in the rendered HTML; exercised the new paginated/status-filtered API responses directly (correct `total`/`page`/`stats` math, empty page 2 behaves correctly); ran a full create → status-change → filtered-lookup → delete round trip against a disposable quotation to confirm the rewritten list's mutation flows still work end-to-end. All test records deleted afterward.
 
+## Cross-cutting: Editable Roles & Permissions + Web Login Role Routing
+
+Not tied to a BRD FR — a direct user request ("update the web login page based on role access,
+make Roles & Permissions editable, and let it assign whatever user it finds"). Scoped via
+AskUserQuestion: the permission matrix itself becomes editable (previously read-only), and a
+find-a-user-and-assign-role widget was added to the same page. Investigated first: per-user role
+*assignment* already existed and worked (`/admin/users/[id]`'s role picker) — what didn't exist was
+editing what a role itself grants, since `ROLE_PERMISSIONS` was a hardcoded TS object with nothing
+reading or writing it from the database.
+
+| What shipped | Where |
+|---|---|
+| `web` login redirects by the role the server actually authenticated, not the customer/dealer toggle the user had selected before submitting (previously a customer who mis-clicked "Dealer" would be routed to a 404, since no dealer portal exists yet) | `web/app/login/page.tsx` |
+| `web`'s public login endpoint now rejects every staff role via an allowlist (`isPublicRole`), not a 3-role hardcoded blocklist that had silently missed `sales`/`service`/`marketing`/`service_advisor`/`service_manager` — those accounts could previously obtain a customer-portal session | `web/app/api/auth/login/route.ts` |
+| New `RolePermissionOverride` model — one row per (role, permissionKey) an admin has explicitly changed from the hardcoded default; absence of a row means "use the default" | Schema: `admin/prisma/schema.prisma` (mirrored to `web`), migration `20260821080000_add_role_permission_override` |
+| Effective-permissions resolver: hardcoded defaults + DB overrides merged, 30s in-memory cache invalidated on every write so a change is visible immediately, not just after the TTL | `admin/lib/auth/rolePermissions.ts` |
+| The NextAuth `session` callback now computes permissions this way on every session check — an already-logged-in user sees a permission change on their very next request, no re-login needed | `admin/lib/auth/config.ts` |
+| `GET/PATCH/DELETE /api/admin/role-permissions` — read the full matrix, toggle one cell, or reset one cell / a whole role back to defaults | `admin/app/api/admin/role-permissions/route.ts` |
+| `/admin/users/roles` is now interactive: click a cell to grant/revoke, blue vs. green checkmarks distinguish an override from a default, hover an override to reset just that cell, "Reset all" per role column | `admin/components/admin/users/RolesPermissionsManager.tsx`, `admin/app/admin/users/roles/page.tsx` |
+| Find-a-user-and-assign-role widget on the same page (search by name/email, pick a role, saves via the existing `PUT /api/admin/users/[id]`) | `admin/components/admin/users/RolesPermissionsManager.tsx` |
+| The role-preview shown on the user create/edit forms now fetches *effective* permissions instead of always showing hardcoded defaults, so it can't drift from what a role actually grants once overrides exist | `admin/components/admin/users/RolePermissionPreview.tsx` |
+
+**Scope decisions:**
+- **`super_admin` is permanently locked, not just defaulted** — the API rejects any attempt to override it, and the UI shows a lock icon instead of a checkbox on that column. This guarantees there's always one role with full access that can undo any permissions mistake, rather than a scenario where every role gets misconfigured and nothing can fix it back.
+- **Editing is gated on the same `canManageUsers` permission that already gates this whole page** — no new permission flag, matching this session's established reuse-before-inventing convention.
+- **Only the permission keys already shown in the existing read-only matrix are editable** (`admin/lib/auth/permissionGroups.ts`'s curated `PERMISSION_GROUPS` list, not the full ~30-flag `AdminPermissions` interface) — kept the surface area identical to what was already being displayed rather than exposing every flag.
+- **A found user's role is only reassignable to one of the 7 staff roles** (matching `/admin/users/new`'s own dropdown), even though the underlying search can surface any user including existing customer/dealer portal accounts — this widget is for staff role assignment, not for converting portal semantics.
+- **Two pre-existing gaps were found but deliberately NOT fixed in this pass**, to keep this batch scoped to what was asked: `/admin/users/new` and `/admin/users/[id]` have no `requirePermission` gate at all (same class of gap Phase 10 found and fixed on the old quotations/new stub) — the mutation endpoints are still properly gated server-side, so this is an unauthorized-page-*view* gap, not a privilege-escalation one, but it's a real gap worth a future pass.
+- **Verified against the live database and the running dev servers, not just typechecked**: proved an already-authenticated session (same cookie, no re-login) sees a permission toggle take effect on its very next request; confirmed the `super_admin` lock and unknown-permission-key rejection; confirmed reset-one-cell and reset-a-whole-role both work; confirmed the previously-unblocked `sales`/`service_advisor` staff accounts are now correctly rejected by the public login endpoint while real customer/dealer accounts still succeed and return the correct role; ran the full find-user → assign-role → verify round trip against a disposable account. All test overrides and accounts removed afterward.
+
 ## Explicitly deferred (not built yet)
 
 | BRD reference | What's missing | Why deferred |

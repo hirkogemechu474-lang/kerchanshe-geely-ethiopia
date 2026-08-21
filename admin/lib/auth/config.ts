@@ -1,7 +1,8 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { AdminRole, getPermissionsForRole, isAdminRole } from './types';
+import { AdminRole, isAdminRole } from './types';
+import { getEffectivePermissions } from './rolePermissions';
 import { prisma } from '@/lib/prisma';
 
 export const authOptions: NextAuthOptions = {
@@ -70,7 +71,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as AdminRole;
         session.user.dealerId = token.dealerId as string | undefined;
-        session.user.permissions = getPermissionsForRole(token.role as AdminRole);
+        session.user.permissions = await getEffectivePermissions(token.role as AdminRole);
       }
       return session;
     },

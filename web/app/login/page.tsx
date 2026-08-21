@@ -51,8 +51,11 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Redirect based on login type
-      if (loginType === 'dealer') {
+      // Redirect based on the role the server actually authenticated —
+      // not the customer/dealer toggle the user happened to have selected
+      // before submitting, which could send a real customer down the
+      // dealer path (or vice versa) if they picked the wrong tab.
+      if (data.user?.role === 'dealer') {
         router.push('/dealer/dashboard');
       } else {
         router.push('/account');

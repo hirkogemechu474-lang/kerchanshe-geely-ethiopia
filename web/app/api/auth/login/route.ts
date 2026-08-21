@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { sign } from 'jsonwebtoken';
+import { isPublicRole } from '@/lib/auth/types';
 
 export async function POST(request: NextRequest) {
   // Rate limit in production only
@@ -43,8 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Block admin users from using the public login endpoint
-    if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager') {
+    // Only customer/dealer accounts may use this endpoint — every staff role
+    // belongs on the admin login instead. An allowlist here is safer than a
+    // hardcoded staff blocklist, which previously named only 3 of the 8
+    // staff roles and let the rest (sales, service, marketing, service
+    // advisor/manager) slip through onto the public portal.
+    if (!isPublicRole(user.role)) {
       return NextResponse.json(
         { error: 'Please use the admin login page' },
         { status: 403 }
