@@ -191,6 +191,20 @@ export const rateLimitConfigs = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 60,
     message: 'Too many lookups. Please ask the front desk for assistance.'
+  },
+
+  // Showroom QR walk-in flow — a single static QR scanned by many visitors,
+  // possibly over the same showroom WiFi/NAT, so the ceiling needs more
+  // headroom than a normal lead form.
+  showroomVisitStart: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 30,
+    message: 'Too many visit sessions started. Please ask the front desk for assistance.'
+  },
+  showroomVisitRegister: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 10,
+    message: 'Too many attempts. Please ask the front desk for assistance.'
   }
 };
 

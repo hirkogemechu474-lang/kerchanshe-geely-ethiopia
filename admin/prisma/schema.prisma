@@ -154,6 +154,40 @@ model TestDrive {
   updatedAt       DateTime  @updatedAt
 }
 
+// Showroom QR walk-in flow: a static QR poster/screen encodes the stable
+// URL /visit/start. Each scan lands there, which mints a fresh
+// ShowroomVisit row server-side (the QR itself never changes or carries a
+// token). The visitor fills a lightweight name/phone/email form, then
+// picks one of three next actions; the row's id flows through as a
+// `visitId` query param so they never re-type their info.
+model ShowroomVisit {
+  id             String    @id @default(uuid())
+  // Plain string status, matching Quotation.status / TestDrive.status
+  // convention rather than a Postgres enum.
+  // 'started' -> created on scan, before the visitor submits the form
+  // 'registered' -> name/phone/email captured
+  // 'sales' | 'test-drive' | 'purchase' -> visitor picked that action
+  status         String    @default("started")
+  fullName       String?
+  phone          String?
+  email          String?
+  selectedAction String?
+  // Loose links (no FK, matching this model's existing decoupled convention)
+  // to whichever CRM records the visit produced — set once a /quote or
+  // direct-purchase submission carries this visit's id back to the server.
+  quotationId    String?
+  salesOrderId   String?
+  ipAddress      String?
+  userAgent      String?
+  registeredAt   DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 // Quotations
 model Quotation {
   id                String      @id @default(uuid())
@@ -233,6 +267,19 @@ model SalesOrder {
   status          OrderStatus               @default(QUOTED)
   orderDate       DateTime                  @default(now())
   deliveredAt     DateTime?
+  // Sales agreement approval/e-sign (BRD-adjacent: "Sales Quotation
+  // Approval by sales agent -> Generate Agreement -> e-sign/attach").
+  // approvedById is a loose actor reference (no FK), matching every other
+  // changedById-style field in this codebase. The agreement document itself
+  // isn't stored — it's rendered on demand from live order data (see
+  // GET /api/admin/orders/[id]/agreement, mirroring the vehicle brochure's
+  // print-ready-HTML pattern) once approvedAt is set; signedDocumentUrl is
+  // staff uploading a photo/scan of the physically-signed copy, reusing the
+  // existing /api/upload/image convention (same as TestDrive's idPhotoUrl).
+  approvedAt        DateTime?
+  approvedById      String?
+  signedDocumentUrl String?
+  signedAt          DateTime?
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   pdiItems        PdiChecklistItem[]

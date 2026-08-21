@@ -25,8 +25,12 @@ export async function POST(request: NextRequest) {
     // web/app/quote/page.tsx and web/app/configurator/page.tsx (handleSendConfiguration).
     const configuration =
       body.configuration && typeof body.configuration === 'object' ? body.configuration : null;
-    // FR-101 lead source tagging — this route is the digital/website channel.
+    // FR-101 lead source tagging — this route is the digital/website channel,
+    // except when the customer arrived via the showroom QR walk-in flow.
     const source = typeof body.source === 'string' && body.source ? body.source : 'website';
+    // Showroom QR walk-in flow: links this quotation back to the visitor's
+    // ShowroomVisit session, so staff can trace a lead to its originating visit.
+    const visitId = typeof body.visitId === 'string' && body.visitId ? body.visitId : null;
 
     if (!customerName || !phoneNumber || !email || !vehicleModel) {
       return NextResponse.json(
@@ -50,6 +54,12 @@ export async function POST(request: NextRequest) {
         status: 'new',
       },
     });
+
+    if (visitId) {
+      await prisma.showroomVisit.update({ where: { id: visitId }, data: { quotationId: quotation.id } }).catch((error) => {
+        console.error('[quotations:visit-link]', error);
+      });
+    }
 
     const reference = `GEELY-QUOTE-${quotation.id.slice(0, 8).toUpperCase()}`;
     let notificationSent = false;

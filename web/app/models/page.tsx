@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
 import { ArrowUpRight, SlidersHorizontal } from "lucide-react";
@@ -27,6 +28,9 @@ function categorySlugOf(vehicle: VehicleRecord): string {
 }
 
 export default function ModelsPage() {
+  const searchParams = useSearchParams();
+  const visitId = searchParams.get("visitId") || "";
+  const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : "";
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
@@ -263,6 +267,7 @@ export default function ModelsPage() {
                   const specs = (vehicle.specifications || {}) as any;
                   const badge = vehicle.badge || (vehicle.isFeatured ? "Featured" : "");
                   const label = vehicle.vehicleCategory?.name || vehicle.category;
+                  const detailsHref = `/models/${vehicle.slug}${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`;
 
                   return (
                     <div
@@ -270,7 +275,7 @@ export default function ModelsPage() {
                       className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-line hover:border-geely-blue hover:shadow-[0_16px_40px_rgba(11,37,69,0.10)] transition-all"
                     >
                       <Link
-                        href={`/models/${vehicle.slug}`}
+                        href={detailsHref}
                         className="relative aspect-[4/3] bg-[#eef2f7] overflow-hidden block"
                       >
                         {imageUrl ? (
@@ -322,7 +327,7 @@ export default function ModelsPage() {
 
                         <div className="mt-4 pt-4 border-t border-line">
                           <Link
-                            href={`/quote?model=${vehicle.slug}`}
+                            href={`/quote?model=${vehicle.slug}${visitParam}`}
                             className="text-[13px] font-bold text-geely-blue hover:underline"
                           >
                             Price on request
@@ -331,13 +336,13 @@ export default function ModelsPage() {
 
                         <div className="flex gap-3 mt-auto pt-5 border-t border-line">
                           <Link
-                            href={`/quote?model=${vehicle.slug}`}
+                            href={`/quote?model=${vehicle.slug}${visitParam}`}
                             className="flex-1 text-center text-[12px] font-bold py-[10px] rounded-lg bg-navy text-white hover:bg-geely-blue transition-colors"
                           >
                             Get a Quote
                           </Link>
                           <Link
-                            href={`/models/${vehicle.slug}`}
+                            href={detailsHref}
                             className="flex-1 inline-flex items-center justify-center gap-1 text-center text-[12px] font-bold py-[10px] rounded-lg border border-line text-navy hover:border-geely-blue hover:text-geely-blue transition-colors"
                           >
                             Details

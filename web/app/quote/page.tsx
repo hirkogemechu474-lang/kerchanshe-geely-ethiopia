@@ -29,6 +29,10 @@ export default function QuotePage() {
   const requestedTrim = searchParams.get("trim");
   const requestedColor = searchParams.get("color");
   const configurationParam = searchParams.get("config");
+  // Showroom QR walk-in flow: a visitor arriving here already registered
+  // their name/phone/email against a ShowroomVisit row — prefill the form
+  // from it instead of asking again.
+  const visitId = searchParams.get("visitId") || "";
   const [configuration, setConfiguration] = useState<Record<string, unknown> | null>(null);
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
@@ -63,6 +67,31 @@ export default function QuotePage() {
       setConfiguration(null);
     }
   }, [configurationParam]);
+
+  useEffect(() => {
+    if (!visitId) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/visit/${encodeURIComponent(visitId)}`);
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !active) return;
+        const [firstName, ...lastNameParts] = String(data.fullName || "").split(" ");
+        reset((current) => ({
+          ...current,
+          firstName: firstName || current.firstName,
+          lastName: lastNameParts.join(" ") || current.lastName,
+          phone: data.phone || current.phone,
+          email: data.email || current.email,
+        }));
+      } catch {
+        /* silent — the form is simply left blank */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [visitId, reset]);
 
   useEffect(() => {
     let active = true;
@@ -168,6 +197,8 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           tradeInInterest: data.tradeIn === 'yes',
           message,
           configuration: configuration || undefined,
+          source: visitId ? 'qr-showroom' : 'website',
+          visitId: visitId || undefined,
         }),
       }).then(async res => {
         const result = await res.json().catch(() => null);
@@ -181,6 +212,14 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       setEmailNotificationSent(quotationResult.notificationSent ?? false);
       setQuoteId(quotationResult.quotation?.id || null);
       setQuotedVehicleId(data.vehicleId);
+
+      if (visitId) {
+        void fetch(`/api/visit/${encodeURIComponent(visitId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ selectedAction: "quote" }),
+        });
+      }
 
       setIsSubmitted(true);
       reset();
@@ -207,7 +246,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
             </p>
             {emailNotificationSent === false && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">Your quote was saved, but the confirmation email could not be sent. Please check the web server SMTP settings or contact Geely Ethiopia directly.</p>}
             {quoteId && <Link
-              href={`/financing/apply?quote=${encodeURIComponent(quoteId)}${quotedVehicleId ? `&vehicle=${encodeURIComponent(quotedVehicleId)}` : ''}`}
+              href={`/financing/apply?quote=${encodeURIComponent(quoteId)}${quotedVehicleId ? `&vehicle=${encodeURIComponent(quotedVehicleId)}` : ''}${visitId ? `&visitId=${encodeURIComponent(visitId)}` : ''}`}
               className="mb-8 inline-flex items-center justify-center rounded-lg bg-gold px-8 py-4 text-sm font-bold text-[#2c2308] hover:bg-opacity-90 transition-all"
             >
               Continue after quote to direct payment

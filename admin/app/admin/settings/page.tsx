@@ -16,6 +16,7 @@ import {
   ChevronRight,
   FileText,
   UserCircle2,
+  QrCode,
 } from 'lucide-react';
 
 export default async function SettingsPage() {
@@ -98,6 +99,17 @@ export default async function SettingsPage() {
       borderAccent: 'border-amber-200',
       href: '/admin/settings/cookie-banner',
       badge: 'Legal',
+    },
+    {
+      title: 'Showroom Visitor QR Code',
+      description: 'Generate the static QR code for showroom posters/table-tents — visitors scan it to register and choose sales, a test drive, or purchase.',
+      icon: QrCode,
+      color: 'from-blue-500 to-blue-600',
+      accent: 'text-blue-600',
+      bgAccent: 'bg-blue-50',
+      borderAccent: 'border-blue-200',
+      href: '/admin/settings/showroom-qr',
+      badge: 'Sales',
     },
   ];
 

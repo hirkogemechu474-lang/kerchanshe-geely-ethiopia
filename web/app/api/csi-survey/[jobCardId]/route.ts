@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { sendFormEmail } from '@/lib/form-email';
 
 // Post-visit satisfaction survey (BRD FR-602, UC-16). No login required —
 // the job card's own id (a random UUID, never shown to any customer other
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const jobCard = await prisma.jobCard.findUnique({
     where: { id: jobCardId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, jobCardNo: true, customerName: true, customerEmail: true, vehicleModel: true },
   });
 
   if (!jobCard) {
@@ -79,6 +80,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     console.error('[csi-survey] submit failed', error);
     return NextResponse.json({ error: 'Failed to submit survey' }, { status: 500 });
+  }
+
+  if (jobCard.customerEmail) {
+    try {
+      await sendFormEmail({
+        type: 'satisfaction survey',
+        name: jobCard.customerName,
+        email: jobCard.customerEmail,
+        subject: `Satisfaction survey received — ${jobCard.jobCardNo}`,
+        reference: jobCard.jobCardNo,
+        details: [
+          `Vehicle: ${jobCard.vehicleModel || 'Not on file'}`,
+          `Rating: ${rating}/5`,
+          comment ? `Comment: ${comment}` : 'Comment: Not provided',
+        ].join('\n'),
+      });
+    } catch (emailError) {
+      console.error('[csi-survey:email]', emailError);
+    }
   }
 
   return NextResponse.json({ success: true });

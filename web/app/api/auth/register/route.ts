@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { sendFormEmail } from '@/lib/form-email';
 
 /**
  * POST /api/auth/register
@@ -96,7 +97,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // TODO: Send welcome email
+    try {
+      await sendFormEmail({
+        type: 'account registration',
+        name: `${firstName} ${lastName}`,
+        email: user.email,
+        phone,
+        subject: `New customer account — ${firstName} ${lastName}`,
+        reference: user.id,
+        details: `${firstName} ${lastName} created a customer account (${city || 'city not provided'}).`,
+      });
+    } catch (emailError) {
+      console.error('[auth:register:email]', emailError);
+    }
+
     // TODO: If acceptMarketing, add to newsletter list
 
     return NextResponse.json({

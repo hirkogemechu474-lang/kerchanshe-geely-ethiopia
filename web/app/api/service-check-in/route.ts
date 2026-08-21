@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { sendFormEmail } from '@/lib/form-email';
 
 // Customer Self Check-in Kiosk (BRD Screen 3, UC-04 alt flow): "if no bay is
 // immediately available, the job card is created with status Awaiting Bay
@@ -89,6 +90,27 @@ export async function POST(request: NextRequest) {
   const queuePosition = await prisma.jobCard.count({
     where: { status: 'DRAFT_CHECKIN', openTs: { gte: todayStart, lte: todayEnd } },
   });
+
+  if (jobCard.customerEmail) {
+    try {
+      await sendFormEmail({
+        type: 'service check-in',
+        name: jobCard.customerName,
+        email: jobCard.customerEmail,
+        phone: jobCard.customerPhone,
+        subject: `Service check-in — ${jobCard.jobCardNo}`,
+        reference: jobCard.jobCardNo,
+        details: [
+          `Plate number: ${plateNo}`,
+          `Vehicle: ${jobCard.vehicleModel || 'Not on file'}`,
+          `Queue position: #${queuePosition}`,
+          bookingMatch ? `Matched appointment: ${bookingMatch.serviceType}` : 'Walk-in (no appointment matched)',
+        ].join('\n'),
+      });
+    } catch (emailError) {
+      console.error('[service-check-in:email]', emailError);
+    }
+  }
 
   return NextResponse.json({
     jobCardNo: jobCard.jobCardNo,

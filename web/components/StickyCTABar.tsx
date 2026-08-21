@@ -9,6 +9,9 @@ interface StickyCTABarProps {
   vehicleName: string;
   price: string;
   brochureUrl?: string;
+  /** Showroom QR walk-in visit id — appended to the quote/test-drive links so
+   * the visitor's already-captured name/phone/email carries through. */
+  visitId?: string;
   /** Pixel offset from top before the bar becomes visible */
   scrollThreshold?: number;
 }
@@ -18,10 +21,12 @@ export function StickyCTABar({
   vehicleName,
   price,
   brochureUrl,
+  visitId,
   scrollThreshold = 400,
 }: StickyCTABarProps) {
   const [visible, setVisible] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : '';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,14 +79,14 @@ export function StickyCTABar({
           {/* CTA buttons */}
           <div className="grid grid-cols-2 gap-2">
             <Link
-              href={`/quote?model=${vehicleSlug}`}
+              href={`/quote?model=${vehicleSlug}${visitParam}`}
               className="flex items-center justify-center gap-2 bg-gold text-[#2c2308] font-bold text-sm py-3 rounded-lg hover:bg-opacity-90 transition-all"
             >
               <FileText size={16} />
               Get a Quote
             </Link>
             <Link
-              href={`/test-drive?model=${vehicleSlug}`}
+              href={`/test-drive?model=${vehicleSlug}${visitParam}`}
               className="flex items-center justify-center gap-2 bg-navy text-white font-bold text-sm py-3 rounded-lg hover:bg-opacity-90 transition-all"
             >
               <Calendar size={16} />
@@ -106,7 +111,7 @@ export function StickyCTABar({
           </div>
 
           <Link
-            href={`/quote?model=${vehicleSlug}`}
+            href={`/quote?model=${vehicleSlug}${visitParam}`}
             className="flex items-center gap-2 bg-gold text-[#2c2308] font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-opacity-90 transition-all text-center justify-center"
           >
             <FileText size={14} />
@@ -114,7 +119,7 @@ export function StickyCTABar({
           </Link>
 
           <Link
-            href={`/test-drive?model=${vehicleSlug}`}
+            href={`/test-drive?model=${vehicleSlug}${visitParam}`}
             className="flex items-center gap-2 bg-navy text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-opacity-90 transition-all text-center justify-center"
           >
             <Calendar size={14} />

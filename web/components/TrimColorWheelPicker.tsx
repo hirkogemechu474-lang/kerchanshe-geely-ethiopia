@@ -30,6 +30,9 @@ interface TrimColorWheelPickerProps {
   basePrice: number;
   heroImage?: string;
   galleryImages?: string[];
+  /** Showroom QR walk-in visit id — appended to the quote links so the
+   * visitor's already-captured name/phone/email carries through. */
+  visitId?: string;
 }
 
 // Default fallback options if vehicle metadata doesn't specify custom ones
@@ -74,10 +77,12 @@ export function TrimColorWheelPicker({
   basePrice,
   heroImage,
   galleryImages = [],
+  visitId,
 }: TrimColorWheelPickerProps) {
   const [selectedTrim, setSelectedTrim]   = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedWheel, setSelectedWheel] = useState(0);
+  const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : '';
 
   const trim = DEFAULT_TRIMS[selectedTrim];
   const color = DEFAULT_COLORS[selectedColor];
@@ -151,7 +156,7 @@ export function TrimColorWheelPicker({
                   </div>
                 </div>
                 <Link
-                  href={`/quote?model=${vehicleSlug}&trim=${encodeURIComponent(trim.name)}&color=${encodeURIComponent(color.name)}`}
+                  href={`/quote?model=${vehicleSlug}&trim=${encodeURIComponent(trim.name)}&color=${encodeURIComponent(color.name)}${visitParam}`}
                   className="bg-gold text-[#2c2308] font-bold text-xs px-5 py-3 rounded-lg hover:bg-opacity-90 transition-all flex items-center gap-2"
                 >
                   Request Quote for this Build
@@ -292,7 +297,7 @@ export function TrimColorWheelPicker({
             {/* Bottom CTA */}
             <div className="pt-4 border-t border-line flex gap-3">
               <Link
-                href={`/quote?model=${vehicleSlug}&trim=${encodeURIComponent(trim.name)}&color=${encodeURIComponent(color.name)}`}
+                href={`/quote?model=${vehicleSlug}&trim=${encodeURIComponent(trim.name)}&color=${encodeURIComponent(color.name)}${visitParam}`}
                 className="flex-1 bg-gold text-[#2c2308] font-bold text-sm py-3.5 rounded-xl hover:bg-opacity-90 transition-all text-center"
               >
                 Get Custom Quote

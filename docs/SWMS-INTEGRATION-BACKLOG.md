@@ -373,6 +373,59 @@ reading or writing it from the database.
 - **Two pre-existing gaps were found but deliberately NOT fixed in this pass**, to keep this batch scoped to what was asked: `/admin/users/new` and `/admin/users/[id]` have no `requirePermission` gate at all (same class of gap Phase 10 found and fixed on the old quotations/new stub) — the mutation endpoints are still properly gated server-side, so this is an unauthorized-page-*view* gap, not a privilege-escalation one, but it's a real gap worth a future pass.
 - **Verified against the live database and the running dev servers, not just typechecked**: proved an already-authenticated session (same cookie, no re-login) sees a permission toggle take effect on its very next request; confirmed the `super_admin` lock and unknown-permission-key rejection; confirmed reset-one-cell and reset-a-whole-role both work; confirmed the previously-unblocked `sales`/`service_advisor` staff accounts are now correctly rejected by the public login endpoint while real customer/dealer accounts still succeed and return the correct role; ran the full find-user → assign-role → verify round trip against a disposable account. All test overrides and accounts removed afterward.
 
+## Delivered in Phase 15 — Connect the Showroom QR Flow into the SalesOrder Pipeline
+
+A direct user request following on from the showroom QR walk-in flow (visitor scans a QR →
+self-registers → browses `/models` → gets a quote / books a test drive / continues to payment,
+built in a prior session pass). The gap: a quotation from `/quote` just sat there until a staff
+member manually clicked "Convert to Order" (Phase 8), and a customer who chose "Continue to
+Payment" directly bypassed the CRM pipeline entirely — that path only ever created a `Message`
+record, invisible to the Orders/PDI pipeline Phase 8 built. The diagram the user provided
+(`CRM/Leads → QR Self-Register → Vehicle Selection → Quotation → Reservation/Booking → ...`) maps
+almost entirely onto what Phases 1–14 already shipped; this phase closes the one real missing
+link between the new public entry point and the existing sales pipeline.
+
+| What shipped | Where |
+|---|---|
+| New `ShowroomVisit.quotationId` / `.salesOrderId` fields — loose links (no FK, matching this model's existing decoupled convention) so a showroom visit is traceable to whatever CRM records it produced | Schema: `admin/prisma/schema.prisma` (mirrored to `web`), migration `20260821110000_add_showroom_visit_crm_links` |
+| `/quote` submissions arriving with a `visitId` are now tagged `Quotation.source: 'qr-showroom'` (was always `'website'` before) and the source `ShowroomVisit` is updated with the new quotation's id | `web/app/quote/page.tsx`, `web/app/api/quotations/route.ts` |
+| Direct "Continue to Payment" purchases (`/financing/apply` → `/api/public/purchases`) now ALSO create a `Quotation` + immediately convert it into a `SalesOrder` (status `BOOKED`, `financingStatus: 'PENDING'`, PDI checklist seeded) — mirroring `admin/app/api/admin/quotations/[id]/convert-to-order/route.ts`'s exact fields/logic as a parallel `web`-side implementation (same precedent as the service-check-in kiosk) — instead of only creating a disconnected `Message` | `web/app/api/public/purchases/route.ts` (`linkPurchaseToSalesPipeline`), `web/lib/sales/pdiChecklistTemplate.ts` (mirrors `admin/lib/sales/pdiChecklistTemplate.ts`) |
+| Reuses an existing `Quotation` instead of creating a duplicate when the purchase followed a real prior "Get a Quote" request — `financing/apply`'s `quote` param now carries either a real `Quotation` id or the `qr-visit-<id>` UI-gate sentinel, and the purchases route distinguishes the two | `web/app/financing/apply/page.tsx`, `web/app/api/public/purchases/route.ts` |
+| Applies to every direct purchase, not just QR-sourced ones (`source` is `'qr-showroom'` when a `visitId` is present, `'website'` otherwise) — kept consistent rather than only fixing this for one traffic source | Same route |
+
+**Scope decisions made in Phase 15:**
+- **The existing `Message`-based purchase record and its mock-payment flow were left completely untouched** — the new `Quotation`/`SalesOrder` creation is purely additive, wrapped in its own try/catch so a failure there can never break the existing purchase/payment/email flow that was already working. The `Message` is payment-processing bookkeeping (what the mock payment step keys off); the `SalesOrder` is the CRM/sales pipeline record — different concerns, not two representations of the same data, so keeping both was a deliberate choice (unlike Phase 9's message-JSON duplication, which really was the same data twice).
+- **No new email is sent for the auto-created `Quotation`/`SalesOrder`.** The purchase already triggers its own customer/admin email via the existing `Message` flow; adding a second notification for the same event would be redundant.
+- **The sales-order state machine gates were not touched.** A `SalesOrder` created this way starts at `BOOKED` exactly like a staff-converted one and goes through the same PDI-gated `orderStateMachine.ts` from Phase 8 — no new lifecycle branch was introduced for QR-originated orders.
+- **A `Quotation` from a plain "Get a Quote" request is NOT auto-converted to a `SalesOrder`.** Only a purchase (explicit "I want to buy now" intent, with a vehicle/bank/quantity already chosen) triggers the automatic conversion — a quote request alone still requires a staff member's deliberate "Convert to Order" action, preserving Phase 8's original intent that becoming an "order" is a judgment call, not automatic on every lead.
+- **Verified against the live database, not just typechecked**: ran three real end-to-end cases through a disposable test instance — (1) a `/quote` submission carrying a `visitId` correctly tagged `source: 'qr-showroom'` and linked back to the `ShowroomVisit`; (2) a direct purchase with no prior quote correctly created a new `Quotation` (`status: converted`) + `SalesOrder` (`SO-1002`, `BOOKED`, `PENDING` financing, 5 PDI items, status history) and linked both ids onto the `ShowroomVisit`; (3) a purchase referencing an already-existing `Quotation` id correctly reused it (confirmed via a phone-number count that no duplicate was created) and created a new `SalesOrder` (`SO-1003`) against that same quotation. All test records (quotations, sales orders + their PDI items/status history, showroom visits, messages) deleted afterward. Note: real confirmation emails were sent to the configured `ADMIN_EMAIL`/SMTP account during this verification (pre-existing `sendFormEmail`/purchase-email behavior on these routes, not something this phase added) — worth knowing if that inbox is monitored.
+
+## Delivered in Phase 16 — Sales Agreement Approval & E-Sign/Attach
+
+Picked from the four items Phase 15 left on the table for the user to choose from — the biggest
+structural gap in the CRM pipeline diagram: `Sales Quotation → Approval by sales agent → Generate
+Agreement → send to Customer → esign or attach`. None of it existed in any form (confirmed via an
+Explore-agent survey first: no PDF library in either app, no signature-capture UI/library/field
+anywhere, and Phase 11 had already deliberately decided against inventing e-signature for test
+drives — "a photo of the ID document... was judged sufficient").
+
+| What shipped | Where |
+|---|---|
+| `SalesOrder` gained `approvedAt`/`approvedById` (loose actor reference, no FK — same convention as every other `changedById`-style field) and `signedDocumentUrl`/`signedAt` | Schema: `admin/prisma/schema.prisma` (synced to `web` via `scripts/sync-web-prisma-schema.mjs`), migration `20260821120000_add_sales_order_approval_agreement` |
+| `POST /api/admin/orders/[id]/approve` — a sales agent approves a booked order (one-way; rejects with 409 if already approved) | `admin/app/api/admin/orders/[id]/approve/route.ts` |
+| `GET /api/admin/orders/[id]/agreement` — a print-ready HTML sales agreement (customer/vehicle/config/price/financing, signature lines), rendered fresh from live order data on every request rather than generated once and stored. Mirrors `web/app/api/vehicles/[id]/brochure`'s "pure HTML + print CSS, `window.print()` on load, zero external dependencies" pattern exactly, since no PDF-generation library exists anywhere in this codebase. Returns 409 until the order is approved | `admin/app/api/admin/orders/[id]/agreement/route.ts` |
+| "Attach signed copy" — staff photograph/scan the physically-signed agreement and upload it, reusing the exact upload-then-PATCH convention already established by `TestDriveIdCapture.tsx` (`POST /api/upload/image` → `PATCH` the parent record with the returned URL) | `admin/app/api/admin/orders/[id]/route.ts` (PATCH now also accepts `signedDocumentUrl`, stamping `signedAt`), new `admin/components/admin/sales/OrderApprovalPanel.tsx` (mirrors `TestDriveIdCapture.tsx`'s structure), wired into `OrderDetail.tsx` between the PDI card and "Move Order" |
+| New lifecycle gate: an order cannot move to `READY_FOR_DELIVERY` until it's both approved AND has a signed document attached — enforced in the same single source of truth as the existing PDI gate, not just hidden in the UI | `admin/lib/sales/orderStateMachine.ts` (new `agreementComplete` context flag), `admin/app/api/admin/orders/[id]/status/route.ts` |
+
+**Scope decisions made in Phase 16:**
+- **No new `OrderStatus` enum value.** Approval/agreement is modeled as scalar fields + a transition guard on `READY_FOR_DELIVERY`, exactly mirroring how PDI already works (a checklist gate, not a status) — this was the more consistent option given the existing state machine's demonstrated pattern of independent readiness checks converging on one gate, rather than inserting a new intermediate status for a 5-status enum that has no room reserved for it.
+- **No new permission flag.** Reuses `canManageQuotations` (approve, attach) and `canViewQuotations` (view the agreement) — the diagram itself names the approver as "a sales agent," the same actor who already manages every other part of this order. `canApproveWarrantyClaims` exists in this codebase as a precedent for splitting "approve" from "manage" when a business rule wants a distinct sign-off role, but nothing in this ask calls for restricting approval more tightly than existing order-management access.
+- **"E-sign" means "staff attaches a photo/scan of the physically-signed agreement," not a canvas-drawn or typed digital signature.** Directly follows Phase 11's precedent decision for test-drive ID capture ("a photo... was judged sufficient without inventing an unrequested e-signature flow") — the diagram's own wording ("esign **or** attach") explicitly offers this as a valid alternative, not a fallback.
+- **Attaching the signed copy is staff-mediated, not a public customer-facing upload.** Same ADR-002 reasoning as Phase 11: `admin` and `web` are separate deployments with separate local-disk upload storage, so a customer-side upload from `web` couldn't reach `admin`'s `/api/upload/image` storage. The customer signs a printed/downloaded copy; staff scan and attach it when it's returned — consistent with how ID capture already works ("captured when the customer physically arrives").
+- **The agreement document itself is never stored** — `GET .../agreement` always renders current order data live. Only the *signed* copy (a photo/scan) gets a stored URL. This avoids a stale-document problem (an order's price/configuration could still change after approval) and matches the brochure route's existing "generate on demand" precedent.
+- **Approving does not touch `SalesOrderStatusHistory`** — it isn't a status change, so it doesn't appear in the status timeline; `approvedAt`/`approvedById` on the order itself is the record of it, matching how `financingStatus` changes also don't touch status history.
+- **Verified against the live database and the live admin dev server, not just typechecked** (authenticated via the seeded `super.admin@geelyethiopia.com` demo account): created a real quotation → converted to an order → confirmed `GET .../agreement` correctly 409s before approval → approved it → confirmed the agreement now renders as HTML → confirmed a second approve attempt correctly 409s → confirmed `READY_FOR_DELIVERY` is blocked by the PDI gate first (order had unchecked PDI items) → attached a signed-document URL → checked off every PDI item → confirmed `READY_FOR_DELIVERY` now succeeds with both gates satisfied. All test records (order, its PDI items and status history, the quotation) deleted afterward.
+
 ## Explicitly deferred (not built yet)
 
 | BRD reference | What's missing | Why deferred |
@@ -387,6 +440,22 @@ reading or writing it from the database.
 | Full invoicing (UC-10 Generate Invoice) | Job cards have an `invoiceAmount` field but no line-item invoice, AR posting, or ERP voucher reference | No ERP/AR system exists to post to |
 
 ## Suggested next phase
+
+Phase 15 connected the showroom QR flow into the `SalesOrder` pipeline; Phase 16 added sales
+approval + agreement + e-sign/attach. Comparing what's left against the full CRM pipeline diagram
+the user provided (`CRM/Leads → QR Self-Register → Vehicle Selection → Quotation → Reservation/
+Booking → Credit/Financing → Sales Quotation Approval → Generate Agreement → e-sign/attach →
+Vehicle Allocation → PDI → Registration → Invoice → Payment → Delivery → Commission →
+Warranty/Service`), three stages genuinely don't exist in any form yet:
+- **Sales Invoice** — `JobCard.invoiceAmount` exists for workshop repairs; `SalesOrder` has no
+  line-item invoice at all.
+- **Commission tracking** — doesn't exist in any form.
+- **Vehicle Registration tracking** — no stage between PDI and Invoice records government
+  registration/plate info on an order.
+
+Two diagram stages remain permanently blocked, same reasoning as everything else in "Explicitly
+deferred" below: **Vehicle Allocation** (needs a real ERP/OEM system that doesn't exist here) and a
+**real payment gateway** (Chapa/Telebirr/etc. — still mock-only, no vendor chosen).
 
 Every named Functional Requirement in the BRD's §6.1 CRM & Showroom section (FR-101 through
 FR-106) has baseline coverage, Phase 12 closed the last deferred item that was actually buildable

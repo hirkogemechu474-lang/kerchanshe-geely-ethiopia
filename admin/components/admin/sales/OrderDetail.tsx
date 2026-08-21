@@ -11,6 +11,7 @@ import {
 import type { AdminPermissions } from '@/lib/auth/types';
 import { Card, Button } from '@/components/admin/ui';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
+import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';
 
 interface PdiItem {
   id: string;
@@ -39,6 +40,9 @@ interface OrderData {
   status: string;
   orderDate: string;
   deliveredAt: string | null;
+  approvedAt: string | null;
+  signedDocumentUrl: string | null;
+  signedAt: string | null;
   pdiItems: PdiItem[];
   statusHistory: StatusHistoryEntry[];
   quotation: { id: string } | null;
@@ -115,7 +119,8 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
   };
 
   const pdiComplete = state.pdiItems.length > 0 && state.pdiItems.every((p) => p.isChecked);
-  const allowedTransitions = getAllowedOrderTransitions(state.status as any, { pdiComplete });
+  const agreementComplete = Boolean(state.approvedAt) && Boolean(state.signedDocumentUrl);
+  const allowedTransitions = getAllowedOrderTransitions(state.status as any, { pdiComplete, agreementComplete });
 
   return (
     <div className="space-y-6">
@@ -205,6 +210,12 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
         </p>
       </Card>
 
+      <OrderApprovalPanel
+        order={{ id: state.id, approvedAt: state.approvedAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt }}
+        canManage={permissions.canManageQuotations}
+        onUpdated={refresh}
+      />
+
       {permissions.canManageQuotations && allowedTransitions.length > 0 && (
         <Card>
           <h2 className="font-semibold text-gray-900 mb-3">Move Order</h2>
@@ -218,6 +229,11 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
           {state.status === 'BOOKED' && !pdiComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Complete the PDI checklist above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {state.status === 'BOOKED' && pdiComplete && !agreementComplete && (
+            <p className="text-xs text-orange-600 mt-2">
+              Approve the order and attach the signed agreement above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
         </Card>

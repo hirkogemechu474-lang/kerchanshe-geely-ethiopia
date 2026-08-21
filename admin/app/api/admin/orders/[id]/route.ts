@@ -35,13 +35,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
   const body = await request.json();
-  const { financingStatus, totalPrice } = body;
+  const { financingStatus, totalPrice, signedDocumentUrl } = body;
 
   const order = await prisma.salesOrder.update({
     where: { id },
     data: {
       ...(financingStatus !== undefined && { financingStatus }),
       ...(totalPrice !== undefined && { totalPrice: totalPrice === null ? null : Number(totalPrice) }),
+      // Staff-attached photo/scan of the physically-signed sales agreement
+      // (BRD-adjacent "e-sign or attach" step) — reuses the same
+      // upload-then-PATCH convention as TestDrive.idPhotoUrl.
+      ...(signedDocumentUrl !== undefined && {
+        signedDocumentUrl,
+        signedAt: signedDocumentUrl ? new Date() : null,
+      }),
     },
   });
 

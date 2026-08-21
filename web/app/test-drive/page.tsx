@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
@@ -23,6 +24,8 @@ interface TestDriveFormData {
 }
 
 export default function TestDrivePage() {
+  const searchParams = useSearchParams();
+  const visitId = searchParams.get("visitId") || "";
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -35,6 +38,34 @@ export default function TestDrivePage() {
     formState: { errors },
     reset,
   } = useForm<TestDriveFormData>();
+
+  // Showroom QR walk-in flow: a visitor arriving here already registered
+  // their name/phone/email against a ShowroomVisit row — prefill the form
+  // from it instead of asking again.
+  useEffect(() => {
+    if (!visitId) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/visit/${encodeURIComponent(visitId)}`);
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !active) return;
+        const [firstName, ...lastNameParts] = String(data.fullName || "").split(" ");
+        reset((current) => ({
+          ...current,
+          firstName: firstName || current.firstName,
+          lastName: lastNameParts.join(" ") || current.lastName,
+          phone: data.phone || current.phone,
+          email: data.email || current.email,
+        }));
+      } catch {
+        /* silent — the form is simply left blank */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [visitId, reset]);
 
   useEffect(() => {
     let active = true;
@@ -96,6 +127,14 @@ export default function TestDrivePage() {
         message: data.message,
         consentGiven: data.consent
       });
+
+      if (visitId) {
+        void fetch(`/api/visit/${encodeURIComponent(visitId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ selectedAction: "test-drive" }),
+        });
+      }
 
       setIsSubmitted(true);
       reset();

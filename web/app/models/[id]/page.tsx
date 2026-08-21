@@ -137,14 +137,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function VehicleDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ visitId?: string }>;
+}) {
   const { id } = await params;
+  const { visitId } = await searchParams;
   const vehicle = await getVehicle(id);
   const [brochure, contactPhone] = await Promise.all([getBrochureSetting(), getContactPhone()]);
 
   if (!vehicle) {
     notFound();
   }
+
+  // Showroom QR walk-in flow: a visitor arriving from /models carries their
+  // visit id so the downstream quote/test-drive/purchase pages can prefill
+  // their already-captured name/phone/email without re-asking.
+  const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : "";
+  const detailsHrefFor = (slug: string) => `/models/${slug}${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`;
 
   const brochureUrl = publicBrochureUrl(brochure?.url, `/api/vehicles/${vehicle.slug}/brochure`);
   const contactPhoneHref = `tel:${contactPhone.replace(/[^0-9+]/g, "")}`;
@@ -267,7 +280,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         <div className="max-w-[1280px] mx-auto px-4 md:px-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-[11px] tracking-wider mb-4">
-            <Link href="/models" className="opacity-70 hover:opacity-100 transition-opacity">
+            <Link href={`/models${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`} className="opacity-70 hover:opacity-100 transition-opacity">
               Models
             </Link>
             <span className="opacity-50">›</span>
@@ -301,13 +314,13 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
               {/* Primary CTAs */}
               <div className="flex gap-3 flex-wrap mb-4">
                 <Link
-                  href={`/quote?model=${vehicle.slug}`}
+                  href={`/quote?model=${vehicle.slug}${visitParam}`}
                   className="bg-gold text-[#2c2308] font-bold text-sm px-7 py-4 rounded hover:bg-opacity-90 transition-all"
                 >
                   Get a Quote
                 </Link>
                 <Link
-                  href={`/test-drive?model=${vehicle.slug}`}
+                  href={`/test-drive?model=${vehicle.slug}${visitParam}`}
                   className="border border-white border-opacity-50 text-white font-semibold text-sm px-7 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
                 >
                   Book Test Drive
@@ -431,6 +444,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         basePrice={displayPrice}
         heroImage={publicHeroImageUrl || undefined}
         galleryImages={publicImageList}
+        visitId={visitId}
       />
 
       {/* ── 360° SPOTLIGHT SECTION ────────────────────────────────────── */}
@@ -565,13 +579,13 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                 </p>
                 <div className="flex gap-3 flex-wrap">
                   <Link
-                    href={`/financing/apply?vehicle=${vehicle.id}`}
+                    href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
                     className="bg-gold text-[#2c2308] font-bold text-sm px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
                   >
                     Purchase This Vehicle
                   </Link>
                   <Link
-                    href={`/financing/apply?vehicle=${vehicle.id}`}
+                    href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
                     className="border border-white/40 text-white font-semibold text-sm px-6 py-3 rounded-lg hover:bg-white/10 transition-all"
                   >
                     Purchase Vehicle
@@ -627,13 +641,13 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
-              href={`/test-drive?model=${vehicle.slug}`}
+              href={`/test-drive?model=${vehicle.slug}${visitParam}`}
               className="bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
             >
               Book a Test Drive
             </Link>
             <Link
-              href={`/quote?model=${vehicle.slug}`}
+              href={`/quote?model=${vehicle.slug}${visitParam}`}
               className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded-lg hover:bg-white hover:bg-opacity-10 transition-all"
             >
               Request a Quote
@@ -659,7 +673,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
               {relatedVehicles.map((rv: typeof relatedVehicles[number]) => (
                 <Link
                   key={rv.id}
-                  href={`/models/${rv.slug}`}
+                  href={detailsHrefFor(rv.slug)}
                   className="bg-white border border-line rounded-xl overflow-hidden hover:border-geely-blue hover:shadow-lg transition-all group"
                 >
                   <div className="h-[160px] bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel overflow-hidden">
@@ -696,6 +710,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         vehicleName={vehicle.name}
         price="Price on request"
         brochureUrl={brochureUrl}
+        visitId={visitId}
       />
     </MainLayout>
   );

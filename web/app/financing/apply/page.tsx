@@ -51,6 +51,11 @@ export default function VehiclePurchasePage() {
   const searchParams = useSearchParams();
   const quoteReference = searchParams.get("quote") || "";
   const preselectedVehicle = searchParams.get("vehicle") || "";
+  // Showroom QR walk-in flow: a visitor arriving here already registered
+  // their name/phone/email against a ShowroomVisit row. The `quote` param
+  // above only needs to be truthy to pass the "request a quote first" gate
+  // below — it isn't validated against a real Quotation record.
+  const visitId = searchParams.get("visitId") || "";
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(preselectedVehicle);
@@ -70,6 +75,29 @@ export default function VehiclePurchasePage() {
     bankId: "",
     consent: false,
   });
+
+  useEffect(() => {
+    if (!visitId) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/visit/${encodeURIComponent(visitId)}`);
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !active) return;
+        setForm((current) => ({
+          ...current,
+          fullName: data.fullName || current.fullName,
+          phone: data.phone || current.phone,
+          email: data.email || current.email,
+        }));
+      } catch {
+        /* silent — the form is simply left blank */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [visitId]);
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) || null,
@@ -145,12 +173,22 @@ export default function VehiclePurchasePage() {
           quantity,
           purchaseAmount,
           paymentMethod: "bank-online",
+          quoteReference,
+          visitId: visitId || undefined,
         }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || "Unable to process this purchase.");
       }
+      if (visitId) {
+        void fetch(`/api/visit/${encodeURIComponent(visitId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ selectedAction: "purchase" }),
+        });
+      }
+
       setConfirmation(result.purchase);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (submissionError) {

@@ -16,6 +16,9 @@ const FORWARD_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 export interface OrderTransitionContext {
   pdiComplete: boolean;
+  // Approved by a sales agent AND the signed agreement has been attached —
+  // see admin/app/api/admin/orders/[id]/approve and .../agreement.
+  agreementComplete: boolean;
 }
 
 export class OrderTransitionError extends Error {}
@@ -47,6 +50,10 @@ export function assertOrderTransitionAllowed(from: OrderStatus, to: OrderStatus,
 
   if (to === 'READY_FOR_DELIVERY' && !ctx.pdiComplete) {
     throw new OrderTransitionError('Cannot mark ready for delivery until every PDI checklist item is complete.');
+  }
+
+  if (to === 'READY_FOR_DELIVERY' && !ctx.agreementComplete) {
+    throw new OrderTransitionError('Cannot mark ready for delivery until the order is approved and the signed agreement is attached.');
   }
 }
 
