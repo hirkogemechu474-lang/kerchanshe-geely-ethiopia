@@ -223,6 +223,7 @@ const navSections: NavSection[] = [
           { name: 'Live Dashboard', href: '/admin/workshop/dashboard', icon: Gauge, permission: 'canViewJobCards' },
           { name: 'Management BI Dashboard', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
           { name: 'Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
+          { name: 'Customers', href: '/admin/customers', icon: Users, permission: 'canViewJobCards' },
           { name: 'Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canViewJobCards' },
           { name: 'Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },
           { name: 'Bay Scheduling Board', href: '/admin/workshop/bays', icon: LayoutGrid, permission: 'canViewJobCards' },

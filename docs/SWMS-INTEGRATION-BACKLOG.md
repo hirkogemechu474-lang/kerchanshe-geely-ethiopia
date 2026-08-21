@@ -294,6 +294,27 @@ built in Phase 6/7.
   and lets the customer fill in their details manually, exactly as before this phase for a new
   customer.
 
+## Delivered in Phase 14 — Standalone Customer/Vehicle Admin Screen
+
+Revisits a scope cut explicitly logged back in Phase 6: "No standalone Customer/CustomerVehicle
+admin management screen was built. The value ships through the write-up flow; a dedicated
+list/edit screen for browsing all customers is a possible future nice-to-have." Picked over the
+other two shipped-phase scope cuts on the table (an OEM-template CSV export, a multi-month CSI
+trend) because both of those are blocked on something this codebase doesn't have yet — an OEM
+format spec, and a few months of real survey data — while this one was buildable outright.
+
+| What shipped | Where |
+|---|---|
+| Customers list — search by name, phone, plate, or VIN; stat tiles for total customers, vehicles on file, and vehicles currently under warranty | `admin/app/api/admin/customers/route.ts`, `admin/components/admin/customers/CustomersList.tsx`, `admin/app/admin/customers/page.tsx` |
+| Customer detail — editable contact info (name/phone/email/address), every linked vehicle shown with its own editable record (plate, model/trim/color, warranty dates, last known mileage) and up to 10 most recent job cards per vehicle, linking through to the existing job card detail page | `admin/app/api/admin/customers/[id]/route.ts`, `admin/app/api/admin/customer-vehicles/[id]/route.ts`, `admin/components/admin/customers/CustomerDetail.tsx`, `admin/app/admin/customers/[id]/page.tsx` |
+| Nav entry | Added "Customers" under SWMS → Service / Workshop, next to Job Cards | `admin/components/admin/AdminLayout.tsx` |
+
+**Scope decisions made in Phase 14:**
+- **No schema change, no new permission flag.** Every field already existed on `Customer`/`CustomerVehicle` since Phase 6; this phase only adds a browse/edit surface for data that previously could only be seen or changed mid-visit through the job-card write-up flow. Reused `canViewJobCards` (page access) and `canManageJobCards` (edit gate) — the same roles that already touch this data (`service_advisor`, `service_manager`, `service`, `manager`, `admin`, `super_admin`); `sales`/`marketing` correctly stay locked out, since this is workshop customer data, not a sales lead.
+- **Browse and correct, not create.** No "add customer" action was added — job-card write-up (find-or-create by phone) and the kiosk check-in are still the only two ways a `Customer`/`CustomerVehicle` record comes into existence. This screen is for fixing what's already there (a mistyped plate, a corrected warranty date), matching exactly the gap Phase 6 flagged rather than expanding it into a new intake path.
+- **The list API itself only requires an authenticated admin session, not `canViewJobCards`** — consistent with every other list GET in this codebase (e.g. `vehicle-lookup`, `orders`); the permission check lives at the page level (`requirePermission('canViewJobCards')`) and again explicitly on both PATCH routes. Verified directly: a `sales`-role session could still read `/api/admin/customers` (matching the existing convention) but got a 403 attempting to PATCH a customer or vehicle record.
+- **Verified against the live database, not just typechecked**: created a real `Customer` + `CustomerVehicle` + `JobCard`, confirmed the list search matched by plate and by VIN fragment, confirmed the detail endpoint returned the linked service history, PATCHed both the customer's phone and the vehicle's plate/mileage and confirmed the changes persisted, and confirmed empty-string validation and 403-on-forbidden-role behaved correctly. All test records deleted afterward.
+
 ## Explicitly deferred (not built yet)
 
 | BRD reference | What's missing | Why deferred |
@@ -310,10 +331,11 @@ built in Phase 6/7.
 ## Suggested next phase
 
 Every named Functional Requirement in the BRD's §6.1 CRM & Showroom section (FR-101 through
-FR-106) has baseline coverage, and Phase 12 closed the last deferred item that was actually
-buildable without an external dependency. **Everything remaining in "Explicitly deferred" above is
-now either blocked on a business decision or on infrastructure this codebase doesn't have** — there
-is no more self-contained, no-dependency slice left to pick by default:
+FR-106) has baseline coverage, Phase 12 closed the last deferred item that was actually buildable
+without an external dependency, and Phase 14 closed the one shipped-phase scope cut that had no
+external blocker. **Everything remaining in "Explicitly deferred" above is now either blocked on a
+business decision or on infrastructure this codebase doesn't have** — there is no more
+self-contained, no-dependency slice left to pick by default:
 
 - **Real SMS/WhatsApp delivery** — confirmed pending per the user; don't re-ask, it stays pending
   until a provider choice is brought.
