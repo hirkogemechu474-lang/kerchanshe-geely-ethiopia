@@ -12,9 +12,10 @@ const topNav = [
   { label: 'Technology', href: '/technology', displayOrder: 3 },
   { label: 'Services', href: '/service', displayOrder: 4 },
   { label: 'Dealers', href: '/dealers', displayOrder: 5 },
-  { label: 'Financing', href: '/financing', displayOrder: 6 },
-  { label: 'News', href: '/news', displayOrder: 7 },
-  { label: 'About', href: '/about', displayOrder: 8 },
+  { label: 'Showroom', href: '/visit/start', icon: 'MapPin', displayOrder: 6 },
+  { label: 'Financing', href: '/financing', displayOrder: 7 },
+  { label: 'News', href: '/news', displayOrder: 8 },
+  { label: 'About', href: '/about', displayOrder: 9 },
 ];
 
 const quickActions = [

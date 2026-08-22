@@ -43,6 +43,9 @@ interface Confirmation {
   checkoutUrl?: string | null;
   paymentId?: string;
   paymentUrl?: string;
+  // Whether a sales agent has approved the resulting SalesOrder yet — until
+  // then, payment cannot proceed (docs/SWMS-INTEGRATION-BACKLOG.md Phase 16).
+  approved?: boolean;
 }
 
 const formatETB = (value: number) => `ETB ${Math.round(value).toLocaleString("en-US")}`;
@@ -64,10 +67,13 @@ export default function VehiclePurchasePage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [initiatingPayment, setInitiatingPayment] = useState(false);
+  // Direct prefill fallback for entry points with no ShowroomVisit (e.g.
+  // the sales-agreement signing page) — passed straight as query params
+  // rather than fetched by visitId.
   const [form, setForm] = useState<PurchaseForm>({
-    fullName: "",
-    phone: "",
-    email: "",
+    fullName: searchParams.get("name") || "",
+    phone: searchParams.get("phone") || "",
+    email: searchParams.get("email") || "",
     nationalId: "",
     color: "",
     quantity: "1",
@@ -236,9 +242,15 @@ export default function VehiclePurchasePage() {
               <div className="flex justify-between gap-4"><span className="text-steel">Payment status</span><strong className={confirmation.status === "PAID" ? "text-green-700" : "text-amber-700"}>{confirmation.status === "PAID" ? "Paid / Payment Confirmed" : "Payment Pending"}</strong></div>
             </div>
             {confirmation.status !== "PAID" && (
-              <button type="button" onClick={() => void continueToBankPayment()} disabled={initiatingPayment} className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all mb-4 disabled:opacity-60">
-                {initiatingPayment ? "Starting secure payment..." : "Continue to Bank Payment"}
-              </button>
+              confirmation.approved ? (
+                <button type="button" onClick={() => void continueToBankPayment()} disabled={initiatingPayment} className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all mb-4 disabled:opacity-60">
+                  {initiatingPayment ? "Starting secure payment..." : "Continue to Bank Payment"}
+                </button>
+              ) : (
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 text-left">
+                  Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign — you can continue to payment right after that.
+                </div>
+              )
             )}
             <p className="text-sm text-steel mb-6">Our sales team will contact you with the next steps for vehicle delivery.</p>
             <Link href="/" className="inline-block bg-geely-blue text-white font-bold px-8 py-3 rounded-lg hover:bg-navy transition-all">Back to Home</Link>

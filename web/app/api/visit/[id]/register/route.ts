@@ -39,6 +39,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // Only notify on the first registration, not on every idempotent resubmit.
   if (isFirstRegistration && email) {
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+    const continueUrl = `${siteUrl}/models?visitId=${encodeURIComponent(visit.id)}`;
     try {
       await sendFormEmail({
         type: 'showroom visit',
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         phone,
         subject: `Showroom walk-in — ${fullName}`,
         reference: visit.id,
-        details: `${fullName} registered at the showroom via the QR walk-in flow and is now browsing our vehicle catalog.`,
+        details: `${fullName} registered at the showroom via the QR walk-in flow and is now browsing our vehicle catalog.\n\nContinue browsing: ${continueUrl}`,
       });
     } catch (emailError) {
       console.error('[visit:register:email]', emailError);

@@ -19,6 +19,10 @@ export interface OrderTransitionContext {
   // Approved by a sales agent AND the signed agreement has been attached —
   // see admin/app/api/admin/orders/[id]/approve and .../agreement.
   agreementComplete: boolean;
+  // Vehicle registration recorded — see .../register-vehicle.
+  registrationComplete: boolean;
+  // Sales invoice generated — see .../invoice.
+  invoiceComplete: boolean;
 }
 
 export class OrderTransitionError extends Error {}
@@ -55,6 +59,14 @@ export function assertOrderTransitionAllowed(from: OrderStatus, to: OrderStatus,
   if (to === 'READY_FOR_DELIVERY' && !ctx.agreementComplete) {
     throw new OrderTransitionError('Cannot mark ready for delivery until the order is approved and the signed agreement is attached.');
   }
+
+  if (to === 'DELIVERED' && !ctx.registrationComplete) {
+    throw new OrderTransitionError('Cannot mark delivered until the vehicle registration is recorded.');
+  }
+
+  if (to === 'DELIVERED' && !ctx.invoiceComplete) {
+    throw new OrderTransitionError('Cannot mark delivered until the sales invoice has been generated.');
+  }
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -80,4 +92,11 @@ export const FINANCING_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pending',
   APPROVED: 'Approved',
   DECLINED: 'Declined',
+};
+
+export const COMMISSION_STATUS_LABELS: Record<string, string> = {
+  NOT_APPLICABLE: 'Not applicable',
+  PENDING: 'Pending (order not yet delivered)',
+  EARNED: 'Earned',
+  PAID: 'Paid',
 };

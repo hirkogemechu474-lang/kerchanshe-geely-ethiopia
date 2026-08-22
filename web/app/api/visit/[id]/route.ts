@@ -26,6 +26,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   const body = await request.json().catch(() => null);
   const selectedAction = typeof body?.selectedAction === 'string' ? body.selectedAction : '';
+  // Loose links back to whichever CRM record this action produced — see
+  // web/app/api/quotations/route.ts and .../purchases/route.ts for the
+  // quotation/purchase equivalents, set directly by those routes instead.
+  const testDriveId = typeof body?.testDriveId === 'string' && body.testDriveId ? body.testDriveId : undefined;
 
   if (!ALLOWED_ACTIONS.includes(selectedAction)) {
     return NextResponse.json({ error: 'Invalid selectedAction' }, { status: 400 });
@@ -42,6 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status: selectedAction,
       selectedAction,
       completedAt: new Date(),
+      ...(testDriveId && { testDriveId }),
     },
   });
 

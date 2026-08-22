@@ -27,9 +27,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const pdiComplete = order.pdiItems.length > 0 && order.pdiItems.every((p) => p.isChecked);
   const agreementComplete = Boolean(order.approvedAt) && Boolean(order.signedDocumentUrl);
+  const registrationComplete = Boolean(order.registeredAt);
+  const invoiceComplete = Boolean(order.invoicedAt);
 
   try {
-    assertOrderTransitionAllowed(order.status, toStatus, { pdiComplete, agreementComplete });
+    assertOrderTransitionAllowed(order.status, toStatus, { pdiComplete, agreementComplete, registrationComplete, invoiceComplete });
   } catch (err) {
     if (err instanceof OrderTransitionError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
@@ -37,12 +39,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     throw err;
   }
 
+  // Commission is earned automatically the moment an order is delivered —
+  // a consequence of delivery, not a prerequisite for it, so this doesn't
+  // participate in the transition gate above. Only computed if a sales
+  // agent is actually on file; nothing changes for orders with none.
+  const earnsCommissionNow =
+    toStatus === 'DELIVERED' && Boolean(order.salesAgentId) && order.commissionStatus !== 'PAID';
+  const commissionAmount = earnsCommissionNow
+    ? (order.totalPrice ?? 0) * ((order.commissionRate ?? 0) / 100)
+    : undefined;
+
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.salesOrder.update({
       where: { id },
       data: {
         status: toStatus,
         ...(toStatus === 'DELIVERED' && { deliveredAt: new Date() }),
+        ...(earnsCommissionNow && { commissionStatus: 'EARNED', commissionAmount }),
       },
     });
 

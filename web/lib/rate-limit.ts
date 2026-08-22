@@ -205,6 +205,20 @@ export const rateLimitConfigs = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 10,
     message: 'Too many attempts. Please ask the front desk for assistance.'
+  },
+
+  // Public sales-agreement viewing/signing — reached via an emailed link,
+  // so the ceiling only needs to guard against abuse of a single link, not
+  // shared-network traffic.
+  agreementView: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 30,
+    message: 'Too many requests. Please try again in a few minutes.'
+  },
+  agreementSign: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many attempts. Please try again in a few minutes or contact us.'
   }
 };
 

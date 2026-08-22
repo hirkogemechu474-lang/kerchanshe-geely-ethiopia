@@ -11,6 +11,7 @@ import { FileCheck2, Upload, FileText } from 'lucide-react';
 // upload-then-PATCH convention as TestDriveIdCapture.tsx.
 interface OrderApprovalData {
   id: string;
+  customerEmail: string | null;
   approvedAt: string | null;
   signedDocumentUrl: string | null;
   signedAt: string | null;
@@ -30,6 +31,7 @@ export default function OrderApprovalPanel({
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [approveNotice, setApproveNotice] = useState('');
 
   const approve = async () => {
     setBusy(true);
@@ -38,6 +40,13 @@ export default function OrderApprovalPanel({
       const res = await fetch(`/api/admin/orders/${order.id}/approve`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Approval failed');
+      setApproveNotice(
+        order.customerEmail
+          ? data.notificationSent
+            ? `Agreement emailed to ${order.customerEmail}.`
+            : `Approved, but the agreement email could not be sent — check SMTP settings.`
+          : 'Approved. No customer email on file, so the agreement was not emailed.'
+      );
       onUpdated();
       router.refresh();
     } catch (err: any) {
@@ -85,11 +94,13 @@ export default function OrderApprovalPanel({
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {approveNotice && <p className="text-sm text-blue-700">{approveNotice}</p>}
 
       {!order.approvedAt ? (
         <div>
           <p className="text-xs text-gray-500 mb-3">
-            Approve this order to unlock the printable sales agreement.
+            Approving unlocks the printable sales agreement
+            {order.customerEmail ? ` and emails it to ${order.customerEmail}.` : ' — no customer email is on file, so it will not be emailed.'}
           </p>
           {canManage && (
             <Button onClick={approve} disabled={busy}>

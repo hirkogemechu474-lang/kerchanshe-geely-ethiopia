@@ -177,6 +177,7 @@ model ShowroomVisit {
   // direct-purchase submission carries this visit's id back to the server.
   quotationId    String?
   salesOrderId   String?
+  testDriveId    String?
   ipAddress      String?
   userAgent      String?
   registeredAt   DateTime?
@@ -249,6 +250,17 @@ enum FinancingStatus {
   DECLINED
 }
 
+// Mirrors FinancingStatus's own enum convention for a SalesOrder lifecycle
+// flag. PENDING once a salesAgentId is set; EARNED is stamped automatically
+// when the order reaches DELIVERED; PAID is a separate manual staff action
+// (accounting actually pays the agent on their own schedule).
+enum CommissionStatus {
+  NOT_APPLICABLE
+  PENDING
+  EARNED
+  PAID
+}
+
 model SalesOrder {
   id              String                    @id @default(uuid())
   orderNo         String                    @unique
@@ -280,6 +292,30 @@ model SalesOrder {
   approvedById      String?
   signedDocumentUrl String?
   signedAt          DateTime?
+  // Vehicle Registration — a stage between PDI and Invoice in the CRM
+  // pipeline diagram; a loose actor reference (no FK), matching every
+  // other changedById-style field in this codebase.
+  registrationNumber String?
+  registeredAt        DateTime?
+  registeredById       String?
+  // Sales Invoice — deliberately minimal scope, mirroring JobCard's own
+  // invoiceAmount field: a single amount, not a line-item invoice/AR
+  // posting (that needs an ERP this codebase doesn't have — see
+  // docs/SWMS-INTEGRATION-BACKLOG.md's "Explicitly deferred" table).
+  invoiceNo     String?
+  invoiceAmount Float?
+  invoicedAt    DateTime?
+  invoicedById  String?
+  // Commission tracking — salesAgentId is a free-text field, matching
+  // Quotation.assignedTo's existing convention (no user-picker UI exists
+  // for this anywhere in the codebase to reuse). commissionAmount is
+  // computed (totalPrice * commissionRate / 100) and stamped automatically
+  // when the order reaches DELIVERED; commissionStatus PAID is a separate
+  // manual step (accounting pays the agent on their own schedule).
+  salesAgentId     String?
+  commissionRate   Float?
+  commissionAmount Float?
+  commissionStatus CommissionStatus @default(NOT_APPLICABLE)
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   pdiItems        PdiChecklistItem[]

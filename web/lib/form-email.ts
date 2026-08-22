@@ -30,6 +30,8 @@ async function sendMailWithRetry(
   }
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com';
+
 export async function sendFormEmail(details: FormEmailDetails): Promise<boolean> {
   const adminEmail = process.env.ADMIN_EMAIL;
   if (process.env.SMTP_ENABLED !== 'true' || !process.env.SMTP_USER || !process.env.SMTP_PASS || !adminEmail) {
@@ -54,7 +56,12 @@ export async function sendFormEmail(details: FormEmailDetails): Promise<boolean>
   // notification (or vice versa), and each side gets its own retry.
   const results = await Promise.allSettled([
     sendMailWithRetry(transporter, { from, to: adminEmail, replyTo: details.email, subject: details.subject || `New ${details.type}`, text }),
-    sendMailWithRetry(transporter, { from, to: details.email, subject: `Geely Ethiopia received your ${details.type}`, text: `Hello ${details.name},\n\nThank you. We received your ${details.type}. Our team will contact you shortly.\n\n${details.reference ? `Reference: ${details.reference}\n\n` : ''}${details.details}` }),
+    sendMailWithRetry(transporter, {
+      from,
+      to: details.email,
+      subject: `Geely Ethiopia received your ${details.type}`,
+      text: `Hello ${details.name},\n\nThank you. We received your ${details.type}. Our team will contact you shortly.\n\n${details.reference ? `Reference: ${details.reference}\n\n` : ''}${details.details}\n\nBrowse our full model lineup: ${BASE_URL}/models\nVisit our website: ${BASE_URL}`,
+    }),
   ]);
 
   const [adminResult, customerResult] = results;

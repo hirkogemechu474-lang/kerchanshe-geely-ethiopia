@@ -35,7 +35,7 @@ const STATUS_MAP: Record<string, string> = {
   'service': 'Service Inquiry',
 };
 
-async function saveLocalLead(leadData: LeadData) {
+async function saveLocalLead(leadData: LeadData): Promise<{ testDriveId?: string }> {
   if (leadData.leadType === 'test-drive') {
     const vehicle = await prisma.vehicle.findFirst({
       where: leadData.vehicleId
@@ -45,7 +45,7 @@ async function saveLocalLead(leadData: LeadData) {
     });
     if (vehicle && leadData.preferredDate && leadData.preferredTime) {
       const preferredDate = new Date(`${leadData.preferredDate}T00:00:00`);
-      await prisma.testDrive.create({
+      const testDrive = await prisma.testDrive.create({
         data: {
           customerName: `${leadData.firstName} ${leadData.lastName}`.trim(),
           customerEmail: leadData.email,
@@ -58,7 +58,7 @@ async function saveLocalLead(leadData: LeadData) {
           status: 'pending',
         },
       });
-      return;
+      return { testDriveId: testDrive.id };
     }
   }
   await prisma.message.create({
@@ -72,6 +72,7 @@ async function saveLocalLead(leadData: LeadData) {
       content: JSON.stringify({ phone: leadData.phone, modelInterest: leadData.modelInterest, preferredDealer: leadData.preferredDealer, preferredDate: leadData.preferredDate, preferredTime: leadData.preferredTime, message: leadData.message }),
     },
   });
+  return {};
 }
 
 /**
@@ -105,8 +106,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let saved: { testDriveId?: string };
   try {
-    await saveLocalLead(leadData);
+    saved = await saveLocalLead(leadData);
   } catch (error) {
     console.error('[crm/lead] Failed to save local lead:', error);
     return NextResponse.json({ error: 'Could not save your request. Please try again.' }, { status: 500 });
@@ -134,5 +136,6 @@ export async function POST(request: NextRequest) {
     leadId: `local-${Date.now()}`,
     notificationSent,
     reference,
+    testDriveId: saved.testDriveId,
   });
 }

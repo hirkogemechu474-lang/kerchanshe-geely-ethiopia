@@ -9,3 +9,13 @@ export async function nextOrderNo(): Promise<string> {
   });
   return `SO-${counter.value}`;
 }
+
+/** Generates the next human-readable sales invoice number, e.g. "INV-1001". */
+export async function nextInvoiceNo(): Promise<string> {
+  const counter = await prisma.counter.upsert({
+    where: { name: 'salesInvoice' },
+    create: { name: 'salesInvoice', value: 1001 },
+    update: { value: { increment: 1 } },
+  });
+  return `INV-${counter.value}`;
+}

@@ -12,6 +12,8 @@ import type { AdminPermissions } from '@/lib/auth/types';
 import { Card, Button } from '@/components/admin/ui';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';
+import OrderFulfillmentPanel from '@/components/admin/sales/OrderFulfillmentPanel';
+import OrderCommissionPanel from '@/components/admin/sales/OrderCommissionPanel';
 
 interface PdiItem {
   id: string;
@@ -43,6 +45,15 @@ interface OrderData {
   approvedAt: string | null;
   signedDocumentUrl: string | null;
   signedAt: string | null;
+  registrationNumber: string | null;
+  registeredAt: string | null;
+  invoiceNo: string | null;
+  invoiceAmount: number | null;
+  invoicedAt: string | null;
+  salesAgentId: string | null;
+  commissionRate: number | null;
+  commissionAmount: number | null;
+  commissionStatus: string;
   pdiItems: PdiItem[];
   statusHistory: StatusHistoryEntry[];
   quotation: { id: string } | null;
@@ -120,7 +131,14 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
 
   const pdiComplete = state.pdiItems.length > 0 && state.pdiItems.every((p) => p.isChecked);
   const agreementComplete = Boolean(state.approvedAt) && Boolean(state.signedDocumentUrl);
-  const allowedTransitions = getAllowedOrderTransitions(state.status as any, { pdiComplete, agreementComplete });
+  const registrationComplete = Boolean(state.registeredAt);
+  const invoiceComplete = Boolean(state.invoicedAt);
+  const allowedTransitions = getAllowedOrderTransitions(state.status as any, {
+    pdiComplete,
+    agreementComplete,
+    registrationComplete,
+    invoiceComplete,
+  });
 
   return (
     <div className="space-y-6">
@@ -211,7 +229,33 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
       </Card>
 
       <OrderApprovalPanel
-        order={{ id: state.id, approvedAt: state.approvedAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt }}
+        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt }}
+        canManage={permissions.canManageQuotations}
+        onUpdated={refresh}
+      />
+
+      <OrderFulfillmentPanel
+        order={{
+          id: state.id,
+          registrationNumber: state.registrationNumber,
+          registeredAt: state.registeredAt,
+          totalPrice: state.totalPrice,
+          invoiceNo: state.invoiceNo,
+          invoiceAmount: state.invoiceAmount,
+          invoicedAt: state.invoicedAt,
+        }}
+        canManage={permissions.canManageQuotations}
+        onUpdated={refresh}
+      />
+
+      <OrderCommissionPanel
+        order={{
+          id: state.id,
+          salesAgentId: state.salesAgentId,
+          commissionRate: state.commissionRate,
+          commissionAmount: state.commissionAmount,
+          commissionStatus: state.commissionStatus,
+        }}
         canManage={permissions.canManageQuotations}
         onUpdated={refresh}
       />
@@ -234,6 +278,11 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
           {state.status === 'BOOKED' && pdiComplete && !agreementComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Approve the order and attach the signed agreement above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {state.status === 'READY_FOR_DELIVERY' && (!registrationComplete || !invoiceComplete) && (
+            <p className="text-xs text-orange-600 mt-2">
+              Record vehicle registration and generate the invoice above to unlock &quot;Delivered&quot;.
             </p>
           )}
         </Card>

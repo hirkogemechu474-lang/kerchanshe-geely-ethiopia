@@ -55,7 +55,7 @@ async function linkPurchaseToSalesPipeline(details: {
   purchaseReference: string;
   quoteReference?: string;
   visitId?: string;
-}) {
+}): Promise<{ approved: boolean }> {
   const configurationJson = {
     vehicle: details.vehicleName,
     color: details.color || null,
@@ -118,6 +118,8 @@ async function linkPurchaseToSalesPipeline(details: {
       .update({ where: { id: details.visitId }, data: { quotationId: quotation.id, salesOrderId: salesOrder.id } })
       .catch(() => {});
   }
+
+  return { approved: Boolean(salesOrder.approvedAt) };
 }
 
 export async function POST(request: NextRequest) {
@@ -202,8 +204,14 @@ export async function POST(request: NextRequest) {
 
     void sendPurchaseEmail({ fullName, email, vehicleName: vehicle.name, bankName: bank.name, purchaseAmount, purchaseReference, transactionId, recordId: record.id, paymentStatus });
 
+    // Until a sales agent approves the resulting order and the customer
+    // signs the agreement (see docs/SWMS-INTEGRATION-BACKLOG.md Phase 16),
+    // payment must not proceed — /api/payments/initiate enforces this
+    // server-side too, but surfacing it here lets the confirmation screen
+    // show the right message instead of a dead-end "Pay Now" button.
+    let approved = false;
     try {
-      await linkPurchaseToSalesPipeline({
+      const pipelineResult = await linkPurchaseToSalesPipeline({
         fullName,
         phone,
         email,
@@ -216,6 +224,7 @@ export async function POST(request: NextRequest) {
         quoteReference: typeof body.quoteReference === "string" ? body.quoteReference.trim() : undefined,
         visitId: typeof body.visitId === "string" && body.visitId ? body.visitId : undefined,
       });
+      approved = pipelineResult.approved;
     } catch (pipelineError) {
       console.error("[public:purchases:sales-pipeline]", pipelineError);
     }
@@ -229,6 +238,7 @@ export async function POST(request: NextRequest) {
         paymentDate: new Date().toISOString(),
         status: paymentStatus,
         checkoutUrl: supportedProgram.directPayUrl || bank.websiteUrl || null,
+        approved,
       },
     }, { status: 201 });
   } catch (error) {

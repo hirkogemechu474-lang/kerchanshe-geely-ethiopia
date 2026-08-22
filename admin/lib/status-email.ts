@@ -9,6 +9,7 @@ interface StatusEmailOptions {
   details?: string;
   actionUrl?: string;
   actionLabel?: string;
+  attachments?: { filename: string; content: string | Buffer; contentType?: string }[];
 }
 
 export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean> {
@@ -47,6 +48,6 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
     .filter(Boolean)
     .join('\n');
 
-  await transporter.sendMail({ from, to: opts.to, subject, text });
+  await transporter.sendMail({ from, to: opts.to, subject, text, attachments: opts.attachments });
   return true;
 }
