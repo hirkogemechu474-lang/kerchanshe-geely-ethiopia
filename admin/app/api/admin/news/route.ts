@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest) {
     if (response) return response;
 
     const body = await request.json();
-    const { id, title, category, content, author, status, publishDate } = body;
+    const { id, title, category, content, author, image, status, publishDate } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Article ID required' }, { status: 400 });
@@ -78,9 +78,10 @@ export async function PUT(request: NextRequest) {
         ...(category && { category }),
         ...(content && { content }),
         ...(author && { author }),
+        ...(image !== undefined && { imageUrl: image || null }),
         ...(status && { status }),
-        ...(publishDate !== undefined && { 
-          publishDate: publishDate ? new Date(publishDate) : null 
+        ...(publishDate !== undefined && {
+          publishDate: publishDate ? new Date(publishDate) : null
         }),
       },
     });

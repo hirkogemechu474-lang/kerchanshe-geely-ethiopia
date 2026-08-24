@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
+import { generateReference } from '@/lib/reference';
 
 // NOTE: Removed `export const runtime = 'edge'` — Prisma requires Node.js runtime
 // The edge runtime cannot connect to PostgreSQL via Prisma.
@@ -35,7 +36,7 @@ const STATUS_MAP: Record<string, string> = {
   'service': 'Service Inquiry',
 };
 
-async function saveLocalLead(leadData: LeadData): Promise<{ testDriveId?: string }> {
+async function saveLocalLead(leadData: LeadData, reference: string): Promise<{ testDriveId?: string }> {
   if (leadData.leadType === 'test-drive') {
     const vehicle = await prisma.vehicle.findFirst({
       where: leadData.vehicleId
@@ -56,6 +57,7 @@ async function saveLocalLead(leadData: LeadData): Promise<{ testDriveId?: string
           location: leadData.preferredDealer || 'To be confirmed',
           specialRequests: leadData.message || null,
           status: 'pending',
+          reference,
         },
       });
       return { testDriveId: testDrive.id };
@@ -70,6 +72,7 @@ async function saveLocalLead(leadData: LeadData): Promise<{ testDriveId?: string
       priority: 'medium',
       status: 'unread',
       content: JSON.stringify({ phone: leadData.phone, modelInterest: leadData.modelInterest, preferredDealer: leadData.preferredDealer, preferredDate: leadData.preferredDate, preferredTime: leadData.preferredTime, message: leadData.message }),
+      reference,
     },
   });
   return {};
@@ -106,16 +109,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const reference = generateReference();
   let saved: { testDriveId?: string };
   try {
-    saved = await saveLocalLead(leadData);
+    saved = await saveLocalLead(leadData, reference);
   } catch (error) {
     console.error('[crm/lead] Failed to save local lead:', error);
     return NextResponse.json({ error: 'Could not save your request. Please try again.' }, { status: 500 });
   }
 
   let notificationSent = false;
-  const reference = `GEELY-${Date.now().toString(36).toUpperCase()}`;
   try {
     notificationSent = await sendFormEmail({
       type: leadData.leadType,

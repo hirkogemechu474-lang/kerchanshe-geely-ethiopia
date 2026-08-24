@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { generateReference } from '@/lib/reference';
 
 async function sendApplicationNotifications(details: {
   applicationId: string;
+  reference: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -51,6 +53,7 @@ async function sendApplicationNotifications(details: {
     `Desired term: ${details.desiredTenureMonths || 'Program default'} months`,
     `Message: ${details.message || 'None'}`,
     `Application ID: ${details.applicationId}`,
+    `Reference: ${details.reference}`,
   ].join('\n');
 
   const from = `"${process.env.SMTP_FROM_NAME || 'Geely Ethiopia'}" <${process.env.SMTP_FROM || smtpUser}>`;
@@ -68,7 +71,7 @@ async function sendApplicationNotifications(details: {
       from,
       to: details.email,
       subject: 'Geely Ethiopia Financing Application Received',
-      text: `Dear ${details.firstName},\n\nWe received your financing application for ${details.vehicleName || 'your selected vehicle'} through ${details.bankName || 'our financing team'}. Our team will contact you within 24-48 hours.\n\nApplication ID: ${details.applicationId}\n\nThank you,\nGeely Ethiopia`,
+      text: `Dear ${details.firstName},\n\nWe received your financing application for ${details.vehicleName || 'your selected vehicle'} through ${details.bankName || 'our financing team'}. Our team will contact you within 24-48 hours.\n\nReference: ${details.reference}\n\nThank you,\nGeely Ethiopia`,
     });
   } catch (error) {
     // The application is already saved; mail delivery must not make the form fail.
@@ -135,6 +138,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join('\n');
 
+    const reference = generateReference();
     const record = await prisma.message.create({
       data: {
         from: `${firstName} ${lastName}`,
@@ -144,11 +148,13 @@ export async function POST(request: NextRequest) {
         priority: 'normal',
         status: 'new',
         content: details,
+        reference,
       },
     });
 
     await sendApplicationNotifications({
       applicationId: record.id,
+      reference,
       firstName,
       lastName,
       email,
@@ -164,7 +170,7 @@ export async function POST(request: NextRequest) {
       message,
     });
 
-    return NextResponse.json({ success: true, applicationId: record.id }, { status: 201 });
+    return NextResponse.json({ success: true, applicationId: record.id, reference }, { status: 201 });
   } catch (error) {
     console.error('[public:financing-applications:post]', error);
     return NextResponse.json({ error: 'Failed to submit financing application' }, { status: 500 });

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { sendStatusEmail } from '@/lib/status-email';
 import { buildSalesAgreementPdf } from '@/lib/sales/salesAgreementPdf';
+import { env } from '@/lib/env';
 
 // Sales-agent approval step: "Sales Quotation -> Approval by sales agent ->
 // Generate Agreement -> e-sign/attach" (see docs/SWMS-INTEGRATION-BACKLOG.md
@@ -40,7 +41,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   let notificationSent = false;
   if (updated.customerEmail) {
     try {
-      const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+      const siteUrl = env.app.url.replace(/\/$/, '');
       const signingUrl = `${siteUrl}/agreement/${updated.id}`;
       const pdfBytes = await buildSalesAgreementPdf(updated);
       notificationSent = await sendStatusEmail({
@@ -49,9 +50,9 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         entityType: 'sales order',
         status: 'approved',
         reference: updated.orderNo,
-        details: 'Your sales agreement is attached as a PDF. Sign it online (draw a signature or upload a photo of a signed printout) to continue to payment.',
+        details: 'Your order has been approved! Your sales agreement is attached as a PDF — sign it online (draw a signature or upload a photo of a signed printout) to continue to payment.',
         actionUrl: signingUrl,
-        actionLabel: 'Sign your agreement online',
+        actionLabel: 'Continue',
         attachments: [
           { filename: `${updated.orderNo}-agreement.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' },
         ],

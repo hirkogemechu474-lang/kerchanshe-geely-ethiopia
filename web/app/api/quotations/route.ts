@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
+import { generateReference } from '@/lib/reference';
 
 // POST - Submit new quotation
 export async function POST(request: NextRequest) {
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const reference = generateReference();
     const quotation = await prisma.quotation.create({
       data: {
         customerName,
@@ -52,6 +54,7 @@ export async function POST(request: NextRequest) {
         configurationJson: configuration ?? undefined,
         source,
         status: 'new',
+        reference,
       },
     });
 
@@ -61,7 +64,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const reference = `GEELY-QUOTE-${quotation.id.slice(0, 8).toUpperCase()}`;
     let notificationSent = false;
     try {
       notificationSent = await sendFormEmail({

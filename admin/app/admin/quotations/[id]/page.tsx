@@ -4,6 +4,8 @@ import { ArrowLeft, Calendar, Mail, MessageSquare, Phone, User, CarFront } from 
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/middleware';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
+import QuotationPdfPanel from '@/components/admin/sales/QuotationPdfPanel';
+import { env } from '@/lib/env';
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat('en-ET', {
@@ -27,13 +29,16 @@ export default async function QuotationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermission('canManageContent');
+  const session = await requirePermission('canManageContent');
   const { id } = await params;
   const quotation = await prisma.quotation.findUnique({ where: { id } });
 
   if (!quotation) notFound();
 
   const status = quotation.status || 'new';
+  const publicPdfUrl = quotation.reference
+    ? `${env.app.url.replace(/\/$/, '')}/api/public/quotations/${encodeURIComponent(quotation.reference)}/pdf`
+    : null;
 
   // UC-01 dedupe visibility: surface other inquiries from the same phone
   // number rather than silently hiding them.
@@ -85,6 +90,25 @@ export default async function QuotationDetailPage({
       </div>
 
       <ConfigurationSummary configuration={quotation.configurationJson} />
+
+      <QuotationPdfPanel
+        quotation={{
+          id: quotation.id,
+          quotationNo: quotation.quotationNo,
+          quotationGeneratedAt: quotation.quotationGeneratedAt?.toISOString() || null,
+          quotationValidUntil: quotation.quotationValidUntil?.toISOString() || null,
+          unitPrice: quotation.unitPrice,
+          quantity: quotation.quantity,
+          discountAmount: quotation.discountAmount,
+          vatAmount: quotation.vatAmount,
+          vehicleYear: quotation.vehicleYear,
+          vehicleColor: quotation.vehicleColor,
+          paymentTerms: quotation.paymentTerms,
+          deliveryTerms: quotation.deliveryTerms,
+        }}
+        canManage={session.user.permissions.canManageQuotations}
+        publicPdfUrl={publicPdfUrl}
+      />
 
       {priorInquiries.length > 0 && (
         <section className="rounded-xl border border-blue-200 bg-blue-50 p-6">

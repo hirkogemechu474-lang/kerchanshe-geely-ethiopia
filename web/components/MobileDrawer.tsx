@@ -2,20 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, ChevronDown, Car, Zap, Wrench, Phone, MessageCircle, Info } from 'lucide-react';
+import { X, ChevronDown, Car, Zap, Wrench, Phone, MessageCircle, Info, Search, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage, useTranslation } from '@/lib/i18n';
 
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onSearchClick?: () => void;
 }
 
-export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
+export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: MobileDrawerProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const { t, language } = useTranslation();
+  const setLanguage = useLanguage((state) => state.setLanguage);
+  const isEnglish = language === 'en';
 
   const navigationItems = [
     {
-      title: 'Models',
+      title: t('common.models'),
       icon: <Car size={20} />,
       href: '/models',
       hasSubmenu: true,
@@ -29,7 +34,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       ]
     },
     {
-      title: 'Electric',
+      title: t('common.electric'),
       icon: <Zap size={20} />,
       href: '/electric',
       hasSubmenu: true,
@@ -40,7 +45,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       ]
     },
     {
-      title: 'Services',
+      title: t('common.services'),
       icon: <Wrench size={20} />,
       href: '/services',
       hasSubmenu: true,
@@ -51,10 +56,10 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         { name: 'Purchase', href: '/financing' }
       ]
     },
-    { title: 'Dealers', icon: <Phone size={20} />, href: '/dealers' },
-    { title: 'News', icon: <MessageCircle size={20} />, href: '/news' },
-    { title: 'About', icon: <Info size={20} />, href: '/about' },
-    { title: 'Offers', icon: <Car size={20} />, href: '/offers' }
+    { title: t('common.dealers'), icon: <Phone size={20} />, href: '/dealers' },
+    { title: t('common.news'), icon: <MessageCircle size={20} />, href: '/news' },
+    { title: t('common.about'), icon: <Info size={20} />, href: '/about' },
+    { title: t('common.offers'), icon: <Car size={20} />, href: '/offers' }
   ];
 
   const toggleSection = (title: string) => {
@@ -70,7 +75,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
             onClick={onClose}
           />
 
@@ -80,27 +85,49 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed left-0 top-0 bottom-0 w-[min(20rem,100vw)] bg-white shadow-xl z-51 lg:hidden overflow-y-auto"
+            className="fixed left-0 top-0 bottom-0 w-[min(20rem,100vw)] bg-white shadow-xl z-[51] overflow-y-auto"
           >
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <Link href="/" onClick={onClose} className="flex items-center gap-2.5 group">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-extrabold text-base shadow-sm">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-display font-extrabold text-base shadow-sm">
                     G
                   </div>
                   <div className="leading-none">
-                    <div className="text-[19px] font-extrabold tracking-tight text-navy">GEELY</div>
-                    <div className="text-[9px] font-bold tracking-[0.3em] text-geely-blue mt-1">
+                    <div className="text-[19px] font-display font-extrabold tracking-tight text-navy">GEELY</div>
+                    <div className="text-[9px] font-display font-bold tracking-[0.3em] text-geely-blue mt-1">
                       ETHIOPIA
                     </div>
                   </div>
                 </Link>
                 <button
                   onClick={onClose}
+                  aria-label="Close menu"
                   className="p-2 text-steel hover:text-navy"
                 >
                   <X size={24} />
+                </button>
+              </div>
+
+              {/* Quick Actions: Search + Language */}
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
+                <button
+                  onClick={() => {
+                    onClose();
+                    onSearchClick();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-navy border border-line rounded-lg py-2.5 hover:bg-ice transition-colors"
+                >
+                  <Search size={16} />
+                  {t('common.search')}
+                </button>
+                <button
+                  onClick={() => setLanguage(isEnglish ? 'am' : 'en')}
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-navy border border-line rounded-lg py-2.5 hover:bg-ice transition-colors"
+                >
+                  <Globe size={16} />
+                  {isEnglish ? 'አማርኛ' : 'English'}
                 </button>
               </div>
 
@@ -116,7 +143,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                         >
                           <div className="flex items-center gap-3">
                             {item.icon}
-                            <span className="font-semibold">{item.title}</span>
+                            <span className="font-display font-semibold uppercase tracking-[0.04em] text-[15px]">{item.title}</span>
                           </div>
                           <ChevronDown
                             size={20}
@@ -132,7 +159,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                           className="flex items-center gap-3 py-3 text-navy hover:text-geely-blue transition-colors"
                         >
                           {item.icon}
-                          <span className="font-semibold">{item.title}</span>
+                          <span className="font-display font-semibold uppercase tracking-[0.04em] text-[15px]">{item.title}</span>
                         </Link>
                       )}
                     </div>
@@ -163,14 +190,14 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                   onClick={onClose}
                   className="block w-full bg-gold text-navy text-center py-3 rounded font-bold hover:bg-opacity-90 transition-colors"
                 >
-                  Book Test Drive
+                  {t('common.bookTestDrive')}
                 </Link>
                 <Link
                   href="/quote"
                   onClick={onClose}
                   className="block w-full bg-navy text-white text-center py-3 rounded font-bold hover:bg-opacity-90 transition-colors"
                 >
-                  Get Quote
+                  {t('common.getQuote')}
                 </Link>
               </div>
             </div>

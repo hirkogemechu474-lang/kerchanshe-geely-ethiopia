@@ -185,15 +185,18 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
                 type="number"
                 value={totalPrice}
                 onChange={(e) => setTotalPrice(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                disabled={!permissions.canManageQuotations}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={!permissions.canManageQuotations || Boolean(state.approvedAt)}
               />
-              {permissions.canManageQuotations && totalPrice !== (state.totalPrice?.toString() || '') && (
+              {permissions.canManageQuotations && !state.approvedAt && totalPrice !== (state.totalPrice?.toString() || '') && (
                 <Button variant="secondary" onClick={() => patchFields({ totalPrice: totalPrice || null })} disabled={busy}>
                   Save
                 </Button>
               )}
             </div>
+            {state.approvedAt && (
+              <p className="mt-1 text-xs text-gray-500">Price locked — order approved.</p>
+            )}
           </div>
         </div>
       </Card>
@@ -282,7 +285,11 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
           )}
           {state.status === 'READY_FOR_DELIVERY' && (!registrationComplete || !invoiceComplete) && (
             <p className="text-xs text-orange-600 mt-2">
-              Record vehicle registration and generate the invoice above to unlock &quot;Delivered&quot;.
+              {!registrationComplete && !invoiceComplete
+                ? 'Record vehicle registration and generate the invoice above to unlock "Delivered".'
+                : !registrationComplete
+                ? 'Record the vehicle registration number above to unlock "Delivered".'
+                : 'Generate the sales invoice above to unlock "Delivered".'}
             </p>
           )}
         </Card>

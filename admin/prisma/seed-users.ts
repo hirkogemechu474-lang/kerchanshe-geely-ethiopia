@@ -18,6 +18,11 @@ const users = [
   { email: 'marketing@geelyethiopia.com', name: 'Demo Marketing', role: 'marketing' },
   { email: 'service.advisor@geelyethiopia.com', name: 'Demo Service Advisor', role: 'service_advisor' },
   { email: 'service.manager@geelyethiopia.com', name: 'Demo Service Manager', role: 'service_manager' },
+  { email: 'gm.geely@geelyethiopia.com', name: 'Demo GM-Geely', role: 'gm_geely' },
+  { email: 'sales.manager@geelyethiopia.com', name: 'Demo Sales Manager', role: 'sales_manager' },
+  { email: 'after.sales.manager@geelyethiopia.com', name: 'Demo After Sales Manager', role: 'after_sales_manager' },
+  { email: 'sales.representative@geelyethiopia.com', name: 'Demo Sales Representative', role: 'sales_representative' },
+  { email: 'workshop.manager@geelyethiopia.com', name: 'Demo Workshop Manager', role: 'workshop_manager' },
 ];
 
 async function main() {

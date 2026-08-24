@@ -59,8 +59,8 @@ const BENEFIT_DEFAULTS = {
 
 const DEFAULT_CALCULATOR_DEFAULTS: CalculatorDefaults = {
   monthlyDistance: 1500,
-  fuelPrice: 70,
-  electricityCost: 3,
+  fuelPrice: 280,
+  electricityCost: 40,
   petrolEfficiency: 12,
   evEfficiency: 6,
 };
@@ -371,9 +371,9 @@ export default function ElectricBenefitForm({ benefitId, benefitType }: Electric
               </label>
               <input
                 type="number"
-                min={30}
-                max={150}
-                step={1}
+                min={50}
+                max={400}
+                step={5}
                 value={calculatorDefaults.fuelPrice}
                 onChange={(e) =>
                   setCalculatorDefaults(prev => ({
@@ -390,8 +390,8 @@ export default function ElectricBenefitForm({ benefitId, benefitType }: Electric
               </label>
               <input
                 type="number"
-                min={1}
-                max={15}
+                min={5}
+                max={60}
                 step={0.5}
                 value={calculatorDefaults.electricityCost}
                 onChange={(e) =>

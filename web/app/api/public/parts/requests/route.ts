@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { sendFormEmail } from '@/lib/form-email';
+import { generateReference } from '@/lib/reference';
 
 /**
  * POST /api/public/parts/requests
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       quantity: Math.max(1, Number(item.quantity) || 1),
     }));
 
+    const reference = generateReference();
     const partRequest = await prisma.partRequest.create({
       data: {
         name,
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
         address: address || null,
         notes: notes || null,
         status: 'new',
+        reference,
         items: {
           create: normalizedItems,
         },
@@ -65,14 +68,14 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         subject: `New parts request${company ? ` — ${company}` : ''}`,
-        reference: partRequest.id,
+        reference,
         details: JSON.stringify({ address, notes, items: normalizedItems }, null, 2),
       });
     } catch (emailError) {
       console.error('[parts-request:email]', emailError);
     }
 
-    return NextResponse.json({ success: true, request: partRequest, notificationSent }, { status: 201 });
+    return NextResponse.json({ success: true, request: partRequest, reference, notificationSent }, { status: 201 });
   } catch (error) {
     console.error('Error creating part request:', error);
     return NextResponse.json(

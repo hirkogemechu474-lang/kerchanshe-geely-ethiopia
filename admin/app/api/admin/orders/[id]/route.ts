@@ -42,39 +42,51 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // Fetched first so editing salesAgentId doesn't clobber a commission
   // that's already EARNED/PAID — that already happened as a consequence
   // of delivery and an edit here afterward shouldn't erase the record.
-  const existing = salesAgentId !== undefined ? await prisma.salesOrder.findUnique({ where: { id }, select: { commissionStatus: true } }) : null;
+  // Also covers the totalPrice guard below (need approvedAt either way).
+  const existing = (salesAgentId !== undefined || totalPrice !== undefined)
+    ? await prisma.salesOrder.findUnique({ where: { id }, select: { commissionStatus: true, approvedAt: true } })
+    : null;
 
-  const order = await prisma.salesOrder.update({
-    where: { id },
-    data: {
-      ...(financingStatus !== undefined && { financingStatus }),
-      ...(totalPrice !== undefined && { totalPrice: totalPrice === null ? null : Number(totalPrice) }),
-      // Staff-attached photo/scan of the physically-signed sales agreement
-      // (BRD-adjacent "e-sign or attach" step) — reuses the same
-      // upload-then-PATCH convention as TestDrive.idPhotoUrl.
-      ...(signedDocumentUrl !== undefined && {
-        signedDocumentUrl,
-        signedAt: signedDocumentUrl ? new Date() : null,
-      }),
-      // Vehicle registration — a plain field edit (unlike approval/signing,
-      // a mistyped plate number is just a correction, not a business event
-      // that needs a one-way gate).
-      ...(registrationNumber !== undefined && {
-        registrationNumber,
-        registeredAt: registrationNumber ? new Date() : null,
-        registeredById: registrationNumber ? session!.user.id : null,
-      }),
-      // Commission assignment — salesAgentId is free text, matching
-      // Quotation.assignedTo's existing convention (no user-picker UI).
-      ...(salesAgentId !== undefined && {
-        salesAgentId,
-        ...(existing?.commissionStatus !== 'EARNED' && existing?.commissionStatus !== 'PAID' && {
-          commissionStatus: salesAgentId ? 'PENDING' : 'NOT_APPLICABLE',
+  if (totalPrice !== undefined && existing?.approvedAt) {
+    return NextResponse.json({ error: 'Price cannot be changed after the order has been approved.' }, { status: 409 });
+  }
+
+  try {
+    const order = await prisma.salesOrder.update({
+      where: { id },
+      data: {
+        ...(financingStatus !== undefined && { financingStatus }),
+        ...(totalPrice !== undefined && { totalPrice: totalPrice === null ? null : Number(totalPrice) }),
+        // Staff-attached photo/scan of the physically-signed sales agreement
+        // (BRD-adjacent "e-sign or attach" step) — reuses the same
+        // upload-then-PATCH convention as TestDrive.idPhotoUrl.
+        ...(signedDocumentUrl !== undefined && {
+          signedDocumentUrl,
+          signedAt: signedDocumentUrl ? new Date() : null,
         }),
-      }),
-      ...(commissionRate !== undefined && { commissionRate: commissionRate === null ? null : Number(commissionRate) }),
-    },
-  });
+        // Vehicle registration — a plain field edit (unlike approval/signing,
+        // a mistyped plate number is just a correction, not a business event
+        // that needs a one-way gate).
+        ...(registrationNumber !== undefined && {
+          registrationNumber,
+          registeredAt: registrationNumber ? new Date() : null,
+          registeredById: registrationNumber ? session!.user.id : null,
+        }),
+        // Commission assignment — salesAgentId is free text, matching
+        // Quotation.assignedTo's existing convention (no user-picker UI).
+        ...(salesAgentId !== undefined && {
+          salesAgentId,
+          ...(existing?.commissionStatus !== 'EARNED' && existing?.commissionStatus !== 'PAID' && {
+            commissionStatus: salesAgentId ? 'PENDING' : 'NOT_APPLICABLE',
+          }),
+        }),
+        ...(commissionRate !== undefined && { commissionRate: commissionRate === null ? null : Number(commissionRate) }),
+      },
+    });
 
-  return NextResponse.json({ order });
+    return NextResponse.json({ order });
+  } catch (dbError) {
+    console.error('[orders:patch]', dbError);
+    return NextResponse.json({ error: 'Update failed. Please try again.' }, { status: 500 });
+  }
 }

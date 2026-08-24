@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { env } from '@/lib/env';
 
 interface Params {
   id: string;
@@ -57,16 +58,16 @@ export async function PUT(
         const vehicle = quotation.vehicleModel
           ? await prisma.vehicle.findFirst({ where: { name: quotation.vehicleModel }, select: { id: true } })
           : null;
-        const publicWebUrl = process.env.NEXT_PUBLIC_WEB_URL || process.env.WEB_URL || 'http://localhost:3002';
+        const publicWebUrl = env.app.url.replace(/\/$/, '');
         const paymentUrl = status === 'approved' || status === 'converted'
-          ? `${publicWebUrl.replace(/\/$/, '')}/financing/apply?quote=${encodeURIComponent(quotation.id)}${vehicle ? `&vehicle=${encodeURIComponent(vehicle.id)}` : ''}`
+          ? `${publicWebUrl}/financing/apply?quote=${encodeURIComponent(quotation.id)}${vehicle ? `&vehicle=${encodeURIComponent(vehicle.id)}` : ''}`
           : undefined;
         await sendStatusEmail({
           to: quotation.email,
           name: quotation.customerName,
           entityType: 'Quote Request',
           status,
-          reference: quotation.id,
+          reference: quotation.reference || quotation.id,
           details: `Vehicle: ${quotation.vehicleModel || 'General enquiry'}`,
           actionUrl: paymentUrl,
           actionLabel: 'Proceed with direct vehicle payment',

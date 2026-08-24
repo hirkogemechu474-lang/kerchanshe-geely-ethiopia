@@ -150,6 +150,10 @@ model TestDrive {
   idPhotoUrl       String?
   idVerifiedAt     DateTime?
   idVerifiedById   String?
+  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference       String?   @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -219,6 +223,27 @@ model Quotation {
   status            String      @default("new") // new, contacted, in_progress, converted, closed
   internalNotes     String?     @db.Text
   assignedTo        String?
+  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference         String?     @unique
+  // ── Sales Quotation PDF fields ──────────────────────────────────────────
+  // Populated by a Sales Consultant via the "Generate & Send Quotation PDF"
+  // panel (admin/components/admin/sales/QuotationPdfPanel.tsx) before the
+  // formal dealer quotation document exists — none of this is captured
+  // anywhere else on the lead (price only otherwise lives in the
+  // unstructured configurationJson.price, if set at all).
+  quotationNo          String?   @unique // SQ-2026-00001, via nextQuotationNo()
+  quotationValidUntil  DateTime?
+  unitPrice            Float?
+  quantity             Int?      @default(1)
+  discountAmount       Float?    @default(0)
+  vatAmount            Float?    // auto-computed at 15%, stored for the PDF/audit trail
+  vehicleYear          String?
+  vehicleColor         String?
+  paymentTerms         String?
+  deliveryTerms        String?
+  quotationGeneratedAt DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   salesOrder        SalesOrder?
@@ -394,6 +419,10 @@ model ServiceBooking {
   technician    String?
   status        String   @default("scheduled")
   notes         String?
+  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference     String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   jobCard       JobCard?
@@ -713,6 +742,10 @@ model PartRequest {
   address   String?           @db.Text
   notes     String?           @db.Text
   status    String            @default("new") // new, contacted, in_progress, quoted, closed
+  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference String?           @unique
   items     PartRequestItem[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
@@ -849,6 +882,12 @@ model Message {
   status    String   @default("unread")
   content   String
   response  String?
+  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // creation via web/lib/reference.ts, for Message rows that back a
+  // customer-facing flow (financing applications, contact-derived leads).
+  // Nullable for rows created before this column existed and for purely
+  // internal messages that never had a reference.
+  reference String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

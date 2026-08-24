@@ -6,6 +6,7 @@ import { Calendar, User, ArrowLeft, Share2, Edit } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/config";
 import NewsImageWithFallback from "./NewsImageWithFallback";
+import { withBasePath } from "@/lib/publicPath";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -56,7 +57,7 @@ export default async function NewsArticlePage({ params }: Props) {
     <MainLayout>
       {/* Breadcrumbs */}
       <div className="bg-ice py-4 border-b border-line">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-2 text-sm text-steel">
             <Link href="/" className="hover:text-geely-blue">Home</Link>
             <span>/</span>
@@ -69,7 +70,7 @@ export default async function NewsArticlePage({ params }: Props) {
 
       {/* Article Header */}
       <div className="bg-white py-12 border-b border-line">
-        <div className="max-w-[900px] mx-auto px-10">
+        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex items-center justify-between mb-6">
             <Link
               href="/news"
@@ -121,7 +122,7 @@ export default async function NewsArticlePage({ params }: Props) {
           {article.imageUrl && (
             <div className="mt-8">
               <NewsImageWithFallback
-                src={article.imageUrl}
+                src={withBasePath(article.imageUrl)}
                 alt={article.title}
                 className="w-full h-64 md:h-80 object-cover rounded-lg border border-line"
               />
@@ -132,7 +133,7 @@ export default async function NewsArticlePage({ params }: Props) {
 
       {/* Article Content */}
       <article className="py-12">
-        <div className="max-w-[900px] mx-auto px-10">
+        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="prose prose-lg max-w-none">
             <div
               dangerouslySetInnerHTML={{ __html: article.content }}
@@ -145,7 +146,7 @@ export default async function NewsArticlePage({ params }: Props) {
       {/* Related Articles */}
       {relatedArticles.length > 0 && (
         <section className="py-12 bg-ice border-t border-line">
-          <div className="max-w-[1280px] mx-auto px-10">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
             <h2 className="text-2xl font-bold text-navy mb-8">Related Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedArticles.map((related) => (

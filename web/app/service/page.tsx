@@ -28,6 +28,7 @@ export default function ServicePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [serviceCenters, setServiceCenters] = useState<Dealer[]>([]);
+  const [bookingReference, setBookingReference] = useState<string | null>(null);
 
   // Fetch service centers from CMS
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function ServicePage() {
       if (result.notificationSent === false) {
         setSubmitError('Your appointment was saved, but the confirmation email could not be sent. Please contact Geely Ethiopia directly.');
       }
+      setBookingReference(result.reference || result.bookingId || null);
       setIsSubmitted(true);
       reset();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,7 +104,7 @@ export default function ServicePage() {
     return (
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-10 text-center">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
@@ -112,6 +114,11 @@ export default function ServicePage() {
             <p className="text-lg text-steel mb-8 leading-relaxed">
               Thank you for scheduling your service with Geely Ethiopia. We've received your appointment request and will send you a confirmation email shortly.
             </p>
+            {bookingReference && (
+              <p className="mb-6 text-base text-navy">
+                Service Request Reference: <span className="font-bold">{bookingReference}</span>
+              </p>
+            )}
             {submitError && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">{submitError}</p>}
             <div className="bg-ice p-6 rounded-lg mb-8">
               <p className="text-sm text-steel mb-2">
@@ -138,6 +145,13 @@ export default function ServicePage() {
                 Order Parts
               </a>
             </div>
+            {bookingReference && (
+              <p className="mt-6 text-sm text-steel">
+                <a href={`/status?ref=${encodeURIComponent(bookingReference)}`} className="text-geely-blue font-semibold hover:underline">
+                  Check your status
+                </a>
+              </p>
+            )}
           </div>
         </div>
       </MainLayout>
@@ -148,7 +162,7 @@ export default function ServicePage() {
     <MainLayout>
       {/* Page Header */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             PROFESSIONAL SERVICE
           </div>
@@ -163,7 +177,7 @@ export default function ServicePage() {
 
       {/* Why Service with Us */}
       <section className="py-12 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -207,7 +221,7 @@ export default function ServicePage() {
 
       {/* Form Section */}
       <section className="py-16">
-        <div className="max-w-4xl mx-auto px-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
           <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
             {submitError && <div className="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</div>}
             <div className="bg-ice p-6 border-b border-line">

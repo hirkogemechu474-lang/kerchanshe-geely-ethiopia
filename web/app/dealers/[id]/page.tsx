@@ -6,6 +6,8 @@ import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
 import { getDealerById, getDealers, type Dealer } from "@/lib/api";
 import { MapPin, Phone, Mail, Clock, Navigation, Calendar, Wrench, Globe, Share2 } from "lucide-react";
+import { MapEmbedFacade } from "@/components/MapEmbedFacade";
+import { withBasePath } from "@/lib/publicPath";
 
 export default function DealerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -57,14 +59,14 @@ export default function DealerDetailPage() {
     return (
       <MainLayout>
         <div className="bg-navy text-white py-16">
-          <div className="max-w-[1280px] mx-auto px-10">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
             <Link href="/dealers" className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3 inline-block">
               ← Back to Dealers
             </Link>
             <h1 className="disp text-4xl font-bold">Dealer Not Found</h1>
           </div>
         </div>
-        <div className="max-w-[1280px] mx-auto px-10 py-16 text-center">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-16 text-center">
           <MapPin size={56} className="text-steel mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-navy mb-2">Location Unavailable</h2>
           <p className="text-steel max-w-xl mx-auto mb-8">
@@ -106,7 +108,7 @@ export default function DealerDetailPage() {
     <MainLayout>
       {/* Header */}
       <div className="bg-navy text-white py-12">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-2 text-xs tracking-wider mb-3 opacity-80">
             <Link href="/dealers" className="hover:opacity-100">
               Dealers & Service Centers
@@ -117,7 +119,7 @@ export default function DealerDetailPage() {
           <div className="flex items-center gap-4 flex-wrap">
             {dealer.logo && (
               <img
-                src={dealer.logo}
+                src={withBasePath(dealer.logo)}
                 alt={`${displayName} logo`}
                 className="w-16 h-16 rounded-lg object-contain bg-white p-2"
               />
@@ -147,7 +149,7 @@ export default function DealerDetailPage() {
 
       {/* Main Content */}
       <section className="py-12">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Details */}
             <div className="lg:col-span-2 space-y-8">
@@ -158,7 +160,7 @@ export default function DealerDetailPage() {
                     {(dealer.gallery && dealer.gallery.length > 0 ? dealer.gallery : [dealer.logo]).map((img, index) => (
                       <img
                         key={index}
-                        src={img}
+                        src={withBasePath(img)}
                         alt={`${displayName} photo ${index + 1}`}
                         className={`object-cover w-full ${index === 0 && dealer.gallery && dealer.gallery.length > 1 ? "md:row-span-2 h-[400px]" : "h-[200px]"}`}
                       />
@@ -223,12 +225,10 @@ export default function DealerDetailPage() {
               <div className="bg-white border border-line rounded-lg p-6">
                 <h2 className="text-2xl font-bold text-navy mb-4">Location</h2>
                 <div className="h-[300px] bg-[repeating-linear-gradient(45deg,#eef3fa,#eef3fa_10px,#e4ecf7_10px,#e4ecf7_20px)] rounded-lg overflow-hidden relative">
-                  <iframe
+                  <MapEmbedFacade
                     src={mapEmbedHref}
                     title={`${displayName} location map`}
                     className="w-full h-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
                 <div className="mt-4 flex gap-3 flex-wrap">
@@ -370,7 +370,7 @@ export default function DealerDetailPage() {
       {/* Other Locations */}
       {otherDealers.length > 0 && (
         <section className="py-12 bg-ice">
-          <div className="max-w-[1280px] mx-auto px-10">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
             <h2 className="disp text-3xl text-navy font-bold mb-8">Other Locations</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {otherDealers.map((otherDealer) => (

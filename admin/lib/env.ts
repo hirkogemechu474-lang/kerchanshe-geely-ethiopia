@@ -3,7 +3,7 @@
 export const env = {
   // Application Settings
   app: {
-    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com',
     env: process.env.NEXT_PUBLIC_APP_ENV || 'development',
     isDev: process.env.NODE_ENV === 'development',
     isProd: process.env.NODE_ENV === 'production',

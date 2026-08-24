@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
+import { generateReference } from '@/lib/reference';
 
 // POST - Create new quotation from public quote form
 export async function POST(request: NextRequest) {
@@ -33,8 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate quote number
-    const count = await prisma.quotation.count();
+    const reference = generateReference();
 
     // Build customer name
     const customerName = `${firstName} ${lastName}`;
@@ -79,13 +79,15 @@ ${message ? `Additional Message: ${message}` : ''}
         financingInterest: Boolean(financingNeeded),
         tradeInInterest: Boolean(tradeIn),
         status: 'new',
+        reference,
       },
     });
 
     return NextResponse.json(
-      { 
+      {
         success: true,
         quotation,
+        reference,
         message: 'Quote request submitted successfully',
       },
       { status: 201 }

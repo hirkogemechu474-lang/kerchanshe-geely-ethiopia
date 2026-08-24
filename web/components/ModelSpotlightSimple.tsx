@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Play, Pause } from 'lucide-react';
+import { withBasePath } from '@/lib/publicPath';
 
 interface ModelSpotlightSimpleProps {
   modelName: string;
@@ -44,7 +45,7 @@ export function ModelSpotlightSimple({
       {/* Main Image */}
       <div className="relative aspect-[16/9]">
         <img
-          src={views[currentView].image}
+          src={withBasePath(views[currentView].image)}
           alt={`${modelName} - ${views[currentView].label}`}
           className="w-full h-full object-contain"
           loading="eager"
@@ -53,6 +54,7 @@ export function ModelSpotlightSimple({
         {/* Navigation Arrows */}
         <button
           onClick={prevView}
+          aria-label="Previous view"
           className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-all"
         >
           <ChevronLeft size={24} />
@@ -60,6 +62,7 @@ export function ModelSpotlightSimple({
 
         <button
           onClick={nextView}
+          aria-label="Next view"
           className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-all"
         >
           <ChevronRight size={24} />
@@ -111,7 +114,7 @@ export function ModelSpotlightSimple({
               }`}
             >
               <img
-                src={view.image}
+                src={withBasePath(view.image)}
                 alt={view.label}
                 className="w-full h-full object-cover"
                 loading="lazy"

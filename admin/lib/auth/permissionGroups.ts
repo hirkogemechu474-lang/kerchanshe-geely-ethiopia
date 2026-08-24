@@ -59,5 +59,6 @@ export const PERMISSION_GROUPS: { label: string; keys: { key: keyof AdminPermiss
 ];
 
 export function roleLabel(role: string) {
+  if (role === 'gm_geely') return 'GM-Geely';
   return role.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }

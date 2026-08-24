@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit, rateLimitConfigs } from "@/lib/rate-limit";
 import nodemailer from "nodemailer";
 import { PDI_CHECKLIST_TEMPLATE } from "@/lib/sales/pdiChecklistTemplate";
+import { generateReference } from "@/lib/reference";
 
 type PurchaseRequest = {
   fullName?: string;
@@ -68,6 +69,22 @@ async function linkPurchaseToSalesPipeline(details: {
     quotation = await prisma.quotation
       .findUnique({ where: { id: details.quoteReference }, include: { salesOrder: true } })
       .catch(() => null);
+    // Every downstream lookup (payment-approval gate, confirmation-screen
+    // status check) correlates purely by searching a Quotation's message
+    // text for "Purchase reference: <id>" — see /api/payments/initiate and
+    // /api/public/purchases/[purchaseId]. A reused quotation only ever got
+    // that text at ITS OWN creation (for whatever the original quote
+    // request was), never for this new purchase, so without appending it
+    // here every one of those lookups would silently fail to find this
+    // purchase's SalesOrder forever, even though it's created correctly
+    // below.
+    if (quotation && !quotation.message?.includes(`Purchase reference: ${details.purchaseReference}`)) {
+      quotation = await prisma.quotation.update({
+        where: { id: quotation.id },
+        data: { message: `${quotation.message ? `${quotation.message}\n` : ""}Purchase reference: ${details.purchaseReference}` },
+        include: { salesOrder: true },
+      });
+    }
   }
 
   if (!quotation) {
@@ -164,7 +181,7 @@ export async function POST(request: NextRequest) {
     }
 
     const purchaseAmount = (vehicle.finalPrice ?? vehicle.basePrice) * quantity;
-    const purchaseReference = `GEO-${new Date().getFullYear()}-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+    const purchaseReference = generateReference();
     const transactionId = "PENDING";
 
     // Payment remains pending until the selected provider confirms it through the callback route.
@@ -199,6 +216,7 @@ export async function POST(request: NextRequest) {
         priority: "high",
         status: paymentStatus === "PAID" ? "new" : "unread",
         content,
+        reference: purchaseReference,
       },
     });
 
@@ -264,12 +282,31 @@ async function sendPurchaseEmail(details: { fullName: string; email: string; veh
       subject: `New Vehicle Purchase - ${details.purchaseReference}`,
       text: `New vehicle purchase request\n\nCustomer: ${details.fullName}\nEmail: ${details.email}\nVehicle: ${details.vehicleName}\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPayment status: ${details.paymentStatus}\nPurchase reference: ${details.purchaseReference}\nTransaction ID: ${details.transactionId}\nInternal record: ${details.recordId}`,
     });
+
+    // The customer's only way back to this purchase (short of the later
+    // approval email) — the confirmation screen otherwise only lives in
+    // that page's local state and is lost the moment the tab closes.
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://geelyethiopia.com").replace(/\/$/, "");
+    const continueUrl = `${siteUrl}/financing/apply?purchaseId=${encodeURIComponent(details.purchaseReference)}`;
+    const statusUrl = `${siteUrl}/status?ref=${encodeURIComponent(details.purchaseReference)}`;
+    const logoHtml = `<div style="text-align:center;padding:24px 0;"><img src="${siteUrl}/assets/logos/geely-logo.png" alt="Geely" style="height:56px;" /></div>`;
+    const statusButtonHtml = `<div style="text-align:center;margin:28px 0;"><a href="${statusUrl}" style="background:#0b5fff;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:6px;display:inline-block;">Check Your Status</a></div>`;
+
     if (details.paymentStatus === "PAID") {
       await transporter.sendMail({
         from,
         to: details.email,
         subject: "Geely Ethiopia Purchase Confirmation",
-        text: `Dear ${details.fullName},\n\nYour purchase of ${details.vehicleName} has been confirmed.\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPurchase reference: ${details.purchaseReference}\nTransaction ID: ${details.transactionId}\n\nOur sales team will contact you about delivery.`,
+        text: `Dear ${details.fullName},\n\nYour purchase of ${details.vehicleName} has been confirmed.\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPurchase reference: ${details.purchaseReference}\nTransaction ID: ${details.transactionId}\n\nCheck your status: ${statusUrl}\n\nOur sales team will contact you about delivery.`,
+        html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">${logoHtml}<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;"><h2 style="margin-top:0;">Dear ${details.fullName},</h2><p>Your purchase of ${details.vehicleName} has been confirmed.</p><p><strong>Amount:</strong> ETB ${details.purchaseAmount.toLocaleString("en-US")}<br /><strong>Bank:</strong> ${details.bankName}<br /><strong>Purchase reference:</strong> ${details.purchaseReference}<br /><strong>Transaction ID:</strong> ${details.transactionId}</p>${statusButtonHtml}<p>Our sales team will contact you about delivery.</p></div></div>`,
+      });
+    } else {
+      await transporter.sendMail({
+        from,
+        to: details.email,
+        subject: `Geely Ethiopia — Purchase Received (${details.purchaseReference})`,
+        text: `Dear ${details.fullName},\n\nThank you. We received your purchase request for ${details.vehicleName}.\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPurchase reference: ${details.purchaseReference}\n\nYour order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign, and you'll be able to continue to payment.\n\nContinue: ${continueUrl}\nCheck your status: ${statusUrl}\n\nOur sales team will contact you with next steps.`,
+        html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">${logoHtml}<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;"><h2 style="margin-top:0;">Dear ${details.fullName},</h2><p>Thank you. We received your purchase request for ${details.vehicleName}.</p><p><strong>Amount:</strong> ETB ${details.purchaseAmount.toLocaleString("en-US")}<br /><strong>Bank:</strong> ${details.bankName}<br /><strong>Purchase reference:</strong> ${details.purchaseReference}</p><p>Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign, and you'll be able to continue to payment.</p><div style="text-align:center;margin:20px 0;"><a href="${continueUrl}" style="background:#1a2b4c;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 24px;border-radius:6px;display:inline-block;margin-right:8px;">Continue</a></div>${statusButtonHtml}<p>Our sales team will contact you with next steps.</p></div></div>`,
       });
     }
   } catch (error) {

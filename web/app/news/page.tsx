@@ -2,6 +2,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { Calendar, Tag } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { withBasePath } from "@/lib/publicPath";
 
 export default async function NewsPage() {
   const articles = await prisma.newsArticle.findMany({
@@ -25,7 +26,7 @@ export default async function NewsPage() {
   return (
     <MainLayout>
       <div className="bg-navy py-16 text-white">
-        <div className="mx-auto max-w-[1280px] px-10">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           <div className="mb-3 text-[13px] font-bold tracking-[0.14em] text-gold">
             LATEST UPDATES
           </div>
@@ -38,7 +39,7 @@ export default async function NewsPage() {
       </div>
 
       <section className="bg-ice py-16">
-        <div className="mx-auto max-w-[1280px] px-10">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           {articles.length === 0 ? (
             <div className="py-12 text-center">
               <p className="mb-4 text-gray-500">No news articles published yet</p>
@@ -59,7 +60,7 @@ export default async function NewsPage() {
                     <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       {article.imageUrl ? (
                         <img
-                          src={article.imageUrl}
+                          src={withBasePath(article.imageUrl)}
                           alt={article.title}
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
                         />

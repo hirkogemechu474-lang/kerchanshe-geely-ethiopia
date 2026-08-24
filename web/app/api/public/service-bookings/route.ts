@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
+import { generateReference } from '@/lib/reference';
 
 interface ServiceRequest {
   firstName: string;
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please provide a valid preferred date.' }, { status: 400 });
     }
 
+    const reference = generateReference();
     const booking = await prisma.serviceBooking.create({
       data: {
         customerName: `${body.firstName.trim()} ${body.lastName.trim()}`,
@@ -79,6 +81,7 @@ export async function POST(request: NextRequest) {
         date,
         status: 'scheduled',
         notes: [`Preferred time: ${body.preferredTime}`, `Service center: ${body.location}`, body.description?.trim() ? `Details: ${body.description.trim()}` : ''].filter(Boolean).join('\n'),
+        reference,
       },
     });
 
@@ -90,7 +93,7 @@ export async function POST(request: NextRequest) {
         email: body.email,
         phone: body.phone,
         subject: `New service appointment — ${body.vehicleModel}`,
-        reference: booking.id,
+        reference,
         details: [
           `Vehicle: ${body.vehicleModel} (${body.vehicleYear})`,
           `Mileage: ${body.mileage}`,
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
       console.error('[service-booking:email]', emailError);
     }
 
-    return NextResponse.json({ success: true, bookingId: booking.id, notificationSent, message: notificationSent ? 'Appointment saved and confirmation email sent.' : 'Appointment saved. Email notification is not configured or could not be delivered.' }, { status: 201 });
+    return NextResponse.json({ success: true, bookingId: booking.id, reference, notificationSent, message: notificationSent ? 'Appointment saved and confirmation email sent.' : 'Appointment saved. Email notification is not configured or could not be delivered.' }, { status: 201 });
   } catch (error) {
     console.error('[service-booking:create]', error);
     return NextResponse.json({ error: 'Unable to submit the service request right now.' }, { status: 500 });

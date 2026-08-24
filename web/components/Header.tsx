@@ -2,13 +2,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Search, User, ChevronDown, Car, Globe } from 'lucide-react';
+import { Menu, User, ChevronDown, Car } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
-import { SearchModal } from './SearchModal';
-import { useLanguage, useTranslation } from '@/lib/i18n';
 import type { VehicleRecord } from '@/lib/vehicleData';
 import { resolveNavIcon, type SiteNavItem } from '@/lib/navIcons';
+import { withBasePath } from '@/lib/publicPath';
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -32,9 +31,10 @@ const DEFAULT_NAV_ITEMS: SiteNavItem[] = [
   { id: 'technology', label: 'Technology', href: '/technology', icon: null, openInNewTab: false, displayOrder: 3 },
   { id: 'services', label: 'Services', href: '/service', icon: null, openInNewTab: false, displayOrder: 4 },
   { id: 'dealers', label: 'Dealers', href: '/dealers', icon: null, openInNewTab: false, displayOrder: 5 },
-  { id: 'financing', label: 'Financing', href: '/financing', icon: null, openInNewTab: false, displayOrder: 6 },
-  { id: 'news', label: 'News', href: '/news', icon: null, openInNewTab: false, displayOrder: 7 },
-  { id: 'about', label: 'About', href: '/about', icon: null, openInNewTab: false, displayOrder: 8 },
+  { id: 'showroom', label: 'Showroom', href: '/visit/start', icon: 'MapPin', openInNewTab: false, displayOrder: 6 },
+  { id: 'financing', label: 'Financing', href: '/financing', icon: null, openInNewTab: false, displayOrder: 7 },
+  { id: 'news', label: 'News', href: '/news', icon: null, openInNewTab: false, displayOrder: 8 },
+  { id: 'about', label: 'About', href: '/about', icon: null, openInNewTab: false, displayOrder: 9 },
 ];
 
 // ─── Pre-fetch helper ─────────────────────────────────────────────────────────
@@ -55,10 +55,6 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const { t, language } = useTranslation();
-  const setLanguage = useLanguage((state) => state.setLanguage);
-  const isEnglish = language === 'en';
 
   // Pre-loaded menu data — fetched once, reused on every hover
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
@@ -111,7 +107,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
           hasDropdown: special?.hasDropdown,
           hasSubmenu: special?.hasSubmenu,
           category: special?.category,
-          icon: IconComponent ? <IconComponent size={16} className="text-green-600" /> : null,
+          icon: IconComponent ? <IconComponent size={16} className="shrink-0" /> : null,
         };
       }),
     [siteNavItems]
@@ -139,19 +135,21 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
         <div className="flex items-center justify-between gap-3 py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group" onClick={closeAllMenus}>
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-extrabold text-base shadow-sm group-hover:shadow-md transition-shadow">
-              G
-            </div>
+            <img
+              src={withBasePath('/assets/logos/geely-vertical-logo.svg')}
+              alt="Geely"
+              className="w-9 h-9 rounded-lg object-contain shadow-sm group-hover:shadow-md transition-shadow"
+            />
             <div className="leading-none">
-              <div className="text-[19px] font-extrabold tracking-tight text-navy">GEELY</div>
-              <div className="text-[9px] font-bold tracking-[0.3em] text-geely-blue mt-1">
+              <div className="text-[19px] font-display font-extrabold tracking-tight text-navy">GEELY</div>
+              <div className="text-[9px] font-display font-bold tracking-[0.3em] text-geely-blue mt-1">
                 ETHIOPIA
               </div>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex flex-1 items-center justify-center gap-1 text-sm whitespace-nowrap">
+          <nav className="hidden lg:flex flex-1 items-center justify-center gap-1 whitespace-nowrap">
             {mainNavItems.map((item) => (
               <div
                 key={item.label}
@@ -174,17 +172,17 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               >
                 {item.hasDropdown ? (
                   <button
-                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-2 py-2 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink hover:text-geely-blue font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
                     onClick={() => {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
                       setMegaMenuOpen(null);
                     }}
                   >
-                    <Car size={16} />
+                    <Car size={15} />
                     {item.label}
                     <ChevronDown
-                      size={16}
+                      size={15}
                       className={`transform transition-transform ${modelsDropdownOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
@@ -193,7 +191,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     href={item.href}
                     target={item.openInNewTab ? '_blank' : undefined}
                     rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="flex items-center gap-1 text-navy hover:text-geely-blue font-semibold px-2 py-2 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink hover:text-geely-blue font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
                     {item.icon}
@@ -206,44 +204,14 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
 
           {/* Right Actions */}
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            <button
-              onClick={() => setSearchModalOpen(true)}
-              className="hidden md:flex items-center gap-2 text-steel hover:text-navy"
-            >
-              <Search size={18} />
-            </button>
-
-            <Link href="/login" className="hidden md:flex items-center gap-2 text-steel hover:text-navy">
+            <Link href="/login" aria-label="Log in" className="hidden md:flex items-center gap-2 text-steel hover:text-navy p-2 -m-2">
               <User size={18} />
             </Link>
 
-            <button
-              onClick={() => setLanguage(isEnglish ? 'am' : 'en')}
-              className="hidden md:flex items-center gap-1.5 text-[11px] font-medium text-steel hover:text-navy border border-line rounded-full px-2.5 py-1 whitespace-nowrap"
-            >
-              <Globe size={13} />
-              <span>English</span>
-              <span className="text-steel/40">|</span>
-              <span>አማርኛ</span>
-            </button>
-
-            <Link
-              href="/quote"
-              className="inline-flex h-9 sm:min-w-[110px] items-center justify-center bg-gold text-navy px-3 sm:px-4 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors whitespace-nowrap"
-              onClick={closeAllMenus}
-            >
-              {t('common.getQuote')}
-            </Link>
-
-            <Link
-              href="/test-drive"
-              className="inline-flex h-9 sm:min-w-[120px] items-center justify-center bg-navy text-white px-3 sm:px-4 rounded-lg font-semibold text-xs sm:text-sm hover:bg-opacity-90 transition-colors whitespace-nowrap"
-              onClick={closeAllMenus}
-            >
-              {t('common.bookTestDrive')}
-            </Link>
-
-            <button onClick={onMobileMenuToggle} className="lg:hidden text-navy p-2">
+            {/* Search, language, Get Quote, and Book Test Drive live in the
+                drawer behind this button (see MobileDrawer) — kept off the
+                persistent header bar at every screen size. */}
+            <button onClick={onMobileMenuToggle} aria-label="Open menu" className="text-navy p-2">
               <Menu size={24} />
             </button>
           </div>
@@ -281,8 +249,6 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
           </div>
         )}
       </div>
-
-      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
     </header>
   );
 }

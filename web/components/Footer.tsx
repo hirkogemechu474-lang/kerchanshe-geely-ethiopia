@@ -6,6 +6,8 @@ import {
   Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube, Linkedin, Music,
   Clock, Award, Headphones, ExternalLink, Send, Shield, MessageCircle,
 } from 'lucide-react';
+import { withBasePath } from '@/lib/publicPath';
+import { useTranslation } from '@/lib/i18n';
 
 interface SocialMediaLinks {
   facebook?: string;
@@ -81,6 +83,7 @@ const FALLBACK_HOURS: HoursSettings = {
 };
 
 export function Footer() {
+  const { t } = useTranslation();
   const [socialMedia, setSocialMedia] = useState<SocialMediaLinks>({});
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
   const [businessHours, setBusinessHours] = useState<BusinessHours | null>(null);
@@ -230,9 +233,11 @@ export function Footer() {
             {/* Brand */}
             <div>
               <div className="flex items-center gap-3 mb-5">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center text-navy font-extrabold text-lg shadow-lg shadow-gold/20">
-                  G
-                </div>
+                <img
+                  src={withBasePath('/assets/logos/geely-vertical-logo.svg')}
+                  alt="Geely"
+                  className="h-10 w-10 rounded-xl object-contain bg-white p-1 shadow-lg shadow-gold/20"
+                />
                 <div>
                   <div className="text-2xl font-extrabold tracking-tight">GEELY</div>
                   <div className="text-xs font-semibold text-gold/90 tracking-wide">ETHIOPIA · KERCHANSHE AUTO</div>
@@ -299,7 +304,7 @@ export function Footer() {
 
           {/* Vehicles */}
           <div className="lg:col-span-2">
-            <FooterColTitle>Vehicles</FooterColTitle>
+            <FooterColTitle>{t('footer.vehicles')}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
               {vehicleLinks.map((l) => (
                 <li key={l.name}>
@@ -316,7 +321,7 @@ export function Footer() {
 
           {/* Services */}
           <div className="lg:col-span-2">
-            <FooterColTitle>Services</FooterColTitle>
+            <FooterColTitle>{t('footer.services')}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
               {serviceLinks.map((l) => (
                 <li key={l.name}>
@@ -335,7 +340,7 @@ export function Footer() {
           <div className="lg:col-span-3 space-y-10">
             <div className="grid grid-cols-2 gap-8">
               <div>
-                <FooterColTitle>Company</FooterColTitle>
+                <FooterColTitle>{t('footer.company')}</FooterColTitle>
                 <ul className="space-y-2.5 mt-5">
                   {companyLinks.slice(0, 5).map((l) => (
                     <li key={l.name}>
@@ -347,7 +352,7 @@ export function Footer() {
                 </ul>
               </div>
               <div>
-                <FooterColTitle>Support</FooterColTitle>
+                <FooterColTitle>{t('footer.support')}</FooterColTitle>
                 <ul className="space-y-2.5 mt-5">
                   {supportLinks.slice(0, 5).map((l) => (
                     <li key={l.name}>
@@ -366,10 +371,10 @@ export function Footer() {
                 <div>
                   <div className="font-bold text-white flex items-center gap-2">
                     <MessageCircle size={17} className="text-gold" />
-                    Stay Connected
+                    {t('footer.stayConnected')}
                   </div>
                   <div className="text-xs mt-1 text-blue-100/80">
-                    Latest models, special offers, and Geely Ethiopia news.
+                    {t('footer.newsletter')}
                   </div>
                 </div>
               </div>
@@ -409,7 +414,7 @@ export function Footer() {
                     required
                     value={emailDraft}
                     onChange={(e) => setEmailDraft(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t('footer.emailPlaceholder')}
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-blue-200/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/50"
                   />
                 </div>
@@ -417,7 +422,7 @@ export function Footer() {
                   type="submit"
                   className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-navy text-sm font-bold hover:from-amber-400 hover:to-gold transition-all shadow-lg shadow-gold/20 whitespace-nowrap"
                 >
-                  {subscribing ? 'Subscribing...' : subscribed ? '✓ Subscribed' : (<>Subscribe <Send size={13} /></>)}
+                  {subscribing ? 'Subscribing...' : subscribed ? '✓ Subscribed' : (<>{t('footer.subscribe')} <Send size={13} /></>)}
                 </button>
               </form>
               {subscribed && (
@@ -487,7 +492,7 @@ export function Footer() {
         <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:justify-between">
           {/* Socials */}
           <div className="flex items-center gap-4">
-            <div className="text-xs font-bold uppercase tracking-widest text-blue-200/70 hidden sm:block">Follow us</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-blue-200/70 hidden sm:block">{t('footer.followUs')}</div>
             <div className="flex items-center gap-2 flex-wrap">
               {(anySocial ? socials : socials.reduce<Partial<SocialMediaLinks>>((a, _, i) => ({ ...a, [socials[i].key]: '#' }), {}))
                 &&
@@ -514,9 +519,9 @@ export function Footer() {
 
           {/* Legal links */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-blue-200/70">
-            <Link href="/privacy" className="hover:text-gold transition">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-gold transition">Terms of Service</Link>
-            <Link href="/cookies" className="hover:text-gold transition">Cookie Policy</Link>
+            <Link href="/privacy" className="hover:text-gold transition">{t('footer.privacyPolicy')}</Link>
+            <Link href="/terms" className="hover:text-gold transition">{t('footer.termsOfService')}</Link>
+            <Link href="/cookies" className="hover:text-gold transition">{t('footer.cookiePolicy')}</Link>
             <Link href="/dealers" className="hover:text-gold transition">Locate Dealer</Link>
             <Link href="/faq" className="hover:text-gold transition">FAQ</Link>
           </div>
@@ -525,7 +530,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="mt-6 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-xs text-blue-200/60">
-            © {currentYear} Geely Ethiopia by Kerchanshe Auto · Kerchanshe Group. All rights reserved.
+            © {currentYear} {t('footer.copyright')}
           </div>
           <div className="text-xs text-blue-200/40">
             Official exclusive distributor of Zhejiang Geely Holding Group in Ethiopia.

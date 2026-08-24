@@ -31,8 +31,8 @@ const formatNumber = (value: number): string => {
 const DEFAULT_CONFIG = {
   defaults: {
     monthlyDistance: 1500,
-    fuelPrice: 70,
-    electricityCost: 3,
+    fuelPrice: 280,
+    electricityCost: 40,
     petrolEfficiency: 12,
     evEfficiency: 6,
   },
@@ -59,7 +59,7 @@ const DEFAULT_CONFIG = {
     },
     {
       q: 'Do electricity tariffs vary across Ethiopia?',
-      a: 'Yes, electricity tariffs can vary slightly by region and consumption tier. The default 3 ETB/kWh is based on the average domestic tariff for households. Commercial rates may differ. Ethiopian Electric Utility periodically reviews tariffs, but increases have historically been modest compared to fuel price hikes.',
+      a: 'Yes, electricity tariffs can vary slightly by region and consumption tier. The default 40 ETB/kWh is based on the average domestic tariff for households. Commercial rates may differ. Ethiopian Electric Utility periodically reviews tariffs, but increases have historically been modest compared to fuel price hikes.',
     },
   ],
 };
@@ -232,16 +232,16 @@ export default function CalculatorPage() {
                   </div>
                   <input
                     type="range"
-                    min={30}
-                    max={150}
-                    step={1}
+                    min={50}
+                    max={400}
+                    step={5}
                     value={fuelPrice}
                     onChange={(e) => setFuelPrice(Number(e.target.value))}
                     className="w-full h-2 bg-ice rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <div className="flex justify-between mt-2 text-xs text-steel">
-                    <span>30 ETB</span>
-                    <span>150 ETB</span>
+                    <span>50 ETB</span>
+                    <span>400 ETB</span>
                   </div>
                 </div>
 
@@ -255,16 +255,16 @@ export default function CalculatorPage() {
                   </div>
                   <input
                     type="range"
-                    min={1}
-                    max={15}
+                    min={5}
+                    max={60}
                     step={0.5}
                     value={electricityCost}
                     onChange={(e) => setElectricityCost(Number(e.target.value))}
                     className="w-full h-2 bg-ice rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <div className="flex justify-between mt-2 text-xs text-steel">
-                    <span>1 ETB</span>
-                    <span>15 ETB</span>
+                    <span>5 ETB</span>
+                    <span>60 ETB</span>
                   </div>
                 </div>
 

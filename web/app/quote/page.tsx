@@ -9,6 +9,14 @@ import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { CheckCircle, FileText, DollarSign, AlertCircle } from "lucide-react";
 
+const TIMEFRAME_LABELS: Record<string, string> = {
+  immediate: 'Within 2 weeks',
+  '1-month': 'Within 1 month',
+  '2-3-months': '2-3 months',
+  '3-6-months': '3-6 months',
+  '6-months-plus': 'More than 6 months',
+};
+
 interface QuoteFormData {
   firstName: string;
   lastName: string;
@@ -174,7 +182,7 @@ export default function QuotePage() {
       const message = `
 Requested trim: ${requestedTrim || 'Not specified'}
 Requested color: ${requestedColor || 'Not specified'}
-Purchase Timeframe: ${data.purchaseTimeframe}
+Purchase Timeframe: ${TIMEFRAME_LABELS[data.purchaseTimeframe] || data.purchaseTimeframe}
 Financing Needed: ${data.financingNeeded}
 Trade-In: ${data.tradeIn}
 ${data.tradeInDetails ? `Trade-In Details: ${data.tradeInDetails}` : ''}
@@ -478,7 +486,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                       }`}
                     >
                       <option value="">Select timeframe</option>
-                      <option value="immediate">Immediate (Within 2 weeks)</option>
+                      <option value="immediate">Within 2 weeks</option>
                       <option value="1-month">Within 1 month</option>
                       <option value="2-3-months">2-3 months</option>
                       <option value="3-6-months">3-6 months</option>

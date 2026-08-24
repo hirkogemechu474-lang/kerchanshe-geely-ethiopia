@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { env } from './env';
 
 interface StatusEmailOptions {
   to: string;
@@ -30,6 +31,8 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
   const subject = `Update on your ${opts.entityType}: ${statusLabel}`;
+  const siteUrl = env.app.url.replace(/\/$/, '');
+  const statusUrl = opts.reference ? `${siteUrl}/status?ref=${encodeURIComponent(opts.reference)}` : null;
   const text = [
     `Hello ${opts.name || 'there'},`,
     '',
@@ -39,6 +42,7 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
     opts.reference ? `Reference: ${opts.reference}` : '',
     opts.details ? `Details: ${opts.details}` : '',
     opts.actionUrl ? `${opts.actionLabel || 'Next step'}: ${opts.actionUrl}` : '',
+    statusUrl ? `Check your status: ${statusUrl}` : '',
     '',
     "If you have any questions, please contact us. We're happy to help.",
     '',
@@ -48,6 +52,33 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
     .filter(Boolean)
     .join('\n');
 
-  await transporter.sendMail({ from, to: opts.to, subject, text, attachments: opts.attachments });
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">
+      <div style="text-align:center;padding:24px 0;">
+        <img src="${siteUrl}/assets/logos/geely-logo.png" alt="Geely" style="height:56px;" />
+      </div>
+      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;">
+        <h2 style="margin-top:0;">Hello ${opts.name || 'there'},</h2>
+        <p>We'd like to update you on your ${opts.entityType.toLowerCase()}.</p>
+        <p style="font-size:15px;"><strong>Status:</strong> ${statusLabel}</p>
+        ${opts.reference ? `<p style="font-size:15px;"><strong>Reference:</strong> ${opts.reference}</p>` : ''}
+        ${opts.details ? `<p style="white-space:pre-line;color:#3a4a6b;">${opts.details}</p>` : ''}
+        ${
+          opts.actionUrl
+            ? `<div style="text-align:center;margin:20px 0;"><a href="${opts.actionUrl}" style="background:#1a2b4c;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 24px;border-radius:6px;display:inline-block;">${opts.actionLabel || 'Next step'}</a></div>`
+            : ''
+        }
+        ${
+          statusUrl
+            ? `<div style="text-align:center;margin:20px 0;"><a href="${statusUrl}" style="background:#0b5fff;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:6px;display:inline-block;">Check Your Status</a></div>`
+            : ''
+        }
+        <p style="margin-bottom:0;">If you have any questions, please contact us. We're happy to help.</p>
+      </div>
+      <p style="text-align:center;color:#8a94a6;font-size:12px;margin-top:16px;">Kerchanshe Group &middot; Geely Ethiopia</p>
+    </div>
+  `;
+
+  await transporter.sendMail({ from, to: opts.to, subject, text, html, attachments: opts.attachments });
   return true;
 }
