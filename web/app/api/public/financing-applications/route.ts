@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 
 async function sendApplicationNotifications(details: {
   applicationId: string;
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join('\n');
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.FINANCING);
     const record = await prisma.message.create({
       data: {
         from: `${firstName} ${lastName}`,

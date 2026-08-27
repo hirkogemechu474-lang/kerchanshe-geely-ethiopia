@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY, type ReferenceCategory } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // NOTE: Removed `export const runtime = 'edge'` — Prisma requires Node.js runtime
@@ -35,6 +35,13 @@ const STATUS_MAP: Record<string, string> = {
   'quote': 'Quote Requested',
   'contact': 'Contact Requested',
   'service': 'Service Inquiry',
+};
+
+const LEAD_TYPE_REFERENCE_CATEGORY: Record<LeadData['leadType'], ReferenceCategory> = {
+  'test-drive': REFERENCE_CATEGORY.TEST_DRIVE,
+  'quote': REFERENCE_CATEGORY.QUOTATION,
+  'contact': REFERENCE_CATEGORY.CONTACT,
+  'service': REFERENCE_CATEGORY.SERVICE_INQUIRY,
 };
 
 async function saveLocalLead(
@@ -115,7 +122,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const reference = await generateReference();
+  const reference = await generateReference(LEAD_TYPE_REFERENCE_CATEGORY[leadData.leadType]);
   const assignedRep = leadData.leadType === 'test-drive' ? await nextSalesRep(leadData.preferredDealer) : null;
   let saved: { testDriveId?: string };
   try {

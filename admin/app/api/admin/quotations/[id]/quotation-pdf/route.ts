@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { buildSalesQuotationPdf, computeQuotationTotals } from '@/lib/sales/salesQuotationPdf';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { vatAmount } = computeQuotationTotals(unitPrice, quantity, discountAmount);
-  const quotationNo = existing.quotationNo || (await generateReference());
+  const quotationNo = existing.quotationNo || (await generateReference(REFERENCE_CATEGORY.QUOTATION));
 
   let updated;
   try {

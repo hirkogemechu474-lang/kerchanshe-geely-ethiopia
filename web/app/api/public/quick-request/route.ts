@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // POST /api/public/quick-request
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
     }
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
     const assignedRep = await nextSalesRep();
 
     const quotation = await prisma.quotation.create({

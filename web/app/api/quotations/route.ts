@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // POST - Submit new quotation
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
     const assignedRep = await nextSalesRep(preferredDealer);
     const quotation = await prisma.quotation.create({
       data: {

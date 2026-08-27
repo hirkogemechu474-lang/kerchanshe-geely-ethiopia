@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 
 interface TradeInBody {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User consent is required' }, { status: 400 });
   }
 
-  const reference = await generateReference();
+  const reference = await generateReference(REFERENCE_CATEGORY.TRADE_IN);
   const name = `${body.firstName} ${body.lastName}`.trim();
   const currentVehicle = `${body.currentYear} ${body.currentMake} ${body.currentModel}`.trim();
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitResult = await rateLimit(request, rateLimitConfigs.showroomVisitRegister);
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // (GY-SQ-DDMMYYYY-NNN) instead of the internal visit.id UUID. Not
       // persisted — this visit is a browsing session, not itself something
       // customers look up on the status page.
-      const reference = await generateReference();
+      const reference = await generateReference(REFERENCE_CATEGORY.SHOWROOM_VISIT);
       await sendFormEmail({
         type: 'showroom visit',
         name: fullName,

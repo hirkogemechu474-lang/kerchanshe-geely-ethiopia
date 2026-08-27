@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 
 /**
  * POST /api/public/parts/requests
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       quantity: Math.max(1, Number(item.quantity) || 1),
     }));
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.PARTS_REQUEST);
     const partRequest = await prisma.partRequest.create({
       data: {
         name,

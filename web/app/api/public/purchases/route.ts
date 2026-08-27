@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 import { PDI_CHECKLIST_TEMPLATE } from "@/lib/sales/pdiChecklistTemplate";
-import { generateReference } from "@/lib/reference";
+import { generateReference, REFERENCE_CATEGORY } from "@/lib/reference";
 
 // Most mail clients (Gmail included) won't fetch an <img src> pointing at
 // http://localhost, and many block remote images by default even when the
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
     }
 
     const purchaseAmount = (vehicle.finalPrice ?? vehicle.basePrice) * quantity;
-    const purchaseReference = await generateReference();
+    const purchaseReference = await generateReference(REFERENCE_CATEGORY.PURCHASE);
     const transactionId = "PENDING";
 
     // Payment remains pending until the selected provider confirms it through the callback route.

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 
 interface ServiceRequest {
   firstName: string;
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please provide a valid preferred date.' }, { status: 400 });
     }
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.SERVICE_BOOKING);
     const booking = await prisma.serviceBooking.create({
       data: {
         customerName: `${body.firstName.trim()} ${body.lastName.trim()}`,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { sendStatusEmail } from '@/lib/status-email';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { env } from '@/lib/env';
 
 /**
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  const reference = await generateReference();
+  const reference = await generateReference(REFERENCE_CATEGORY.TEST_DRIVE);
   const testDrive = await prisma.testDrive.create({
     data: {
       customerName: order.customerName,

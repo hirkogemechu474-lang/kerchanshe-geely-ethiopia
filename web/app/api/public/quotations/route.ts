@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
-import { generateReference } from '@/lib/reference';
+import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // POST - Create new quotation from public quote form
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = await generateReference();
+    const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
     const assignedRep = await nextSalesRep();
 
     // Build customer name
