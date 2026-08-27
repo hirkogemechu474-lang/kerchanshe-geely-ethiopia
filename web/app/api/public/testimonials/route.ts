@@ -1,18 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
+import { reviewRepository } from '@/repositories/reviewRepository';
 
 // GET - Fetch approved testimonials
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const testimonials = await prisma.review.findMany({
-      where: {
-        status: 'approved',
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
+    const testimonials = await reviewRepository.findApproved();
     return NextResponse.json({ testimonials });
   } catch (error) {
     console.error('Error fetching testimonials:', error);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { prisma } from '@/lib/prisma';
-import { sendFormEmail } from '@/lib/form-email';
+import { reviewRepository } from '@/repositories/reviewRepository';
+import { submitReview } from '@/lib/services/reviews/reviewService';
 
 // GET - Get reviews with optional filtering
 export async function GET(request: NextRequest) {
@@ -10,35 +10,19 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured');
     const limit = searchParams.get('limit');
 
-    const where: any = {};
-    
-    if (featured === 'true') {
-      where.isFeatured = true;
-    }
-
-    where.status = 'approved'; // Only show approved reviews
-    where.isActive = true;
-
-    const reviews = await prisma.review.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit ? parseInt(limit) : undefined,
-    });
-
-    // Calculate stats
-    const totalReviews = await prisma.review.count({
-      where: { status: 'approved', isActive: true }
-    });
-
-    const avgRatingResult = await prisma.review.aggregate({
-      where: { status: 'approved', isActive: true },
-      _avg: { rating: true }
-    });
+    const [reviews, totalReviews, averageRating] = await Promise.all([
+      reviewRepository.findApprovedActive({
+        featured: featured === 'true',
+        limit: limit ? parseInt(limit) : undefined,
+      }),
+      reviewRepository.countApprovedActive(),
+      reviewRepository.averageApprovedActiveRating(),
+    ]);
 
     return NextResponse.json({
       reviews,
       total_reviews: totalReviews,
-      average_rating: avgRatingResult._avg.rating || 0,
+      average_rating: averageRating,
     });
 
   } catch (error) {
@@ -59,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
+
     const {
       fullName,
       email,
@@ -84,36 +68,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the review (will be pending approval)
-    const review = await prisma.review.create({
-      data: {
-        fullName,
-        email: email || null,
-        vehicleModel,
-        rating,
-        reviewTitle,
-        reviewMessage,
-        status: 'pending', // Requires admin approval
-        isFeatured: false,
-        isActive: true,
-      },
+    const { review, notificationSent } = await submitReview({
+      fullName,
+      email,
+      vehicleModel,
+      rating,
+      reviewTitle,
+      reviewMessage,
     });
-
-    let notificationSent = false;
-    if (email) {
-      try {
-        notificationSent = await sendFormEmail({
-          type: 'customer review',
-          name: fullName,
-          email,
-          subject: `New review: ${reviewTitle}`,
-          reference: review.id,
-          details: `Vehicle: ${vehicleModel}\nRating: ${rating}/5\n\n${reviewMessage}`,
-        });
-      } catch (emailError) {
-        console.error('[review:email]', emailError);
-      }
-    }
 
     return NextResponse.json({
       message: 'Review submitted successfully',

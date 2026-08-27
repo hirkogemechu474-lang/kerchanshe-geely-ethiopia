@@ -1,29 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
+import { newsRepository } from '@/repositories/newsRepository';
 
 // GET - Fetch published news articles for public website
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const articles = await prisma.newsArticle.findMany({
-      where: {
-        status: 'published',
-      },
-      orderBy: [
-        { publishDate: 'desc' },
-        { createdAt: 'desc' }
-      ],
-      take: 6,
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        publishDate: true,
-        createdAt: true,
-        imageUrl: true,
-        excerpt: true,
-      },
-    });
-
+    const articles = await newsRepository.findPublished(6);
     return NextResponse.json({ articles });
   } catch (error) {
     console.error('Error fetching public news:', error);

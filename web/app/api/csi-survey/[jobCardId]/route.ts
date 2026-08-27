@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { sendFormEmail } from '@/lib/form-email';
+import { getSurveyEligibility, submitSurvey } from '@/lib/services/csiSurvey/csiSurveyService';
 
 // Post-visit satisfaction survey (BRD FR-602, UC-16). No login required —
 // the job card's own id (a random UUID, never shown to any customer other
@@ -12,36 +11,13 @@ import { sendFormEmail } from '@/lib/form-email';
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobCardId: string }> }) {
   const { jobCardId } = await params;
 
-  const jobCard = await prisma.jobCard.findUnique({
-    where: { id: jobCardId },
-    select: {
-      id: true,
-      jobCardNo: true,
-      vehicleModel: true,
-      customerName: true,
-      status: true,
-      csiSurveyResponse: { select: { id: true } },
-    },
-  });
+  const eligibility = await getSurveyEligibility(jobCardId);
 
-  if (!jobCard) {
-    return NextResponse.json({ eligible: false, reason: 'not_found' }, { status: 404 });
+  if (!eligibility.eligible) {
+    return NextResponse.json(eligibility, { status: eligibility.reason === 'not_found' ? 404 : 200 });
   }
 
-  if (jobCard.status !== 'INVOICED_CLOSED') {
-    return NextResponse.json({ eligible: false, reason: 'not_closed' });
-  }
-
-  if (jobCard.csiSurveyResponse) {
-    return NextResponse.json({ eligible: false, reason: 'already_submitted' });
-  }
-
-  return NextResponse.json({
-    eligible: true,
-    jobCardNo: jobCard.jobCardNo,
-    vehicleModel: jobCard.vehicleModel,
-    customerName: jobCard.customerName,
-  });
+  return NextResponse.json(eligibility);
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ jobCardId: string }> }) {
@@ -57,48 +33,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Rating must be a whole number between 1 and 5' }, { status: 400 });
   }
 
-  const jobCard = await prisma.jobCard.findUnique({
-    where: { id: jobCardId },
-    select: { id: true, status: true, jobCardNo: true, customerName: true, customerEmail: true, vehicleModel: true },
-  });
+  const result = await submitSurvey(jobCardId, rating, comment);
 
-  if (!jobCard) {
-    return NextResponse.json({ error: 'Survey not found' }, { status: 404 });
-  }
-
-  if (jobCard.status !== 'INVOICED_CLOSED') {
-    return NextResponse.json({ error: 'This job card is not yet closed' }, { status: 400 });
-  }
-
-  try {
-    await prisma.cSISurveyResponse.create({
-      data: { jobCardId, rating, comment },
-    });
-  } catch (error: any) {
-    if (error?.code === 'P2002') {
-      return NextResponse.json({ error: 'A response has already been submitted for this visit' }, { status: 409 });
-    }
-    console.error('[csi-survey] submit failed', error);
-    return NextResponse.json({ error: 'Failed to submit survey' }, { status: 500 });
-  }
-
-  if (jobCard.customerEmail) {
-    try {
-      await sendFormEmail({
-        type: 'satisfaction survey',
-        name: jobCard.customerName,
-        email: jobCard.customerEmail,
-        subject: `Satisfaction survey received — ${jobCard.jobCardNo}`,
-        reference: jobCard.jobCardNo,
-        details: [
-          `Vehicle: ${jobCard.vehicleModel || 'Not on file'}`,
-          `Rating: ${rating}/5`,
-          comment ? `Comment: ${comment}` : 'Comment: Not provided',
-        ].join('\n'),
-      });
-    } catch (emailError) {
-      console.error('[csi-survey:email]', emailError);
-    }
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
   return NextResponse.json({ success: true });

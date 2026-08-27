@@ -1,27 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { promotionRepository } from '@/repositories/promotionRepository';
 
 export async function GET() {
   try {
-    const now = new Date();
-    
-    // Fetch active promotions within their date range
-    const promotions = await prisma.promotion.findMany({
-      where: {
-        isActive: true,
-        startDate: {
-          lte: now,
-        },
-        endDate: {
-          gte: now,
-        },
-      },
-      orderBy: [
-        { isFeatured: 'desc' },
-        { displayOrder: 'asc' },
-        { createdAt: 'desc' },
-      ],
-    });
+    const promotions = await promotionRepository.findActive();
 
     return NextResponse.json({
       success: true,
@@ -30,8 +12,8 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching promotions:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to fetch promotions',
         promotions: [],
       },
