@@ -17,6 +17,12 @@ interface SocialMediaLinks {
   tiktok?: string;
 }
 
+interface FooterVehicle {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface ContactInfo {
   headquarters: {
     name: string;
@@ -65,6 +71,7 @@ export function Footer() {
   const { t } = useTranslation();
   const [socialMedia, setSocialMedia] = useState<SocialMediaLinks>({});
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
+  const [vehicles, setVehicles] = useState<FooterVehicle[]>([]);
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
   const [emailDraft, setEmailDraft] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -94,6 +101,13 @@ export function Footer() {
           }
         })
         .catch(() => {}),
+      fetch('/api/public/vehicles')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const list = Array.isArray(d) ? d : d?.vehicles || [];
+          setVehicles(list.slice(0, 5));
+        })
+        .catch(() => {}),
     ]);
   }, []);
 
@@ -104,13 +118,13 @@ export function Footer() {
     { name: 'Customer Reviews', href: '/testimonials' },
   ];
 
-  const vehicleLinks = [
-    { name: 'Coolray', href: '/models/coolray' },
-    { name: 'Emgrand', href: '/models/emgrand' },
-    { name: 'Monjaro', href: '/models/monjaro' },
-    { name: 'Azkarra', href: '/models/azkarra' },
-    { name: 'Okavango', href: '/models/okavango' },
-  ];
+  // Sourced from /api/public/vehicles (active + published models, DB-driven)
+  // rather than a fixed list, so this stays correct as models are added,
+  // renamed, or retired in admin.
+  const vehicleLinks = vehicles.map((v) => ({
+    name: v.name.replace(/^Geely\s+/i, '').trim() || v.name,
+    href: `/models/${v.slug}`,
+  }));
 
   const afterSalesLinks = [
     { name: 'Service Booking', href: '/service' },

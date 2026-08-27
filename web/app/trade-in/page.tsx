@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
-import { CheckCircle, Car, DollarSign, FileText, TrendingUp } from "lucide-react";
+import type { VehicleRecord } from "@/lib/vehicleData";
+import { CheckCircle, Car, DollarSign, FileText, TrendingUp, AlertCircle } from "lucide-react";
 
 interface TradeInFormData {
   // Personal Info
@@ -38,6 +39,9 @@ interface TradeInFormData {
 export default function TradeInPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
 
   const {
     register,
@@ -46,18 +50,49 @@ export default function TradeInPage() {
     reset,
   } = useForm<TradeInFormData>();
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch("/api/public/vehicles");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (active) setVehicles(Array.isArray(data) ? data : data?.vehicles || []);
+      } catch (error) {
+        console.error("Failed to load vehicles:", error);
+      } finally {
+        if (active) setVehiclesLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const onSubmit = async (data: TradeInFormData) => {
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log("Trade-In Submission:", data);
-    setIsSubmitted(true);
-    setIsSubmitting(false);
-    reset();
+    setSubmitError(null);
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      const response = await fetch("/api/public/trade-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, consentGiven: data.consent }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.error || "Failed to submit your trade-in request");
+      }
+
+      setIsSubmitted(true);
+      reset();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error("Failed to submit trade-in request:", err);
+      setSubmitError(err instanceof Error ? err.message : "Failed to submit your trade-in request");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -446,13 +481,14 @@ export default function TradeInPage() {
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
                         errors.interestedModel ? "border-red-500" : "border-line"
                       }`}
+                      disabled={vehiclesLoading}
                     >
-                      <option value="">Select model</option>
-                      <option value="coolray">Coolray</option>
-                      <option value="emgrand">Emgrand</option>
-                      <option value="monjaro">Monjaro</option>
-                      <option value="azkarra">Azkarra</option>
-                      <option value="okavango">Okavango</option>
+                      <option value="">{vehiclesLoading ? "Loading models..." : "Select model"}</option>
+                      {vehicles.map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.name}>
+                          {vehicle.name.replace(/^Geely\s+/i, "").trim() || vehicle.name}
+                        </option>
+                      ))}
                       <option value="undecided">Undecided</option>
                     </select>
                     {errors.interestedModel && (
@@ -541,6 +577,15 @@ export default function TradeInPage() {
 
               {/* Submit Button */}
               <div className="pt-4">
+                {submitError && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                    <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+                    <div>
+                      <p className="font-semibold text-red-800 text-sm mb-1">Submission Error</p>
+                      <p className="text-red-600 text-sm">{submitError}</p>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting}

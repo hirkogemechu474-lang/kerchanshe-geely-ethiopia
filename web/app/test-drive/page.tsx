@@ -28,6 +28,8 @@ export default function TestDrivePage() {
   const visitId = searchParams.get("visitId") || "";
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [contactPhone, setContactPhone] = useState("+251 11 000 0000");
   const { submitLead, loading, error, success } = useCRMSubmit();
@@ -88,6 +90,26 @@ export default function TestDrivePage() {
       }
     }
 
+    async function fetchLocations() {
+      try {
+        const response = await fetch("/api/public/dealers");
+        if (!response.ok) return;
+        const data = await response.json();
+        const dealers = Array.isArray(data) ? data : data?.data || [];
+        // Showrooms that actually offer test drives — falls back to every
+        // dealer if none have the flag set, so the field is never empty.
+        const withTestDrives = dealers.filter((d: any) => d?.facilities?.testDriveArea);
+        const names = (withTestDrives.length > 0 ? withTestDrives : dealers).map(
+          (d: any) => `${d.name}, ${d.city}`
+        );
+        if (active) setLocations(names);
+      } catch (error) {
+        console.error("Failed to load showroom locations:", error);
+      } finally {
+        if (active) setLocationsLoading(false);
+      }
+    }
+
     async function fetchContact() {
       try {
         const response = await fetch("/api/public/contact-information");
@@ -102,6 +124,7 @@ export default function TestDrivePage() {
     }
 
     void fetchVehicles();
+    void fetchLocations();
     void fetchContact();
 
     return () => {
@@ -144,15 +167,6 @@ export default function TestDrivePage() {
       // Error is handled by the hook
     }
   };
-
-  const locations = [
-    "Sarbet Showroom, Addis Ababa",
-    "Bole Showroom, Addis Ababa",
-    "Piassa Service Center, Addis Ababa",
-    "Bahir Dar Showroom",
-    "Hawassa Showroom",
-    "Mekelle Showroom",
-  ];
 
   const timeSlots = [
     "09:00 AM - 10:00 AM",
@@ -244,7 +258,9 @@ export default function TestDrivePage() {
               </div>
               <h3 className="font-bold text-navy mb-2">Convenient Locations</h3>
               <p className="text-xs text-steel">
-                Choose from 6 showrooms across Ethiopia
+                {locationsLoading
+                  ? "Choose from showrooms across Ethiopia"
+                  : `Choose from ${locations.length} showroom${locations.length === 1 ? "" : "s"} across Ethiopia`}
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg text-center">
@@ -448,8 +464,9 @@ export default function TestDrivePage() {
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
                         errors.location ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
+                      disabled={locationsLoading}
                     >
-                      <option value="">Choose a showroom</option>
+                      <option value="">{locationsLoading ? "Loading showrooms..." : "Choose a showroom"}</option>
                       {locations.map((location) => (
                         <option key={location} value={location}>
                           {location}
