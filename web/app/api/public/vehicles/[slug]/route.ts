@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'vehicle_settings';
 
@@ -13,49 +14,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const vehicle = await prisma.vehicle.findFirst({
-      where: {
-        slug: slug,
-        isActive: true,
-        status: 'published',
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        model: true,
-        year: true,
-        category: true,
-        badge: true,
-        description: true,
-        images: true,
-        specifications: true,
-        basePrice: true,
-        finalPrice: true,
-        hidePrice: true,
-        discountAmount: true,
-        taxRate: true,
-        isFeatured: true,
-        brand: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        vehicleCategory: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        heroImageUrl: true,
-        heroVideoUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const vehicle = await vehicleRepository.findPublicBySlug(slug);
 
     if (!vehicle) {
       return NextResponse.json(
@@ -64,36 +23,9 @@ export async function GET(
       );
     }
 
-    const relatedVehicles = await prisma.vehicle.findMany({
-      where: {
-        category: vehicle.category,
-        slug: { not: vehicle.slug },
-        isActive: true,
-        status: 'published',
-      },
-      orderBy: [
-        { displayOrder: 'asc' },
-        { isFeatured: 'desc' },
-        { name: 'asc' },
-      ],
-      take: 3,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        category: true,
-        basePrice: true,
-        finalPrice: true,
-        hidePrice: true,
-        images: true,
-        heroImageUrl: true,
-        badge: true,
-      },
-    });
+    const relatedVehicles = await vehicleRepository.findRelated(vehicle.category, vehicle.slug);
 
-    const setting = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const setting = await settingRepository.findByKey(SETTING_KEY);
 
     let brochure: any = null;
     if (setting?.value) {

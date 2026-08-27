@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
-import { prisma } from '@/lib/prisma';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET - Get single vehicle
 export async function GET(
@@ -13,14 +13,7 @@ export async function GET(
     // NOTE: deliberately NOT including testDrives/quotations. Those relations
     // contain customer PII (names, phones, emails) and this is an
     // unauthenticated public endpoint. Include only the vehicle payload.
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: { testDrives: true },
-        },
-      },
-    });
+    const vehicle = await vehicleRepository.findByIdWithTestDriveCount(id);
 
     if (!vehicle) {
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
@@ -51,7 +44,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user?.permissions?.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -59,7 +52,7 @@ export async function PUT(
     const data = await request.json();
 
     const updateData: any = {};
-    
+
     if (data.name) updateData.name = data.name;
     if (data.model) updateData.model = data.model;
     if (data.year) updateData.year = parseInt(data.year);
@@ -78,10 +71,7 @@ export async function PUT(
     if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    const vehicle = await prisma.vehicle.update({
-      where: { id },
-      data: updateData,
-    });
+    const vehicle = await vehicleRepository.update(id, updateData);
 
     return NextResponse.json(vehicle);
   } catch (error) {
@@ -101,15 +91,12 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user?.permissions?.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await prisma.vehicle.update({
-      where: { id: id },
-      data: { isActive: false },
-    });
+    await vehicleRepository.softDelete(id);
 
     return NextResponse.json({ success: true, message: 'Vehicle deleted successfully' });
   } catch (error) {
