@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { salesOrderRepository } from '@/repositories/salesOrderRepository';
 
 // Public order summary for the self-service vehicle-handover signing page —
 // same security-through-obscurity pattern as web/app/api/agreement/[orderId]
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id: orderId } });
+  const order = await salesOrderRepository.findById(orderId);
   if (!order) {
     return NextResponse.json({ error: 'Handover not found' }, { status: 404 });
   }

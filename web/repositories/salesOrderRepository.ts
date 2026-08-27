@@ -20,4 +20,8 @@ export const salesOrderRepository = {
   async updateSignature(id: string, data: { signedDocumentUrl: string; signedAt: Date }) {
     return prisma.salesOrder.update({ where: { id }, data });
   },
+
+  async updateHandoverSignature(id: string, data: { handoverSignedDocumentUrl: string; handoverSignedAt: Date }) {
+    return prisma.salesOrder.update({ where: { id }, data });
+  },
 };

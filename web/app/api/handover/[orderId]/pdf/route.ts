@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { buildHandoverPdf } from '@/lib/services/sales/handoverPdf';
+import { salesOrderRepository } from '@/repositories/salesOrderRepository';
 
 // Public — same access-token pattern as the agreement PDF route. Always
 // renders the unsigned base handover confirmation live from current order
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id: orderId } });
+  const order = await salesOrderRepository.findById(orderId);
   if (!order) {
     return NextResponse.json({ error: 'Handover not found' }, { status: 404 });
   }
