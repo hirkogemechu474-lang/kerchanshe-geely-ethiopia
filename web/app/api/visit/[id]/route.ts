@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { showroomVisitRepository } from '@/repositories/showroomVisitRepository';
+import { ALLOWED_VISIT_ACTIONS } from '@/lib/services/showroomVisits/showroomVisitService';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitResult = await rateLimit(request, rateLimitConfigs.showroomVisitRegister);
   if (rateLimitResult) return rateLimitResult;
 
   const { id } = await params;
-  const visit = await prisma.showroomVisit.findUnique({
-    where: { id },
-    select: { id: true, status: true, fullName: true, phone: true, email: true },
-  });
+  const visit = await showroomVisitRepository.findSummaryById(id);
   if (!visit) {
     return NextResponse.json({ error: 'Visit session not found' }, { status: 404 });
   }
   return NextResponse.json(visit);
 }
-
-const ALLOWED_ACTIONS = ['sales', 'test-drive', 'purchase', 'quote'];
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitResult = await rateLimit(request, rateLimitConfigs.showroomVisitRegister);
@@ -31,24 +27,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // quotation/purchase equivalents, set directly by those routes instead.
   const testDriveId = typeof body?.testDriveId === 'string' && body.testDriveId ? body.testDriveId : undefined;
 
-  if (!ALLOWED_ACTIONS.includes(selectedAction)) {
+  if (!ALLOWED_VISIT_ACTIONS.includes(selectedAction)) {
     return NextResponse.json({ error: 'Invalid selectedAction' }, { status: 400 });
   }
 
-  const existing = await prisma.showroomVisit.findUnique({ where: { id } });
+  const existing = await showroomVisitRepository.findById(id);
   if (!existing) {
     return NextResponse.json({ error: 'Visit session not found' }, { status: 404 });
   }
 
-  const visit = await prisma.showroomVisit.update({
-    where: { id },
-    data: {
-      status: selectedAction,
-      selectedAction,
-      completedAt: new Date(),
-      ...(testDriveId && { testDriveId }),
-    },
-  });
+  const visit = await showroomVisitRepository.updateSelectedAction(id, selectedAction, testDriveId);
 
   return NextResponse.json({ visitId: visit.id, status: visit.status });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { testDriveRepository } from '@/repositories/testDriveRepository';
 
 // Public test-drive summary for the self-service confirm page — same
 // id-as-access-token pattern as /api/agreement/[orderId] and
@@ -11,10 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { id } = await params;
-  const testDrive = await prisma.testDrive.findUnique({
-    where: { id },
-    include: { vehicle: { select: { name: true } } },
-  });
+  const testDrive = await testDriveRepository.findByIdWithVehicleName(id);
   if (!testDrive) {
     return NextResponse.json({ error: 'Test drive not found' }, { status: 404 });
   }

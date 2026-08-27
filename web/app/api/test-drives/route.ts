@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
-import { prisma } from '@/lib/prisma';
+import { testDriveRepository } from '@/repositories/testDriveRepository';
 
 // GET - List all test drives
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user.permissions.canViewTestDrives) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -17,33 +17,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const where: any = {};
-    
-    if (status && status !== 'all') {
-      where.status = status;
-    }
-    
-    if (startDate && endDate) {
-      where.preferredDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
-    }
-
-    const testDrives = await prisma.testDrive.findMany({
-      where,
-      include: {
-        vehicle: {
-          select: {
-            id: true,
-            name: true,
-            model: true,
-            year: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const testDrives = await testDriveRepository.findMany({ status, startDate, endDate });
 
     return NextResponse.json(testDrives);
   } catch (error) {
@@ -59,34 +33,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user.permissions.canManageTestDrives) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const data = await request.json();
 
-    const testDrive = await prisma.testDrive.create({
-      data: {
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerPhone: data.customerPhone,
-        vehicleId: data.vehicleId,
-        preferredDate: new Date(data.preferredDate),
-        preferredTime: data.preferredTime,
-        alternativeDate: data.alternativeDate ? new Date(data.alternativeDate) : null,
-        alternativeTime: data.alternativeTime,
-        location: data.location,
-        salesRepId: data.salesRepId,
-        status: 'pending',
-        specialRequests: data.specialRequests,
-        internalNotes: data.internalNotes,
-        emailConfirm: data.emailConfirm !== false,
-        smsReminder: data.smsReminder !== false,
-      },
-      include: {
-        vehicle: true,
-      },
+    const testDrive = await testDriveRepository.create({
+      customerName: data.customerName,
+      customerEmail: data.customerEmail,
+      customerPhone: data.customerPhone,
+      vehicle: { connect: { id: data.vehicleId } },
+      preferredDate: new Date(data.preferredDate),
+      preferredTime: data.preferredTime,
+      alternativeDate: data.alternativeDate ? new Date(data.alternativeDate) : null,
+      alternativeTime: data.alternativeTime,
+      location: data.location,
+      salesRepId: data.salesRepId,
+      status: 'pending',
+      specialRequests: data.specialRequests,
+      internalNotes: data.internalNotes,
+      emailConfirm: data.emailConfirm !== false,
+      smsReminder: data.smsReminder !== false,
     });
 
     // TODO: Send email confirmation if emailConfirm is true
