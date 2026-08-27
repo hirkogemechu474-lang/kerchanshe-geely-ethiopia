@@ -71,7 +71,7 @@ export default function JobCardList({ initialJobCards }: { initialJobCards: JobC
           {filtered.map((j) => (
             <Tr key={j.id}>
               <Td>
-                <Link href={`/admin/workshop/job-cards/${j.id}`} className="text-blue-600 font-medium hover:underline">
+                <Link href={`/admin/workshop/job-cards/${j.id}`} className="text-geely-blue font-medium hover:underline">
                   {j.jobCardNo}
                 </Link>
               </Td>

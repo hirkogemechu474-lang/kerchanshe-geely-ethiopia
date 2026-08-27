@@ -237,7 +237,7 @@ export default function ConfiguratorPage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Vehicle Selector */}
             <section>
-              <h2 className="text-2xl font-bold text-navy mb-4">1. Select Model</h2>
+              <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">1. Select Model</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {vehicles.slice(0, 6).map((vehicle) => (
                   <button
@@ -245,19 +245,19 @@ export default function ConfiguratorPage() {
                     onClick={() => setSelectedVehicle(vehicle)}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       selectedVehicle?.id === vehicle.id
-                        ? 'border-geely-blue bg-ice shadow-lg'
-                        : 'border-line bg-white hover:border-geely-blue'
+                        ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                        : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                     }`}
                   >
-                    <div className="h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded mb-3 flex items-center justify-center">
-                      <span className="text-xs text-steel text-center px-2">
+                    <div className="h-20 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] rounded mb-3 flex items-center justify-center">
+                      <span className="text-xs text-steel dark:text-steel-light text-center px-2">
                         {vehicle.name}
                       </span>
                     </div>
-                    <div className="font-bold text-navy text-sm mb-1">
+                    <div className="font-bold text-navy dark:text-ice text-sm mb-1">
                       {vehicle.name.replace('Geely ', '')}
                     </div>
-                    <div className="text-xs text-steel">
+                    <div className="text-xs text-steel dark:text-steel-light">
                       {vehicle.hidePrice ? "Price on request" : `From ${formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}`}
                     </div>
                   </button>
@@ -267,7 +267,7 @@ export default function ConfiguratorPage() {
 
             {/* Trim Selector */}
             <section>
-              <h2 className="text-2xl font-bold text-navy mb-4">2. Choose Trim Level</h2>
+              <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">2. Choose Trim Level</h2>
               <div className="space-y-3">
                 {currentTrimOptions.map((trim) => (
                   <button
@@ -275,13 +275,13 @@ export default function ConfiguratorPage() {
                     onClick={() => setSelectedTrim(trim)}
                     className={`w-full p-6 rounded-lg border-2 transition-all text-left ${
                       selectedTrim?.id === trim.id
-                        ? 'border-geely-blue bg-ice shadow-lg'
-                        : 'border-line bg-white hover:border-geely-blue'
+                        ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                        : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="font-bold text-navy text-lg mb-1">{trim.name}</h3>
+                        <h3 className="font-bold text-navy dark:text-ice text-lg mb-1">{trim.name}</h3>
                         <p className="text-gold font-bold">
                           {trim.price === 0 ? 'Included' : `+${formatPrice(trim.price)}`}
                         </p>
@@ -294,7 +294,7 @@ export default function ConfiguratorPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {trim.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-steel">
+                        <div key={idx} className="flex items-center gap-2 text-sm text-steel dark:text-steel-light">
                           <Check size={14} className="text-green-600 flex-shrink-0" />
                           <span>{feature}</span>
                         </div>
@@ -307,7 +307,7 @@ export default function ConfiguratorPage() {
 
             {/* Color Selector */}
             <section>
-              <h2 className="text-2xl font-bold text-navy mb-4">3. Select Exterior Color</h2>
+              <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">3. Select Exterior Color</h2>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {activeColorOptions.map((color) => (
                   <button
@@ -315,18 +315,18 @@ export default function ConfiguratorPage() {
                     onClick={() => setSelectedColor(color)}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       selectedColor?.id === color.id
-                        ? 'border-geely-blue bg-ice shadow-lg'
-                        : 'border-line bg-white hover:border-geely-blue'
+                        ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                        : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                     }`}
                   >
                     <div
-                      className="w-full h-16 rounded-lg mb-2 border border-line"
+                      className="w-full h-16 rounded-lg mb-2 border border-line dark:border-midnight-line"
                       style={{ backgroundColor: color.hex }}
                     />
-                    <div className="text-xs font-semibold text-navy mb-1 text-center">
+                    <div className="text-xs font-semibold text-navy dark:text-ice mb-1 text-center">
                       {color.name}
                     </div>
-                    <div className="text-xs text-steel text-center">
+                    <div className="text-xs text-steel dark:text-steel-light text-center">
                       {color.price === 0 ? 'Standard' : `+${formatPrice(color.price)}`}
                     </div>
                     {selectedColor?.id === color.id && (
@@ -343,7 +343,7 @@ export default function ConfiguratorPage() {
 
             {/* Wheel Selector */}
             <section>
-              <h2 className="text-2xl font-bold text-navy mb-4">4. Choose Wheels</h2>
+              <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">4. Choose Wheels</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {activeWheelOptions.map((wheel) => (
                   <button
@@ -351,15 +351,15 @@ export default function ConfiguratorPage() {
                     onClick={() => setSelectedWheels(wheel)}
                     className={`p-6 rounded-lg border-2 transition-all ${
                       selectedWheels?.id === wheel.id
-                        ? 'border-geely-blue bg-ice shadow-lg'
-                        : 'border-line bg-white hover:border-geely-blue'
+                        ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                        : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                     }`}
                   >
-                    <div className="h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full mb-3 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-navy">{wheel.size}</span>
+                    <div className="h-24 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] rounded-full mb-3 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-navy dark:text-ice">{wheel.size}</span>
                     </div>
-                    <h3 className="font-bold text-navy mb-1">{wheel.name}</h3>
-                    <p className="text-sm text-steel mb-2">{wheel.size} Wheels</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">{wheel.name}</h3>
+                    <p className="text-sm text-steel dark:text-steel-light mb-2">{wheel.size} Wheels</p>
                     <p className="text-sm font-bold text-gold">
                       {wheel.price === 0 ? 'Included' : `+${formatPrice(wheel.price)}`}
                     </p>
@@ -378,7 +378,7 @@ export default function ConfiguratorPage() {
             {/* Interior Selector */}
             {activeInteriorOptions.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-navy mb-4">5. Choose Interior</h2>
+                <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">5. Choose Interior</h2>
                 <div className="space-y-3">
                   {activeInteriorOptions.map((interior) => (
                     <button
@@ -386,16 +386,16 @@ export default function ConfiguratorPage() {
                       onClick={() => setSelectedInterior(interior)}
                       className={`w-full text-left p-6 rounded-lg border-2 transition-all ${
                         selectedInterior?.id === interior.id
-                          ? 'border-geely-blue bg-ice shadow-lg'
-                          : 'border-line bg-white hover:border-geely-blue'
+                          ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                          : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-bold text-navy mb-1">{interior.name}</h3>
-                          <p className="text-sm text-steel">{interior.materialType}</p>
+                          <h3 className="font-bold text-navy dark:text-ice mb-1">{interior.name}</h3>
+                          <p className="text-sm text-steel dark:text-steel-light">{interior.materialType}</p>
                           {interior.description && (
-                            <p className="text-xs text-steel mt-1">{interior.description}</p>
+                            <p className="text-xs text-steel dark:text-steel-light mt-1">{interior.description}</p>
                           )}
                           <p className="text-sm font-bold text-gold mt-2">
                             {interior.price === 0 ? 'Included' : `+${formatPrice(interior.price)}`}
@@ -416,7 +416,7 @@ export default function ConfiguratorPage() {
             {/* Accessories Selector */}
             {activeAccessoryOptions.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-navy mb-4">6. Add Accessories</h2>
+                <h2 className="text-2xl font-bold text-navy dark:text-ice mb-4">6. Add Accessories</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {activeAccessoryOptions.map((accessory) => {
                     const isSelected = selectedAccessories.some((a) => a.id === accessory.id);
@@ -426,16 +426,16 @@ export default function ConfiguratorPage() {
                         onClick={() => toggleAccessory(accessory)}
                         className={`text-left p-4 rounded-lg border-2 transition-all ${
                           isSelected
-                            ? 'border-geely-blue bg-ice shadow-lg'
-                            : 'border-line bg-white hover:border-geely-blue'
+                            ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                            : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
                         }`}
                       >
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="text-xs text-gold font-bold mb-1">{accessory.category}</div>
-                            <h3 className="font-bold text-navy">{accessory.name}</h3>
+                            <h3 className="font-bold text-navy dark:text-ice">{accessory.name}</h3>
                             {accessory.description && (
-                              <p className="text-xs text-steel mt-1">{accessory.description}</p>
+                              <p className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</p>
                             )}
                             <p className="text-sm font-bold text-gold mt-2">+{formatPrice(accessory.price)}</p>
                           </div>
@@ -457,8 +457,8 @@ export default function ConfiguratorPage() {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               {/* Vehicle Preview */}
-              <div className="bg-white rounded-lg shadow-lg p-6 border border-line">
-                <h3 className="font-bold text-navy text-lg mb-4">Your Configuration</h3>
+              <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-lg p-6 border border-line dark:border-midnight-line">
+                <h3 className="font-bold text-navy dark:text-ice text-lg mb-4">Your Configuration</h3>
                 
                 {/* Vehicle Image */}
                 <div 
@@ -470,10 +470,10 @@ export default function ConfiguratorPage() {
                 >
                   <div className="text-center">
                     <div className="text-4xl mb-2">🚗</div>
-                    <div className="text-sm text-navy font-semibold">
+                    <div className="text-sm text-navy dark:text-ice font-semibold">
                       {selectedVehicle?.name}
                     </div>
-                    <div className="text-xs text-steel mt-1">
+                    <div className="text-xs text-steel dark:text-steel-light mt-1">
                       {selectedColor?.name}
                     </div>
                   </div>
@@ -481,40 +481,40 @@ export default function ConfiguratorPage() {
 
                 {/* Configuration Details */}
                 <div className="space-y-3 mb-6">
-                  <div className="flex justify-between items-center py-2 border-b border-line">
-                    <span className="text-sm text-steel">Model</span>
-                    <span className="text-sm font-semibold text-navy">{selectedVehicle?.name}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-line dark:border-midnight-line">
+                    <span className="text-sm text-steel dark:text-steel-light">Model</span>
+                    <span className="text-sm font-semibold text-navy dark:text-ice">{selectedVehicle?.name}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-line">
-                    <span className="text-sm text-steel">Trim</span>
-                    <span className="text-sm font-semibold text-navy">{selectedTrim?.name}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-line dark:border-midnight-line">
+                    <span className="text-sm text-steel dark:text-steel-light">Trim</span>
+                    <span className="text-sm font-semibold text-navy dark:text-ice">{selectedTrim?.name}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-line">
-                    <span className="text-sm text-steel">Color</span>
-                    <span className="text-sm font-semibold text-navy">{selectedColor?.name}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-line dark:border-midnight-line">
+                    <span className="text-sm text-steel dark:text-steel-light">Color</span>
+                    <span className="text-sm font-semibold text-navy dark:text-ice">{selectedColor?.name}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-line">
-                    <span className="text-sm text-steel">Wheels</span>
-                    <span className="text-sm font-semibold text-navy">{selectedWheels?.name}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-line dark:border-midnight-line">
+                    <span className="text-sm text-steel dark:text-steel-light">Wheels</span>
+                    <span className="text-sm font-semibold text-navy dark:text-ice">{selectedWheels?.name}</span>
                   </div>
 
                   {selectedInterior && (
-                    <div className="flex justify-between items-center py-2 border-b border-line">
-                      <span className="text-sm text-steel">Interior</span>
-                      <span className="text-sm font-semibold text-navy">{selectedInterior.name}</span>
+                    <div className="flex justify-between items-center py-2 border-b border-line dark:border-midnight-line">
+                      <span className="text-sm text-steel dark:text-steel-light">Interior</span>
+                      <span className="text-sm font-semibold text-navy dark:text-ice">{selectedInterior.name}</span>
                     </div>
                   )}
 
                   {selectedAccessories.length > 0 && (
-                    <div className="py-2 border-b border-line">
-                      <span className="text-sm text-steel">Accessories</span>
+                    <div className="py-2 border-b border-line dark:border-midnight-line">
+                      <span className="text-sm text-steel dark:text-steel-light">Accessories</span>
                       {selectedAccessories.map((acc) => (
                         <div key={acc.id} className="flex justify-between items-center mt-1">
-                          <span className="text-sm font-semibold text-navy">{acc.name}</span>
-                          <span className="text-xs text-steel">+{formatPrice(acc.price)}</span>
+                          <span className="text-sm font-semibold text-navy dark:text-ice">{acc.name}</span>
+                          <span className="text-xs text-steel dark:text-steel-light">+{formatPrice(acc.price)}</span>
                         </div>
                       ))}
                     </div>
@@ -522,49 +522,49 @@ export default function ConfiguratorPage() {
                 </div>
 
                 {/* Price Breakdown */}
-                <div className="bg-ice p-4 rounded-lg mb-6">
+                <div className="bg-ice dark:bg-midnight p-4 rounded-lg mb-6">
                   <div className="space-y-2 mb-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-steel">Base Price</span>
-                      <span className="text-navy">
+                      <span className="text-steel dark:text-steel-light">Base Price</span>
+                      <span className="text-navy dark:text-ice">
                         {selectedVehicle?.hidePrice ? "Price on request" : formatVehiclePrice(selectedVehicle?.finalPrice || selectedVehicle?.basePrice || 0)}
                       </span>
                     </div>
                     {selectedTrim && selectedTrim.price > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-steel">Trim Package</span>
-                        <span className="text-navy">+{formatPrice(selectedTrim.price)}</span>
+                        <span className="text-steel dark:text-steel-light">Trim Package</span>
+                        <span className="text-navy dark:text-ice">+{formatPrice(selectedTrim.price)}</span>
                       </div>
                     )}
                     {selectedColor && selectedColor.price > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-steel">Premium Color</span>
-                        <span className="text-navy">+{formatPrice(selectedColor.price)}</span>
+                        <span className="text-steel dark:text-steel-light">Premium Color</span>
+                        <span className="text-navy dark:text-ice">+{formatPrice(selectedColor.price)}</span>
                       </div>
                     )}
                     {selectedWheels && selectedWheels.price > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-steel">Upgraded Wheels</span>
-                        <span className="text-navy">+{formatPrice(selectedWheels.price)}</span>
+                        <span className="text-steel dark:text-steel-light">Upgraded Wheels</span>
+                        <span className="text-navy dark:text-ice">+{formatPrice(selectedWheels.price)}</span>
                       </div>
                     )}
                     {selectedInterior && selectedInterior.price > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-steel">Interior</span>
-                        <span className="text-navy">+{formatPrice(selectedInterior.price)}</span>
+                        <span className="text-steel dark:text-steel-light">Interior</span>
+                        <span className="text-navy dark:text-ice">+{formatPrice(selectedInterior.price)}</span>
                       </div>
                     )}
                     {selectedAccessories.length > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-steel">Accessories ({selectedAccessories.length})</span>
-                        <span className="text-navy">+{formatPrice(selectedAccessories.reduce((sum, a) => sum + a.price, 0))}</span>
+                        <span className="text-steel dark:text-steel-light">Accessories ({selectedAccessories.length})</span>
+                        <span className="text-navy dark:text-ice">+{formatPrice(selectedAccessories.reduce((sum, a) => sum + a.price, 0))}</span>
                       </div>
                     )}
                   </div>
                   
                   <div className="pt-3 border-t-2 border-navy">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-navy">Total Price</span>
+                      <span className="font-bold text-navy dark:text-ice">Total Price</span>
                       <span className="text-2xl font-bold text-geely-blue">
                         {formatPrice(totalPrice)}
                       </span>
@@ -576,7 +576,7 @@ export default function ConfiguratorPage() {
                 <div className="space-y-3">
                   <button
                     onClick={handleSendConfiguration}
-                    className="w-full bg-gold text-navy font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-gold text-navy dark:text-ice font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
                   >
                     <Mail size={18} />
                     Send My Configuration
@@ -584,14 +584,14 @@ export default function ConfiguratorPage() {
                   
                   <button
                     onClick={handleShare}
-                    className="w-full bg-white text-navy font-bold py-3 rounded-lg border-2 border-navy hover:bg-ice transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-white dark:bg-midnight-surface text-navy dark:text-ice font-bold py-3 rounded-lg border-2 border-navy hover:bg-ice dark:hover:bg-midnight transition-all flex items-center justify-center gap-2"
                   >
                     <Share2 size={18} />
                     Share Configuration
                   </button>
                   
                   <button
-                    className="w-full bg-white text-navy font-bold py-3 rounded-lg border-2 border-line hover:border-geely-blue transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-white dark:bg-midnight-surface text-navy dark:text-ice font-bold py-3 rounded-lg border-2 border-line dark:border-midnight-line hover:border-geely-blue transition-all flex items-center justify-center gap-2"
                   >
                     <Download size={18} />
                     Download Brochure
@@ -600,13 +600,13 @@ export default function ConfiguratorPage() {
               </div>
 
               {/* Financing Estimate */}
-              <div className="bg-ice rounded-lg p-6 border border-line">
-                <h4 className="font-bold text-navy mb-3">Estimated Monthly Payment</h4>
+              <div className="bg-ice dark:bg-midnight rounded-lg p-6 border border-line dark:border-midnight-line">
+                <h4 className="font-bold text-navy dark:text-ice mb-3">Estimated Monthly Payment</h4>
                 <div className="text-center mb-4">
                   <div className="text-3xl font-bold text-geely-blue mb-1">
                     {formatPrice(Math.round(totalPrice * 0.02))}
                   </div>
-                  <div className="text-xs text-steel">
+                  <div className="text-xs text-steel dark:text-steel-light">
                     Based on 20% down, 5 years @ 13% APR
                   </div>
                 </div>

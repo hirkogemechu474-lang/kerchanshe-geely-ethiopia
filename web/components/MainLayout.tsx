@@ -1,30 +1,12 @@
-'use client';
-
 import React from 'react';
-import { useState } from 'react';
-import { Header } from './Header';
-import { Footer } from './Footer';
-import { MobileDrawer } from './MobileDrawer';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  showFooter?: boolean;
 }
 
-export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <div className="min-h-screen flex flex-col bg-ice">
-      <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
-      <MobileDrawer
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      />
-      <main className="flex-1">
-        {children}
-      </main>
-      {showFooter && <Footer />}
-    </div>
-  );
+// Header/Footer/MobileDrawer now live in the root layout (see SiteChrome) so
+// they persist across navigations instead of remounting on every page change.
+// This wrapper is kept so existing page.tsx call sites don't need to change.
+export function MainLayout({ children }: MainLayoutProps) {
+  return <>{children}</>;
 }

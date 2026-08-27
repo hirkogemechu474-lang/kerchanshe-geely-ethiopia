@@ -9,17 +9,28 @@ const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void } | n
 const STORAGE_KEY = 'admin-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Matches the class already set by the inline script in app/layout.tsx
-  // (runs before hydration) so there's no mismatch/flash on first render.
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof document === 'undefined') return 'light';
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  });
+  // Always starts at 'light' — matching the server render exactly — even
+  // though the inline script in app/layout.tsx may have already put the
+  // `dark` class on <html> before hydration. Reading that class during the
+  // initial render (client-only) would mismatch the SSR HTML for anything
+  // that renders differently per theme (e.g. the Sun/Moon toggle button)
+  // and trigger a hydration error. Instead, sync the real value in an
+  // effect below, once hydration is safely done.
+  const [theme, setTheme] = useState<Theme>('light');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Skip the very first (pre-sync) pass so we never stomp the class the
+    // inline script already set before we've read the real value.
+    if (!mounted) return;
     document.documentElement.classList.toggle('dark', theme === 'dark');
     window.localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
+  }, [theme, mounted]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 

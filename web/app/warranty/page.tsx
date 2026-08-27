@@ -113,21 +113,21 @@ export default function WarrantyPage() {
     return (
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-10 text-center">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Warranty Claim Submitted!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Your warranty claim has been received. Our service team will review your case and contact you within 1-2 business days.
             </p>
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-2">
-                <strong className="text-navy">What Happens Next:</strong>
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-2">
+                <strong className="text-navy dark:text-ice">What Happens Next:</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ Claim review by warranty specialist</li>
                 <li>✓ Vehicle inspection scheduling</li>
                 <li>✓ Approval notification</li>
@@ -146,7 +146,7 @@ export default function WarrantyPage() {
               </button>
               <a
                 href="/service"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
               >
                 Book Service
               </a>
@@ -161,7 +161,7 @@ export default function WarrantyPage() {
     <MainLayout>
       {/* Page Header */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             VEHICLE WARRANTY
           </div>
@@ -175,38 +175,38 @@ export default function WarrantyPage() {
       </div>
 
       {/* Warranty Benefits */}
-      <section className="py-12 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
+      <section className="py-12 bg-ice dark:bg-midnight">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Shield className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Vehicle Warranty</h3>
-              <p className="text-xs text-steel">{settings.warranty.vehicle}</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Vehicle Warranty</h3>
+              <p className="text-xs text-steel dark:text-steel-light">{settings.warranty.vehicle}</p>
             </div>
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Clock className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">EV Battery Warranty</h3>
-              <p className="text-xs text-steel">{settings.warranty.battery}</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-2">EV Battery Warranty</h3>
+              <p className="text-xs text-steel dark:text-steel-light">{settings.warranty.battery}</p>
             </div>
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Wrench className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Factory-Backed</h3>
-              <p className="text-xs text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Factory-Backed</h3>
+              <p className="text-xs text-steel dark:text-steel-light">
                 Genuine parts and authorized service
               </p>
             </div>
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Phone className="text-geely-blue" size={24} />
               </div>
-              <h3 className="font-bold text-navy mb-2">24/7 Support</h3>
-              <p className="text-xs text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">24/7 Support</h3>
+              <p className="text-xs text-steel dark:text-steel-light">
                 Always available when you need us
               </p>
             </div>
@@ -216,52 +216,52 @@ export default function WarrantyPage() {
 
       {/* Warranty Details */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* What's Covered */}
             <div>
-              <h2 className="text-3xl font-bold text-navy mb-6">What's Covered</h2>
+              <h2 className="text-3xl font-bold text-navy dark:text-ice mb-6">What's Covered</h2>
               <div className="space-y-4">
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Powertrain Components</h3>
-                    <p className="text-sm text-steel">Engine, transmission, drive axle, and all internal parts</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Powertrain Components</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Engine, transmission, drive axle, and all internal parts</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Electrical Systems</h3>
-                    <p className="text-sm text-steel">All factory-installed electrical and electronic components</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Electrical Systems</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">All factory-installed electrical and electronic components</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Safety Systems</h3>
-                    <p className="text-sm text-steel">Airbags, ABS, stability control, and all safety features</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Safety Systems</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Airbags, ABS, stability control, and all safety features</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Climate Control</h3>
-                    <p className="text-sm text-steel">Air conditioning and heating systems</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Climate Control</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Air conditioning and heating systems</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Steering & Suspension</h3>
-                    <p className="text-sm text-steel">Steering mechanism and suspension components</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Steering & Suspension</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Steering mechanism and suspension components</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Body & Paint</h3>
-                    <p className="text-sm text-steel">3-year coverage against manufacturing defects and corrosion perforation</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Body & Paint</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">3-year coverage against manufacturing defects and corrosion perforation</p>
                   </div>
                 </div>
               </div>
@@ -269,48 +269,48 @@ export default function WarrantyPage() {
 
             {/* What's Not Covered */}
             <div>
-              <h2 className="text-3xl font-bold text-navy mb-6">What's Not Covered</h2>
+              <h2 className="text-3xl font-bold text-navy dark:text-ice mb-6">What's Not Covered</h2>
               <div className="space-y-4">
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Normal Wear & Tear</h3>
-                    <p className="text-sm text-steel">Brake pads, wiper blades, tires, filters, and bulbs</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Normal Wear & Tear</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Brake pads, wiper blades, tires, filters, and bulbs</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Misuse & Neglect</h3>
-                    <p className="text-sm text-steel">Damage from accidents, abuse, or lack of maintenance</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Misuse & Neglect</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Damage from accidents, abuse, or lack of maintenance</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Unauthorized Modifications</h3>
-                    <p className="text-sm text-steel">Aftermarket parts or modifications not approved by Geely</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Unauthorized Modifications</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Aftermarket parts or modifications not approved by Geely</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Environmental Damage</h3>
-                    <p className="text-sm text-steel">Damage from natural disasters, fire, or vandalism</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Environmental Damage</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Damage from natural disasters, fire, or vandalism</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Commercial Use</h3>
-                    <p className="text-sm text-steel">Vehicles used for taxi, rental, or commercial purposes</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Commercial Use</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Vehicles used for taxi, rental, or commercial purposes</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
                   <div>
-                    <h3 className="font-bold text-navy mb-1">Cosmetic Issues</h3>
-                    <p className="text-sm text-steel">Minor scratches, dents, or stone chips not affecting function</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-1">Cosmetic Issues</h3>
+                    <p className="text-sm text-steel dark:text-steel-light">Minor scratches, dents, or stone chips not affecting function</p>
                   </div>
                 </div>
               </div>
@@ -320,52 +320,52 @@ export default function WarrantyPage() {
       </section>
 
       {/* Warranty Coverage & Service Intervals */}
-      <section className="py-16 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="text-3xl font-bold text-navy text-center mb-2">Warranty Coverage</h2>
-          <p className="text-center text-steel text-sm mb-12">Managed by our team and always kept current here</p>
+      <section className="py-16 bg-ice dark:bg-midnight">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h2 className="text-3xl font-bold text-navy dark:text-ice text-center mb-2">Warranty Coverage</h2>
+          <p className="text-center text-steel dark:text-steel-light text-sm mb-12">Managed by our team and always kept current here</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-geely-blue to-blue-600 text-white p-5 flex items-center gap-3">
-                <Car size={20} />
+            <div className="bg-white dark:bg-midnight-surface rounded-lg overflow-hidden border border-line dark:border-midnight-line hover:shadow-lg transition-all">
+              <div className="bg-navy text-white p-5 flex items-center gap-3">
+                <Car size={20} className="text-gold" />
                 <h3 className="font-bold">Vehicle Warranty</h3>
               </div>
-              <div className="p-5 text-sm text-steel">{settings.warranty.vehicle}</div>
+              <div className="p-5 text-sm text-steel dark:text-steel-light">{settings.warranty.vehicle}</div>
             </div>
-            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-5 flex items-center gap-3">
-                <Award size={20} />
+            <div className="bg-white dark:bg-midnight-surface rounded-lg overflow-hidden border border-line dark:border-midnight-line hover:shadow-lg transition-all">
+              <div className="bg-navy text-white p-5 flex items-center gap-3">
+                <Award size={20} className="text-gold" />
                 <h3 className="font-bold">EV Battery Warranty</h3>
               </div>
-              <div className="p-5 text-sm text-steel">{settings.warranty.battery}</div>
+              <div className="p-5 text-sm text-steel dark:text-steel-light">{settings.warranty.battery}</div>
             </div>
-            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-5 flex items-center gap-3">
-                <Shield size={20} />
+            <div className="bg-white dark:bg-midnight-surface rounded-lg overflow-hidden border border-line dark:border-midnight-line hover:shadow-lg transition-all">
+              <div className="bg-navy text-white p-5 flex items-center gap-3">
+                <Shield size={20} className="text-gold" />
                 <h3 className="font-bold">Paintwork Warranty</h3>
               </div>
-              <div className="p-5 text-sm text-steel">{settings.warranty.paintwork}</div>
+              <div className="p-5 text-sm text-steel dark:text-steel-light">{settings.warranty.paintwork}</div>
             </div>
-            <div className="bg-white rounded-lg overflow-hidden border border-line hover:shadow-lg transition-all">
-              <div className="bg-gradient-to-r from-slate-500 to-slate-600 text-white p-5 flex items-center gap-3">
-                <Shield size={20} />
+            <div className="bg-white dark:bg-midnight-surface rounded-lg overflow-hidden border border-line dark:border-midnight-line hover:shadow-lg transition-all">
+              <div className="bg-navy text-white p-5 flex items-center gap-3">
+                <Shield size={20} className="text-gold" />
                 <h3 className="font-bold">Corrosion Warranty</h3>
               </div>
-              <div className="p-5 text-sm text-steel">{settings.warranty.corrosion}</div>
+              <div className="p-5 text-sm text-steel dark:text-steel-light">{settings.warranty.corrosion}</div>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-navy text-center mt-16 mb-8">Recommended Service Intervals</h2>
+          <h2 className="text-2xl font-bold text-navy dark:text-ice text-center mt-16 mb-8">Recommended Service Intervals</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <div className="bg-white rounded-lg border border-line p-6 text-center">
+            <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6 text-center">
               <Wrench className="text-geely-blue mx-auto mb-3" size={24} />
-              <h3 className="font-bold text-navy mb-1">Petrol / Hybrid</h3>
-              <p className="text-sm text-steel">{settings.serviceIntervals.standard}</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-1">Petrol / Hybrid</h3>
+              <p className="text-sm text-steel dark:text-steel-light">{settings.serviceIntervals.standard}</p>
             </div>
-            <div className="bg-white rounded-lg border border-line p-6 text-center">
+            <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6 text-center">
               <Wrench className="text-geely-blue mx-auto mb-3" size={24} />
-              <h3 className="font-bold text-navy mb-1">Electric Vehicles</h3>
-              <p className="text-sm text-steel">{settings.serviceIntervals.electric}</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-1">Electric Vehicles</h3>
+              <p className="text-sm text-steel dark:text-steel-light">{settings.serviceIntervals.electric}</p>
             </div>
           </div>
         </div>
@@ -373,7 +373,7 @@ export default function WarrantyPage() {
 
       {/* CTA Section */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="bg-gradient-to-r from-geely-blue to-blue-600 rounded-2xl p-12 text-white text-center">
             <h2 className="text-3xl font-bold mb-4">Need to File a Warranty Claim?</h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
@@ -387,7 +387,7 @@ export default function WarrantyPage() {
                     document.getElementById("claim-form")?.scrollIntoView({ behavior: "smooth" });
                   }, 100);
                 }}
-                className="bg-white text-geely-blue font-bold text-base px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
+                className="bg-white dark:bg-midnight-surface text-geely-blue font-bold text-base px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
               >
                 File a Claim Online
               </button>
@@ -405,7 +405,7 @@ export default function WarrantyPage() {
       {/* Warranty Claim Form */}
       {showClaimForm && (
         <section id="claim-form" className="py-16 bg-ice">
-          <div className="max-w-4xl mx-auto px-10">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
             <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
               <div className="bg-navy text-white p-6 border-b border-line">
                 <h2 className="text-2xl font-bold">File a Warranty Claim</h2>
@@ -425,7 +425,7 @@ export default function WarrantyPage() {
                         type="text"
                         {...register("firstName", { required: "First name is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.firstName ? "border-red-500" : "border-line"
+                          errors.firstName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Enter your first name"
                       />
@@ -435,14 +435,14 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Last Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("lastName", { required: "Last name is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.lastName ? "border-red-500" : "border-line"
+                          errors.lastName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Enter your last name"
                       />
@@ -452,7 +452,7 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Email Address <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -465,7 +465,7 @@ export default function WarrantyPage() {
                           },
                         })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.email ? "border-red-500" : "border-line"
+                          errors.email ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="your.email@example.com"
                       />
@@ -475,7 +475,7 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Phone Number <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -488,7 +488,7 @@ export default function WarrantyPage() {
                           },
                         })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.phone ? "border-red-500" : "border-line"
+                          errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="+251 91 234 5678"
                       />
@@ -501,7 +501,7 @@ export default function WarrantyPage() {
 
                 {/* Vehicle Information */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Vehicle Information</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Vehicle Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-navy mb-2">
@@ -511,7 +511,7 @@ export default function WarrantyPage() {
                         type="text"
                         {...register("vin", { required: "VIN is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.vin ? "border-red-500" : "border-line"
+                          errors.vin ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="17-character VIN"
                       />
@@ -521,13 +521,13 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Model <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("model", { required: "Model is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.model ? "border-red-500" : "border-line"
+                          errors.model ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select model</option>
@@ -543,7 +543,7 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Year <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -554,7 +554,7 @@ export default function WarrantyPage() {
                           max: { value: 2027, message: "Invalid year" },
                         })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.year ? "border-red-500" : "border-line"
+                          errors.year ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="2024"
                       />
@@ -564,14 +564,14 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Purchase Date <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
                         {...register("purchaseDate", { required: "Purchase date is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.purchaseDate ? "border-red-500" : "border-line"
+                          errors.purchaseDate ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       />
                       {errors.purchaseDate && (
@@ -580,14 +580,14 @@ export default function WarrantyPage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Current Mileage (km) <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"
                         {...register("currentMileage", { required: "Mileage is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.currentMileage ? "border-red-500" : "border-line"
+                          errors.currentMileage ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="e.g., 25000"
                       />
@@ -600,7 +600,7 @@ export default function WarrantyPage() {
 
                 {/* Claim Details */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Claim Details</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Claim Details</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-navy mb-2">
@@ -609,7 +609,7 @@ export default function WarrantyPage() {
                       <select
                         {...register("issueCategory", { required: "Category is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.issueCategory ? "border-red-500" : "border-line"
+                          errors.issueCategory ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select category</option>
@@ -628,14 +628,14 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Detailed Description <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         {...register("issueDescription", { required: "Description is required" })}
                         rows={5}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.issueDescription ? "border-red-500" : "border-line"
+                          errors.issueDescription ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Describe the issue in detail: when it started, symptoms, any warning lights, etc."
                       ></textarea>
@@ -646,14 +646,14 @@ export default function WarrantyPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           When did this first occur? <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="date"
                           {...register("firstOccurrence", { required: "Date is required" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.firstOccurrence ? "border-red-500" : "border-line"
+                            errors.firstOccurrence ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         />
                         {errors.firstOccurrence && (
@@ -662,13 +662,13 @@ export default function WarrantyPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Have you visited a dealer? <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("dealerVisited", { required: "Please select" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.dealerVisited ? "border-red-500" : "border-line"
+                            errors.dealerVisited ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         >
                           <option value="">Select</option>
@@ -683,13 +683,13 @@ export default function WarrantyPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Proof of Purchase Available? <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("hasProofOfPurchase", { required: "Please select" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.hasProofOfPurchase ? "border-red-500" : "border-line"
+                            errors.hasProofOfPurchase ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         >
                           <option value="">Select</option>
@@ -702,13 +702,13 @@ export default function WarrantyPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Service Records Available? <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("hasServiceRecords", { required: "Please select" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.hasServiceRecords ? "border-red-500" : "border-line"
+                            errors.hasServiceRecords ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         >
                           <option value="">Select</option>
@@ -723,13 +723,13 @@ export default function WarrantyPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Preferred Contact Method <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("preferredContactMethod", { required: "Please select" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.preferredContactMethod ? "border-red-500" : "border-line"
+                          errors.preferredContactMethod ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select</option>
@@ -745,7 +745,7 @@ export default function WarrantyPage() {
                 </div>
 
                 {/* Consent */}
-                <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                   <input
                     type="checkbox"
                     {...register("consent", {
@@ -754,7 +754,7 @@ export default function WarrantyPage() {
                     className="mt-1 w-4 h-4 accent-geely-blue"
                   />
                   <div>
-                    <label className="text-sm text-navy">
+                    <label className="text-sm text-navy dark:text-ice">
                       <span className="text-red-500">* </span>
                       I confirm that all information provided is accurate and agree to Geely Ethiopia's{" "}
                       <a href="/privacy" className="text-geely-blue hover:underline">
@@ -781,7 +781,7 @@ export default function WarrantyPage() {
                   >
                     {isSubmitting ? "Submitting Claim..." : "Submit Warranty Claim"}
                   </button>
-                  <p className="text-xs text-steel text-center mt-3">
+                  <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                     Our service team will review your claim within 1-2 business days
                   </p>
                 </div>
@@ -792,16 +792,16 @@ export default function WarrantyPage() {
       )}
 
       {/* Contact Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="text-3xl font-bold text-navy text-center mb-12">Questions About Your Warranty?</h2>
+      <section className="py-16 bg-white dark:bg-midnight-surface">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h2 className="text-3xl font-bold text-navy dark:text-ice text-center mb-12">Questions About Your Warranty?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Phone className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Call Us</h3>
-              <p className="text-sm text-steel mb-2">Speak with our warranty team</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Call Us</h3>
+              <p className="text-sm text-steel dark:text-steel-light mb-2">Speak with our warranty team</p>
               <a href={contact.phoneHref} className="text-geely-blue font-semibold hover:underline">
                 {contact.phone}
               </a>
@@ -811,8 +811,8 @@ export default function WarrantyPage() {
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Mail className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Email Us</h3>
-              <p className="text-sm text-steel mb-2">Get detailed answers</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Email Us</h3>
+              <p className="text-sm text-steel dark:text-steel-light mb-2">Get detailed answers</p>
               <a href={`mailto:${contact.email}`} className="text-geely-blue font-semibold hover:underline">
                 {contact.email}
               </a>
@@ -822,8 +822,8 @@ export default function WarrantyPage() {
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MapPin className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Visit Us</h3>
-              <p className="text-sm text-steel mb-2">Find your nearest dealer</p>
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Visit Us</h3>
+              <p className="text-sm text-steel dark:text-steel-light mb-2">Find your nearest dealer</p>
               <Link href="/dealers" className="text-geely-blue font-semibold hover:underline">
                 Find Dealer
               </Link>

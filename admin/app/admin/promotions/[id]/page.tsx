@@ -128,19 +128,19 @@ export default function EditPromotionPage() {
         <div className="grid gap-6 p-6 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium text-gray-700"><Tag className="mr-2 inline h-4 w-4" />Title *</label>
-            <input required value={form.title} onChange={(e) => update('title', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500" />
+            <input required value={form.title} onChange={(e) => update('title', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-geely-blue" />
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium text-gray-700">Description *</label>
-            <textarea required rows={5} value={form.description} onChange={(e) => update('description', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500" />
+            <textarea required rows={5} value={form.description} onChange={(e) => update('description', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-geely-blue" />
           </div>
           <div><label className="mb-2 block text-sm font-medium text-gray-700"><Calendar className="mr-2 inline h-4 w-4" />Start date *</label><input required type="date" value={form.startDate} onChange={(e) => update('startDate', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>
           <div><label className="mb-2 block text-sm font-medium text-gray-700"><Calendar className="mr-2 inline h-4 w-4" />End date *</label><input required type="date" value={form.endDate} onChange={(e) => update('endDate', e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium text-gray-700">Banner image</label>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"><input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadBanner(file); e.currentTarget.value = ''; }} /><ImageIcon className="h-4 w-4" />{uploading ? 'Uploading...' : 'Upload image'}</label>
-              {form.bannerImage && <a href={form.bannerImage} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600"><Eye className="h-4 w-4" />Preview</a>}
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-geely-blue px-4 py-2 text-sm font-semibold text-white hover:bg-navy"><input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadBanner(file); e.currentTarget.value = ''; }} /><ImageIcon className="h-4 w-4" />{uploading ? 'Uploading...' : 'Upload image'}</label>
+              {form.bannerImage && <a href={form.bannerImage} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue"><Eye className="h-4 w-4" />Preview</a>}
             </div>
             <input value={form.bannerImage} onChange={(e) => update('bannerImage', e.target.value)} placeholder="Or paste an image URL" className="mt-3 w-full rounded-lg border border-gray-300 px-4 py-2" />
           </div>
@@ -149,7 +149,7 @@ export default function EditPromotionPage() {
           <div><label className="mb-2 block text-sm font-medium text-gray-700">Display order</label><input type="number" value={form.displayOrder} onChange={(e) => update('displayOrder', Number(e.target.value))} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>
           <div className="flex items-center gap-6 pt-7"><label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" checked={form.isFeatured} onChange={(e) => update('isFeatured', e.target.checked)} /> Featured</label><label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" checked={form.isActive} onChange={(e) => update('isActive', e.target.checked)} /> Active</label></div>
         </div>
-        <div className="flex items-center justify-between border-t bg-gray-50 px-6 py-4"><Link href="/admin/promotions" className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-200">Cancel</Link><button disabled={saving} type="submit" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save Changes'}</button></div>
+        <div className="flex items-center justify-between border-t bg-gray-50 px-6 py-4"><Link href="/admin/promotions" className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-200">Cancel</Link><button disabled={saving} type="submit" className="inline-flex items-center gap-2 rounded-lg bg-geely-blue px-6 py-2 font-semibold text-white hover:bg-navy disabled:opacity-50"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save Changes'}</button></div>
       </form>
     </div>
   );

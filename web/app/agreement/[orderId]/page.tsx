@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
-import { FileText, PenLine, Upload, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
+import { FileText, PenLine, Upload, CheckCircle, AlertCircle, CreditCard, Clock } from 'lucide-react';
 
 interface OrderSummary {
   id: string;
@@ -15,13 +16,13 @@ interface OrderSummary {
   vehicleId: string | null;
   signedDocumentUrl: string | null;
   signedAt: string | null;
+  countersignedAt: string | null;
   quotationId: string | null;
   purchaseReference: string | null;
 }
 
 export default function AgreementSigningPage() {
   const params = useParams<{ orderId: string }>();
-  const router = useRouter();
   const orderId = params.orderId;
 
   const [order, setOrder] = useState<OrderSummary | null>(null);
@@ -31,8 +32,6 @@ export default function AgreementSigningPage() {
   const [hasSignature, setHasSignature] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signError, setSignError] = useState('');
-  const [startingPayment, setStartingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
@@ -145,46 +144,6 @@ export default function AgreementSigningPage() {
     }
   };
 
-  const continueToPayment = async () => {
-    if (!order) return;
-    setPaymentError('');
-
-    // If this order started from a direct purchase (bank/national ID/
-    // address already captured — see linkPurchaseToSalesPipeline), resume
-    // that exact purchase's payment instead of asking the customer to
-    // fill the purchase form again.
-    if (order.purchaseReference) {
-      setStartingPayment(true);
-      try {
-        const res = await fetch('/api/payments/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ purchaseId: order.purchaseReference }),
-        });
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.success) throw new Error(data?.error || data?.message || 'Unable to start payment.');
-        window.location.href = data.payment.paymentUrl;
-        return;
-      } catch (err: any) {
-        setPaymentError(err.message || 'Unable to start payment. Please try again.');
-        setStartingPayment(false);
-        return;
-      }
-    }
-
-    // Otherwise this order only ever had a quote — bank/national ID/
-    // address were never collected, so send them to the purchase form to
-    // capture those for the first time.
-    const params = new URLSearchParams({
-      quote: order.quotationId || `signed-agreement-${order.id}`,
-      name: order.customerName,
-      phone: order.customerPhone,
-    });
-    if (order.customerEmail) params.set('email', order.customerEmail);
-    if (order.vehicleId) params.set('vehicle', order.vehicleId);
-    router.push(`/financing/apply?${params.toString()}`);
-  };
-
   if (loading) {
     return (
       <MainLayout>
@@ -201,8 +160,8 @@ export default function AgreementSigningPage() {
         <div className="min-h-[60vh] flex items-center justify-center px-6">
           <div className="max-w-md text-center">
             <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
-            <h1 className="text-xl font-bold text-navy mb-2">Something went wrong</h1>
-            <p className="text-steel text-sm">{loadError || 'This agreement could not be found.'}</p>
+            <h1 className="text-xl font-bold text-navy dark:text-ice mb-2">Something went wrong</h1>
+            <p className="text-steel dark:text-steel-light text-sm">{loadError || 'This agreement could not be found.'}</p>
           </div>
         </div>
       </MainLayout>
@@ -211,14 +170,14 @@ export default function AgreementSigningPage() {
 
   return (
     <MainLayout>
-      <div className="py-12 bg-ice min-h-[70vh]">
+      <div className="py-12 bg-ice dark:bg-midnight min-h-[70vh]">
         <div className="max-w-2xl mx-auto px-4">
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
             <div className="flex items-center gap-3 mb-1">
               <FileText className="w-6 h-6 text-geely-blue" />
-              <h1 className="text-2xl font-bold text-navy">Sales Agreement — {order.orderNo}</h1>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice">Sales Agreement — {order.orderNo}</h1>
             </div>
-            <p className="text-steel text-sm mb-6">
+            <p className="text-steel dark:text-steel-light text-sm mb-6">
               {order.customerName} · {order.vehicleModel}
             </p>
 
@@ -233,29 +192,38 @@ export default function AgreementSigningPage() {
             </a>
 
             {order.signedDocumentUrl ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
-                <h2 className="text-lg font-bold text-navy mb-1">Agreement Signed</h2>
-                <p className="text-sm text-steel mb-6">
-                  Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you — you're ready to continue.
-                </p>
-                {paymentError && <p className="text-sm text-red-600 mb-3">{paymentError}</p>}
-                <button
-                  onClick={() => void continueToPayment()}
-                  disabled={startingPayment}
-                  className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {startingPayment ? 'Starting…' : 'Continue to Payment'}
-                </button>
-              </div>
+              order.countersignedAt ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                  <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
+                  <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed &amp; Approved</h2>
+                  <p className="text-sm text-steel dark:text-steel-light mb-6">
+                    Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you — you're ready to continue.
+                  </p>
+                  <Link
+                    href={`/payment/order/${order.id}`}
+                    className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Continue to Payment
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                  <Clock className="w-10 h-10 text-geely-blue mx-auto mb-3" />
+                  <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed</h2>
+                  <p className="text-sm text-steel dark:text-steel-light">
+                    Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Your agreement is now under review by our
+                    sales manager — we'll email you a payment link as soon as it's approved.
+                  </p>
+                </div>
+              )
             ) : (
               <>
                 <div className="flex gap-2 mb-5">
                   <button
                     onClick={() => setMode('draw')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-                      mode === 'draw' ? 'bg-geely-blue text-white border-geely-blue' : 'border-line text-navy hover:bg-ice'
+                      mode === 'draw' ? 'bg-geely-blue text-white border-geely-blue' : 'border-line dark:border-midnight-line text-navy dark:text-ice hover:bg-ice dark:hover:bg-midnight'
                     }`}
                   >
                     <PenLine className="w-4 h-4" /> Draw Signature
@@ -263,7 +231,7 @@ export default function AgreementSigningPage() {
                   <button
                     onClick={() => setMode('upload')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-                      mode === 'upload' ? 'bg-geely-blue text-white border-geely-blue' : 'border-line text-navy hover:bg-ice'
+                      mode === 'upload' ? 'bg-geely-blue text-white border-geely-blue' : 'border-line dark:border-midnight-line text-navy dark:text-ice hover:bg-ice dark:hover:bg-midnight'
                     }`}
                   >
                     <Upload className="w-4 h-4" /> Upload Signed Copy
@@ -283,12 +251,12 @@ export default function AgreementSigningPage() {
                       onPointerMove={draw}
                       onPointerUp={endDraw}
                       onPointerLeave={endDraw}
-                      className="w-full h-[180px] border-2 border-dashed border-line rounded-lg bg-white touch-none"
+                      className="w-full h-[180px] border-2 border-dashed border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight-surface touch-none"
                     />
                     <div className="flex gap-3 mt-4">
                       <button
                         onClick={clearCanvas}
-                        className="text-sm font-semibold text-steel border border-line px-4 py-2 rounded-lg hover:bg-ice"
+                        className="text-sm font-semibold text-steel dark:text-steel-light border border-line dark:border-midnight-line px-4 py-2 rounded-lg hover:bg-ice dark:hover:bg-midnight"
                       >
                         Clear
                       </button>
@@ -312,9 +280,9 @@ export default function AgreementSigningPage() {
                       accept="image/*"
                       onChange={submitPhoto}
                       disabled={submitting}
-                      className="block w-full text-sm border border-line rounded-lg p-3"
+                      className="block w-full text-sm border border-line dark:border-midnight-line rounded-lg p-3"
                     />
-                    {submitting && <p className="text-xs text-steel mt-2">Uploading…</p>}
+                    {submitting && <p className="text-xs text-steel dark:text-steel-light mt-2">Uploading…</p>}
                   </div>
                 )}
               </>

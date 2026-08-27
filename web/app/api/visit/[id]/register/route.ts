@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { sendFormEmail } from '@/lib/form-email';
+import { generateReference } from '@/lib/reference';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitResult = await rateLimit(request, rateLimitConfigs.showroomVisitRegister);
@@ -42,13 +43,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
     const continueUrl = `${siteUrl}/models?visitId=${encodeURIComponent(visit.id)}`;
     try {
+      // Human-friendly reference matching every other confirmation email
+      // (GY-SQ-DDMMYYYY-NNN) instead of the internal visit.id UUID. Not
+      // persisted — this visit is a browsing session, not itself something
+      // customers look up on the status page.
+      const reference = await generateReference();
       await sendFormEmail({
         type: 'showroom visit',
         name: fullName,
         email,
         phone,
         subject: `Showroom walk-in — ${fullName}`,
-        reference: visit.id,
+        reference,
         details: `${fullName} registered at the showroom via the QR walk-in flow and is now browsing our vehicle catalog.\n\nContinue browsing: ${continueUrl}`,
       });
     } catch (emailError) {

@@ -22,13 +22,21 @@ const config: Config = {
     },
     extend: {
       colors: {
-        navy: "#0B2545",
-        "geely-blue": "#0057B8",
-        gold: "#C8A15A",
-        ice: "#EAF1FB",
-        steel: "#5B6B79",
-        ink: "#1B1F24",
-        line: "#E1E7EF",
+        // Synced with web/tailwind.config.ts's Geely Auto global digital
+        // palette so the admin panel and the public site read as one brand
+        // instead of drifting apart — legacy token names kept unchanged.
+        navy: "#0A0B0D",
+        "geely-blue": "#0066FF",
+        gold: "#A9B0B8",
+        ice: "#F7F8FA",
+        steel: "#69717B",
+        ink: "#111318",
+        line: "#E2E5E9",
+        midnight: "#0A0B0D",
+        "midnight-surface": "#141619",
+        "midnight-line": "#30343A",
+        "steel-light": "#AEB5BE",
+        "blue-bright": "#66A3FF",
       },
       fontFamily: {
         sans: ["Segoe UI", "Arial", "sans-serif"],

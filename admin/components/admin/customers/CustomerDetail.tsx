@@ -159,7 +159,7 @@ function VehicleCard({ vehicle, canEdit }: { vehicle: VehicleData; canEdit: bool
             {state.jobCards.map((jc) => (
               <li key={jc.id} className="py-2 flex items-center justify-between gap-3 text-sm">
                 <div className="min-w-0">
-                  <Link href={`/admin/workshop/job-cards/${jc.id}`} className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                  <Link href={`/admin/workshop/job-cards/${jc.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline">
                     {jc.jobCardNo}
                   </Link>
                   <p className="text-xs text-gray-400 truncate">{jc.complaintText || 'No complaint on file'}</p>

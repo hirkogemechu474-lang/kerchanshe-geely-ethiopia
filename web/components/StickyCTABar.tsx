@@ -12,9 +12,13 @@ interface StickyCTABarProps {
   /** Showroom QR walk-in visit id — appended to the quote/test-drive links so
    * the visitor's already-captured name/phone/email carries through. */
   visitId?: string;
+  /** Admin-managed Contact Information phone (same source as the footer). */
+  contactPhone?: string;
   /** Pixel offset from top before the bar becomes visible */
   scrollThreshold?: number;
 }
+
+const FALLBACK_CONTACT_PHONE = '+251110000000';
 
 export function StickyCTABar({
   vehicleSlug,
@@ -22,11 +26,14 @@ export function StickyCTABar({
   price,
   brochureUrl,
   visitId,
+  contactPhone = FALLBACK_CONTACT_PHONE,
   scrollThreshold = 400,
 }: StickyCTABarProps) {
   const [visible, setVisible] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : '';
+  const telHref = `tel:${contactPhone.replace(/[^0-9+]/g, '')}`;
+  const whatsappNumber = contactPhone.replace(/[^0-9]/g, '');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,7 +52,7 @@ export function StickyCTABar({
       <div
         className={`
           fixed bottom-0 left-0 right-0 z-50 lg:hidden
-          bg-white border-t border-line shadow-[0_-4px_24px_rgba(11,37,69,0.12)]
+          bg-white dark:bg-midnight-surface border-t border-line dark:border-midnight-line shadow-[0_-4px_24px_rgba(11,37,69,0.12)]
           transition-transform duration-300
           ${minimized ? 'translate-y-full' : 'translate-y-0'}
         `}
@@ -53,7 +60,7 @@ export function StickyCTABar({
         {/* Minimise handle */}
         <button
           onClick={() => setMinimized(!minimized)}
-          className="absolute -top-6 right-4 bg-white border border-line rounded-t-lg px-3 py-1 text-xs text-steel flex items-center gap-1"
+          className="absolute -top-6 right-4 bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-t-lg px-3 py-1 text-xs text-steel dark:text-steel-light flex items-center gap-1"
           aria-label="Toggle CTA bar"
         >
           <ChevronUp size={12} className={`transition-transform ${minimized ? 'rotate-180' : ''}`} />
@@ -64,11 +71,11 @@ export function StickyCTABar({
           {/* Vehicle name + price strip */}
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-xs text-steel">Geely {vehicleName}</div>
-              <div className="text-sm font-bold text-navy">{price}</div>
+              <div className="text-xs text-steel dark:text-steel-light">Geely {vehicleName}</div>
+              <div className="text-sm font-bold text-navy dark:text-ice">{price}</div>
             </div>
             <a
-              href="tel:+251110000000"
+              href={telHref}
               className="flex items-center gap-1.5 text-xs text-geely-blue font-semibold"
             >
               <Phone size={14} />
@@ -104,7 +111,7 @@ export function StickyCTABar({
           transition-all duration-300
         "
       >
-        <div className="bg-white border border-line rounded-xl shadow-xl p-3 flex flex-col gap-2 min-w-[160px]">
+        <div className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-xl shadow-xl p-3 flex flex-col gap-2 min-w-[160px]">
           <div className="text-xs text-steel border-b border-line pb-2 mb-1">
             <div className="font-bold text-navy text-sm">{vehicleName}</div>
             <div className="text-geely-blue font-semibold">{price}</div>
@@ -127,15 +134,15 @@ export function StickyCTABar({
           </Link>
 
           <a
-            href="tel:+251110000000"
-            className="flex items-center gap-2 border border-line text-navy font-semibold text-xs px-3 py-2.5 rounded-lg hover:bg-ice transition-all text-center justify-center"
+            href={telHref}
+            className="flex items-center gap-2 border border-line text-navy font-semibold text-xs px-3 py-2.5 rounded-lg hover:bg-ice dark:hover:bg-midnight transition-all text-center justify-center"
           >
             <Phone size={14} />
             Call Us
           </a>
 
           <a
-            href={`https://wa.me/251110000000?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicleName}`)}`}
+            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicleName}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 border border-[#25D366] text-[#128C7E] font-semibold text-xs px-3 py-2.5 rounded-lg hover:bg-[#25D366]/5 transition-all text-center justify-center"
@@ -146,7 +153,7 @@ export function StickyCTABar({
 
           <a
             href={brochureUrl || `/api/vehicles/${vehicleSlug}/brochure`}
-            className="flex items-center gap-2 text-steel font-semibold text-xs px-3 py-2 rounded-lg hover:bg-ice transition-all text-center justify-center"
+            className="flex items-center gap-2 text-steel dark:text-steel-light font-semibold text-xs px-3 py-2 rounded-lg hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all text-center justify-center"
             download
           >
             <Download size={14} />

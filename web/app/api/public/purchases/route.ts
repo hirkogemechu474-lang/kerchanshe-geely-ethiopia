@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, rateLimitConfigs } from "@/lib/rate-limit";
 import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
 import { PDI_CHECKLIST_TEMPLATE } from "@/lib/sales/pdiChecklistTemplate";
 import { generateReference } from "@/lib/reference";
+
+// Most mail clients (Gmail included) won't fetch an <img src> pointing at
+// http://localhost, and many block remote images by default even when the
+// URL is public — so the logo is attached inline via cid instead of linked.
+function readLogoBytes(): Buffer | null {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), "public", "assets", "logos", "geely-logo.png"));
+  } catch {
+    return null;
+  }
+}
 
 type PurchaseRequest = {
   fullName?: string;
@@ -181,7 +194,7 @@ export async function POST(request: NextRequest) {
     }
 
     const purchaseAmount = (vehicle.finalPrice ?? vehicle.basePrice) * quantity;
-    const purchaseReference = generateReference();
+    const purchaseReference = await generateReference();
     const transactionId = "PENDING";
 
     // Payment remains pending until the selected provider confirms it through the callback route.
@@ -289,8 +302,10 @@ async function sendPurchaseEmail(details: { fullName: string; email: string; veh
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://geelyethiopia.com").replace(/\/$/, "");
     const continueUrl = `${siteUrl}/financing/apply?purchaseId=${encodeURIComponent(details.purchaseReference)}`;
     const statusUrl = `${siteUrl}/status?ref=${encodeURIComponent(details.purchaseReference)}`;
-    const logoHtml = `<div style="text-align:center;padding:24px 0;"><img src="${siteUrl}/assets/logos/geely-logo.png" alt="Geely" style="height:56px;" /></div>`;
+    const logoHtml = `<div style="text-align:center;padding:24px 0;"><img src="cid:geely-logo" alt="Geely" style="height:56px;" /></div>`;
     const statusButtonHtml = `<div style="text-align:center;margin:28px 0;"><a href="${statusUrl}" style="background:#0b5fff;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:6px;display:inline-block;">Check Your Status</a></div>`;
+    const logoBytes = readLogoBytes();
+    const logoAttachments = logoBytes ? [{ filename: "geely-logo.png", content: logoBytes, cid: "geely-logo" }] : undefined;
 
     if (details.paymentStatus === "PAID") {
       await transporter.sendMail({
@@ -299,6 +314,7 @@ async function sendPurchaseEmail(details: { fullName: string; email: string; veh
         subject: "Geely Ethiopia Purchase Confirmation",
         text: `Dear ${details.fullName},\n\nYour purchase of ${details.vehicleName} has been confirmed.\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPurchase reference: ${details.purchaseReference}\nTransaction ID: ${details.transactionId}\n\nCheck your status: ${statusUrl}\n\nOur sales team will contact you about delivery.`,
         html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">${logoHtml}<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;"><h2 style="margin-top:0;">Dear ${details.fullName},</h2><p>Your purchase of ${details.vehicleName} has been confirmed.</p><p><strong>Amount:</strong> ETB ${details.purchaseAmount.toLocaleString("en-US")}<br /><strong>Bank:</strong> ${details.bankName}<br /><strong>Purchase reference:</strong> ${details.purchaseReference}<br /><strong>Transaction ID:</strong> ${details.transactionId}</p>${statusButtonHtml}<p>Our sales team will contact you about delivery.</p></div></div>`,
+        attachments: logoAttachments,
       });
     } else {
       await transporter.sendMail({
@@ -307,6 +323,7 @@ async function sendPurchaseEmail(details: { fullName: string; email: string; veh
         subject: `Geely Ethiopia — Purchase Received (${details.purchaseReference})`,
         text: `Dear ${details.fullName},\n\nThank you. We received your purchase request for ${details.vehicleName}.\nAmount: ETB ${details.purchaseAmount.toLocaleString("en-US")}\nBank: ${details.bankName}\nPurchase reference: ${details.purchaseReference}\n\nYour order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign, and you'll be able to continue to payment.\n\nContinue: ${continueUrl}\nCheck your status: ${statusUrl}\n\nOur sales team will contact you with next steps.`,
         html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">${logoHtml}<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;"><h2 style="margin-top:0;">Dear ${details.fullName},</h2><p>Thank you. We received your purchase request for ${details.vehicleName}.</p><p><strong>Amount:</strong> ETB ${details.purchaseAmount.toLocaleString("en-US")}<br /><strong>Bank:</strong> ${details.bankName}<br /><strong>Purchase reference:</strong> ${details.purchaseReference}</p><p>Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign, and you'll be able to continue to payment.</p><div style="text-align:center;margin:20px 0;"><a href="${continueUrl}" style="background:#1a2b4c;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 24px;border-radius:6px;display:inline-block;margin-right:8px;">Continue</a></div>${statusButtonHtml}<p>Our sales team will contact you with next steps.</p></div></div>`,
+        attachments: logoAttachments,
       });
     }
   } catch (error) {

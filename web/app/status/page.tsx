@@ -90,16 +90,16 @@ export default function StatusPage() {
               e.preventDefault();
               void lookup(reference);
             }}
-            className="bg-white rounded-lg border border-line shadow-lg p-6 sm:p-8"
+            className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line shadow-lg p-6 sm:p-8"
           >
-            <label className="block text-sm font-semibold text-navy mb-2">Reference Number</label>
+            <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">Reference Number</label>
             <div className="flex gap-3">
               <input
                 type="text"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="KER-GLY-24-08-2026-XXXX"
-                className="flex-1 px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                placeholder="GY-SQ-24082026-001"
+                className="flex-1 px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
               />
               <button
                 type="submit"
@@ -122,23 +122,23 @@ export default function StatusPage() {
           )}
 
           {result && (
-            <div className="mt-6 bg-white rounded-lg border border-line shadow-lg p-6 sm:p-8">
+            <div className="mt-6 bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line shadow-lg p-6 sm:p-8">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <CheckCircle className="text-green-600" size={22} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-navy">{result.label}</h2>
-                  <p className="text-sm text-steel mt-1">Submitted {formatDate(result.createdAt)}</p>
+                  <h2 className="text-xl font-bold text-navy dark:text-ice">{result.label}</h2>
+                  <p className="text-sm text-steel dark:text-steel-light mt-1">Submitted {formatDate(result.createdAt)}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line dark:border-midnight-line">
                 <div>
-                  <div className="text-xs text-steel uppercase tracking-wide mb-1">Reference</div>
-                  <div className="font-bold text-navy">{result.reference}</div>
+                  <div className="text-xs text-steel dark:text-steel-light uppercase tracking-wide mb-1">Reference</div>
+                  <div className="font-bold text-navy dark:text-ice">{result.reference}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-steel uppercase tracking-wide mb-1">Status</div>
+                  <div className="text-xs text-steel dark:text-steel-light uppercase tracking-wide mb-1">Status</div>
                   <div className="font-bold text-geely-blue">{formatStatus(result.status)}</div>
                 </div>
               </div>

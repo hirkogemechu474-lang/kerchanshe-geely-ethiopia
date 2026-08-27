@@ -89,7 +89,7 @@ export default function PoliciesPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 bg-geely-blue text-white px-6 py-3 rounded-lg hover:bg-navy disabled:opacity-50"
           >
             <Save size={20} />
             {saving ? 'Saving...' : 'Save All'}
@@ -132,7 +132,7 @@ export default function PoliciesPage() {
                   value={policies.privacy}
                   onChange={(e) => handleChange('privacy', e.target.value)}
                   placeholder="Enter your privacy policy here..."
-                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent font-mono text-sm"
                 />
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-bold text-blue-900 mb-2">💡 What to Include:</h4>
@@ -161,7 +161,7 @@ export default function PoliciesPage() {
                   value={policies.terms}
                   onChange={(e) => handleChange('terms', e.target.value)}
                   placeholder="Enter your terms of service here..."
-                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent font-mono text-sm"
                 />
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-bold text-blue-900 mb-2">💡 What to Include:</h4>
@@ -191,7 +191,7 @@ export default function PoliciesPage() {
                   value={policies.cookies}
                   onChange={(e) => handleChange('cookies', e.target.value)}
                   placeholder="Enter your cookie policy here..."
-                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  className="w-full h-96 p-4 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent font-mono text-sm"
                 />
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-bold text-blue-900 mb-2">💡 What to Include:</h4>

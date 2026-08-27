@@ -102,7 +102,7 @@ export default async function ServicePagesPage() {
                         href={`/services/${page.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-geely-blue hover:text-navy"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -137,7 +137,7 @@ export default async function ServicePagesPage() {
                   <div className="flex items-center justify-end gap-2">
                     <Link
                       href={`/admin/services-menu/pages/${page.id}/edit`}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors"
                       title="Edit page"
                     >
                       <Edit className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default async function ServicePagesPage() {
       <div className="flex justify-center">
         <Link
           href="/admin/services-menu"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          className="text-geely-blue hover:text-navy text-sm font-medium"
         >
           ← Back to Services Menu
         </Link>

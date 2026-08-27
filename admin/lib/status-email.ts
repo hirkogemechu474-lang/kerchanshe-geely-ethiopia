@@ -1,5 +1,18 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 import { env } from './env';
+
+// Most mail clients (Gmail included) won't fetch an <img src> pointing at
+// http://localhost, and many block remote images by default even when the
+// URL is public — so the logo is attached inline via cid instead of linked.
+function readLogoBytes(): Buffer | null {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), 'public', 'assets', 'logos', 'geely-logo.png'));
+  } catch {
+    return null;
+  }
+}
 
 interface StatusEmailOptions {
   to: string;
@@ -55,7 +68,7 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2b4c;">
       <div style="text-align:center;padding:24px 0;">
-        <img src="${siteUrl}/assets/logos/geely-logo.png" alt="Geely" style="height:56px;" />
+        <img src="cid:geely-logo" alt="Geely" style="height:56px;" />
       </div>
       <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;">
         <h2 style="margin-top:0;">Hello ${opts.name || 'there'},</h2>
@@ -79,6 +92,11 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
     </div>
   `;
 
-  await transporter.sendMail({ from, to: opts.to, subject, text, html, attachments: opts.attachments });
+  const logoBytes = readLogoBytes();
+  const attachments = [
+    ...(logoBytes ? [{ filename: 'geely-logo.png', content: logoBytes, cid: 'geely-logo' }] : []),
+    ...(opts.attachments || []),
+  ];
+  await transporter.sendMail({ from, to: opts.to, subject, text, html, attachments });
   return true;
 }

@@ -99,7 +99,6 @@ async function main() {
         rating: 5,
         reviewTitle: 'Best SUV for City Driving',
         reviewMessage: 'I\'ve owned my Coolray for 6 months now and I absolutely love it. The fuel efficiency is incredible for an SUV, and the tech features are way ahead of other cars in this price range. The service from Geely Ethiopia has been exceptional.',
-        profileImage: '/images/reviews/customer-1.jpg',
         status: 'approved',
         isFeatured: true,
         isActive: true,
@@ -113,7 +112,6 @@ async function main() {
         rating: 5,
         reviewTitle: 'Elegant and Reliable',
         reviewMessage: 'The Emgrand has exceeded all my expectations. It\'s spacious, comfortable, and drives like a dream. I especially love the safety features and the premium interior. Great value for money!',
-        profileImage: '/images/reviews/customer-2.jpg',
         status: 'approved',
         isFeatured: true,
         isActive: true,
@@ -127,7 +125,6 @@ async function main() {
         rating: 5,
         reviewTitle: 'Perfect Family Car',
         reviewMessage: 'Bought the Azkarra for my growing family and it\'s been perfect. Plenty of space for car seats, great cargo capacity, and the panoramic sunroof is a hit with the kids. Highly recommend!',
-        profileImage: '/images/reviews/customer-3.jpg',
         status: 'approved',
         isFeatured: true,
         isActive: true,
@@ -248,7 +245,6 @@ Key Features:
 The Galaxy E8 represents Geely's commitment to electric mobility and Ethiopia's sustainable transportation future. Pre-orders will open in March 2026, with deliveries beginning in May.
 
 Special launch pricing and home charging installation packages will be available for early adopters. Visit our electric vehicle page to learn more and register your interest.`,
-        imageUrl: '/images/news/galaxy-e8.jpg',
         status: 'published',
         publishDate: new Date('2026-01-20'),
         views: 789,

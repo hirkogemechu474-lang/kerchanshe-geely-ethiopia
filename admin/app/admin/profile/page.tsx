@@ -13,7 +13,7 @@ export default async function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-semibold">
+            <div className="w-14 h-14 rounded-full bg-geely-blue text-white flex items-center justify-center text-xl font-semibold">
               {user.name.charAt(0)}
             </div>
             <div>

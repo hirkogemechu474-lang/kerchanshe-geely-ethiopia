@@ -10,7 +10,7 @@ type StatusResult = {
   quotationNo?: string | null;
 };
 
-// GET /api/public/status?ref=KER-GLY-DD-MM-YYYY-XXXX
+// GET /api/public/status?ref=GY-SQ-DDMMYYYY-NNN
 // Looks up a customer-facing reference across every flow that issues one,
 // so a single "check your status" page can serve quotes, purchases,
 // service bookings, financing applications, parts requests, and test drives.

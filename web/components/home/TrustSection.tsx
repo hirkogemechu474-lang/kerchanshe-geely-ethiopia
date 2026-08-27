@@ -23,23 +23,23 @@ const trustItems = [
 
 export default function TrustSection() {
   return (
-    <section className="bg-ice py-[70px]">
-      <div className="max-w-[1280px] mx-auto px-10">
+    <section className="bg-ice dark:bg-midnight py-[70px] transition-colors">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="mb-9">
-          <h2 className="disp text-[30px] text-navy font-bold">
+          <h2 className="disp text-[30px] text-navy dark:text-ice font-bold">
             Why Geely Ethiopia
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {trustItems.map((item, index) => (
             <div key={index} className="text-center p-3">
-              <div className="w-11 h-11 rounded-full bg-white border border-line mx-auto mb-4 flex items-center justify-center text-geely-blue font-bold text-base">
+              <div className="w-11 h-11 rounded-full bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line mx-auto mb-4 flex items-center justify-center text-geely-blue dark:text-blue-bright font-bold text-base">
                 {item.icon}
               </div>
-              <h4 className="text-[15px] text-navy font-bold mb-2">
+              <h3 className="text-[15px] text-navy dark:text-ice font-bold mb-2">
                 {item.title}
-              </h4>
-              <p className="text-[12.5px] text-steel leading-relaxed">
+              </h3>
+              <p className="text-[12.5px] text-steel dark:text-steel-light leading-relaxed">
                 {item.description}
               </p>
             </div>

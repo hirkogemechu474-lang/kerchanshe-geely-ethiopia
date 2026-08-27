@@ -61,7 +61,7 @@ export default function FeatureTagList({
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
             placeholder={placeholder}
             list={suggestions?.length ? datalistId : undefined}
-            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-offset-0 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-offset-0 focus:ring-geely-blue focus:border-transparent"
           />
           {suggestions?.length ? (
             <datalist id={datalistId}>

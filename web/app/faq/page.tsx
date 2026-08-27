@@ -90,13 +90,13 @@ export default async function FAQPage() {
           <div className="flex flex-wrap justify-center gap-4">
             <a
               href="/test-drive"
-              className="inline-flex items-center justify-center bg-gold text-navy px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors"
+              className="inline-flex items-center justify-center bg-gold text-navy dark:text-ice px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors"
             >
               Book a Test Drive
             </a>
             <Link
               href="/dealers"
-              className="inline-flex items-center justify-center bg-white/10 text-white border border-white/30 px-8 py-4 rounded-lg font-bold hover:bg-white/20 transition-colors"
+              className="inline-flex items-center justify-center bg-white dark:bg-midnight-surface/10 text-white border border-white/30 px-8 py-4 rounded-lg font-bold hover:bg-white/20 transition-colors"
             >
               Find a Dealer
             </Link>

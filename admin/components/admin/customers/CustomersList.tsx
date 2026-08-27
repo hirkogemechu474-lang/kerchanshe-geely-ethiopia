@@ -67,7 +67,7 @@ export default function CustomersList() {
           {customers.map((c) => (
             <Tr key={c.id}>
               <Td>
-                <Link href={`/admin/customers/${c.id}`} className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                <Link href={`/admin/customers/${c.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline">
                   {c.fullName}
                 </Link>
                 {c.email && <div className="text-xs text-gray-400">{c.email}</div>}

@@ -79,7 +79,7 @@ export default function CookieBannerSettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-geely-blue mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading settings...</p>
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function CookieBannerSettingsPage() {
               type="text"
               value={config.title}
               onChange={(e) => setConfig({ ...config, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="We Value Your Privacy"
               required
             />
@@ -156,7 +156,7 @@ export default function CookieBannerSettingsPage() {
               value={config.description}
               onChange={(e) => setConfig({ ...config, description: e.target.value })}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="We use cookies to enhance your browsing experience..."
               required
             />
@@ -175,7 +175,7 @@ export default function CookieBannerSettingsPage() {
                 type="text"
                 value={config.acceptText}
                 onChange={(e) => setConfig({ ...config, acceptText: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="Accept All"
                 required
               />
@@ -190,7 +190,7 @@ export default function CookieBannerSettingsPage() {
                 type="text"
                 value={config.declineText}
                 onChange={(e) => setConfig({ ...config, declineText: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="Decline"
                 required
               />
@@ -206,7 +206,7 @@ export default function CookieBannerSettingsPage() {
               type="text"
               value={config.policyLink}
               onChange={(e) => setConfig({ ...config, policyLink: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="/cookies"
               required
             />
@@ -225,7 +225,7 @@ export default function CookieBannerSettingsPage() {
                 </h4>
                 <p className="text-sm text-gray-600 mb-4">
                   {config.description}{' '}
-                  <span className="text-blue-600 underline cursor-pointer">
+                  <span className="text-geely-blue underline cursor-pointer">
                     Learn more
                   </span>
                 </p>
@@ -238,7 +238,7 @@ export default function CookieBannerSettingsPage() {
                   </button>
                   <button
                     type="button"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg"
+                    className="px-4 py-2 text-sm font-medium text-white bg-geely-blue rounded-lg"
                   >
                     {config.acceptText}
                   </button>
@@ -260,7 +260,7 @@ export default function CookieBannerSettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 text-sm font-medium text-white bg-geely-blue rounded-lg hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>

@@ -228,7 +228,7 @@ export default function ModelsAndVariantsPage() {
                         <Td><Badge tone="gray">Trim</Badge></Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditPackage(pkg)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEditPackage(pkg)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeTrim(pkg)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>
@@ -273,7 +273,7 @@ export default function ModelsAndVariantsPage() {
                         <Td><Badge tone={acc.inStock ? 'green' : 'red'}>{acc.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditAccessory(acc)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEditAccessory(acc)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeAccessory(acc)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>

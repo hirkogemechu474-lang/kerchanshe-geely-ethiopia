@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
 
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react'],
   },
 
   // Suppress Next.js 15 dynamic API warnings for NextAuth compatibility

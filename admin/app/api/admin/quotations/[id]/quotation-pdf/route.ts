@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextQuotationNo } from '@/lib/sales/orderNumber';
+import { generateReference } from '@/lib/reference';
 import { buildSalesQuotationPdf, computeQuotationTotals } from '@/lib/sales/salesQuotationPdf';
 import { sendStatusEmail } from '@/lib/status-email';
+import { env } from '@/lib/env';
 
 /**
  * GET /api/admin/quotations/[id]/quotation-pdf — the quotation PDF. 409 until generated.
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { vatAmount } = computeQuotationTotals(unitPrice, quantity, discountAmount);
-  const quotationNo = existing.quotationNo || (await nextQuotationNo());
+  const quotationNo = existing.quotationNo || (await generateReference());
 
   let updated;
   try {
@@ -97,13 +98,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (updated.email) {
     try {
       const pdfBytes = await buildSalesQuotationPdf(updated);
+      const siteUrl = env.app.url.replace(/\/$/, '');
+      const alreadySigned = Boolean(updated.signedDocumentUrl);
+      const signingUrl = !alreadySigned && updated.reference ? `${siteUrl}/quotation/${encodeURIComponent(updated.reference)}` : undefined;
       notificationSent = await sendStatusEmail({
         to: updated.email,
         name: updated.customerName,
         entityType: 'sales quotation',
         status: 'sent',
         reference: updated.reference || updated.quotationNo || updated.id,
-        details: `Your sales quotation ${updated.quotationNo} is attached.`,
+        details: alreadySigned
+          ? `Your revised sales quotation ${updated.quotationNo} is attached.`
+          : `Your sales quotation ${updated.quotationNo} is attached. Please review, sign, and return it to proceed.`,
+        actionUrl: signingUrl,
+        actionLabel: 'Review & Sign Quotation',
         attachments: [{ filename: `${updated.quotationNo}.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' }],
       });
     } catch (emailError) {

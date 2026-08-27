@@ -245,7 +245,7 @@ export default function MediaBrowser({
                           VIDEO
                         </div>
                       ) : (
-                        <div className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        <div className="bg-geely-blue text-white text-xs font-bold px-2 py-1 rounded">
                           IMAGE
                         </div>
                       )}

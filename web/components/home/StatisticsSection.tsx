@@ -1,31 +1,17 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-
 interface Stat {
   label: string;
   value: string;
 }
 
-export default function StatisticsSection() {
-  const [stats, setStats] = useState<Stat[]>([
-    { label: 'Vehicles Sold', value: '10,000+' },
-    { label: 'Happy Customers', value: '8,500+' },
-    { label: 'Service Centers', value: '15+' },
-    { label: 'Years of Excellence', value: '5+' }
-  ]);
+interface StatisticsSectionProps {
+  // Fetched server-side (see app/page.tsx) so the real numbers are in the
+  // initial HTML instead of the hardcoded defaults popping in after a
+  // client fetch resolves.
+  initialStats: Stat[];
+}
 
-  useEffect(() => {
-    // Fetch content from API
-    fetch('/api/content/homepage')
-      .then(res => res.json())
-      .then(data => {
-        if (data.stats) {
-          setStats(data.stats);
-        }
-      })
-      .catch(err => console.error('Failed to load stats content:', err));
-  }, []);
+export default function StatisticsSection({ initialStats }: StatisticsSectionProps) {
+  const stats = initialStats;
 
   return (
     <section className="py-16 bg-navy text-white relative overflow-hidden">
@@ -36,7 +22,7 @@ export default function StatisticsSection() {
         <div className="absolute top-1/2 left-1/4 w-24 h-24 border border-white rounded-full"></div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-10 relative">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 relative">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">

@@ -42,12 +42,12 @@ function RegisterForm() {
 
   return (
     <div className="max-w-xl mx-auto px-4">
-      <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
         <div className="flex items-center gap-3 mb-1">
           <UserRound className="w-6 h-6 text-geely-blue" />
-          <h1 className="text-2xl font-bold text-navy">Welcome!</h1>
+          <h1 className="text-2xl font-bold text-navy dark:text-ice">Welcome!</h1>
         </div>
-        <p className="text-steel text-sm mb-6">Just a few details so our team can help you right away.</p>
+        <p className="text-steel dark:text-steel-light text-sm mb-6">Just a few details so our team can help you right away.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -114,7 +114,7 @@ function RegisterForm() {
 export default function VisitRegisterPage() {
   return (
     <MainLayout>
-      <div className="py-16 bg-ice min-h-[70vh]">
+      <div className="py-16 bg-ice dark:bg-midnight min-h-[70vh]">
         <Suspense fallback={null}>
           <RegisterForm />
         </Suspense>

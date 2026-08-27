@@ -64,21 +64,21 @@ export default function TradeInPage() {
     return (
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-10 text-center">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Trade-In Request Submitted!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Thank you for your interest in trading in your vehicle. Our team will evaluate your vehicle and send you a preliminary quote within 24-48 hours.
             </p>
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-2">
-                <strong className="text-navy">Next Steps:</strong>
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-2">
+                <strong className="text-navy dark:text-ice">Next Steps:</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ We'll review your vehicle details</li>
                 <li>✓ Schedule an inspection at your convenience</li>
                 <li>✓ Receive your final trade-in offer</li>
@@ -94,7 +94,7 @@ export default function TradeInPage() {
               </button>
               <Link
                 href="/models"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight transition-all"
               >
                 Browse Models
               </Link>
@@ -109,7 +109,7 @@ export default function TradeInPage() {
     <MainLayout>
       {/* Page Header */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             TRADE-IN YOUR VEHICLE
           </div>
@@ -124,14 +124,14 @@ export default function TradeInPage() {
 
       {/* Benefits Section */}
       <section className="py-12 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <DollarSign className="text-geely-blue" size={24} />
               </div>
               <h3 className="font-bold text-navy mb-2">Competitive Offers</h3>
-              <p className="text-xs text-steel">
+              <p className="text-xs text-steel dark:text-steel-light">
                 Get fair market value for your vehicle
               </p>
             </div>
@@ -168,7 +168,7 @@ export default function TradeInPage() {
 
       {/* Form Section */}
       <section className="py-16">
-        <div className="max-w-4xl mx-auto px-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
           <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
             <div className="bg-ice p-6 border-b border-line">
               <h2 className="text-2xl font-bold text-navy">Trade-In Valuation Request</h2>
@@ -502,13 +502,13 @@ export default function TradeInPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Additional Information
                     </label>
                     <textarea
                       {...register("additionalInfo")}
                       rows={4}
-                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Any additional details about your vehicle or trade-in..."
                     ></textarea>
                   </div>
@@ -516,7 +516,7 @@ export default function TradeInPage() {
               </div>
 
               {/* Consent */}
-              <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                 <input
                   type="checkbox"
                   {...register("consent", {
@@ -525,7 +525,7 @@ export default function TradeInPage() {
                   className="mt-1 w-4 h-4 accent-geely-blue"
                 />
                 <div>
-                  <label className="text-sm text-navy">
+                  <label className="text-sm text-navy dark:text-ice">
                     <span className="text-red-500">* </span>
                     I agree to be contacted by Geely Ethiopia regarding my trade-in and consent to the collection of my personal information as per the{" "}
                     <a href="/privacy" className="text-geely-blue hover:underline">
@@ -552,7 +552,7 @@ export default function TradeInPage() {
                 >
                   {isSubmitting ? "Submitting..." : "Get Trade-In Quote"}
                 </button>
-                <p className="text-xs text-steel text-center mt-3">
+                <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                   We'll respond within 24-48 hours with your preliminary quote
                 </p>
               </div>

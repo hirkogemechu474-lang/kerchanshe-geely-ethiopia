@@ -12,17 +12,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: "#0B2545",
-        "geely-blue": "#0057B8",
-        gold: "#C8A15A",
-        ice: "#EAF1FB",
-        steel: "#5B6B79",
-        ink: "#1B1F24",
-        line: "#E1E7EF",
+        // Geely Auto global digital palette: black, white, neutrals and
+        // active blue. The legacy names remain available to avoid breaking
+        // existing page components while bringing them onto the new system.
+        navy: "#0A0B0D",
+        "geely-blue": "#0066FF",
+        gold: "#A9B0B8",
+        ice: "#F7F8FA",
+        steel: "#69717B",
+        ink: "#111318",
+        line: "#E2E5E9",
+        // Dark-mode surfaces — not swaps of the tokens above (navy/ice are
+        // also used as intentional foreground/background choices in light
+        // mode), but a parallel set for `dark:` variants on the chrome.
+        midnight: "#0A0B0D",
+        "midnight-surface": "#141619",
+        "midnight-line": "#30343A",
+        "steel-light": "#AEB5BE",
+        "blue-bright": "#66A3FF",
+        "gold-bright": "#D8DCE1",
       },
       fontFamily: {
-        sans: ["Segoe UI", "Arial", "sans-serif"],
+        sans: ["var(--font-inter)", "Segoe UI", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-inter)", "Segoe UI", "Arial", "sans-serif"],
         serif: ["Georgia", "Times New Roman", "serif"],
+        amharic: ["var(--font-amharic)", "Noto Sans Ethiopic", "sans-serif"],
       },
       animation: {
         'slide-in': 'slideIn 0.3s ease-out',

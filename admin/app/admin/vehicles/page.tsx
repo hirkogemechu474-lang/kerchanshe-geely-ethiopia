@@ -34,9 +34,9 @@ export default async function VehiclesPage() {
       href: '/admin/vehicles',
       icon: Car,
       count: stats.total,
-      color: 'from-blue-500 to-blue-600',
-      textColor: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'from-geely-blue to-navy',
+      textColor: 'text-geely-blue',
+      bgColor: 'bg-geely-blue/10',
       active: true,
     },
     {
@@ -66,8 +66,8 @@ export default async function VehiclesPage() {
       value: stats.total,
       icon: LayoutGrid,
       sub: 'In your catalog',
-      gradient: 'from-blue-500 to-blue-600',
-      ring: 'shadow-blue-500/20',
+      gradient: 'from-geely-blue to-navy',
+      ring: 'shadow-geely-blue/20',
       valueColor: 'text-gray-900',
     },
     {

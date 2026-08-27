@@ -30,13 +30,13 @@ export default async function PrivacyPolicyPage() {
       <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8 mb-8">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                 <Shield className="text-blue-600" size={32} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-navy">Privacy Policy</h1>
+                <h1 className="text-3xl font-bold text-navy dark:text-ice">Privacy Policy</h1>
                 <p className="text-gray-600">How we collect, use, and protect your data</p>
               </div>
             </div>
@@ -46,7 +46,7 @@ export default async function PrivacyPolicyPage() {
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8">
             {privacyContent ? (
               <div className="prose max-w-none">
                 <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
@@ -89,7 +89,7 @@ export default async function PrivacyPolicyPage() {
               </a>
               <a
                 href="mailto:info@geelyethiopia.com"
-                className="inline-block bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
+                className="inline-block bg-white dark:bg-midnight-surface text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
               >
                 Email Us
               </a>

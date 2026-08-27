@@ -157,7 +157,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-geely-blue mx-auto"></div>
           <p className="mt-4 text-gray-500">Loading article...</p>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
           <p className="text-red-600">Article not found</p>
           <Link
             href="/admin/news"
-            className="mt-4 inline-block text-blue-600 hover:underline"
+            className="mt-4 inline-block text-geely-blue hover:underline"
           >
             Back to News
           </Link>
@@ -212,7 +212,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., Geely Opens New Showroom in Addis Ababa"
             />
           </div>
@@ -230,7 +230,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               >
                 <option value="company">Company News</option>
                 <option value="product">Product Updates</option>
@@ -253,7 +253,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 value={formData.author}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="e.g., Marketing Team"
               />
             </div>
@@ -270,7 +270,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
               value={formData.excerpt}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Brief summary of the article (optional - will be auto-generated if left empty)"
             />
           </div>
@@ -287,7 +287,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
               onChange={handleChange}
               required
               rows={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Write your article content here..."
             />
             <p className="mt-1 text-xs text-gray-500">Support for rich text editor coming soon</p>
@@ -304,7 +304,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
               id="image"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
             <p className="mt-1 text-xs text-gray-500">
               Upload new image (max 10MB) - PNG, JPG, JPEG, GIF supported
@@ -337,7 +337,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 value={formData.status}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
@@ -355,7 +355,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 name="publishDate"
                 value={formData.publishDate}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
               <p className="mt-1 text-xs text-gray-500">Leave empty to use current date</p>
             </div>

@@ -17,6 +17,14 @@ interface ShowcaseView {
   label: string;
 }
 
+interface VehicleColorOption {
+  id: string;
+  name: string;
+  colorCode: string;
+  imageUrl: string | null;
+  isDefault?: boolean;
+}
+
 interface Model360SectionProps {
   modelName: string;
   modelId: string;
@@ -28,6 +36,9 @@ interface Model360SectionProps {
   showcaseViews?: ShowcaseView[];
   /** Optional uploaded showcase video managed from the admin panel. */
   showcaseVideoUrl?: string | null;
+  /** Managed in Admin → Vehicles → Colors. Selecting one swaps the front
+   * view's image, mirroring geely.com.eg's color-switchable 360° viewer. */
+  colors?: VehicleColorOption[];
 }
 
 const ANGLE_LABELS = [
@@ -48,8 +59,14 @@ export function Model360Section({
   heroImageUrl,
   showcaseViews = [],
   showcaseVideoUrl = null,
+  colors = [],
 }: Model360SectionProps) {
   const [activeTab, setActiveTab] = useState<'video' | '360' | 'angles'>(showcaseVideoUrl ? 'video' : '360');
+  const colorsWithImages = colors.filter((c) => c.imageUrl);
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(
+    colorsWithImages.find((c) => c.isDefault)?.id ?? colorsWithImages[0]?.id ?? null
+  );
+  const selectedColor = colorsWithImages.find((c) => c.id === selectedColorId) ?? null;
 
   // ── Build views from DB images ──────────────────────────────────────────────
   const buildViewsFromImages = (): ViewEntry[] => {
@@ -104,33 +121,62 @@ export function Model360Section({
     ];
   };
 
-  const views = buildViewsFromImages();
+  const baseViews = buildViewsFromImages();
+  const views = selectedColor
+    ? [{ ...baseViews[0], image: selectedColor.imageUrl as string, label: selectedColor.name }, ...baseViews.slice(1)]
+    : baseViews;
   const rawImageUrls = views.map(v => v.image);
 
   return (
-    <section id="section-360" className="py-16 bg-white scroll-mt-20">
+    <section id="section-360" className="py-16 bg-white dark:bg-midnight-surface scroll-mt-20">
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-6">
           <div>
             <div className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-bold mb-4 tracking-wider">
               360° INTERACTIVE VIEW
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-navy mb-3">
-              Explore Every Detail
+            <h2 className="text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-3">
+              Discover Every Angle
             </h2>
-            <p className="text-steel text-lg">
+            <p className="text-steel dark:text-steel-light text-lg">
               Navigate through multiple angles and discover the {modelName} from every perspective.
             </p>
           </div>
 
+          {/* Color Swatches — managed in Admin → Vehicles → Colors */}
+          {colorsWithImages.length > 0 && (
+            <div className="flex items-start gap-3 self-start md:self-auto overflow-x-auto pb-1">
+              {colorsWithImages.map((color) => (
+                <button
+                  key={color.id}
+                  onClick={() => setSelectedColorId(color.id)}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group"
+                >
+                  <span
+                    className={`w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors ${
+                      selectedColorId === color.id
+                        ? 'border-geely-blue'
+                        : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
+                    }`}
+                  >
+                    <img src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" />
+                  </span>
+                  <span className="text-[11px] text-steel dark:text-steel-light font-semibold whitespace-nowrap">{color.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end mb-8">
           {/* Mode Switcher */}
-          <div className="flex gap-2 bg-ice p-1.5 rounded-xl border border-line self-start md:self-auto">
+          <div className="flex gap-2 bg-ice dark:bg-midnight p-1.5 rounded-xl border border-line dark:border-midnight-line self-start md:self-auto">
             {showcaseVideoUrl && <button
               onClick={() => setActiveTab('video')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === 'video'
                   ? 'bg-navy text-white shadow-md'
-                  : 'text-steel hover:text-navy'
+                  : 'text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice'
               }`}
             >
               <Camera size={16} />
@@ -141,7 +187,7 @@ export function Model360Section({
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === '360'
                   ? 'bg-navy text-white shadow-md'
-                  : 'text-steel hover:text-navy'
+                  : 'text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice'
               }`}
             >
               <RotateCw size={16} />
@@ -152,7 +198,7 @@ export function Model360Section({
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === 'angles'
                   ? 'bg-navy text-white shadow-md'
-                  : 'text-steel hover:text-navy'
+                  : 'text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice'
               }`}
             >
               <Camera size={16} />
@@ -170,7 +216,9 @@ export function Model360Section({
               playsInline
               preload="metadata"
               aria-label={`${modelName} showcase video`}
-            />
+            >
+              <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+            </video>
           </div>
         ) : activeTab === '360' ? (
           <ModelSpotlight360
@@ -188,21 +236,21 @@ export function Model360Section({
         )}
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-ice p-6 rounded-lg border border-line">
-            <h3 className="font-bold text-navy mb-2">Exterior Design</h3>
-            <p className="text-steel text-sm leading-relaxed">
+          <div className="bg-ice dark:bg-midnight p-6 rounded-lg border border-line dark:border-midnight-line">
+            <h3 className="font-bold text-navy dark:text-ice mb-2">Exterior Design</h3>
+            <p className="text-steel dark:text-steel-light text-sm leading-relaxed">
               Premium styling with attention to aerodynamics and modern aesthetics that turns heads.
             </p>
           </div>
-          <div className="bg-ice p-6 rounded-lg border border-line">
-            <h3 className="font-bold text-navy mb-2">Interior Comfort</h3>
-            <p className="text-steel text-sm leading-relaxed">
+          <div className="bg-ice dark:bg-midnight p-6 rounded-lg border border-line dark:border-midnight-line">
+            <h3 className="font-bold text-navy dark:text-ice mb-2">Interior Comfort</h3>
+            <p className="text-steel dark:text-steel-light text-sm leading-relaxed">
               Spacious cabin with premium materials and thoughtful ergonomics for every journey.
             </p>
           </div>
-          <div className="bg-ice p-6 rounded-lg border border-line">
-            <h3 className="font-bold text-navy mb-2">Technology</h3>
-            <p className="text-steel text-sm leading-relaxed">
+          <div className="bg-ice dark:bg-midnight p-6 rounded-lg border border-line dark:border-midnight-line">
+            <h3 className="font-bold text-navy dark:text-ice mb-2">Technology</h3>
+            <p className="text-steel dark:text-steel-light text-sm leading-relaxed">
               Advanced connectivity and safety features designed for the modern Ethiopian driver.
             </p>
           </div>

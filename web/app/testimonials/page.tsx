@@ -6,7 +6,7 @@ export default function TestimonialsPage() {
     <MainLayout>
       {/* Page Header */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             CUSTOMER EXPERIENCES
           </div>
@@ -21,7 +21,7 @@ export default function TestimonialsPage() {
 
       {/* Testimonials */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <TestimonialsSection showFilters={true} />
         </div>
       </section>

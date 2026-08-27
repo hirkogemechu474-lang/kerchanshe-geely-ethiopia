@@ -187,7 +187,7 @@ export default function ReviewsList() {
                 <div className="flex gap-2">
                   <Link
                     href={`/admin/reviews/${review.id}`}
-                    className="text-blue-600 hover:text-blue-900"
+                    className="text-geely-blue hover:text-blue-900"
                     title="Edit"
                   >
                     <Edit size={16} />

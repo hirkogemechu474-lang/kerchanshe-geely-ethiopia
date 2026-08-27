@@ -44,11 +44,11 @@ export default function FAQSection() {
 
   if (loading) {
     return (
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-midnight-surface transition-colors">
         <div className="max-w-[1280px] mx-auto px-4">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading FAQs...</span>
+            <span className="ml-2 text-gray-600 dark:text-steel-light">Loading FAQs...</span>
           </div>
         </div>
       </section>
@@ -79,10 +79,10 @@ export default function FAQSection() {
           <div className="inline-block bg-blue-600/10 text-blue-600 px-4 py-2 rounded-full text-sm font-bold mb-4">
             FREQUENTLY ASKED QUESTIONS
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-navy mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4">
             Got Questions? We Have Answers
           </h2>
-          <p className="text-steel text-lg max-w-2xl mx-auto">
+          <p className="text-steel dark:text-steel-light text-lg max-w-2xl mx-auto">
             Find quick answers to the most common questions about Geely vehicles, services, and ownership.
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function FAQSection() {
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                   selectedCategory === 'all'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-midnight text-gray-700 dark:text-steel-light hover:bg-gray-200 dark:hover:bg-midnight-surface'
                 }`}
               >
                 All Questions
@@ -108,7 +108,7 @@ export default function FAQSection() {
                   className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                     selectedCategory === category
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-midnight text-gray-700 dark:text-steel-light hover:bg-gray-200 dark:hover:bg-midnight-surface'
                   }`}
                 >
                   {category}
@@ -124,8 +124,8 @@ export default function FAQSection() {
             {sortedFAQs.map((faq, index) => (
               <div
                 key={faq.id}
-                className={`bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 ${
-                  openFAQ === faq.id ? 'shadow-lg border-blue-300' : 'hover:shadow-md'
+                className={`bg-white dark:bg-midnight border border-gray-200 dark:border-midnight-line rounded-lg overflow-hidden transition-all duration-300 ${
+                  openFAQ === faq.id ? 'shadow-lg border-blue-300 dark:border-blue-bright' : 'hover:shadow-md'
                 } ${faq.isFeatured ? 'ring-2 ring-yellow-400 ring-opacity-30' : ''}`}
               >
                 <button
@@ -137,15 +137,15 @@ export default function FAQSection() {
                       {faq.isFeatured && (
                         <div className="flex-shrink-0 w-2 h-2 bg-yellow-400 rounded-full mt-3"></div>
                       )}
-                      <h3 className="font-semibold text-navy text-lg pr-4">
+                      <h3 className="font-semibold text-navy dark:text-ice text-lg pr-4">
                         {faq.question}
                       </h3>
                     </div>
                     <div className="flex-shrink-0">
                       {openFAQ === faq.id ? (
-                        <ChevronUp className="w-5 h-5 text-gray-500" />
+                        <ChevronUp className="w-5 h-5 text-gray-500 dark:text-steel-light" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-gray-500 dark:text-steel-light" />
                       )}
                     </div>
                   </div>
@@ -155,7 +155,7 @@ export default function FAQSection() {
                   <div className="px-6 pb-4">
                     <div className={`pt-2 ${faq.isFeatured ? 'pl-5' : ''}`}>
                       <div 
-                        className="text-steel leading-relaxed prose prose-sm max-w-none"
+                        className="text-steel dark:text-steel-light leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ __html: faq.answer }}
                       />
                     </div>

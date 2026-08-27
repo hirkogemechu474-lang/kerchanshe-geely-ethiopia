@@ -75,7 +75,7 @@ export default function SocialMediaPage() {
       id: 'facebook',
       name: 'Facebook',
       icon: Facebook,
-      color: 'text-blue-600',
+      color: 'text-geely-blue',
       bgColor: 'bg-blue-50',
       placeholder: 'https://facebook.com/geelyethiopia',
       example: 'https://facebook.com/YourPage'
@@ -138,7 +138,7 @@ export default function SocialMediaPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 bg-geely-blue text-white px-6 py-3 rounded-lg hover:bg-navy disabled:opacity-50"
           >
             <Save size={20} />
             {saving ? 'Saving...' : 'Save Links'}
@@ -173,7 +173,7 @@ export default function SocialMediaPage() {
                       value={value}
                       onChange={(e) => handleChange(platform.id as keyof typeof socialMedia, e.target.value)}
                       placeholder={platform.placeholder}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     />
                   </div>
 
@@ -184,7 +184,7 @@ export default function SocialMediaPage() {
                         href={value}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                        className="flex items-center gap-1 text-geely-blue hover:text-navy"
                       >
                         Test Link <ExternalLink size={14} />
                       </a>

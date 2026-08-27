@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
+import { withBasePath } from "@/lib/publicPath";
 import {
   X,
   TrendingUp,
@@ -33,6 +35,7 @@ type CompareRow = {
 };
 
 export default function ComparePage() {
+  const searchParams = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [highlightDifferences, setHighlightDifferences] = useState(true);
@@ -42,6 +45,18 @@ export default function ComparePage() {
   useEffect(() => {
     void fetchVehicles();
   }, []);
+
+  // Lets model cards deep-link straight into a pre-selected comparison
+  // (e.g. the homepage's "Compare" button) instead of dumping the visitor
+  // on an empty picker.
+  useEffect(() => {
+    const addId = searchParams.get("add");
+    if (!addId || vehicles.length === 0) return;
+    if (!vehicles.some((v) => v.id === addId)) return;
+    setSelectedVehicles((prev) =>
+      prev.includes(addId) || prev.length >= maxCompare ? prev : [...prev, addId]
+    );
+  }, [searchParams, vehicles]);
 
   async function fetchVehicles() {
     try {
@@ -212,7 +227,7 @@ export default function ComparePage() {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-geely-blue border-t-transparent mb-4" />
-            <p className="text-steel">Loading vehicles...</p>
+            <p className="text-steel dark:text-steel-light">Loading vehicles...</p>
           </div>
         </div>
       </MainLayout>
@@ -224,7 +239,7 @@ export default function ComparePage() {
   return (
     <MainLayout>
       <div className="bg-navy py-16 text-white">
-        <div className="mx-auto max-w-[1280px] px-10">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           <div className="mb-3 text-[13px] font-bold tracking-[0.14em] text-gold">
             COMPARE MODELS
           </div>
@@ -235,15 +250,15 @@ export default function ComparePage() {
         </div>
       </div>
 
-      <section className="bg-ice py-12">
-        <div className="mx-auto max-w-[1280px] px-10">
-          <h2 className="mb-6 text-2xl font-bold text-navy">
+      <section className="bg-ice dark:bg-midnight py-12">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
+          <h2 className="mb-6 text-2xl font-bold text-navy dark:text-ice">
             Select vehicles to compare ({selectedVehicles.length}/{maxCompare})
           </h2>
 
           {vehicles.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-steel">No vehicles available for comparison</p>
+              <p className="text-steel dark:text-steel-light">No vehicles available for comparison</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-3">
@@ -263,8 +278,8 @@ export default function ComparePage() {
                     disabled={!isSelected && selectedVehicles.length >= maxCompare}
                     className={`rounded-lg border-2 p-4 text-left transition-all ${
                       isSelected
-                        ? "border-geely-blue bg-white shadow-lg"
-                        : "border-line bg-white hover:border-geely-blue"
+                        ? "border-geely-blue bg-white dark:bg-midnight-surface shadow-lg"
+                        : "border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue"
                     } ${
                       !isSelected && selectedVehicles.length >= maxCompare
                         ? "cursor-not-allowed opacity-50"
@@ -273,13 +288,13 @@ export default function ComparePage() {
                   >
                     <div className="mb-2 flex h-32 items-center justify-center overflow-hidden rounded bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={vehicle.name} className="h-full w-full object-cover" />
+                        <img src={withBasePath(imageUrl)} alt="" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="px-2 text-center text-xs text-steel">{vehicle.name}</span>
+                        <span className="px-2 text-center text-xs text-steel dark:text-steel-light">{vehicle.name}</span>
                       )}
                     </div>
-                    <div className="mb-1 text-center text-sm font-bold text-navy">{vehicle.name}</div>
-                    <div className="text-center text-[11px] text-steel">Price on request</div>
+                    <div className="mb-1 text-center text-sm font-bold text-navy dark:text-ice">{vehicle.name}</div>
+                    <div className="text-center text-[11px] text-steel dark:text-steel-light">Price on request</div>
                     {isSelected && (
                       <div className="mt-2 flex justify-center">
                         <div className="rounded-full bg-geely-blue p-1 text-white">
@@ -297,9 +312,9 @@ export default function ComparePage() {
 
       {selectedVehicleData.length > 0 ? (
         <section className="py-12">
-          <div className="mx-auto max-w-[1280px] px-10">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
             <div className="mb-6 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold text-navy">Comparison</h2>
+              <h2 className="text-2xl font-bold text-navy dark:text-ice">Comparison</h2>
 
               <div className="flex items-center gap-6">
                 <label className="flex cursor-pointer items-center gap-2">
@@ -309,14 +324,14 @@ export default function ComparePage() {
                     onChange={(event) => setHighlightDifferences(event.target.checked)}
                     className="h-4 w-4 accent-geely-blue"
                   />
-                  <span className="text-sm font-semibold text-navy">
+                  <span className="text-sm font-semibold text-navy dark:text-ice">
                     Highlight Differences
                   </span>
                 </label>
 
                 <button
                   onClick={() => setSelectedVehicles([])}
-                  className="flex items-center gap-2 text-sm font-semibold text-steel hover:text-navy"
+                  className="flex items-center gap-2 text-sm font-semibold text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice dark:hover:text-ice"
                 >
                   <X size={16} />
                   Clear All
@@ -325,18 +340,18 @@ export default function ComparePage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full overflow-hidden rounded-lg bg-white shadow-lg">
+              <table className="w-full overflow-hidden rounded-lg bg-white dark:bg-midnight-surface shadow-lg">
                 <thead>
                   <tr className="bg-navy text-white">
                     <th className="w-56 p-4 text-left font-bold">Feature</th>
                     {selectedVehicleData.map((vehicle) => (
                       <th key={vehicle.id} className="min-w-[250px] p-4 text-center font-bold">
                         <div className="flex flex-col items-center gap-2">
-                          <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded bg-white bg-opacity-10 text-xs">
+                          <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded bg-white dark:bg-midnight-surface bg-opacity-10 text-xs">
                             {getImageUrl(vehicle) ? (
                               <img
                                 src={getImageUrl(vehicle) || ""}
-                                alt={vehicle.name}
+                                alt=""
                                 className="h-full w-full object-cover"
                               />
                             ) : (
@@ -361,14 +376,14 @@ export default function ComparePage() {
                     ) : (
                       <tr
                         key={row.label}
-                        className={`border-b border-line ${
+                        className={`border-b border-line dark:border-midnight-line ${
                           highlightDifferences &&
                           hasDifference(selectedVehicleData.map((vehicle) => row.value(vehicle)))
                             ? "bg-yellow-50"
-                            : "bg-white"
+                            : "bg-white dark:bg-midnight-surface"
                         }`}
                       >
-                        <td className="bg-ice p-4 font-semibold">
+                        <td className="bg-ice dark:bg-midnight p-4 font-semibold">
                           <div className="flex items-center gap-2">
                             {row.label}
                             {highlightDifferences &&
@@ -387,7 +402,7 @@ export default function ComparePage() {
 
                           return (
                             <td key={vehicle.id} className="p-4 text-center">
-                              <div className="flex items-center justify-center gap-2 font-medium text-navy">
+                              <div className="flex items-center justify-center gap-2 font-medium text-navy dark:text-ice">
                                 {row.label === "Starting Price" && typeof rawValue === "number"
                                   ? formatPrice(rawValue)
                                   : rawValue}
@@ -406,19 +421,21 @@ export default function ComparePage() {
                     )
                   )}
 
-                  <tr className="bg-ice">
+                  <tr className="bg-ice dark:bg-midnight">
                     <td className="p-4 font-semibold">Actions</td>
                     {selectedVehicleData.map((vehicle) => (
                       <td key={vehicle.id} className="p-4">
                         <div className="flex flex-col gap-2">
                           <Link
                             href={`/models/${vehicle.id}`}
+                            aria-label={`View details for ${vehicle.name}`}
                             className="block rounded bg-navy px-4 py-2 text-center text-xs font-bold text-white transition-all hover:bg-opacity-90"
                           >
                             View Details
                           </Link>
                           <Link
                             href={`/quote?model=${vehicle.id}`}
+                            aria-label={`Get a quote for ${vehicle.name}`}
                             className="block rounded bg-gold px-4 py-2 text-center text-xs font-bold text-[#2c2308] transition-all hover:bg-opacity-90"
                           >
                             Get Quote
@@ -434,12 +451,12 @@ export default function ComparePage() {
         </section>
       ) : (
         <section className="py-20">
-          <div className="mx-auto max-w-[1280px] px-10 text-center">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10 text-center">
             <div className="mb-6 text-6xl">CAR</div>
-            <h3 className="mb-3 text-2xl font-bold text-navy">
+            <h3 className="mb-3 text-2xl font-bold text-navy dark:text-ice">
               Select vehicles to start comparing
             </h3>
-            <p className="mb-8 text-base text-steel">
+            <p className="mb-8 text-base text-steel dark:text-steel-light">
               Choose up to 3 vehicles from the selection above to see a detailed comparison.
             </p>
           </div>

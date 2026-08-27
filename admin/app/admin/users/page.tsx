@@ -90,7 +90,7 @@ export default async function UsersPage() {
                   </Badge>
                 </Td>
                 <Td className="text-right">
-                  <Link href={`/admin/users/${user.id}`} className="text-blue-600 hover:text-blue-700">
+                  <Link href={`/admin/users/${user.id}`} className="text-geely-blue hover:text-navy">
                     Edit
                   </Link>
                 </Td>

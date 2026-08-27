@@ -113,7 +113,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
               type="text"
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., Abebe Kebede"
               required
             />
@@ -128,7 +128,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                 type="email"
                 value={formData.customerEmail}
                 onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="customer@email.com"
                 required
               />
@@ -144,7 +144,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                 type="tel"
                 value={formData.customerPhone}
                 onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="+251-911-234567"
                 required
               />
@@ -167,7 +167,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
             <select
               value={formData.vehicleId}
               onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               required
             >
               <option value="">Select Vehicle</option>
@@ -187,7 +187,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
               <select
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 required
               >
                 <option value="">Select Location</option>
@@ -218,7 +218,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                   type="date"
                   value={formData.preferredDate}
                   onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   min={new Date().toISOString().split('T')[0]}
                   required
                 />
@@ -228,7 +228,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                 <select
                   value={formData.preferredTime}
                   onChange={(e) => setFormData({ ...formData, preferredTime: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   required
                 >
                   <option value="">Select Time</option>
@@ -251,7 +251,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                   type="date"
                   value={formData.alternativeDate}
                   onChange={(e) => setFormData({ ...formData, alternativeDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -260,7 +260,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
                 <select
                   value={formData.alternativeTime}
                   onChange={(e) => setFormData({ ...formData, alternativeTime: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 >
                   <option value="">Select Time</option>
                   {timeSlots.map((slot) => (
@@ -289,7 +289,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
             <select
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="">Auto-assign</option>
               {salesReps.map((rep) => (
@@ -306,7 +306,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
             <textarea
               value={formData.specialRequests}
               onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               rows={3}
               placeholder="Any special requirements or accessibility needs..."
             />
@@ -318,7 +318,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               rows={3}
               placeholder="Internal notes for staff (not visible to customer)..."
             />
@@ -338,7 +338,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
               type="checkbox"
               checked={formData.sendConfirmationEmail}
               onChange={(e) => setFormData({ ...formData, sendConfirmationEmail: e.target.checked })}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
             />
             <span className="text-sm font-medium text-gray-700">
               Send confirmation email to customer
@@ -349,7 +349,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
               type="checkbox"
               checked={formData.sendSMSReminder}
               onChange={(e) => setFormData({ ...formData, sendSMSReminder: e.target.checked })}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
             />
             <span className="text-sm font-medium text-gray-700">
               Send SMS reminder 24 hours before
@@ -369,7 +369,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
         <button
           type="submit"
           disabled={loading}
-          className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy transition-colors disabled:bg-geely-blue/50 disabled:cursor-not-allowed"
         >
           <Save className="w-5 h-5" />
           {loading ? 'Saving...' : mode === 'create' ? 'Schedule Test Drive' : 'Update Test Drive'}

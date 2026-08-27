@@ -123,7 +123,7 @@ export default function NewUserForm() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., John Doe"
             />
           </div>
@@ -141,7 +141,7 @@ export default function NewUserForm() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., user@geelyethiopia.com"
             />
           </div>
@@ -161,7 +161,7 @@ export default function NewUserForm() {
                 onChange={handleChange}
                 required
                 minLength={8}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="Min. 8 characters"
               />
             </div>
@@ -179,7 +179,7 @@ export default function NewUserForm() {
                 onChange={handleChange}
                 required
                 minLength={8}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="Re-enter password"
               />
             </div>
@@ -201,7 +201,7 @@ export default function NewUserForm() {
               value={formData.role}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="super_admin">Super Admin - Full system access</option>
               <option value="manager">Manager - Manage most operations</option>
@@ -231,7 +231,7 @@ export default function NewUserForm() {
               name="dealerId"
               value={formData.dealerId}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Leave empty for headquarters staff"
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -247,7 +247,7 @@ export default function NewUserForm() {
               name="isActive"
               checked={formData.isActive}
               onChange={handleChange}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-geely-blue rounded focus:ring-geely-blue"
             />
             <label htmlFor="isActive" className="text-sm text-gray-700">
               User account is active and can log in

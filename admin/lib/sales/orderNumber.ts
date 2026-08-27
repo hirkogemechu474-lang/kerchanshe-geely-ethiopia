@@ -19,13 +19,3 @@ export async function nextInvoiceNo(): Promise<string> {
   });
   return `INV-${counter.value}`;
 }
-
-/** Generates the next formal sales quotation number, e.g. "SQ-2026-00001". */
-export async function nextQuotationNo(): Promise<string> {
-  const counter = await prisma.counter.upsert({
-    where: { name: 'salesQuotation' },
-    create: { name: 'salesQuotation', value: 1 },
-    update: { value: { increment: 1 } },
-  });
-  return `SQ-${new Date().getFullYear()}-${String(counter.value).padStart(5, '0')}`;
-}

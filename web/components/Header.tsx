@@ -2,12 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, User, ChevronDown, Car } from 'lucide-react';
+import { Menu, ChevronDown, Car } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import type { VehicleRecord } from '@/lib/vehicleData';
 import { resolveNavIcon, type SiteNavItem } from '@/lib/navIcons';
 import { withBasePath } from '@/lib/publicPath';
+import { useTranslation } from '@/lib/i18n';
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -17,24 +18,22 @@ interface HeaderProps {
 // rather than admin-editable data — an admin can add/reorder/hide/relabel any
 // nav item via /admin/site-navigation, but only these three hrefs ever get a
 // dropdown attached, matching what the site actually has content systems for.
-const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; category?: 'models' | 'electric' | 'services' }> = {
+const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; category?: 'models' | 'services' }> = {
   '/models': { hasDropdown: true, category: 'models' },
-  '/electric': { hasSubmenu: true, category: 'electric' },
   '/service': { hasSubmenu: true, category: 'services' },
 };
 
+// Trimmed to match the nav pattern used on Geely's regional distributor
+// sites (e.g. geely.com.eg): Models, Company, After-Sales Services, Dealers,
+// Contact — rather than every section the site happens to have a page for.
 // Matches the seed data in admin/prisma/seed-site-nav.ts — used only as the
 // pre-fetch fallback so the header never renders empty before the first load.
 const DEFAULT_NAV_ITEMS: SiteNavItem[] = [
   { id: 'models', label: 'Models', href: '/models', icon: null, openInNewTab: false, displayOrder: 1 },
-  { id: 'electric', label: 'Electric', href: '/electric', icon: 'Zap', openInNewTab: false, displayOrder: 2 },
-  { id: 'technology', label: 'Technology', href: '/technology', icon: null, openInNewTab: false, displayOrder: 3 },
-  { id: 'services', label: 'Services', href: '/service', icon: null, openInNewTab: false, displayOrder: 4 },
-  { id: 'dealers', label: 'Dealers', href: '/dealers', icon: null, openInNewTab: false, displayOrder: 5 },
-  { id: 'showroom', label: 'Showroom', href: '/visit/start', icon: 'MapPin', openInNewTab: false, displayOrder: 6 },
-  { id: 'financing', label: 'Financing', href: '/financing', icon: null, openInNewTab: false, displayOrder: 7 },
-  { id: 'news', label: 'News', href: '/news', icon: null, openInNewTab: false, displayOrder: 8 },
-  { id: 'about', label: 'About', href: '/about', icon: null, openInNewTab: false, displayOrder: 9 },
+  { id: 'company', label: 'Company', href: '/about', icon: null, openInNewTab: false, displayOrder: 2 },
+  { id: 'services', label: 'After-Sales Services', href: '/service', icon: null, openInNewTab: false, displayOrder: 3 },
+  { id: 'dealers', label: 'Dealers', href: '/dealers', icon: null, openInNewTab: false, displayOrder: 4 },
+  { id: 'contact', label: 'Contact Us', href: '/contact', icon: null, openInNewTab: false, displayOrder: 5 },
 ];
 
 // ─── Pre-fetch helper ─────────────────────────────────────────────────────────
@@ -53,14 +52,13 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
+  const { t } = useTranslation();
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
 
   // Pre-loaded menu data — fetched once, reused on every hover
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
   const [servicesMenu, setServicesMenu]   = useState<MenuSection[]>([]);
-  const [electricMenu, setElectricMenu]   = useState<MenuSection[]>([]);
-  const [quickActions, setQuickActions]   = useState<SiteNavItem[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const prefetched = useRef(false);
 
@@ -72,16 +70,12 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
     Promise.all([
       fetchJSON<{ vehicles: VehicleRecord[] } | VehicleRecord[]>('/api/public/vehicles'),
       fetchJSON<{ sections: MenuSection[] }>('/api/public/services/menu'),
-      fetchJSON<{ sections: MenuSection[] }>('/api/public/electric/menu'),
-      fetchJSON<{ items: SiteNavItem[] }>('/api/public/site-nav?placement=MODELS_QUICK_ACTIONS'),
-    ]).then(([vehiclesData, servicesData, electricData, quickActionsData]) => {
+    ]).then(([vehiclesData, servicesData]) => {
       if (vehiclesData) {
         const list = Array.isArray(vehiclesData) ? vehiclesData : vehiclesData.vehicles ?? [];
         setVehicles(list);
       }
       if (servicesData?.sections) setServicesMenu(servicesData.sections);
-      if (electricData?.sections)  setElectricMenu(electricData.sections);
-      if (quickActionsData?.items) setQuickActions(quickActionsData.items);
       setVehiclesLoading(false);
     });
   };
@@ -130,22 +124,17 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-line sticky top-0 z-50">
+    <header className="bg-white dark:bg-midnight-surface border-b border-black/10 dark:border-midnight-line sticky top-0 z-50 transition-colors">
       <div className="max-w-[1280px] mx-auto px-4">
         <div className="flex items-center justify-between gap-3 py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group" onClick={closeAllMenus}>
             <img
-              src={withBasePath('/assets/logos/geely-vertical-logo.svg')}
-              alt="Geely"
-              className="w-9 h-9 rounded-lg object-contain shadow-sm group-hover:shadow-md transition-shadow"
+              src={withBasePath('/assets/logos/geely-logo.png')}
+              alt="Geely Ethiopia"
+              className="h-9 w-auto max-w-[124px] object-contain transition-opacity group-hover:opacity-70"
             />
-            <div className="leading-none">
-              <div className="text-[19px] font-display font-extrabold tracking-tight text-navy">GEELY</div>
-              <div className="text-[9px] font-display font-bold tracking-[0.3em] text-geely-blue mt-1">
-                ETHIOPIA
-              </div>
-            </div>
+            <span className="sr-only">Geely Ethiopia</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -172,7 +161,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               >
                 {item.hasDropdown ? (
                   <button
-                    className="nav-link flex items-center gap-1.5 text-ink hover:text-geely-blue font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
                     onClick={() => {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
@@ -191,7 +180,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     href={item.href}
                     target={item.openInNewTab ? '_blank' : undefined}
                     rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="nav-link flex items-center gap-1.5 text-ink hover:text-geely-blue font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
                     {item.icon}
@@ -204,14 +193,22 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
 
           {/* Right Actions */}
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Link href="/login" aria-label="Log in" className="hidden md:flex items-center gap-2 text-steel hover:text-navy p-2 -m-2">
-              <User size={18} />
+            <Link
+              href="/test-drive"
+              className="hidden lg:flex items-center bg-geely-blue dark:bg-blue-bright text-white dark:text-midnight font-display font-bold text-[13px] px-4 py-2 rounded hover:bg-opacity-90 transition-all whitespace-nowrap"
+            >
+              {t('common.bookTestDrive')}
             </Link>
 
-            {/* Search, language, Get Quote, and Book Test Drive live in the
-                drawer behind this button (see MobileDrawer) — kept off the
-                persistent header bar at every screen size. */}
-            <button onClick={onMobileMenuToggle} aria-label="Open menu" className="text-navy p-2">
+            {/* Dark mode and login are intentionally not in the persistent
+                header — neither appears on Geely's regional distributor
+                sites (geely.com.eg, geelyauto.co.za). Dark mode is still
+                reachable from the mobile drawer's quick actions; login only
+                via /login directly for now. Search, language, Get Quote,
+                and Book Test Drive live in the drawer behind this button
+                (see MobileDrawer) — kept off the persistent header bar at
+                every screen size. */}
+            <button onClick={onMobileMenuToggle} aria-label="Open menu" className="text-navy dark:text-ice p-2">
               <Menu size={24} />
             </button>
           </div>
@@ -220,7 +217,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
         {/* Vehicle Dropdown — data already loaded, no spinner */}
         {modelsDropdownOpen && (
           <div
-            className="absolute left-0 right-0 bg-white shadow-lg border-t border-line z-40"
+            className="absolute left-0 right-0 bg-white dark:bg-midnight-surface shadow-lg border-t border-line dark:border-midnight-line z-40"
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
           >
@@ -228,7 +225,6 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               onClose={() => setModelsDropdownOpen(false)}
               vehicles={vehicles}
               loading={vehiclesLoading}
-              quickActions={quickActions}
             />
           </div>
         )}
@@ -236,14 +232,13 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
         {/* Mega Menu — data already loaded, no spinner */}
         {megaMenuOpen && (
           <div
-            className="absolute left-0 right-0 bg-white shadow-lg border-t border-line z-40"
+            className="absolute left-0 right-0 bg-white dark:bg-midnight-surface shadow-lg border-t border-line dark:border-midnight-line z-40"
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
           >
           <MegaMenu
               category={megaMenuOpen}
               servicesMenu={servicesMenu}
-              electricMenu={electricMenu}
               vehicles={vehicles}
             />
           </div>

@@ -127,7 +127,7 @@ export default function DealersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, city, or region..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-geely-blue"
             />
           </div>
           <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
@@ -145,7 +145,7 @@ export default function DealersPage() {
 
       {loading ? (
         <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
         </div>
       ) : (
         <TableCard>
@@ -170,7 +170,7 @@ export default function DealersPage() {
                         <img src={dealer.logo} alt={dealer.name} className="w-10 h-10 object-contain rounded-lg" />
                       ) : (
                         <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                          <MapPin className="w-5 h-5 text-blue-600" />
+                          <MapPin className="w-5 h-5 text-geely-blue" />
                         </div>
                       )}
                       <div>
@@ -203,7 +203,7 @@ export default function DealersPage() {
                       <Link href={`/admin/dealers/${dealer.id}`} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="View Details">
                         <MapPin className="w-4 h-4" />
                       </Link>
-                      <Link href={`/admin/dealers/${dealer.id}/edit`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                      <Link href={`/admin/dealers/${dealer.id}/edit`} className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                         <Pencil className="w-4 h-4" />
                       </Link>
                       <button onClick={() => handleDelete(dealer)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">

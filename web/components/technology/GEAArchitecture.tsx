@@ -28,7 +28,7 @@ export default function GEAArchitecture() {
   ];
 
   return (
-    <section className="py-20 md:py-32 bg-white dark:bg-gray-900">
+    <section className="py-20 md:py-32 bg-white dark:bg-midnight-surface dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           {/* Left: Content */}
@@ -42,7 +42,7 @@ export default function GEAArchitecture() {
               GEA Architecture
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-white mb-6 leading-tight tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-ice dark:text-white mb-6 leading-tight tracking-tight">
               Intelligent Global
               <br />
               <span className="text-geely-blue">Engineering Platform</span>
@@ -67,7 +67,7 @@ export default function GEAArchitecture() {
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-navy dark:text-white mb-1">{feature.title}</h3>
+                    <h3 className="font-bold text-navy dark:text-ice dark:text-white mb-1">{feature.title}</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">{feature.description}</p>
                   </div>
                 </motion.div>

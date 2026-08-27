@@ -73,21 +73,21 @@ export default function RoadsidePage() {
     return (
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-10 text-center">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Help is on the Way!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Your roadside assistance request has been received. Our team will arrive at your location within 30-45 minutes.
             </p>
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-3">
-                <strong className="text-navy">What to Do While You Wait:</strong>
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-3">
+                <strong className="text-navy dark:text-ice">What to Do While You Wait:</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ Keep your phone charged and accessible</li>
                 <li>✓ Stay in a safe location</li>
                 <li>✓ Have your vehicle documents ready</li>
@@ -111,7 +111,7 @@ export default function RoadsidePage() {
               </button>
               <Link
                 href="/"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
               >
                 Back to Home
               </Link>
@@ -126,7 +126,7 @@ export default function RoadsidePage() {
     <MainLayout>
       {/* Page Header */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             24/7 ROADSIDE ASSISTANCE
           </div>
@@ -141,7 +141,7 @@ export default function RoadsidePage() {
 
       {/* Emergency Contact Bar */}
       <div className="bg-red-600 text-white py-4">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <AlertTriangle size={24} />
@@ -150,7 +150,7 @@ export default function RoadsidePage() {
             <div className="flex items-center gap-6">
               <a 
                 href="tel:+251911234567" 
-                className="flex items-center gap-2 bg-white text-red-600 px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all"
+                className="flex items-center gap-2 bg-white dark:bg-midnight-surface text-red-600 px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all"
               >
                 <Phone size={20} />
                 +251 91 123 4567
@@ -162,66 +162,66 @@ export default function RoadsidePage() {
       </div>
 
       {/* Services Section */}
-      <section className="py-16 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="text-3xl font-bold text-navy text-center mb-12">Our Services</h2>
+      <section className="py-16 bg-ice dark:bg-midnight">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h2 className="text-3xl font-bold text-navy dark:text-ice text-center mb-12">Our Services</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Truck className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Towing Service</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Towing Service</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Free towing to nearest authorized dealer (up to 100km)
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Battery className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Battery Jump-Start</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Battery Jump-Start</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Quick battery boost to get you back on the road
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Wrench className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Flat Tire Change</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Flat Tire Change</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Professional tire change with your spare
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Fuel className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Fuel Delivery</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Fuel Delivery</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Emergency fuel delivery to your location
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Key className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Lockout Service</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Lockout Service</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Help when you're locked out of your vehicle
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-all">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center hover:shadow-lg transition-all">
               <div className="w-16 h-16 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Zap className="text-geely-blue" size={28} />
               </div>
-              <h3 className="font-bold text-navy mb-2">Minor Repairs</h3>
-              <p className="text-sm text-steel">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Minor Repairs</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 On-site minor mechanical repairs
               </p>
             </div>
@@ -251,7 +251,7 @@ export default function RoadsidePage() {
 
       {/* How It Works */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <h2 className="text-3xl font-bold text-navy text-center mb-12">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="text-center">
@@ -298,8 +298,8 @@ export default function RoadsidePage() {
       </section>
 
       {/* Coverage Area */}
-      <section className="py-16 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
+      <section className="py-16 bg-ice dark:bg-midnight">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold text-navy mb-6">Nationwide Coverage</h2>
@@ -369,7 +369,7 @@ export default function RoadsidePage() {
 
       {/* CTA Section */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="bg-gradient-to-r from-geely-blue to-blue-600 rounded-2xl p-12 text-white text-center">
             <h2 className="text-3xl font-bold mb-4">Need Assistance Right Now?</h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
@@ -378,7 +378,7 @@ export default function RoadsidePage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <a
                 href="tel:+251911234567"
-                className="bg-white text-geely-blue font-bold text-base px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all inline-flex items-center gap-2"
+                className="bg-white dark:bg-midnight-surface text-geely-blue font-bold text-base px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all inline-flex items-center gap-2"
               >
                 <Phone size={20} />
                 Call Now: +251 91 123 4567
@@ -390,7 +390,7 @@ export default function RoadsidePage() {
                     document.getElementById("request-form")?.scrollIntoView({ behavior: "smooth" });
                   }, 100);
                 }}
-                className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white hover:text-geely-blue transition-all"
+                className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:text-geely-blue transition-all"
               >
                 Submit Request Online
               </button>
@@ -401,10 +401,10 @@ export default function RoadsidePage() {
 
       {/* Request Form */}
       {showRequestForm && (
-        <section id="request-form" className="py-16 bg-ice">
-          <div className="max-w-4xl mx-auto px-10">
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
-              <div className="bg-red-600 text-white p-6 border-b border-line">
+        <section id="request-form" className="py-16 bg-ice dark:bg-midnight">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
+            <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line shadow-lg overflow-hidden">
+              <div className="bg-red-600 text-white p-6 border-b border-line dark:border-midnight-line">
                 <h2 className="text-2xl font-bold">Request Roadside Assistance</h2>
                 <p className="text-sm opacity-90 mt-1">Fill out this form and help will be on the way</p>
               </div>
@@ -412,17 +412,17 @@ export default function RoadsidePage() {
               <div className="p-6 space-y-6">
                 {/* Contact Information */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Contact Information</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Contact Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         First Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("firstName", { required: "First name is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.firstName ? "border-red-500" : "border-line"
+                          errors.firstName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Enter your first name"
                       />
@@ -432,14 +432,14 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Last Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("lastName", { required: "Last name is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.lastName ? "border-red-500" : "border-line"
+                          errors.lastName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Enter your last name"
                       />
@@ -449,7 +449,7 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Phone Number <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -462,7 +462,7 @@ export default function RoadsidePage() {
                           },
                         })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.phone ? "border-red-500" : "border-line"
+                          errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="+251 91 234 5678"
                       />
@@ -472,13 +472,13 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Alternate Phone (Optional)
                       </label>
                       <input
                         type="tel"
                         {...register("alternatePhone")}
-                        className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                        className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                         placeholder="+251 91 234 5679"
                       />
                     </div>
@@ -487,17 +487,17 @@ export default function RoadsidePage() {
 
                 {/* Location */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Your Location</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Your Location</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Current Location <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("currentLocation", { required: "Location is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.currentLocation ? "border-red-500" : "border-line"
+                          errors.currentLocation ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="e.g., Bole Road near Total Gas Station"
                       />
@@ -507,25 +507,25 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Nearest Landmark (Optional)
                       </label>
                       <input
                         type="text"
                         {...register("landmark")}
-                        className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                        className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                         placeholder="e.g., Ethiopian Airlines Building"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         City <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("city", { required: "City is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.city ? "border-red-500" : "border-line"
+                          errors.city ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select city</option>
@@ -547,16 +547,16 @@ export default function RoadsidePage() {
 
                 {/* Vehicle Information */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Vehicle Information</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Vehicle Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Model <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("model", { required: "Model is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.model ? "border-red-500" : "border-line"
+                          errors.model ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select model</option>
@@ -572,14 +572,14 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Plate Number <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("plateNumber", { required: "Plate number is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.plateNumber ? "border-red-500" : "border-line"
+                          errors.plateNumber ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="e.g., 3-12345"
                       />
@@ -589,14 +589,14 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Color <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         {...register("color", { required: "Color is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.color ? "border-red-500" : "border-line"
+                          errors.color ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="e.g., White"
                       />
@@ -609,16 +609,16 @@ export default function RoadsidePage() {
 
                 {/* Issue Details */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">What's the Problem?</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">What's the Problem?</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Issue Type <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("issueType", { required: "Issue type is required" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.issueType ? "border-red-500" : "border-line"
+                          errors.issueType ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select issue type</option>
@@ -637,14 +637,14 @@ export default function RoadsidePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Detailed Description <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         {...register("issueDescription", { required: "Description is required" })}
                         rows={4}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.issueDescription ? "border-red-500" : "border-line"
+                          errors.issueDescription ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                         placeholder="Please describe the situation in detail..."
                       ></textarea>
@@ -655,13 +655,13 @@ export default function RoadsidePage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Is the vehicle in a safe location? <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("isVehicleSafe", { required: "Please select" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.isVehicleSafe ? "border-red-500" : "border-line"
+                            errors.isVehicleSafe ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         >
                           <option value="">Select</option>
@@ -674,13 +674,13 @@ export default function RoadsidePage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Number of Passengers <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("passengersCount", { required: "Please select" })}
                           className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                            errors.passengersCount ? "border-red-500" : "border-line"
+                            errors.passengersCount ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                           }`}
                         >
                           <option value="">Select</option>
@@ -700,16 +700,16 @@ export default function RoadsidePage() {
 
                 {/* Membership */}
                 <div>
-                  <h3 className="text-lg font-bold text-navy mb-4">Membership Information</h3>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Membership Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Do you have a roadside assistance membership? <span className="text-red-500">*</span>
                       </label>
                       <select
                         {...register("hasMembership", { required: "Please select" })}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                          errors.hasMembership ? "border-red-500" : "border-line"
+                          errors.hasMembership ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                         }`}
                       >
                         <option value="">Select</option>
@@ -723,13 +723,13 @@ export default function RoadsidePage() {
 
                     {hasMembership === "yes" && (
                       <div>
-                        <label className="block text-sm font-semibold text-navy mb-2">
+                        <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                           Membership Number
                         </label>
                         <input
                           type="text"
                           {...register("membershipNumber")}
-                          className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                          className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                           placeholder="Enter membership number"
                         />
                       </div>
@@ -745,7 +745,7 @@ export default function RoadsidePage() {
                 </div>
 
                 {/* Consent */}
-                <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                   <input
                     type="checkbox"
                     {...register("consent", {
@@ -754,7 +754,7 @@ export default function RoadsidePage() {
                     className="mt-1 w-4 h-4 accent-geely-blue"
                   />
                   <div>
-                    <label className="text-sm text-navy">
+                    <label className="text-sm text-navy dark:text-ice">
                       <span className="text-red-500">* </span>
                       I authorize Geely Ethiopia to dispatch roadside assistance to my location and agree to pay applicable service fees if not covered by membership.
                     </label>
@@ -777,7 +777,7 @@ export default function RoadsidePage() {
                   >
                     {isSubmitting ? "Dispatching Help..." : "Request Assistance Now"}
                   </button>
-                  <p className="text-xs text-steel text-center mt-3">
+                  <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                     Help will arrive within 30-45 minutes (urban areas)
                   </p>
                 </div>
@@ -789,30 +789,30 @@ export default function RoadsidePage() {
 
       {/* FAQ Section */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="text-3xl font-bold text-navy text-center mb-12">Frequently Asked Questions</h2>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h2 className="text-3xl font-bold text-navy dark:text-ice text-center mb-12">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-ice p-6 rounded-lg">
-              <h3 className="font-bold text-navy mb-2">Is roadside assistance available 24/7?</h3>
-              <p className="text-sm text-steel">
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Is roadside assistance available 24/7?</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Yes! Our service is available 24 hours a day, 7 days a week, including holidays.
               </p>
             </div>
-            <div className="bg-ice p-6 rounded-lg">
-              <h3 className="font-bold text-navy mb-2">How much does it cost?</h3>
-              <p className="text-sm text-steel">
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">How much does it cost?</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Free for warranty vehicles and members. Non-members pay standard fees based on service type.
               </p>
             </div>
-            <div className="bg-ice p-6 rounded-lg">
-              <h3 className="font-bold text-navy mb-2">How long until help arrives?</h3>
-              <p className="text-sm text-steel">
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">How long until help arrives?</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Average 30-45 minutes in urban areas, 60-90 minutes in rural areas depending on location.
               </p>
             </div>
-            <div className="bg-ice p-6 rounded-lg">
-              <h3 className="font-bold text-navy mb-2">Do you service all vehicle brands?</h3>
-              <p className="text-sm text-steel">
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg">
+              <h3 className="font-bold text-navy dark:text-ice mb-2">Do you service all vehicle brands?</h3>
+              <p className="text-sm text-steel dark:text-steel-light">
                 We primarily service Geely vehicles, but can provide basic assistance to other brands.
               </p>
             </div>

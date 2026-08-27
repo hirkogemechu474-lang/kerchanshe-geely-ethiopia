@@ -16,7 +16,7 @@ interface SEOMetaProps {
 }
 
 export function generateSEOMeta(props: SEOMetaProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://geelyethiopia.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com';
   const fullUrl = props.url ? `${baseUrl}${props.url}` : baseUrl;
   const ogImage = props.image || `${baseUrl}/images/og-default.jpg`;
 

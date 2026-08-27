@@ -215,7 +215,7 @@ export default function ContactInformationPage() {
   }
 
   const phoneFields = [
-    { key: 'primary' as const, label: 'Primary Line', badge: 'bg-blue-50 text-blue-600', badgeIcon: Phone },
+    { key: 'primary' as const, label: 'Primary Line', badge: 'bg-blue-50 text-geely-blue', badgeIcon: Phone },
     { key: 'sales' as const, label: 'Sales Hotline', badge: 'bg-emerald-50 text-emerald-600', badgeIcon: Building2 },
     { key: 'service' as const, label: 'Service Center', badge: 'bg-orange-50 text-orange-600', badgeIcon: LocateFixed },
     { key: 'parts' as const, label: 'Parts Department', badge: 'bg-purple-50 text-purple-600', badgeIcon: MapPin },
@@ -226,7 +226,7 @@ export default function ContactInformationPage() {
     { key: 'general' as const, label: 'General Inquiries', badge: 'bg-gray-50 text-gray-600' },
     { key: 'sales' as const, label: 'Sales Department', badge: 'bg-emerald-50 text-emerald-600' },
     { key: 'service' as const, label: 'Service Bookings', badge: 'bg-orange-50 text-orange-600' },
-    { key: 'support' as const, label: 'Customer Support', badge: 'bg-blue-50 text-blue-600' },
+    { key: 'support' as const, label: 'Customer Support', badge: 'bg-blue-50 text-geely-blue' },
     { key: 'careers' as const, label: 'Careers / HR', badge: 'bg-purple-50 text-purple-600' },
   ];
 
@@ -244,7 +244,7 @@ export default function ContactInformationPage() {
             <button
               onClick={save}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
             >
               <Save size={18} />
               {saving ? 'Saving...' : 'Save Changes'}
@@ -450,7 +450,7 @@ export default function ContactInformationPage() {
 
           {/* Card 3: Email & Digital */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 p-6">
+            <div className="bg-gradient-to-r from-geely-blue via-indigo-500 to-navy p-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
                   <Mail className="w-7 h-7 text-white" />
@@ -542,7 +542,7 @@ export default function ContactInformationPage() {
                       type="url"
                       value={data.website}
                       onChange={e => setData(d => ({ ...d, website: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-blue-200 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-blue-200 bg-white rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                       placeholder="https://www.example.com"
                     />
                   </div>
@@ -561,7 +561,7 @@ export default function ContactInformationPage() {
             <button
               onClick={save}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 font-medium"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-geely-blue to-indigo-600 text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 font-medium"
             >
               <Save size={18} />
               {saving ? 'Saving...' : 'Save All Changes'}

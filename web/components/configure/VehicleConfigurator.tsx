@@ -125,7 +125,7 @@ export default function VehicleConfigurator({
     <div>
       {/* Header */}
       <div className="bg-navy text-white py-8">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <Link 
             href="/configure"
             className="inline-flex items-center gap-2 text-gold hover:underline mb-4"
@@ -138,14 +138,14 @@ export default function VehicleConfigurator({
         </div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-10 py-12">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Configuration Options - Left Column */}
           <div className="lg:col-span-2 space-y-8">
 
             {/* Vehicle Preview */}
-            <div className="bg-white rounded-lg border border-line p-6">
-              <h3 className="text-xl font-bold text-navy mb-4">Preview</h3>
+            <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6">
+              <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Preview</h3>
               <div className="aspect-video bg-gradient-to-br from-ice to-line rounded-lg flex items-center justify-center overflow-hidden">
                 {displayImage ? (
                   <img
@@ -154,15 +154,15 @@ export default function VehicleConfigurator({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-steel">{vehicle.name} Preview</span>
+                  <span className="text-steel dark:text-steel-light">{vehicle.name} Preview</span>
                 )}
               </div>
             </div>
 
             {/* Color Selection */}
             {colors.length > 0 && (
-              <div className="bg-white rounded-lg border border-line p-6">
-                <h3 className="text-xl font-bold text-navy mb-4">Exterior Color</h3>
+              <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Exterior Color</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {colors.map((color) => (
                     <button
@@ -172,16 +172,16 @@ export default function VehicleConfigurator({
                       className={`relative border-2 rounded-lg p-4 text-center transition-all ${
                         selectedColor?.id === color.id
                           ? 'border-geely-blue ring-2 ring-geely-blue'
-                          : 'border-line hover:border-geely-blue'
+                          : 'border-line dark:border-midnight-line dark:text-ice hover:border-geely-blue'
                       } ${!color.inStock && 'opacity-50 cursor-not-allowed'}`}
                     >
                       <div 
-                        className="w-full aspect-square rounded-full mb-2 border border-line"
+                        className="w-full aspect-square rounded-full mb-2 border border-line dark:border-midnight-line"
                         style={{ backgroundColor: color.colorCode }}
                       />
-                      <div className="text-sm font-medium text-navy">{color.name}</div>
+                      <div className="text-sm font-medium text-navy dark:text-ice">{color.name}</div>
                       {color.price > 0 && (
-                        <div className="text-xs text-steel">+{formatPrice(color.price)}</div>
+                        <div className="text-xs text-steel dark:text-steel-light">+{formatPrice(color.price)}</div>
                       )}
                       {!color.inStock && (
                         <div className="text-xs text-red-600 mt-1">Out of Stock</div>
@@ -199,8 +199,8 @@ export default function VehicleConfigurator({
 
             {/* Interior Selection */}
             {interiors.length > 0 && (
-              <div className="bg-white rounded-lg border border-line p-6">
-                <h3 className="text-xl font-bold text-navy mb-4">Interior</h3>
+              <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Interior</h3>
                 <div className="space-y-3">
                   {interiors.map((interior) => (
                     <button
@@ -210,20 +210,20 @@ export default function VehicleConfigurator({
                       className={`w-full text-left border-2 rounded-lg p-4 transition-all ${
                         selectedInterior?.id === interior.id
                           ? 'border-geely-blue ring-2 ring-geely-blue'
-                          : 'border-line hover:border-geely-blue'
+                          : 'border-line dark:border-midnight-line dark:text-ice hover:border-geely-blue'
                       } ${!interior.inStock && 'opacity-50 cursor-not-allowed'}`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="font-bold text-navy">{interior.name}</div>
-                          <div className="text-sm text-steel">{interior.materialType}</div>
+                          <div className="font-bold text-navy dark:text-ice">{interior.name}</div>
+                          <div className="text-sm text-steel dark:text-steel-light">{interior.materialType}</div>
                           {interior.description && (
-                            <div className="text-xs text-steel mt-1">{interior.description}</div>
+                            <div className="text-xs text-steel dark:text-steel-light mt-1">{interior.description}</div>
                           )}
                         </div>
                         <div className="text-right">
                           {interior.price > 0 && (
-                            <div className="font-bold text-navy">+{formatPrice(interior.price)}</div>
+                            <div className="font-bold text-navy dark:text-ice">+{formatPrice(interior.price)}</div>
                           )}
                           {selectedInterior?.id === interior.id && (
                             <Check size={20} className="text-geely-blue mt-1" />
@@ -238,8 +238,8 @@ export default function VehicleConfigurator({
 
             {/* Package Selection */}
             {packages.length > 0 && (
-              <div className="bg-white rounded-lg border border-line p-6">
-                <h3 className="text-xl font-bold text-navy mb-4">Packages</h3>
+              <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Packages</h3>
                 <div className="space-y-3">
                   {packages.map((pkg) => (
                     <button
@@ -248,12 +248,12 @@ export default function VehicleConfigurator({
                       className={`w-full text-left border-2 rounded-lg p-4 transition-all ${
                         selectedPackage?.id === pkg.id
                           ? 'border-geely-blue ring-2 ring-geely-blue'
-                          : 'border-line hover:border-geely-blue'
+                          : 'border-line dark:border-midnight-line dark:text-ice hover:border-geely-blue'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <div className="font-bold text-navy">{pkg.name}</div>
+                          <div className="font-bold text-navy dark:text-ice">{pkg.name}</div>
                           <div className="text-sm font-bold text-geely-blue">
                             +{formatPrice(pkg.price)}
                           </div>
@@ -263,10 +263,10 @@ export default function VehicleConfigurator({
                         )}
                       </div>
                       {pkg.description && (
-                        <p className="text-sm text-steel mb-2">{pkg.description}</p>
+                        <p className="text-sm text-steel dark:text-steel-light mb-2">{pkg.description}</p>
                       )}
                       {pkg.features && pkg.features.length > 0 && (
-                        <ul className="text-xs text-steel space-y-1">
+                        <ul className="text-xs text-steel dark:text-steel-light space-y-1">
                           {pkg.features.map((feature: string, idx: number) => (
                             <li key={idx}>- {feature}</li>
                           ))}
@@ -280,8 +280,8 @@ export default function VehicleConfigurator({
 
             {/* Accessories */}
             {accessories.length > 0 && (
-              <div className="bg-white rounded-lg border border-line p-6">
-                <h3 className="text-xl font-bold text-navy mb-4">Accessories</h3>
+              <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Accessories</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {accessories.map((accessory) => {
                     const isSelected = selectedAccessories.find(a => a.id === accessory.id);
@@ -293,7 +293,7 @@ export default function VehicleConfigurator({
                         className={`text-left border-2 rounded-lg p-4 transition-all ${
                           isSelected
                             ? 'border-geely-blue ring-2 ring-geely-blue'
-                            : 'border-line hover:border-geely-blue'
+                            : 'border-line dark:border-midnight-line dark:text-ice hover:border-geely-blue'
                         } ${!accessory.inStock && 'opacity-50 cursor-not-allowed'}`}
                       >
                         <div className="flex items-start justify-between">
@@ -301,9 +301,9 @@ export default function VehicleConfigurator({
                             <div className="text-xs text-gold font-bold mb-1">
                               {accessory.category}
                             </div>
-                            <div className="font-bold text-navy">{accessory.name}</div>
+                            <div className="font-bold text-navy dark:text-ice">{accessory.name}</div>
                             {accessory.description && (
-                              <div className="text-xs text-steel mt-1">{accessory.description}</div>
+                              <div className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</div>
                             )}
                             <div className="text-sm font-bold text-geely-blue mt-2">
                               +{formatPrice(accessory.price)}
@@ -323,51 +323,51 @@ export default function VehicleConfigurator({
 
           {/* Summary - Right Column (Sticky) */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border border-line p-6 sticky top-4">
-              <h3 className="text-xl font-bold text-navy mb-4">Configuration Summary</h3>
+            <div className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6 sticky top-4">
+              <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Configuration Summary</h3>
               
               <div className="space-y-4 mb-6">
-                <div className="pb-4 border-b border-line">
-                  <div className="text-sm text-steel">Base Vehicle</div>
-                  <div className="font-bold text-navy">{vehicle.name} {vehicle.year}</div>
-                  <div className="text-sm text-steel">{formatPrice(vehicle.finalPrice || vehicle.basePrice)}</div>
+                <div className="pb-4 border-b border-line dark:border-midnight-line">
+                  <div className="text-sm text-steel dark:text-steel-light">Base Vehicle</div>
+                  <div className="font-bold text-navy dark:text-ice">{vehicle.name} {vehicle.year}</div>
+                  <div className="text-sm text-steel dark:text-steel-light">{formatPrice(vehicle.finalPrice || vehicle.basePrice)}</div>
                 </div>
 
                 {selectedColor && (
-                  <div className="pb-4 border-b border-line">
-                    <div className="text-sm text-steel">Exterior Color</div>
-                    <div className="font-medium text-navy">{selectedColor.name}</div>
+                  <div className="pb-4 border-b border-line dark:border-midnight-line">
+                    <div className="text-sm text-steel dark:text-steel-light">Exterior Color</div>
+                    <div className="font-medium text-navy dark:text-ice">{selectedColor.name}</div>
                     {selectedColor.price > 0 && (
-                      <div className="text-sm text-steel">+{formatPrice(selectedColor.price)}</div>
+                      <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedColor.price)}</div>
                     )}
                   </div>
                 )}
 
                 {selectedInterior && (
-                  <div className="pb-4 border-b border-line">
-                    <div className="text-sm text-steel">Interior</div>
-                    <div className="font-medium text-navy">{selectedInterior.name}</div>
+                  <div className="pb-4 border-b border-line dark:border-midnight-line">
+                    <div className="text-sm text-steel dark:text-steel-light">Interior</div>
+                    <div className="font-medium text-navy dark:text-ice">{selectedInterior.name}</div>
                     {selectedInterior.price > 0 && (
-                      <div className="text-sm text-steel">+{formatPrice(selectedInterior.price)}</div>
+                      <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedInterior.price)}</div>
                     )}
                   </div>
                 )}
 
                 {selectedPackage && (
-                  <div className="pb-4 border-b border-line">
-                    <div className="text-sm text-steel">Package</div>
-                    <div className="font-medium text-navy">{selectedPackage.name}</div>
-                    <div className="text-sm text-steel">+{formatPrice(selectedPackage.price)}</div>
+                  <div className="pb-4 border-b border-line dark:border-midnight-line">
+                    <div className="text-sm text-steel dark:text-steel-light">Package</div>
+                    <div className="font-medium text-navy dark:text-ice">{selectedPackage.name}</div>
+                    <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedPackage.price)}</div>
                   </div>
                 )}
 
                 {selectedAccessories.length > 0 && (
-                  <div className="pb-4 border-b border-line">
-                    <div className="text-sm text-steel mb-2">Accessories</div>
+                  <div className="pb-4 border-b border-line dark:border-midnight-line">
+                    <div className="text-sm text-steel dark:text-steel-light mb-2">Accessories</div>
                     {selectedAccessories.map(acc => (
                       <div key={acc.id} className="flex justify-between text-sm mb-1">
-                        <span className="text-navy">{acc.name}</span>
-                        <span className="text-steel">+{formatPrice(acc.price)}</span>
+                        <span className="text-navy dark:text-ice">{acc.name}</span>
+                        <span className="text-steel dark:text-steel-light">+{formatPrice(acc.price)}</span>
                       </div>
                     ))}
                   </div>
@@ -394,16 +394,16 @@ export default function VehicleConfigurator({
                 </Link>
                 <Link
                   href={`/test-drive?vehicle=${vehicle.slug}`}
-                  className="block w-full border-2 border-navy text-navy text-center font-bold py-3 rounded-lg hover:bg-navy hover:text-white transition-colors"
+                  className="block w-full border-2 border-navy text-navy dark:text-ice text-center font-bold py-3 rounded-lg hover:bg-navy hover:text-white transition-colors"
                 >
                   Book Test Drive
                 </Link>
               </div>
 
-              <div className="mt-6 p-4 bg-ice rounded-lg">
+              <div className="mt-6 p-4 bg-ice dark:bg-midnight rounded-lg">
                 <div className="flex items-start gap-2">
                   <Info size={16} className="text-geely-blue flex-shrink-0 mt-1" />
-                  <div className="text-xs text-steel">
+                  <div className="text-xs text-steel dark:text-steel-light">
                     Final price may vary based on dealer location and current promotions. Contact us for the most accurate pricing.
                   </div>
                 </div>

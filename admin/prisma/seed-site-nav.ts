@@ -2,20 +2,17 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Mirrors exactly what was hardcoded in web/components/Header.tsx (mainNavItems)
-// and web/components/VehicleDropdown.tsx (Quick Actions) before both were made
-// admin-editable, so switching to SiteNavItem is behaviorally invisible until
-// an admin edits something.
+// Trimmed to match the nav pattern used on Geely's regional distributor
+// sites (e.g. geely.com.eg): Models, Company, After-Sales Services, Dealers,
+// Contact — rather than every section the site happens to have a page for.
+// Mirrors web/components/Header.tsx's DEFAULT_NAV_ITEMS fallback, so the
+// pre-fetch fallback and the seeded CMS data stay in sync.
 const topNav = [
   { label: 'Models', href: '/models', displayOrder: 1 },
-  { label: 'Electric', href: '/electric', icon: 'Zap', displayOrder: 2 },
-  { label: 'Technology', href: '/technology', displayOrder: 3 },
-  { label: 'Services', href: '/service', displayOrder: 4 },
-  { label: 'Dealers', href: '/dealers', displayOrder: 5 },
-  { label: 'Showroom', href: '/visit/start', icon: 'MapPin', displayOrder: 6 },
-  { label: 'Financing', href: '/financing', displayOrder: 7 },
-  { label: 'News', href: '/news', displayOrder: 8 },
-  { label: 'About', href: '/about', displayOrder: 9 },
+  { label: 'Company', href: '/about', displayOrder: 2 },
+  { label: 'After-Sales Services', href: '/service', displayOrder: 3 },
+  { label: 'Dealers', href: '/dealers', displayOrder: 4 },
+  { label: 'Contact Us', href: '/contact', displayOrder: 5 },
 ];
 
 const quickActions = [

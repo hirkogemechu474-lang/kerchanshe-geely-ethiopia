@@ -8,12 +8,15 @@ import {
   ORDER_STATUS_LABELS,
   FINANCING_STATUS_LABELS,
 } from '@/lib/sales/orderStateMachine';
-import type { AdminPermissions } from '@/lib/auth/types';
-import { Card, Button } from '@/components/admin/ui';
+import { AdminRole, type AdminPermissions } from '@/lib/auth/types';
+import { Card, Button, Badge, type Tone } from '@/components/admin/ui';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';
 import OrderFulfillmentPanel from '@/components/admin/sales/OrderFulfillmentPanel';
 import OrderCommissionPanel from '@/components/admin/sales/OrderCommissionPanel';
+import OrderHandoverPanel from '@/components/admin/sales/OrderHandoverPanel';
+import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
+import { FileText } from 'lucide-react';
 
 interface PdiItem {
   id: string;
@@ -42,9 +45,16 @@ interface OrderData {
   status: string;
   orderDate: string;
   deliveredAt: string | null;
+  handoverNotifiedAt: string | null;
   approvedAt: string | null;
+  agreementSentAt: string | null;
   signedDocumentUrl: string | null;
   signedAt: string | null;
+  countersignedAt: string | null;
+  paymentStatus: string;
+  paymentProofUrl: string | null;
+  paymentSubmittedAt: string | null;
+  paymentConfirmedAt: string | null;
   registrationNumber: string | null;
   registeredAt: string | null;
   invoiceNo: string | null;
@@ -59,12 +69,37 @@ interface OrderData {
   quotation: { id: string } | null;
 }
 
-export default function OrderDetail({ order, permissions }: { order: OrderData; permissions: AdminPermissions }) {
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  UNPAID: 'Not Paid',
+  PENDING_REVIEW: 'Pending Review',
+  PAID: 'Paid',
+};
+
+const PAYMENT_STATUS_TONE: Record<string, Tone> = {
+  UNPAID: 'gray',
+  PENDING_REVIEW: 'orange',
+  PAID: 'green',
+};
+
+export default function OrderDetail({
+  order,
+  permissions,
+  role,
+  webAppUrl,
+}: {
+  order: OrderData;
+  permissions: AdminPermissions;
+  role: AdminRole;
+  webAppUrl: string;
+}) {
   const router = useRouter();
   const [state, setState] = useState(order);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [totalPrice, setTotalPrice] = useState(state.totalPrice?.toString() || '');
+  const canCountersign =
+    permissions.canManageQuotations &&
+    (role === AdminRole.SALES_MANAGER || role === AdminRole.ADMIN || role === AdminRole.SUPER_ADMIN);
 
   const refresh = async () => {
     const res = await fetch(`/api/admin/orders/${state.id}`);
@@ -118,6 +153,25 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, isChecked }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmPayment = async (action: 'confirm' | 'reject') => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/orders/${state.id}/payment/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
@@ -232,10 +286,62 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
       </Card>
 
       <OrderApprovalPanel
-        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt }}
+        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt }}
         canManage={permissions.canManageQuotations}
+        canCountersign={canCountersign}
+        webAppUrl={webAppUrl}
         onUpdated={refresh}
       />
+
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-900">Payment</h2>
+          <Badge tone={PAYMENT_STATUS_TONE[state.paymentStatus] ?? 'gray'}>
+            {PAYMENT_STATUS_LABELS[state.paymentStatus] ?? state.paymentStatus}
+          </Badge>
+        </div>
+
+        {state.paymentProofUrl && (
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-1">Submitted proof</p>
+            {isPdfUrl(state.paymentProofUrl) ? (
+              <a
+                href={resolveDocumentUrl(state.paymentProofUrl, webAppUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"
+              >
+                <FileText className="w-4 h-4" />
+                View submitted PDF
+              </a>
+            ) : (
+              <img
+                src={resolveDocumentUrl(state.paymentProofUrl, webAppUrl)}
+                alt="Payment proof"
+                className="w-32 h-20 object-cover rounded-lg border border-gray-200"
+              />
+            )}
+            {state.paymentSubmittedAt && (
+              <p className="text-xs text-gray-400 mt-1">Submitted {new Date(state.paymentSubmittedAt).toLocaleString()}</p>
+            )}
+          </div>
+        )}
+
+        {state.paymentStatus === 'PAID' && state.paymentConfirmedAt && (
+          <p className="text-xs text-green-600">Confirmed {new Date(state.paymentConfirmedAt).toLocaleString()}</p>
+        )}
+
+        {permissions.canManageQuotations && state.paymentStatus === 'PENDING_REVIEW' && (
+          <div className="flex gap-2">
+            <Button onClick={() => confirmPayment('confirm')} disabled={busy}>
+              Confirm Payment
+            </Button>
+            <Button variant="ghost" onClick={() => confirmPayment('reject')} disabled={busy}>
+              Reject
+            </Button>
+          </div>
+        )}
+      </Card>
 
       <OrderFulfillmentPanel
         order={{
@@ -263,11 +369,23 @@ export default function OrderDetail({ order, permissions }: { order: OrderData; 
         onUpdated={refresh}
       />
 
-      {permissions.canManageQuotations && allowedTransitions.length > 0 && (
+      <OrderHandoverPanel
+        order={{
+          id: state.id,
+          status: state.status,
+          deliveredAt: state.deliveredAt,
+          handoverNotifiedAt: state.handoverNotifiedAt,
+          customerEmail: state.customerEmail,
+        }}
+        canManage={permissions.canManageQuotations}
+        onUpdated={refresh}
+      />
+
+      {permissions.canManageQuotations && allowedTransitions.filter((s) => s !== 'DELIVERED').length > 0 && (
         <Card>
           <h2 className="font-semibold text-gray-900 mb-3">Move Order</h2>
           <div className="flex flex-wrap gap-2">
-            {allowedTransitions.map((s) => (
+            {allowedTransitions.filter((s) => s !== 'DELIVERED').map((s) => (
               <Button key={s} variant={s === 'CANCELLED' ? 'ghost' : 'secondary'} onClick={() => transition(s)} disabled={busy}>
                 {ORDER_STATUS_LABELS[s as keyof typeof ORDER_STATUS_LABELS]}
               </Button>

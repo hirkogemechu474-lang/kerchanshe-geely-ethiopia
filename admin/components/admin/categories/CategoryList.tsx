@@ -108,7 +108,7 @@ export default function CategoryList() {
                 )}
               </Td>
               <Td>
-                <code className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                <code className="text-sm text-geely-blue bg-blue-50 px-2 py-1 rounded">
                   /{category.slug}
                 </code>
               </Td>
@@ -131,7 +131,7 @@ export default function CategoryList() {
                   </Link>
                   <Link
                     href={`/admin/categories/${category.id}/edit`}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                     title="Edit"
                   >
                     <Edit size={18} />

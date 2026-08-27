@@ -24,6 +24,7 @@ interface SubmitResponse {
   leadId?: string;
   duplicate?: boolean;
   notificationSent?: boolean;
+  testDriveId?: string;
 }
 
 export function useCRMSubmit() {

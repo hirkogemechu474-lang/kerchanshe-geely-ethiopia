@@ -98,7 +98,7 @@ export default function TestDriveIdCapture({ testDrive, canManage }: { testDrive
   return (
     <Card className="space-y-4">
       <div className="flex items-center gap-2">
-        <ShieldCheck className="w-5 h-5 text-blue-600" />
+        <ShieldCheck className="w-5 h-5 text-geely-blue" />
         <h2 className="text-lg font-semibold text-gray-900">Digital ID Capture</h2>
       </div>
 

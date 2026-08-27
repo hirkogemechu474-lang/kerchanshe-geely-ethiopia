@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Edit,
   FileText,
-  Zap,
   Wrench,
   Package,
   Layers,
@@ -45,52 +44,6 @@ export default async function AllPagesPage() {
   }
 
   const pages: PageRow[] = [];
-
-  // Electric pages (legacy + battery)
-  try {
-    const electric = await prisma.electricPage.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-    electric.forEach((p) =>
-      pages.push({
-        id: p.id,
-        type: 'electric',
-        typeLabel: 'Electric',
-        icon: Zap,
-        title: p.title,
-        subtitle: p.heroSubtitle || undefined,
-        publicUrl: `/electric/${p.slug}`,
-        editHref: `/admin/electric/${p.id}`,
-        isPublished: p.isPublished,
-        updatedAt: p.updatedAt,
-      })
-    );
-  } catch (e) {
-    console.error('Electric pages:', e);
-  }
-
-  // Electric menu pages
-  try {
-    const menuPages = await prisma.electricMenuPage.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-    menuPages.forEach((p) =>
-      pages.push({
-        id: p.id,
-        type: 'electric',
-        typeLabel: 'Electric',
-        icon: Zap,
-        title: p.title,
-        subtitle: p.excerpt || undefined,
-        publicUrl: `/electric/${p.slug}`,
-        editHref: `/admin/electric/pages/${p.id}/edit`,
-        isPublished: p.isPublished,
-        updatedAt: p.updatedAt,
-      })
-    );
-  } catch (e) {
-    console.error('Electric menu pages:', e);
-  }
 
   // Service pages
   try {
@@ -232,7 +185,7 @@ export default async function AllPagesPage() {
         </div>
         <Link
           href="/admin"
-          className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-geely-blue border border-geely-blue rounded-lg hover:bg-blue-50 transition-colors"
         >
           Back to Dashboard
         </Link>
@@ -262,7 +215,7 @@ export default async function AllPagesPage() {
           <div className="text-sm text-gray-600">Drafts</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{typeGroups.length}</div>
+          <div className="text-2xl font-bold text-geely-blue">{typeGroups.length}</div>
           <div className="text-sm text-gray-600">Content Types</div>
         </div>
       </div>
@@ -271,7 +224,7 @@ export default async function AllPagesPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
           <FileText className="w-16 h-16 mx-auto text-gray-300" />
           <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">No content pages found</h3>
-          <p className="text-gray-600">Create pages from the Services or Electric menus.</p>
+          <p className="text-gray-600">Create pages from the Services menu.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -301,7 +254,7 @@ export default async function AllPagesPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                        <span className="text-xs font-medium text-geely-blue bg-blue-50 px-2 py-0.5 rounded">
                           {page.typeLabel}
                         </span>
                         <span className="text-xs text-gray-400">
@@ -320,7 +273,7 @@ export default async function AllPagesPage() {
                             href={page.publicUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-geely-blue hover:text-navy"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
@@ -330,7 +283,7 @@ export default async function AllPagesPage() {
                   </div>
                   <Link
                     href={page.editHref}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
+                    className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors shrink-0"
                     title={`Edit ${page.title}`}
                   >
                     <Edit className="w-4 h-4" />

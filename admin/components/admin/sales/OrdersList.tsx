@@ -76,7 +76,7 @@ export default function OrdersList() {
           {orders.map((o) => (
             <Tr key={o.id}>
               <Td>
-                <Link href={`/admin/orders/${o.id}`} className="text-blue-600 font-medium hover:underline">
+                <Link href={`/admin/orders/${o.id}`} className="text-geely-blue font-medium hover:underline">
                   {o.orderNo}
                 </Link>
               </Td>

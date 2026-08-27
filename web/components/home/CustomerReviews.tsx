@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Star } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Review {
   id: string;
@@ -21,33 +22,23 @@ interface ReviewsData {
   total_reviews: number;
 }
 
-export default function CustomerReviews() {
-  const [data, setData] = useState<ReviewsData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface CustomerReviewsProps {
+  // Fetched server-side (see app/page.tsx) so reviews render on first paint
+  // instead of this section returning null until a client fetch resolves.
+  initialData: ReviewsData | null;
+}
 
-  useEffect(() => {
-    fetchReviews();
-  }, []);
+export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
+  const data = initialData;
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
-  const fetchReviews = async () => {
-    try {
-      const response = await fetch('/api/reviews?featured=true&limit=6');
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || !data || data.reviews.length === 0) {
+  if (!data || data.reviews.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-16 bg-ice">
-      <div className="max-w-[1280px] mx-auto px-10">
+    <section className="py-16 bg-ice dark:bg-midnight transition-colors">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -66,12 +57,12 @@ export default function CustomerReviews() {
                   />
                 ))}
             </div>
-            <span className="text-lg font-bold text-navy">
+            <span className="text-lg font-bold text-navy dark:text-ice">
               {data.average_rating.toFixed(1)} / 5.0
             </span>
           </div>
-          <h2 className="disp text-4xl text-navy font-bold mb-2">What Our Customers Say</h2>
-          <p className="text-steel max-w-2xl mx-auto">
+          <h2 className="disp text-4xl text-navy dark:text-ice font-bold mb-2">What Our Customers Say</h2>
+          <p className="text-steel dark:text-steel-light max-w-2xl mx-auto">
             Join {data.total_reviews}+ satisfied Geely customers who are enjoying their vehicles
           </p>
         </div>
@@ -81,7 +72,7 @@ export default function CustomerReviews() {
           {data.reviews.map((review) => (
             <div
               key={review.id}
-              className="bg-white rounded-lg border border-line p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line p-6 hover:shadow-lg transition-shadow"
             >
               {/* Rating */}
               <div className="flex gap-1 mb-3">
@@ -101,20 +92,25 @@ export default function CustomerReviews() {
               </div>
 
               {/* Title */}
-              <h3 className="font-bold text-navy mb-2 text-lg">{review.reviewTitle}</h3>
+              <h3 className="font-bold text-navy dark:text-ice mb-2 text-lg">{review.reviewTitle}</h3>
 
               {/* Message */}
-              <p className="text-steel text-sm mb-4 leading-relaxed line-clamp-3">
+              <p className="text-steel dark:text-steel-light text-sm mb-4 leading-relaxed line-clamp-3">
                 {review.reviewMessage}
               </p>
 
               {/* Customer Info */}
               <div className="flex items-center gap-3 pt-4 border-t">
-                {review.profileImage ? (
-                  <img
+                {review.profileImage && !brokenImages.has(review.id) ? (
+                  <Image
                     src={review.profileImage}
                     alt={review.fullName}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full object-cover"
+                    onError={() =>
+                      setBrokenImages((prev) => new Set(prev).add(review.id))
+                    }
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
@@ -122,9 +118,9 @@ export default function CustomerReviews() {
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-navy text-sm">{review.fullName}</p>
+                  <p className="font-semibold text-navy dark:text-ice text-sm">{review.fullName}</p>
                   {review.vehicleModel && (
-                    <p className="text-xs text-steel">{review.vehicleModel}</p>
+                    <p className="text-xs text-steel dark:text-steel-light">{review.vehicleModel}</p>
                   )}
                 </div>
               </div>

@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, ChevronDown, Car, Zap, Wrench, Phone, MessageCircle, Info, Search, Globe } from 'lucide-react';
+import { X, ChevronDown, Car, Wrench, Phone, Info, MapPin, Search, Globe, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage, useTranslation } from '@/lib/i18n';
+import { useTheme } from '@/providers/ThemeProvider';
+import { withBasePath } from '@/lib/publicPath';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -17,7 +19,12 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
   const { t, language } = useTranslation();
   const setLanguage = useLanguage((state) => state.setLanguage);
   const isEnglish = language === 'en';
+  const { resolvedTheme, setTheme } = useTheme();
 
+  // Mirrors Header.tsx's trimmed top nav (Models, Company, After-Sales
+  // Services, Dealers, Contact Us) so desktop and mobile agree — the
+  // deeper submenus stay, since mobile still benefits from that nesting
+  // even where the desktop bar itself is flat.
   const navigationItems = [
     {
       title: t('common.models'),
@@ -30,24 +37,14 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
         { name: 'Emgrand', href: '/models/emgrand' },
         { name: 'Monjaro', href: '/models/monjaro' },
         { name: 'Azkarra', href: '/models/azkarra' },
-        { name: 'Okavango', href: '/models/okavango' }
+        { name: 'Okavango', href: '/models/okavango' },
       ]
     },
+    { title: 'Company', icon: <Info size={20} />, href: '/about' },
     {
-      title: t('common.electric'),
-      icon: <Zap size={20} />,
-      href: '/electric',
-      hasSubmenu: true,
-      submenu: [
-        { name: 'Geometry EX5', href: '/models/geometry-ex5' },
-        { name: 'Charging Map', href: '/electric/charging' },
-        { name: 'EV Benefits', href: '/electric' }
-      ]
-    },
-    {
-      title: t('common.services'),
+      title: 'After-Sales Services',
       icon: <Wrench size={20} />,
-      href: '/services',
+      href: '/service',
       hasSubmenu: true,
       submenu: [
         { name: 'Test Drive', href: '/test-drive' },
@@ -56,10 +53,8 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
         { name: 'Purchase', href: '/financing' }
       ]
     },
-    { title: t('common.dealers'), icon: <Phone size={20} />, href: '/dealers' },
-    { title: t('common.news'), icon: <MessageCircle size={20} />, href: '/news' },
-    { title: t('common.about'), icon: <Info size={20} />, href: '/about' },
-    { title: t('common.offers'), icon: <Car size={20} />, href: '/offers' }
+    { title: t('common.dealers'), icon: <MapPin size={20} />, href: '/dealers' },
+    { title: 'Contact Us', icon: <Phone size={20} />, href: '/contact' },
   ];
 
   const toggleSection = (title: string) => {
@@ -85,49 +80,53 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed left-0 top-0 bottom-0 w-[min(20rem,100vw)] bg-white shadow-xl z-[51] overflow-y-auto"
+            className="fixed left-0 top-0 bottom-0 w-[min(20rem,100vw)] bg-white dark:bg-midnight-surface shadow-xl z-[51] overflow-y-auto"
           >
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-line">
+              <div className="flex items-center justify-between p-4 border-b border-line dark:border-midnight-line">
                 <Link href="/" onClick={onClose} className="flex items-center gap-2.5 group">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-navy to-geely-blue flex items-center justify-center text-white font-display font-extrabold text-base shadow-sm">
-                    G
-                  </div>
-                  <div className="leading-none">
-                    <div className="text-[19px] font-display font-extrabold tracking-tight text-navy">GEELY</div>
-                    <div className="text-[9px] font-display font-bold tracking-[0.3em] text-geely-blue mt-1">
-                      ETHIOPIA
-                    </div>
-                  </div>
+                  <img
+                    src={withBasePath('/assets/logos/geely-logo.png')}
+                    alt="Geely Ethiopia"
+                    className="h-8 w-auto max-w-[110px] object-contain transition-opacity group-hover:opacity-70"
+                  />
+                  <span className="sr-only">Geely Ethiopia</span>
                 </Link>
                 <button
                   onClick={onClose}
                   aria-label="Close menu"
-                  className="p-2 text-steel hover:text-navy"
+                  className="p-2 text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice"
                 >
                   <X size={24} />
                 </button>
               </div>
 
-              {/* Quick Actions: Search + Language */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
+              {/* Quick Actions: Search + Language + Theme */}
+              <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b border-line dark:border-midnight-line">
                 <button
                   onClick={() => {
                     onClose();
                     onSearchClick();
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-navy border border-line rounded-lg py-2.5 hover:bg-ice transition-colors"
+                  className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-navy dark:text-ice border border-line dark:border-midnight-line rounded-lg py-2.5 hover:bg-ice dark:hover:bg-midnight transition-colors"
                 >
                   <Search size={16} />
                   {t('common.search')}
                 </button>
                 <button
                   onClick={() => setLanguage(isEnglish ? 'am' : 'en')}
-                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-navy border border-line rounded-lg py-2.5 hover:bg-ice transition-colors"
+                  className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-navy dark:text-ice border border-line dark:border-midnight-line rounded-lg py-2.5 hover:bg-ice dark:hover:bg-midnight transition-colors"
                 >
                   <Globe size={16} />
                   {isEnglish ? 'አማርኛ' : 'English'}
+                </button>
+                <button
+                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                  className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-navy dark:text-ice border border-line dark:border-midnight-line rounded-lg py-2.5 hover:bg-ice dark:hover:bg-midnight transition-colors"
+                >
+                  {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  {resolvedTheme === 'dark' ? 'Light' : 'Dark'}
                 </button>
               </div>
 
@@ -139,7 +138,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                       {item.hasSubmenu ? (
                         <button
                           onClick={() => toggleSection(item.title)}
-                          className="flex items-center justify-between w-full py-3 text-left text-navy hover:text-geely-blue transition-colors"
+                          className="flex items-center justify-between w-full py-3 text-left text-navy dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             {item.icon}
@@ -156,7 +155,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                         <Link
                           href={item.href}
                           onClick={onClose}
-                          className="flex items-center gap-3 py-3 text-navy hover:text-geely-blue transition-colors"
+                          className="flex items-center gap-3 py-3 text-navy dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
                         >
                           {item.icon}
                           <span className="font-display font-semibold uppercase tracking-[0.04em] text-[15px]">{item.title}</span>
@@ -166,13 +165,13 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
 
                     {/* Submenu */}
                     {item.hasSubmenu && expandedSection === item.title && (
-                      <div className="bg-ice border-t border-line">
+                      <div className="bg-ice dark:bg-midnight border-t border-line dark:border-midnight-line">
                         {item.submenu?.map((subItem) => (
                           <Link
                             key={subItem.name}
                             href={subItem.href}
                             onClick={onClose}
-                            className="block px-8 py-2 text-steel hover:text-navy hover:bg-white transition-colors"
+                            className="block px-8 py-2 text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice hover:bg-white dark:hover:bg-midnight-surface transition-colors"
                           >
                             {subItem.name}
                           </Link>
@@ -184,7 +183,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
               </nav>
 
               {/* Bottom Actions */}
-              <div className="border-t border-line p-4 space-y-3">
+              <div className="border-t border-line dark:border-midnight-line p-4 space-y-3">
                 <Link
                   href="/test-drive"
                   onClick={onClose}

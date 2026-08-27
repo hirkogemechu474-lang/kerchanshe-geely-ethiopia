@@ -1,7 +1,6 @@
-'use client';
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import imageLoader from "@/lib/imageLoader";
 
 interface NewsArticle {
   id: string;
@@ -13,32 +12,14 @@ interface NewsArticle {
   excerpt: string | null;
 }
 
-export default function NewsSection() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+interface NewsSectionProps {
+  // Fetched server-side (see app/page.tsx) so cards render on first paint
+  // instead of a "Loading news..." shell that pops in after a client fetch.
+  initialArticles: NewsArticle[];
+}
 
-  useEffect(() => {
-    fetch('/api/public/news')
-      .then(res => res.json())
-      .then(data => {
-        setArticles(data.articles || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error loading news:', err);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <section className="py-[70px] pt-0">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <div className="text-center text-gray-500">Loading news...</div>
-        </div>
-      </section>
-    );
-  }
+export default function NewsSection({ initialArticles }: NewsSectionProps) {
+  const articles = initialArticles;
 
   if (articles.length === 0) {
     return null; // Don't show section if no articles
@@ -46,14 +27,14 @@ export default function NewsSection() {
 
   return (
     <section className="py-[70px] pt-0">
-      <div className="max-w-[1280px] mx-auto px-10">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Section Header */}
         <div className="flex justify-between items-end mb-9">
           <div>
-            <h2 className="disp text-[30px] text-navy font-bold mb-2">
+            <h2 className="disp text-[30px] text-navy dark:text-ice font-bold mb-2">
               News & Stories
             </h2>
-            <p className="text-steel text-sm">
+            <p className="text-steel dark:text-steel-light text-sm">
               Product launches, market news and ownership guides.
             </p>
           </div>
@@ -83,35 +64,30 @@ export default function NewsSection() {
                 className="group"
               >
                 {/* Image */}
-                <div className="h-[140px] bg-[#eef2f8] border border-line rounded-t-lg overflow-hidden">
+                <div className="relative h-[140px] bg-[#eef2f8] dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-t-lg overflow-hidden">
                   {article.imageUrl ? (
-                    <img
+                    <Image
                       src={article.imageUrl}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = `
-                          <div class="flex items-center justify-center text-[11px] text-steel text-center px-4 h-full">
-                            ${article.title}
-                          </div>
-                        `;
-                      }}
+                      alt=""
+                      loader={imageLoader}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="flex items-center justify-center text-[11px] text-steel text-center px-4 h-full">
+                    <div className="flex items-center justify-center text-[11px] text-steel dark:text-steel-light text-center px-4 h-full">
                       {article.title}
                     </div>
                   )}
                 </div>
                 {/* Content */}
-                <div className="border border-t-0 border-line rounded-b-lg p-5 group-hover:border-geely-blue transition-colors">
+                <div className="border border-t-0 border-line dark:border-midnight-line rounded-b-lg p-5 group-hover:border-geely-blue transition-colors">
                   <div className="text-[11px] text-gold font-bold tracking-wider mb-2">
                     {formattedDate}
                   </div>
-                  <h4 className="text-[15px] text-navy font-semibold leading-snug group-hover:text-geely-blue transition-colors">
+                  <h3 className="text-[15px] text-navy dark:text-ice font-semibold leading-snug group-hover:text-geely-blue transition-colors">
                     {article.title}
-                  </h4>
+                  </h3>
                 </div>
               </Link>
             );

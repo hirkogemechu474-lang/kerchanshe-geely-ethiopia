@@ -85,8 +85,8 @@ const DEFAULT_DATA: AboutContent = {
     ],
     statsCards: [
       { icon: 'Factory', title: 'Manufacturing', description: 'Buna Plate, Buna Pen production facilities', gradient: 'from-amber-500 to-amber-600' },
-      { icon: 'Globe', title: 'Coffee Export', description: '$100M+ annual turnover, largest in Ethiopia', gradient: 'from-slate-700 to-blue-700' },
-      { icon: 'TrendingUp', title: 'Heavy Equipment', description: 'Exclusive Caterpillar dealer in Ethiopia', gradient: 'from-blue-600 to-slate-800' },
+      { icon: 'Globe', title: 'Coffee Export', description: '$100M+ annual turnover, largest in Ethiopia', gradient: 'from-slate-700 to-navy' },
+      { icon: 'TrendingUp', title: 'Heavy Equipment', description: 'Exclusive Caterpillar dealer in Ethiopia', gradient: 'from-geely-blue to-slate-800' },
       { icon: 'Users', title: '25,000+ Jobs', description: 'Major employer across multiple sectors', gradient: 'from-amber-600 to-yellow-500' },
     ],
   },
@@ -201,7 +201,7 @@ function LabelField(props: { label: string; required?: boolean; children: React.
 }
 
 const baseInput =
-  'w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition';
+  'w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-geely-blue/30 focus:border-blue-500 transition';
 
 function ParagraphArrayEditor({
   label,
@@ -218,12 +218,12 @@ function ParagraphArrayEditor({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-sm text-gray-800 flex items-center gap-2">
-          <ListChecks className="w-4 h-4 text-blue-600" /> {label}
+          <ListChecks className="w-4 h-4 text-geely-blue" /> {label}
         </h4>
         <button
           type="button"
           onClick={() => onChange([...values, ''])}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+          className="text-xs font-semibold text-geely-blue hover:text-navy inline-flex items-center gap-1"
         >
           + Add Paragraph
         </button>
@@ -366,7 +366,7 @@ function FeatureCardsEditor({
         <button
           type="button"
           onClick={() => onChange([...cards, { icon: defaultIcon, title: '', description: '', image: '' }])}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+          className="text-xs font-semibold text-geely-blue hover:text-navy inline-flex items-center gap-1"
         >
           + Add Card
         </button>
@@ -572,7 +572,7 @@ export default function AboutSettingsPage() {
         <SectionCard
           id="sec-home"
           icon={Building2}
-          gradient="from-blue-500 to-blue-600"
+          gradient="from-geely-blue to-navy"
           title="Homepage — About Preview Section"
           description="Shown directly after the hero on the landing page. Keep it short, confident, and scannable."
         >
@@ -616,7 +616,7 @@ export default function AboutSettingsPage() {
         <SectionCard
           id="sec-hero"
           icon={MessageSquare}
-          gradient="from-slate-700 to-blue-700"
+          gradient="from-slate-700 to-navy"
           title="About Page — Hero Banner"
           description="Top section with a large heading and intro on /about."
         >
@@ -768,7 +768,7 @@ export default function AboutSettingsPage() {
             title="Group Feature Cards"
             cards={data.geelyGlobal.features}
             onChange={(v) => setKey('geelyGlobal', { ...data.geelyGlobal, features: v })}
-            gradient="from-blue-500 to-blue-600"
+            gradient="from-geely-blue to-navy"
             iconChoices={ICON_CHOICES}
             defaultIcon="Globe"
           />

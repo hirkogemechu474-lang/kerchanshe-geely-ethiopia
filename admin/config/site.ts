@@ -29,6 +29,5 @@ export const ADMIN_ROUTES = {
   analytics:      '/admin/analytics',
   settings:       '/admin/settings',
   parts:          '/admin/parts',
-  electric:       '/admin/electric',
   content:        '/admin/content',
 } as const;

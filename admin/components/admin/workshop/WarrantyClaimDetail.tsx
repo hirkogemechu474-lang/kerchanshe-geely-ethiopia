@@ -189,7 +189,7 @@ export default function WarrantyClaimDetail({ claim, permissions }: { claim: Cla
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{state.claimNo}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              <Link href={`/admin/workshop/job-cards/${state.jobCard.id}`} className="text-blue-600 hover:underline">
+              <Link href={`/admin/workshop/job-cards/${state.jobCard.id}`} className="text-geely-blue hover:underline">
                 {state.jobCard.jobCardNo}
               </Link>{' '}
               · {state.jobCard.plateNo} · {state.jobCard.customerName}

@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join('\n');
 
-    const reference = generateReference();
+    const reference = await generateReference();
     const record = await prisma.message.create({
       data: {
         from: `${firstName} ${lastName}`,

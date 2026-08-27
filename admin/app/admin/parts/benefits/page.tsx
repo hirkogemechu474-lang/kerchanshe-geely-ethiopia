@@ -98,7 +98,7 @@ export default function PartBenefitsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -117,7 +117,7 @@ export default function PartBenefitsPage() {
         </div>
         <button
           onClick={() => { setEditing(null); setFormData(emptyForm); setShowForm(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-geely-blue text-white px-4 py-2 rounded-lg hover:bg-navy transition-colors"
         >
           <Plus className="w-5 h-5" /> Add Benefit
         </button>
@@ -141,7 +141,7 @@ export default function PartBenefitsPage() {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
                 placeholder="e.g., Genuine Parts Only"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -151,7 +151,7 @@ export default function PartBenefitsPage() {
                 value={formData.icon}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                 placeholder="Shield, Truck, ShoppingCart"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="md:col-span-2">
@@ -161,7 +161,7 @@ export default function PartBenefitsPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
                 placeholder="Short description of this benefit"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -170,7 +170,7 @@ export default function PartBenefitsPage() {
                 type="number"
                 value={formData.displayOrder}
                 onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="flex items-end">
@@ -179,7 +179,7 @@ export default function PartBenefitsPage() {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-geely-blue rounded"
                 />
                 <span className="text-sm text-gray-700">Active</span>
               </label>
@@ -189,7 +189,7 @@ export default function PartBenefitsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-2 bg-geely-blue text-white px-6 py-2 rounded-lg hover:bg-navy disabled:opacity-50"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editing ? 'Update Benefit' : 'Create Benefit'}
@@ -233,7 +233,7 @@ export default function PartBenefitsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => startEdit(benefit)} className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                    <button onClick={() => startEdit(benefit)} className="inline-flex items-center gap-1 text-geely-blue hover:text-navy">
                       <Pencil className="w-4 h-4" /> Edit
                     </button>
                     <button onClick={() => handleDelete(benefit.id)} className="inline-flex items-center gap-1 text-red-600 hover:text-red-700">

@@ -72,7 +72,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
       {/* Modal */}
       <div className="relative min-h-screen flex items-start justify-center p-4 sm:p-6 md:p-20">
-        <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-3xl">
+        <div className="relative bg-white dark:bg-midnight-surface rounded-lg shadow-2xl w-full max-w-3xl">
           {/* Search Input */}
           <div className="p-4 border-b">
             <div className="flex items-center gap-3">
@@ -87,6 +87,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               />
               <button
                 onClick={onClose}
+                aria-label="Close search"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5 text-gray-400" />
@@ -165,7 +166,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
           {/* Footer */}
           <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 text-center">
-            Press <kbd className="px-2 py-1 bg-white border rounded">ESC</kbd> to close
+            Press <kbd className="px-2 py-1 bg-white dark:bg-midnight-surface border rounded">ESC</kbd> to close
           </div>
         </div>
       </div>

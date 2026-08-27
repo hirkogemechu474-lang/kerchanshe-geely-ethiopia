@@ -3,6 +3,7 @@ import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
 import { generateReference } from '@/lib/reference';
+import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // NOTE: Removed `export const runtime = 'edge'` — Prisma requires Node.js runtime
 // The edge runtime cannot connect to PostgreSQL via Prisma.
@@ -36,7 +37,11 @@ const STATUS_MAP: Record<string, string> = {
   'service': 'Service Inquiry',
 };
 
-async function saveLocalLead(leadData: LeadData, reference: string): Promise<{ testDriveId?: string }> {
+async function saveLocalLead(
+  leadData: LeadData,
+  reference: string,
+  assignedRep: { id: string; name: string } | null
+): Promise<{ testDriveId?: string }> {
   if (leadData.leadType === 'test-drive') {
     const vehicle = await prisma.vehicle.findFirst({
       where: leadData.vehicleId
@@ -58,6 +63,7 @@ async function saveLocalLead(leadData: LeadData, reference: string): Promise<{ t
           specialRequests: leadData.message || null,
           status: 'pending',
           reference,
+          salesRepId: assignedRep?.id ?? null,
         },
       });
       return { testDriveId: testDrive.id };
@@ -109,10 +115,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const reference = generateReference();
+  const reference = await generateReference();
+  const assignedRep = leadData.leadType === 'test-drive' ? await nextSalesRep(leadData.preferredDealer) : null;
   let saved: { testDriveId?: string };
   try {
-    saved = await saveLocalLead(leadData, reference);
+    saved = await saveLocalLead(leadData, reference, assignedRep);
   } catch (error) {
     console.error('[crm/lead] Failed to save local lead:', error);
     return NextResponse.json({ error: 'Could not save your request. Please try again.' }, { status: 500 });
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
       phone: leadData.phone,
       reference,
       subject: `${STATUS_MAP[leadData.leadType] || 'Website enquiry'}${leadData.modelInterest ? ` — ${leadData.modelInterest}` : ''}`,
-      details: JSON.stringify({ model: leadData.modelInterest, dealer: leadData.preferredDealer, date: leadData.preferredDate, time: leadData.preferredTime, message: leadData.message }, null, 2),
+      details: JSON.stringify({ model: leadData.modelInterest, dealer: leadData.preferredDealer, date: leadData.preferredDate, time: leadData.preferredTime, message: leadData.message, assignedSalesConsultant: assignedRep?.name }, null, 2),
     });
   } catch (error) {
     console.error('[crm/lead:email]', error);

@@ -52,7 +52,7 @@ export default function SafetySystems() {
             Safety Systems
           </div>
           
-          <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-white mb-6 leading-tight tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-ice dark:text-white mb-6 leading-tight tracking-tight">
             Advanced Safety
             <br />
             <span className="text-red-600 dark:text-red-400">Protecting What Matters Most</span>
@@ -69,7 +69,7 @@ export default function SafetySystems() {
           {systems.map((system, index) => (
             <motion.div
               key={system.title}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-700 group"
+              className="bg-white dark:bg-midnight-surface dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-700 group"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -80,7 +80,7 @@ export default function SafetySystems() {
                 <system.icon className="w-8 h-8 text-white" />
               </div>
               
-              <h3 className="text-xl font-bold text-navy dark:text-white mb-4">{system.title}</h3>
+              <h3 className="text-xl font-bold text-navy dark:text-ice dark:text-white mb-4">{system.title}</h3>
               
               <ul className="space-y-2">
                 {system.features.map((feature, idx) => (

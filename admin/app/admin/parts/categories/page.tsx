@@ -109,7 +109,7 @@ export default function PartCategoriesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export default function PartCategoriesPage() {
         </div>
         <button
           onClick={() => { setEditing(null); setFormData(emptyForm); setShowForm(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-geely-blue text-white px-4 py-2 rounded-lg hover:bg-navy transition-colors"
         >
           <Plus className="w-5 h-5" /> Add Category
         </button>
@@ -152,7 +152,7 @@ export default function PartCategoriesPage() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 placeholder="e.g., Engine Parts"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -162,7 +162,7 @@ export default function PartCategoriesPage() {
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
                 placeholder="engine-parts"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="md:col-span-2">
@@ -172,7 +172,7 @@ export default function PartCategoriesPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
                 placeholder="Short description of this category"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="md:col-span-2">
@@ -192,7 +192,7 @@ export default function PartCategoriesPage() {
                 type="number"
                 value={formData.displayOrder}
                 onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="flex items-end">
@@ -201,7 +201,7 @@ export default function PartCategoriesPage() {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-geely-blue rounded"
                 />
                 <span className="text-sm text-gray-700">Active</span>
               </label>
@@ -211,7 +211,7 @@ export default function PartCategoriesPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-2 bg-geely-blue text-white px-6 py-2 rounded-lg hover:bg-navy disabled:opacity-50"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editing ? 'Update Category' : 'Create Category'}
@@ -269,7 +269,7 @@ export default function PartCategoriesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => startEdit(category)} className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                    <button onClick={() => startEdit(category)} className="inline-flex items-center gap-1 text-geely-blue hover:text-navy">
                       <Pencil className="w-4 h-4" /> Edit
                     </button>
                     <button onClick={() => handleDelete(category.id)} className="inline-flex items-center gap-1 text-red-600 hover:text-red-700">

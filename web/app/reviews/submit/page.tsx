@@ -62,14 +62,14 @@ export default function SubmitReviewPage() {
   if (submitted) {
     return (
       <MainLayout>
-        <div className="py-16 bg-ice">
+        <div className="py-16 bg-ice dark:bg-midnight">
           <div className="max-w-2xl mx-auto px-4 text-center">
-            <div className="bg-white rounded-xl p-8 shadow-lg">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl p-8 shadow-lg">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="text-3xl font-bold text-navy mb-4">Thank You!</h1>
-              <p className="text-steel text-lg mb-6">
+              <h1 className="text-3xl font-bold text-navy dark:text-ice mb-4">Thank You!</h1>
+              <p className="text-steel dark:text-steel-light text-lg mb-6">
                 Your review has been submitted successfully. It will be published after moderation.
               </p>
               <div className="flex gap-4 justify-center">
@@ -105,23 +105,23 @@ export default function SubmitReviewPage() {
 
   return (
     <MainLayout>
-      <div className="py-16 bg-ice">
+      <div className="py-16 bg-ice dark:bg-midnight">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-navy mb-4">Share Your Geely Experience</h1>
-            <p className="text-steel text-lg max-w-2xl mx-auto">
+            <h1 className="text-4xl font-bold text-navy dark:text-ice mb-4">Share Your Geely Experience</h1>
+            <p className="text-steel dark:text-steel-light text-lg max-w-2xl mx-auto">
               Help other customers by sharing your honest experience with your Geely vehicle. 
               Your review will help others make informed decisions.
             </p>
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Personal Information */}
               <div>
-                <h3 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4 flex items-center gap-2">
                   <User className="w-5 h-5" />
                   Personal Information
                 </h3>
@@ -156,7 +156,7 @@ export default function SubmitReviewPage() {
 
               {/* Vehicle Information */}
               <div>
-                <h3 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4 flex items-center gap-2">
                   <Car className="w-5 h-5" />
                   Vehicle Information
                 </h3>
@@ -182,7 +182,7 @@ export default function SubmitReviewPage() {
 
               {/* Rating */}
               <div>
-                <h3 className="text-xl font-bold text-navy mb-4">Overall Rating *</h3>
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Overall Rating *</h3>
                 <div className="flex items-center gap-2 mb-4">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -202,7 +202,7 @@ export default function SubmitReviewPage() {
                     </button>
                   ))}
                   {formData.rating > 0 && (
-                    <span className="ml-3 text-lg font-semibold text-navy">
+                    <span className="ml-3 text-lg font-semibold text-navy dark:text-ice">
                       {formData.rating}/5 Stars
                     </span>
                   )}
@@ -211,7 +211,7 @@ export default function SubmitReviewPage() {
 
               {/* Review Content */}
               <div>
-                <h3 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-4 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
                   Your Review
                 </h3>

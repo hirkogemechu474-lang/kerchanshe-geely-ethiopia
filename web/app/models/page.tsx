@@ -11,14 +11,10 @@ import {
   type VehicleCategory,
   type VehicleRecord,
 } from "@/lib/vehicleData";
+import { withBasePath } from "@/lib/publicPath";
 
 function publicMediaUrl(url: string | null | undefined) {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  const adminUrl =
-    process.env.NEXT_PUBLIC_ADMIN_URL ||
-    (process.env.NODE_ENV === "development" ? "http://localhost:3001" : "");
-  return `${adminUrl}${url}`;
+  return withBasePath(url);
 }
 
 function categorySlugOf(vehicle: VehicleRecord): string {
@@ -153,18 +149,18 @@ export default function ModelsPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="border-b border-line bg-white sticky top-[65px] z-30">
+      <div className="border-b border-line dark:border-midnight-line bg-white dark:bg-midnight-surface sticky top-[65px] z-30 transition-colors">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Brand filter */}
             <div className="flex items-center gap-3 flex-wrap">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-steel">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-steel dark:text-steel-light">
                 Brand
               </label>
               <select
                 value={selectedBrand}
                 onChange={(event) => setSelectedBrand(event.target.value)}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
               >
                 <option value="all">All Brands</option>
                 {brands.map((brand) => (
@@ -177,14 +173,14 @@ export default function ModelsPage() {
 
             {/* Sort */}
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-steel">
+              <label className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-steel dark:text-steel-light">
                 <SlidersHorizontal size={16} />
                 Sort
               </label>
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white text-navy border border-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
               >
                 <option value="featured">Featured First</option>
                 <option value="name">Name: A to Z</option>
@@ -199,11 +195,11 @@ export default function ModelsPage() {
               className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
                 selectedCategory === "all"
                   ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                  : "bg-white text-navy border-line hover:border-geely-blue hover:text-geely-blue"
+                  : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-geely-blue hover:text-geely-blue"
               }`}
             >
               All Models
-              <span className={`ml-2 text-[11px] ${selectedCategory === "all" ? "text-white/70" : "text-steel"}`}>
+              <span className={`ml-2 text-[11px] ${selectedCategory === "all" ? "text-white/70" : "text-steel dark:text-steel-light"}`}>
                 {vehicles.length}
               </span>
             </button>
@@ -214,11 +210,11 @@ export default function ModelsPage() {
                 className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
                   selectedCategory === category.slug
                     ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                    : "bg-white text-navy border-line hover:border-geely-blue hover:text-geely-blue"
+                    : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-geely-blue hover:text-geely-blue"
                 }`}
               >
                 {category.name}
-                <span className={`ml-2 text-[11px] ${selectedCategory === category.slug ? "text-white/70" : "text-steel"}`}>
+                <span className={`ml-2 text-[11px] ${selectedCategory === category.slug ? "text-white/70" : "text-steel dark:text-steel-light"}`}>
                   {vehicleCountByCategory[category.slug] || 0}
                 </span>
               </button>
@@ -238,7 +234,7 @@ export default function ModelsPage() {
             </div>
           ) : sortedVehicles.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-steel text-lg mb-6">No models available in this category yet.</p>
+              <p className="text-steel dark:text-steel-light text-lg mb-6">No models available in this category yet.</p>
               <button
                 onClick={() => {
                   setSelectedBrand("all");
@@ -272,21 +268,22 @@ export default function ModelsPage() {
                   return (
                     <div
                       key={vehicle.id}
-                      className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-line hover:border-geely-blue hover:shadow-[0_16px_40px_rgba(11,37,69,0.10)] transition-all"
+                      className="group flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line hover:border-geely-blue hover:shadow-[0_16px_40px_rgba(11,37,69,0.10)] transition-all"
                     >
                       <Link
                         href={detailsHref}
+                        aria-label={`${vehicle.name} details`}
                         className="relative aspect-[4/3] bg-[#eef2f7] overflow-hidden block"
                       >
                         {imageUrl ? (
                           <img
                             src={imageUrl}
-                            alt={vehicle.name}
+                            alt=""
                             loading="lazy"
                             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[11px] text-steel px-6 text-center">
+                          <div className="w-full h-full flex items-center justify-center text-[11px] text-navy/70 dark:text-ice/70 px-6 text-center">
                             {vehicle.name}
                           </div>
                         )}
@@ -298,34 +295,34 @@ export default function ModelsPage() {
                       </Link>
 
                       <div className="p-5 flex flex-col flex-1">
-                        <div className="text-[11px] uppercase tracking-[0.14em] text-steel font-semibold">
+                        <div className="text-[11px] uppercase tracking-[0.14em] text-steel dark:text-steel-light font-semibold">
                           {label}
                         </div>
-                        <h3 className="disp text-[19px] text-navy font-bold mt-1.5 group-hover:text-geely-blue transition-colors">
+                        <h3 className="disp text-[19px] text-navy dark:text-ice font-bold mt-1.5 group-hover:text-geely-blue transition-colors">
                           {vehicle.name}
                         </h3>
 
                         {specs?.dimensions && (
-                          <div className="flex gap-4 mt-3 text-[11px] text-steel">
+                          <div className="flex gap-4 mt-3 text-[11px] text-steel dark:text-steel-light">
                             {specs.dimensions.seatingCapacity && (
                               <div>
-                                <span className="font-semibold text-navy">{specs.dimensions.seatingCapacity}</span> Seats
+                                <span className="font-semibold text-navy dark:text-ice">{specs.dimensions.seatingCapacity}</span> Seats
                               </div>
                             )}
                             {specs.engine?.transmission && (
                               <div>
-                                <span className="font-semibold text-navy">{specs.engine.transmission}</span>
+                                <span className="font-semibold text-navy dark:text-ice">{specs.engine.transmission}</span>
                               </div>
                             )}
                             {specs.engine?.fuelType && (
                               <div>
-                                <span className="font-semibold text-navy">{specs.engine.fuelType}</span>
+                                <span className="font-semibold text-navy dark:text-ice">{specs.engine.fuelType}</span>
                               </div>
                             )}
                           </div>
                         )}
 
-                        <div className="mt-4 pt-4 border-t border-line">
+                        <div className="mt-4 pt-4 border-t border-line dark:border-midnight-line">
                           <Link
                             href={`/quote?model=${vehicle.slug}${visitParam}`}
                             className="text-[13px] font-bold text-geely-blue hover:underline"
@@ -334,16 +331,18 @@ export default function ModelsPage() {
                           </Link>
                         </div>
 
-                        <div className="flex gap-3 mt-auto pt-5 border-t border-line">
+                        <div className="flex gap-3 mt-auto pt-5 border-t border-line dark:border-midnight-line">
                           <Link
                             href={`/quote?model=${vehicle.slug}${visitParam}`}
+                            aria-label={`Get a quote for ${vehicle.name}`}
                             className="flex-1 text-center text-[12px] font-bold py-[10px] rounded-lg bg-navy text-white hover:bg-geely-blue transition-colors"
                           >
                             Get a Quote
                           </Link>
                           <Link
                             href={detailsHref}
-                            className="flex-1 inline-flex items-center justify-center gap-1 text-center text-[12px] font-bold py-[10px] rounded-lg border border-line text-navy hover:border-geely-blue hover:text-geely-blue transition-colors"
+                            aria-label={`View details for ${vehicle.name}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1 text-center text-[12px] font-bold py-[10px] rounded-lg border border-line dark:border-midnight-line text-navy dark:text-ice hover:border-geely-blue hover:text-geely-blue transition-colors"
                           >
                             Details
                             <ArrowUpRight size={14} />

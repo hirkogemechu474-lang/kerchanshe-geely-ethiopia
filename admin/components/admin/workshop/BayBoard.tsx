@@ -143,7 +143,7 @@ export default function BayBoard() {
               </div>
               <button
                 onClick={() => setAssigning(j)}
-                className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+                className="text-geely-blue hover:text-blue-800 font-medium text-xs"
               >
                 Assign bay & time
               </button>

@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { TableCard, THead, TBody, Tr, Th, Td, Badge, Button, Modal, ModalActions, EmptyTableRow } from '@/components/admin/ui';
-import { SITE_NAV_ICON_OPTIONS } from '@/lib/siteNavIcons';
 
 interface SiteNavItem {
   id: string;
-  placement: 'TOP_NAV' | 'MODELS_QUICK_ACTIONS';
+  // Prisma's generated type is the full SiteNavPlacement enum even though
+  // this page only ever queries/renders 'TOP_NAV' rows.
+  placement: string;
   label: string;
   subtitle: string | null;
   icon: string | null;
@@ -21,57 +22,47 @@ interface SiteNavItem {
 
 type FormState = {
   label: string;
-  subtitle: string;
-  icon: string;
   href: string;
   displayOrder: string;
   isActive: boolean;
-  isHighlighted: boolean;
   openInNewTab: boolean;
 };
 
 const EMPTY_FORM: FormState = {
   label: '',
-  subtitle: '',
-  icon: '',
   href: '',
   displayOrder: '0',
   isActive: true,
-  isHighlighted: false,
   openInNewTab: false,
 };
 
-export default function SiteNavManager({
-  topNav,
-  quickActions,
-}: {
-  topNav: SiteNavItem[];
-  quickActions: SiteNavItem[];
-}) {
+// Only manages TOP_NAV — the header's main nav bar and the mobile drawer both
+// read from it. The site previously also had a MODELS_QUICK_ACTIONS
+// placement (a panel in the Models dropdown), but that panel was removed
+// when the dropdown was redesigned to match Geely's regional distributor
+// sites' flat model gallery, so it's no longer editable here.
+export default function SiteNavManager({ topNav }: { topNav: SiteNavItem[] }) {
   const router = useRouter();
-  const [modal, setModal] = useState<{ placement: SiteNavItem['placement']; editing: SiteNavItem | null } | null>(null);
+  const [modal, setModal] = useState<{ editing: SiteNavItem | null } | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const openCreate = (placement: SiteNavItem['placement']) => {
+  const openCreate = () => {
     setForm(EMPTY_FORM);
-    setModal({ placement, editing: null });
+    setModal({ editing: null });
     setError('');
   };
 
   const openEdit = (item: SiteNavItem) => {
     setForm({
       label: item.label,
-      subtitle: item.subtitle || '',
-      icon: item.icon || '',
       href: item.href,
       displayOrder: String(item.displayOrder),
       isActive: item.isActive,
-      isHighlighted: item.isHighlighted,
       openInNewTab: item.openInNewTab,
     });
-    setModal({ placement: item.placement, editing: item });
+    setModal({ editing: item });
     setError('');
   };
 
@@ -81,14 +72,14 @@ export default function SiteNavManager({
     setError('');
     try {
       const body = {
-        placement: modal.placement,
+        placement: 'TOP_NAV',
         label: form.label,
-        subtitle: form.subtitle || null,
-        icon: form.icon || null,
+        subtitle: null,
+        icon: null,
         href: form.href,
         displayOrder: Number(form.displayOrder) || 0,
         isActive: form.isActive,
-        isHighlighted: form.isHighlighted,
+        isHighlighted: false,
         openInNewTab: form.openInNewTab,
       };
       const url = modal.editing ? `/api/admin/site-nav/${modal.editing.id}` : '/api/admin/site-nav';
@@ -114,14 +105,17 @@ export default function SiteNavManager({
     if (res.ok) router.refresh();
   };
 
-  const renderSection = (title: string, description: string, placement: SiteNavItem['placement'], items: SiteNavItem[]) => (
+  return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-semibold text-gray-900">{title}</h2>
-          <p className="text-xs text-gray-500">{description}</p>
+          <h2 className="font-semibold text-gray-900">Top Navigation</h2>
+          <p className="text-xs text-gray-500">
+            Shown left-to-right in the header, in Display Order. Currently matches the pattern used on
+            Geely&apos;s regional distributor sites — 5 items, kept deliberately short.
+          </p>
         </div>
-        <Button size="sm" onClick={() => openCreate(placement)}>
+        <Button size="sm" onClick={openCreate}>
           <Plus className="w-4 h-4" /> Add Item
         </Button>
       </div>
@@ -129,30 +123,25 @@ export default function SiteNavManager({
         <THead>
           <tr>
             <Th>Order</Th>
-            <Th>Label</Th>
-            {placement === 'MODELS_QUICK_ACTIONS' && <Th>Subtitle</Th>}
-            <Th>Href</Th>
+            <Th>Label (as shown in the header)</Th>
+            <Th>Links to</Th>
             <Th>Status</Th>
             <Th className="text-right">Actions</Th>
           </tr>
         </THead>
         <TBody>
-          {items.length === 0 && <EmptyTableRow colSpan={placement === 'MODELS_QUICK_ACTIONS' ? 6 : 5} message="No items yet." />}
-          {items.map((item) => (
+          {topNav.length === 0 && <EmptyTableRow colSpan={5} message="No items yet." />}
+          {topNav.map((item) => (
             <Tr key={item.id}>
               <Td className="text-gray-500">{item.displayOrder}</Td>
-              <Td className="font-medium text-gray-900">
-                {item.label}
-                {item.isHighlighted && <span className="ml-2"><Badge tone="blue">Highlighted</Badge></span>}
-              </Td>
-              {placement === 'MODELS_QUICK_ACTIONS' && <Td className="text-gray-500">{item.subtitle || '—'}</Td>}
+              <Td className="font-medium text-gray-900">{item.label}</Td>
               <Td className="text-gray-500">{item.href}</Td>
               <Td>
                 <Badge tone={item.isActive ? 'green' : 'red'}>{item.isActive ? 'Active' : 'Hidden'}</Badge>
               </Td>
               <Td className="text-right">
                 <div className="flex justify-end gap-3">
-                  <button onClick={() => openEdit(item)} className="text-blue-600 hover:text-blue-700">
+                  <button onClick={() => openEdit(item)} className="text-geely-blue hover:text-navy">
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button onClick={() => remove(item)} className="text-red-600 hover:text-red-700">
@@ -164,18 +153,6 @@ export default function SiteNavManager({
           ))}
         </TBody>
       </TableCard>
-    </div>
-  );
-
-  return (
-    <div className="space-y-8">
-      {renderSection('Top Navigation', 'The main header nav bar shown on every page', 'TOP_NAV', topNav)}
-      {renderSection(
-        'Models Quick Actions',
-        'The panel shown alongside the vehicle list in the Models dropdown',
-        'MODELS_QUICK_ACTIONS',
-        quickActions
-      )}
 
       {modal && (
         <Modal
@@ -184,23 +161,14 @@ export default function SiteNavManager({
           maxWidth="max-w-md"
         >
           <div className="space-y-3">
-            <Field label="Label *">
+            <Field label="Label *" hint="Shown exactly as typed in the header, e.g. &quot;After-Sales Services&quot;">
               <input
                 value={form.label}
                 onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                 className="input"
               />
             </Field>
-            {modal.placement === 'MODELS_QUICK_ACTIONS' && (
-              <Field label="Subtitle">
-                <input
-                  value={form.subtitle}
-                  onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
-                  className="input"
-                />
-              </Field>
-            )}
-            <Field label="Link (href) *">
+            <Field label="Link (href) *" hint="A path on the public site, e.g. /service">
               <input
                 value={form.href}
                 onChange={(e) => setForm((f) => ({ ...f, href: e.target.value }))}
@@ -208,24 +176,14 @@ export default function SiteNavManager({
                 className="input"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Icon">
-                <select value={form.icon} onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))} className="input">
-                  <option value="">— None —</option>
-                  {SITE_NAV_ICON_OPTIONS.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Display Order">
-                <input
-                  type="number"
-                  value={form.displayOrder}
-                  onChange={(e) => setForm((f) => ({ ...f, displayOrder: e.target.value }))}
-                  className="input"
-                />
-              </Field>
-            </div>
+            <Field label="Display Order" hint="Lower numbers appear first, left to right">
+              <input
+                type="number"
+                value={form.displayOrder}
+                onChange={(e) => setForm((f) => ({ ...f, displayOrder: e.target.value }))}
+                className="input"
+              />
+            </Field>
             <div className="flex flex-wrap gap-4 pt-1">
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
@@ -243,16 +201,6 @@ export default function SiteNavManager({
                 />
                 Open in new tab
               </label>
-              {modal.placement === 'MODELS_QUICK_ACTIONS' && (
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={form.isHighlighted}
-                    onChange={(e) => setForm((f) => ({ ...f, isHighlighted: e.target.checked }))}
-                  />
-                  Highlighted (dark CTA tile)
-                </label>
-              )}
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
@@ -280,11 +228,12 @@ export default function SiteNavManager({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       {children}
+      {hint && <p className="mt-1 text-[11px] text-gray-400">{hint}</p>}
     </div>
   );
 }

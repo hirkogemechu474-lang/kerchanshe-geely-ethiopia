@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import imageLoader from "@/lib/imageLoader";
 
 interface HeroSection {
   id: string;
@@ -19,25 +20,17 @@ interface HeroSection {
   sortOrder: number;
 }
 
-export default function HeroSection() {
-  const [heroSections, setHeroSections] = useState<HeroSection[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+interface HeroSectionProps {
+  // Fetched server-side (see app/page.tsx) so the real hero image/video is
+  // already in the initial HTML instead of appearing only after a client
+  // fetch resolves — that gap was the page's LCP bottleneck.
+  initialHeroSections?: HeroSection[];
+}
 
-  useEffect(() => {
-    fetch('/api/public/hero')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          setHeroSections(data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error loading hero content:', err);
-        setLoading(false);
-      });
-  }, []);
+export default function HeroSection({ initialHeroSections = [] }: HeroSectionProps) {
+  const [heroSections] = useState<HeroSection[]>(initialHeroSections);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Auto-rotate hero sections every 7 seconds
   useEffect(() => {
@@ -50,10 +43,14 @@ export default function HeroSection() {
     return () => clearInterval(interval);
   }, [heroSections.length]);
 
-  // Default content if no hero sections
-  // Keep the stable fallback visible while the CMS hero request is loading.
-  // This prevents the LCP region from being blank on the initial render.
-  if (loading || heroSections.length === 0) {
+  // Let the LCP paint (poster/text) happen before fetching the hero video.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVideoReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Default content if there's no active CMS hero content configured.
+  if (heroSections.length === 0) {
     return (
       <section className="relative min-h-[520px] md:h-[560px] bg-gradient-to-br from-navy via-[#123a72] to-geely-blue text-white overflow-hidden">
         {/* Decorative circles */}
@@ -121,18 +118,39 @@ export default function HeroSection() {
           animate={{ scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
-          <video
-            key={currentHero.id}
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster={currentHero.posterUrl || undefined}
-            className="w-full h-full object-cover scale-105"
-            style={{ filter: 'brightness(0.85)' }}
-          >
-            <source src={currentHero.videoUrl} type="video/mp4" />
-          </video>
+          {currentHero.posterUrl && (
+            <Image
+              src={currentHero.posterUrl}
+              alt={currentHero.title}
+              loader={imageLoader}
+              fill
+              priority={currentIndex === 0}
+              sizes="100vw"
+              quality={85}
+              className="object-cover scale-105"
+              style={{ filter: 'brightness(0.85)' }}
+            />
+          )}
+          {/* Hero videos run 14-20MB+; deferring the fetch until after first
+              paint keeps it from competing with the LCP text/poster render. */}
+          {videoReady && (
+            // No `poster` here: the <Image> above already shows it, and
+            // repeating it on the <video> would both re-fetch the same file
+            // and give Chrome a second, later Largest Contentful Paint candidate.
+            <video
+              key={currentHero.id}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="none"
+              className="absolute inset-0 w-full h-full object-cover scale-105"
+              style={{ filter: 'brightness(0.85)' }}
+            >
+              <source src={currentHero.videoUrl} type="video/mp4" />
+              <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+            </video>
+          )}
           {/* Enhanced Overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/50 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
@@ -147,6 +165,7 @@ export default function HeroSection() {
           <Image
             src={currentHero.imageUrl}
             alt={currentHero.title}
+            loader={imageLoader}
             fill
             priority={currentIndex === 0}
             sizes="100vw"

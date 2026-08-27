@@ -15,7 +15,6 @@ const PRECACHE_ASSETS = [
   '/quote',
   '/compare',
   '/configurator',
-  '/electric',
   '/about',
   '/offline',
   '/manifest.json',
@@ -102,11 +101,13 @@ async function handleNavigationRequest(request) {
   try {
     // Try network first
     const networkResponse = await fetch(request);
-    
-    // Cache the response
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, networkResponse.clone());
-    
+
+    // Cache the response (the Cache API rejects partial/206 responses)
+    if (networkResponse.status === 200) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+
     return networkResponse;
   } catch (error) {
     // Network failed, try cache
@@ -143,12 +144,12 @@ async function handleImageRequest(request) {
   
   try {
     const networkResponse = await fetch(request);
-    
-    // Cache successful responses
-    if (networkResponse.ok) {
+
+    // Cache successful, full responses (the Cache API rejects partial/206 responses)
+    if (networkResponse.status === 200) {
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     // Return placeholder image if available
@@ -166,13 +167,13 @@ async function handleImageRequest(request) {
 async function handleOtherRequests(request) {
   try {
     const networkResponse = await fetch(request);
-    
-    // Cache successful responses
-    if (networkResponse.ok) {
+
+    // Cache successful, full responses (the Cache API rejects partial/206 responses)
+    if (networkResponse.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     // Fallback to cache

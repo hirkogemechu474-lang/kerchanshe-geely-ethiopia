@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { FileText, Copy, Check } from 'lucide-react';
+import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
 
 interface QuotationPdfData {
   id: string;
@@ -18,6 +19,8 @@ interface QuotationPdfData {
   vehicleColor: string | null;
   paymentTerms: string | null;
   deliveryTerms: string | null;
+  signedDocumentUrl: string | null;
+  signedAt: string | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -34,10 +37,14 @@ export default function QuotationPdfPanel({
   quotation,
   canManage,
   publicPdfUrl,
+  publicSignUrl,
+  webAppUrl,
 }: {
   quotation: QuotationPdfData;
   canManage: boolean;
   publicPdfUrl: string | null;
+  publicSignUrl: string | null;
+  webAppUrl: string;
 }) {
   const router = useRouter();
   const [unitPrice, setUnitPrice] = useState(quotation.unitPrice?.toString() || '');
@@ -84,9 +91,10 @@ export default function QuotationPdfPanel({
   };
 
   const copyLink = async () => {
-    if (!publicPdfUrl) return;
+    const link = publicSignUrl || publicPdfUrl;
+    if (!link) return;
     try {
-      await navigator.clipboard.writeText(publicPdfUrl);
+      await navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -97,7 +105,7 @@ export default function QuotationPdfPanel({
   return (
     <Card className="space-y-4">
       <div className="flex items-center gap-2">
-        <FileText className="w-5 h-5 text-blue-600" />
+        <FileText className="w-5 h-5 text-geely-blue" />
         <h2 className="text-lg font-semibold text-gray-900">Sales Quotation PDF</h2>
       </div>
 
@@ -117,20 +125,49 @@ export default function QuotationPdfPanel({
               href={`/api/admin/quotations/${quotation.id}/quotation-pdf`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"
             >
               <FileText className="w-4 h-4" />
               View / Download PDF
             </a>
-            {publicPdfUrl && (
+            {(publicSignUrl || publicPdfUrl) && (
               <button
                 type="button"
                 onClick={copyLink}
                 className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
               >
                 {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied' : 'Copy customer link'}
+                {copied ? 'Copied' : 'Copy customer sign link'}
               </button>
+            )}
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
+            {quotation.signedDocumentUrl ? (
+              <div className="flex items-start gap-4">
+                {isPdfUrl(quotation.signedDocumentUrl) ? (
+                  <a
+                    href={resolveDocumentUrl(quotation.signedDocumentUrl, webAppUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-32 h-20 rounded-lg border border-gray-200 flex flex-col items-center justify-center gap-1 text-xs font-medium text-geely-blue hover:bg-gray-50"
+                  >
+                    <FileText className="w-5 h-5" />
+                    View signed PDF
+                  </a>
+                ) : (
+                  <img
+                    src={resolveDocumentUrl(quotation.signedDocumentUrl, webAppUrl)}
+                    alt="Signed quotation"
+                    className="w-32 h-20 object-cover rounded-lg border border-gray-200"
+                  />
+                )}
+                <p className="text-xs text-green-600 font-medium self-center">
+                  Signed {quotation.signedAt ? new Date(quotation.signedAt).toLocaleString() : ''}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">Not yet signed by the customer.</p>
             )}
           </div>
         </div>

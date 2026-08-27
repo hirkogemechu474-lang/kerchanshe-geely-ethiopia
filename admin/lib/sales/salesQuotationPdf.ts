@@ -18,6 +18,18 @@ const VAT_RATE = 0.15; // Ethiopia standard VAT rate
 const DEFAULT_PAYMENT_TERMS = '30% Advance / 70% Before Delivery';
 const DEFAULT_DELIVERY_TERMS = 'Within 10 Working Days';
 
+// Layout constant the signature-stamping step (web-only — see
+// stampSignatureOnQuotationPdf in web/lib/sales/salesQuotationPdf.ts) uses
+// to place a drawn signature image without re-deriving the layout. Keep
+// this file and its web/ mirror byte-identical, same convention as
+// salesAgreementPdf.ts.
+export const CUSTOMER_SIGNATURE_AREA = {
+  lineX: MARGIN,
+  lineY: 90,
+  lineWidth: 220,
+  maxImageHeight: 50,
+};
+
 export function computeQuotationTotals(unitPrice: number, quantity: number, discountAmount: number) {
   const vehiclePrice = unitPrice * quantity;
   const taxableAmount = Math.max(0, vehiclePrice - discountAmount);
@@ -191,10 +203,18 @@ export async function buildSalesQuotationPdf(quotation: Quotation): Promise<Uint
   y -= 14;
 
   page.drawText('Thank you for choosing Geely.', { x: MARGIN, y, size: 10, font: bold });
-  y -= 40;
 
-  page.drawLine({ start: { x: MARGIN, y }, end: { x: MARGIN + 220, y }, thickness: 1, color: rgb(0.1, 0.1, 0.1) });
-  page.drawText('Authorized Signature / Dealer Stamp', { x: MARGIN, y: y - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+  const sigY = CUSTOMER_SIGNATURE_AREA.lineY;
+  page.drawLine({
+    start: { x: CUSTOMER_SIGNATURE_AREA.lineX, y: sigY },
+    end: { x: CUSTOMER_SIGNATURE_AREA.lineX + CUSTOMER_SIGNATURE_AREA.lineWidth, y: sigY },
+    thickness: 1, color: rgb(0.1, 0.1, 0.1),
+  });
+  page.drawText('Customer Signature & Date', { x: CUSTOMER_SIGNATURE_AREA.lineX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+
+  const dealerX = CUSTOMER_SIGNATURE_AREA.lineX + CUSTOMER_SIGNATURE_AREA.lineWidth + 60;
+  page.drawLine({ start: { x: dealerX, y: sigY }, end: { x: dealerX + CUSTOMER_SIGNATURE_AREA.lineWidth, y: sigY }, thickness: 1, color: rgb(0.1, 0.1, 0.1) });
+  page.drawText('Authorized Signature / Dealer Stamp', { x: dealerX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
 
   return doc.save();
 }

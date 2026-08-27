@@ -140,7 +140,7 @@ export default function PromotionsList() {
                 <div className="flex gap-2 pt-2 border-t border-gray-100">
                   <Link
                     href={`/admin/promotions/${promotion.id}`}
-                    className="flex-1 flex items-center justify-center gap-1 text-sm text-blue-600 hover:text-blue-900 font-medium"
+                    className="flex-1 flex items-center justify-center gap-1 text-sm text-geely-blue hover:text-blue-900 font-medium"
                   >
                     <Edit size={14} />
                     Edit

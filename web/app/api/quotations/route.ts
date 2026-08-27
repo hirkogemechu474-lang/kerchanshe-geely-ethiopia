@@ -3,6 +3,7 @@ import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { sendFormEmail } from '@/lib/form-email';
 import { generateReference } from '@/lib/reference';
+import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // POST - Submit new quotation
 export async function POST(request: NextRequest) {
@@ -40,7 +41,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = generateReference();
+    const reference = await generateReference();
+    const assignedRep = await nextSalesRep(preferredDealer);
     const quotation = await prisma.quotation.create({
       data: {
         customerName,
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
         source,
         status: 'new',
         reference,
+        assignedTo: assignedRep?.name ?? null,
       },
     });
 
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
           `Financing requested: ${financingInterest ? 'Yes' : 'No'}`,
           `Trade-in requested: ${tradeInInterest ? 'Yes' : 'No'}`,
           preferredDealer ? `Preferred dealer: ${preferredDealer}` : '',
+          assignedRep ? `Assigned Sales Consultant: ${assignedRep.name}` : '',
           message ? `Message:\n${message}` : '',
         ].filter(Boolean).join('\n'),
       });

@@ -193,7 +193,7 @@ export default function HeroSectionList() {
                 </a>
                 <Link
                   href={`/admin/content/hero/${hero.id}`}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                   title="Edit"
                 >
                   <Edit size={18} />

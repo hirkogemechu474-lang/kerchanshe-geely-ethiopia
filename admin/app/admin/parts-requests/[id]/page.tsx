@@ -135,7 +135,7 @@ export default function PartRequestDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function PartRequestDetailPage() {
         <p className="text-gray-500 mb-6">This request may have been deleted.</p>
         <Link
           href="/admin/parts-requests"
-          className="inline-block px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
+          className="inline-block px-6 py-3 rounded-lg bg-geely-blue text-white font-semibold hover:bg-navy transition-colors"
         >
           Back to Part Requests
         </Link>
@@ -194,7 +194,7 @@ export default function PartRequestDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-blue-600 mt-0.5" />
+                <User className="w-5 h-5 text-geely-blue mt-0.5" />
                 <div>
                   <div className="text-sm font-semibold text-gray-900">{request.name}</div>
                   {request.company && (
@@ -205,16 +205,16 @@ export default function PartRequestDetailPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-blue-600 mt-0.5" />
-                <a href={`tel:${request.phone}`} className="text-sm text-gray-700 hover:text-blue-600">{request.phone}</a>
+                <Phone className="w-5 h-5 text-geely-blue mt-0.5" />
+                <a href={`tel:${request.phone}`} className="text-sm text-gray-700 hover:text-navy">{request.phone}</a>
               </div>
               <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
-                <a href={`mailto:${request.email}`} className="text-sm text-gray-700 hover:text-blue-600 break-all">{request.email}</a>
+                <Mail className="w-5 h-5 text-geely-blue mt-0.5" />
+                <a href={`mailto:${request.email}`} className="text-sm text-gray-700 hover:text-navy break-all">{request.email}</a>
               </div>
               {request.address && (
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-geely-blue mt-0.5" />
                   <span className="text-sm text-gray-700">{request.address}</span>
                 </div>
               )}
@@ -295,7 +295,7 @@ export default function PartRequestDetailPage() {
               <button
                 onClick={handleStatusUpdate}
                 disabled={saving || status === request.status}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 bg-geely-blue text-white font-semibold py-3 rounded-lg hover:bg-navy transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {saving ? 'Saving...' : 'Save Status'}

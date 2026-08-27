@@ -26,6 +26,25 @@ export async function POST(request: Request, context: { params: Promise<{ paymen
       if (status === "PAID") {
         await prisma.message.create({ data: { from: "Payment System", email: purchase.email, subject: "New Vehicle Purchase Payment", category: "Admin Notification", priority: "high", status: "unread", content: `Customer: ${purchase.from}\nVehicle: ${value(purchase.content, "Vehicle")}\nAmount: ${value(purchase.content, "Purchase amount")}\nBank: ${value(purchase.content, "Bank")}\nTransaction: ${transactionId}\nStatus: PAID\nPurchase ID: ${purchaseId}` } });
         await sendPaymentEmails(purchase, updatedPurchaseContent, transactionId, purchaseId);
+
+        // Surface the paid status on the linked SalesOrder itself — the
+        // sales agent otherwise has no way to see payment completed short
+        // of digging through the raw Messages inbox. financingStatus is
+        // already used generically for a direct (non-loan) purchase's
+        // "money side is resolved" signal (see linkPurchaseToSalesPipeline,
+        // which seeds it as PENDING regardless of whether the order is
+        // actually financed), so APPROVED here means the same thing: the
+        // customer has paid and the order can proceed.
+        const linkedQuotation = await prisma.quotation.findFirst({
+          where: { message: { contains: `Purchase reference: ${purchaseId}` } },
+          include: { salesOrder: true },
+        });
+        if (linkedQuotation?.salesOrder && linkedQuotation.salesOrder.financingStatus !== "APPROVED") {
+          await prisma.salesOrder.update({
+            where: { id: linkedQuotation.salesOrder.id },
+            data: { financingStatus: "APPROVED" },
+          });
+        }
       }
     }
 

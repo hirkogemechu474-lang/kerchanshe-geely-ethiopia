@@ -113,7 +113,7 @@ export default function TestDrivePage() {
     try {
       const selectedVehicle = vehicles.find(v => v.id === data.vehicleId);
       
-      await submitLead({
+      const result = await submitLead({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -132,7 +132,7 @@ export default function TestDrivePage() {
         void fetch(`/api/visit/${encodeURIComponent(visitId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ selectedAction: "test-drive" }),
+          body: JSON.stringify({ selectedAction: "test-drive", testDriveId: result.testDriveId }),
         });
       }
 
@@ -171,17 +171,17 @@ export default function TestDrivePage() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Test Drive Booked Successfully!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Thank you for booking a test drive with Geely Ethiopia. Our team will contact you within 24 hours to confirm your appointment and provide additional details.
             </p>
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-2">
-                <strong className="text-navy">What happens next?</strong>
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-2">
+                <strong className="text-navy dark:text-ice">What happens next?</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ You'll receive a confirmation email</li>
                 <li>✓ Our team will call to confirm your preferred date and time</li>
                 <li>✓ We'll prepare your selected vehicle for the test drive</li>
@@ -197,7 +197,7 @@ export default function TestDrivePage() {
               </button>
               <Link
                 href="/models"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
               >
                 Explore Models
               </Link>
@@ -229,7 +229,7 @@ export default function TestDrivePage() {
       <section className="py-12 bg-ice">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Car className="text-geely-blue" size={24} />
               </div>
@@ -291,7 +291,7 @@ export default function TestDrivePage() {
                       type="text"
                       {...register("firstName", { required: "First name is required" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.firstName ? "border-red-500" : "border-line"
+                        errors.firstName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="Enter your first name"
                     />
@@ -301,14 +301,14 @@ export default function TestDrivePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("lastName", { required: "Last name is required" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.lastName ? "border-red-500" : "border-line"
+                        errors.lastName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="Enter your last name"
                     />
@@ -318,7 +318,7 @@ export default function TestDrivePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -331,7 +331,7 @@ export default function TestDrivePage() {
                         },
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.email ? "border-red-500" : "border-line"
+                        errors.email ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="your.email@example.com"
                     />
@@ -341,7 +341,7 @@ export default function TestDrivePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -354,7 +354,7 @@ export default function TestDrivePage() {
                         },
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.phone ? "border-red-500" : "border-line"
+                        errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="+251 91 234 5678"
                     />
@@ -367,7 +367,7 @@ export default function TestDrivePage() {
 
               {/* Test Drive Details */}
               <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Test Drive Details</h3>
+                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Test Drive Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-navy mb-2">
@@ -376,7 +376,7 @@ export default function TestDrivePage() {
                     <select
                       {...register("vehicleId", { required: "Please select a vehicle" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleId ? "border-red-500" : "border-line"
+                        errors.vehicleId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       disabled={vehiclesLoading}
                     >
@@ -393,7 +393,7 @@ export default function TestDrivePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Preferred Date <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -409,7 +409,7 @@ export default function TestDrivePage() {
                       })}
                       min={new Date().toISOString().split("T")[0]}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredDate ? "border-red-500" : "border-line"
+                        errors.preferredDate ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     />
                     {errors.preferredDate && (
@@ -418,13 +418,13 @@ export default function TestDrivePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Preferred Time <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("preferredTime", { required: "Please select a time slot" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredTime ? "border-red-500" : "border-line"
+                        errors.preferredTime ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Choose a time slot</option>
@@ -440,13 +440,13 @@ export default function TestDrivePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Showroom Location <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("location", { required: "Please select a location" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.location ? "border-red-500" : "border-line"
+                        errors.location ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Choose a showroom</option>
@@ -462,13 +462,13 @@ export default function TestDrivePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Additional Message (Optional)
                     </label>
                     <textarea
                       {...register("message")}
                       rows={4}
-                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Any specific requirements or questions?"
                     ></textarea>
                   </div>
@@ -476,7 +476,7 @@ export default function TestDrivePage() {
               </div>
 
               {/* Consent */}
-              <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                 <input
                   type="checkbox"
                   {...register("consent", {
@@ -529,7 +529,7 @@ export default function TestDrivePage() {
                     "Book Test Drive"
                   )}
                 </button>
-                <p className="text-xs text-steel text-center mt-3">
+                <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                   By submitting this form, you agree to our terms and conditions
                 </p>
               </div>

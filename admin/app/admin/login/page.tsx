@@ -139,7 +139,7 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-geely-blue rounded-full mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Geely Ethiopia</h1>
@@ -188,7 +188,7 @@ export default function AdminLogin() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="admin@geelyethiopia.com"
                     required
                     disabled={loading}
@@ -207,7 +207,7 @@ export default function AdminLogin() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Enter your password"
                     required
                     disabled={loading}
@@ -218,7 +218,7 @@ export default function AdminLogin() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                className="w-full bg-geely-blue text-white py-3 rounded-lg font-semibold hover:bg-navy transition-colors disabled:bg-geely-blue/50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
@@ -240,7 +240,7 @@ export default function AdminLogin() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="admin@geelyethiopia.com"
                     required
                     disabled={loading}
@@ -251,7 +251,7 @@ export default function AdminLogin() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                className="w-full bg-geely-blue text-white py-3 rounded-lg font-semibold hover:bg-navy transition-colors disabled:bg-geely-blue/50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Sending OTP...' : 'Send OTP'}
               </button>
@@ -271,7 +271,7 @@ export default function AdminLogin() {
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-widest"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent text-center text-2xl tracking-widest"
                   placeholder="000000"
                   maxLength={6}
                   required
@@ -290,7 +290,7 @@ export default function AdminLogin() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Enter new password"
                     required
                     minLength={8}
@@ -310,7 +310,7 @@ export default function AdminLogin() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Confirm new password"
                     required
                     disabled={loading}
@@ -321,7 +321,7 @@ export default function AdminLogin() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                className="w-full bg-geely-blue text-white py-3 rounded-lg font-semibold hover:bg-navy transition-colors disabled:bg-geely-blue/50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Resetting Password...' : 'Reset Password'}
               </button>
@@ -332,7 +332,7 @@ export default function AdminLogin() {
             <div className="mt-6 text-center">
               <button
                 onClick={() => setShowForgotPassword(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                className="text-sm text-geely-blue hover:text-navy hover:underline"
               >
                 Forgot your password?
               </button>

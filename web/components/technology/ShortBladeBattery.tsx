@@ -14,7 +14,7 @@ export default function ShortBladeBattery() {
   ];
 
   return (
-    <section className="py-20 md:py-32 bg-white dark:bg-gray-900">
+    <section className="py-20 md:py-32 bg-white dark:bg-midnight-surface dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         {/* Header */}
         <motion.div
@@ -28,7 +28,7 @@ export default function ShortBladeBattery() {
             Battery Technology
           </div>
           
-          <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-white mb-6 leading-tight tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-ice dark:text-white mb-6 leading-tight tracking-tight">
             Short Blade Battery
             <br />
             <span className="text-amber-600 dark:text-amber-400">Maximum Safety, Zero Compromise</span>
@@ -59,7 +59,7 @@ export default function ShortBladeBattery() {
               whileHover={{ scale: 1.05 }}
             >
               <test.icon className="w-12 h-12 text-amber-600 dark:text-amber-400 mb-3" />
-              <h3 className="font-bold text-navy dark:text-white mb-1">{test.label}</h3>
+              <h3 className="font-bold text-navy dark:text-ice dark:text-white mb-1">{test.label}</h3>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm font-semibold text-green-600 dark:text-green-400">{test.result}</span>

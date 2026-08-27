@@ -150,7 +150,7 @@ model TestDrive {
   idPhotoUrl       String?
   idVerifiedAt     DateTime?
   idVerifiedById   String?
-  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts. Nullable for rows created before
   // this column existed.
   reference       String?   @unique
@@ -223,7 +223,7 @@ model Quotation {
   status            String      @default("new") // new, contacted, in_progress, converted, closed
   internalNotes     String?     @db.Text
   assignedTo        String?
-  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts. Nullable for rows created before
   // this column existed.
   reference         String?     @unique
@@ -233,7 +233,7 @@ model Quotation {
   // formal dealer quotation document exists — none of this is captured
   // anywhere else on the lead (price only otherwise lives in the
   // unstructured configurationJson.price, if set at all).
-  quotationNo          String?   @unique // SQ-2026-00001, via nextQuotationNo()
+  quotationNo          String?   @unique // GY-SQ-DDMMYYYY-NNN, via generateReference()
   quotationValidUntil  DateTime?
   unitPrice            Float?
   quantity             Int?      @default(1)
@@ -244,6 +244,14 @@ model Quotation {
   paymentTerms         String?
   deliveryTerms        String?
   quotationGeneratedAt DateTime?
+  // Customer e-sign/attach on the quotation PDF itself (distinct from the
+  // later SalesOrder agreement signature) — same drawn-signature-stamped-
+  // onto-PDF or uploaded-photo convention as SalesOrder.signedDocumentUrl.
+  // Setting this also flips status to "accepted", a value distinct from
+  // the older manually-set "approved" (a staff decision) so a customer's
+  // own digital acceptance is visible separately in the pipeline.
+  signedDocumentUrl String?
+  signedAt          DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   salesOrder        SalesOrder?
@@ -286,6 +294,17 @@ enum CommissionStatus {
   PAID
 }
 
+// Real payment status, distinct from FinancingStatus (which tracks the
+// loan/financing decision, not whether money has actually moved).
+// PENDING_REVIEW is set once a customer uploads a bank-transfer proof and
+// is waiting on staff to confirm/reject it; the online "pay now" mock
+// path skips straight to PAID.
+enum PaymentStatus {
+  UNPAID
+  PENDING_REVIEW
+  PAID
+}
+
 model SalesOrder {
   id              String                    @id @default(uuid())
   orderNo         String                    @unique
@@ -304,6 +323,11 @@ model SalesOrder {
   status          OrderStatus               @default(QUOTED)
   orderDate       DateTime                  @default(now())
   deliveredAt     DateTime?
+  // Set once the "vehicle delivered, thank you" confirmation (with the
+  // invoice PDF re-attached) is actually emailed — a separate action from
+  // the DELIVERED status transition itself, fired by the dedicated Handover
+  // panel. Not a one-way lock: resending updates this timestamp again.
+  handoverNotifiedAt DateTime?
   // Sales agreement approval/e-sign (BRD-adjacent: "Sales Quotation
   // Approval by sales agent -> Generate Agreement -> e-sign/attach").
   // approvedById is a loose actor reference (no FK), matching every other
@@ -315,8 +339,29 @@ model SalesOrder {
   // existing /api/upload/image convention (same as TestDrive's idPhotoUrl).
   approvedAt        DateTime?
   approvedById      String?
+  // Set once the agreement PDF is actually emailed to the customer — a
+  // separate, later action from approving (see .../send-agreement), so
+  // staff can review/adjust price before the customer ever sees it. Not a
+  // one-way lock: resending a revised copy updates this timestamp again.
+  agreementSentAt   DateTime?
   signedDocumentUrl String?
   signedAt          DateTime?
+  // Manager countersignature — a second, staff-side sign-off after the
+  // customer signs. No drawn signature captured, only identity + timestamp
+  // (matching the approvedById/approvedAt convention above). Gates the
+  // payment-link email so the customer isn't asked to pay before staff
+  // have reviewed the customer's signed copy.
+  countersignedAt   DateTime?
+  countersignedById String?
+  // Payment tracking — see PaymentStatus. paymentProofUrl is the customer's
+  // uploaded bank-transfer receipt (reuses the /api/upload/document
+  // convention); paymentConfirmedById is null for the online mock-pay path
+  // since no staff review is involved there.
+  paymentStatus        PaymentStatus @default(UNPAID)
+  paymentProofUrl      String?
+  paymentSubmittedAt   DateTime?
+  paymentConfirmedAt   DateTime?
+  paymentConfirmedById String?
   // Vehicle Registration — a stage between PDI and Invoice in the CRM
   // pipeline diagram; a loose actor reference (no FK), matching every
   // other changedById-style field in this codebase.
@@ -419,7 +464,7 @@ model ServiceBooking {
   technician    String?
   status        String   @default("scheduled")
   notes         String?
-  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts. Nullable for rows created before
   // this column existed.
   reference     String?  @unique
@@ -742,7 +787,7 @@ model PartRequest {
   address   String?           @db.Text
   notes     String?           @db.Text
   status    String            @default("new") // new, contacted, in_progress, quoted, closed
-  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts. Nullable for rows created before
   // this column existed.
   reference String?           @unique
@@ -882,7 +927,7 @@ model Message {
   status    String   @default("unread")
   content   String
   response  String?
-  // Customer-facing lookup code (KER-GLY-DD-MM-YYYY-XXXX), generated at
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts, for Message rows that back a
   // customer-facing flow (financing applications, contact-derived leads).
   // Nullable for rows created before this column existed and for purely

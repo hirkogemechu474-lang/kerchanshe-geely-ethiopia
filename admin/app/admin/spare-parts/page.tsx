@@ -19,7 +19,7 @@ export default async function SparePartsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6"><Package className="w-8 h-8 text-blue-600 mb-3" /><div className="text-2xl font-bold">184</div><p className="text-sm text-gray-500">SKUs</p></div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6"><Package className="w-8 h-8 text-geely-blue mb-3" /><div className="text-2xl font-bold">184</div><p className="text-sm text-gray-500">SKUs</p></div>
         <div className="bg-white rounded-lg border border-gray-200 p-6"><Warehouse className="w-8 h-8 text-green-600 mb-3" /><div className="text-2xl font-bold">92%</div><p className="text-sm text-gray-500">Fill Rate</p></div>
         <div className="bg-white rounded-lg border border-gray-200 p-6"><ArrowDownUp className="w-8 h-8 text-purple-600 mb-3" /><div className="text-2xl font-bold">17</div><p className="text-sm text-gray-500">Reorder Items</p></div>
         <div className="bg-white rounded-lg border border-gray-200 p-6"><AlertTriangle className="w-8 h-8 text-orange-600 mb-3" /><div className="text-2xl font-bold">4</div><p className="text-sm text-gray-500">Critical Alerts</p></div>

@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { MobileDrawer } from '@/components/MobileDrawer';
 import {
   Award, Users, Globe, TrendingUp, Factory, Shield, Zap, Heart,
   ArrowRight,
@@ -153,7 +150,6 @@ function mergeFallback(d: Partial<AboutContent> | null | undefined): AboutConten
 }
 
 export default function AboutPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [data, setData] = useState<AboutContent>(FALLBACK);
   const [loaded, setLoaded] = useState(false);
 
@@ -166,11 +162,7 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ice flex flex-col">
-      <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
-      <MobileDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-
-      <main className="flex-1">
+    <>
         {/* 1. Hero section */}
         <section
           className="relative overflow-hidden text-white py-20 sm:py-28"
@@ -202,7 +194,7 @@ export default function AboutPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-gold" />
                 {data.sectionHero.eyebrow}
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight leading-[1.05]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-6 tracking-tight leading-[1.05] text-balance">
                 {data.sectionHero.title}
               </h1>
               <p className="text-lg sm:text-xl text-blue-100 leading-relaxed max-w-2xl">
@@ -213,7 +205,7 @@ export default function AboutPage() {
         </section>
 
         {/* 2. Partnership story */}
-        <section className="py-20 bg-white relative">
+        <section className="py-20 bg-white dark:bg-midnight-surface relative transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Text */}
@@ -221,12 +213,12 @@ export default function AboutPage() {
                 <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
                   {data.partnership.eyebrow}
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy tracking-tight mb-6 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-6 leading-tight text-balance">
                   {data.partnership.title}
                 </h2>
                 <div className="space-y-5">
                   {data.partnership.paragraphs.map((p, i) => (
-                    <p key={i} className="text-steel text-lg leading-relaxed">
+                    <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
                       {p}
                     </p>
                   ))}
@@ -247,14 +239,14 @@ export default function AboutPage() {
                   {data.partnership.highlights.map((h, i) => (
                     <div
                       key={i}
-                      className="group relative rounded-2xl p-6 bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-100 overflow-hidden hover:-translate-y-1 transition-all hover:shadow-lg hover:shadow-blue-500/10"
+                      className="group relative rounded-2xl p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-midnight dark:to-midnight-surface border border-slate-100 dark:border-midnight-line overflow-hidden hover:-translate-y-1 transition-all hover:shadow-lg hover:shadow-blue-500/10"
                     >
                       <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br from-gold/20 to-transparent blur-2xl" />
                       <div className="relative">
                         <div className="text-3xl sm:text-4xl font-extrabold text-geely-blue mb-2 tracking-tight">
                           {h.value}
                         </div>
-                        <div className="text-sm font-medium text-steel">{h.label}</div>
+                        <div className="text-sm font-medium text-steel dark:text-steel-light">{h.label}</div>
                       </div>
                     </div>
                   ))}
@@ -273,10 +265,10 @@ export default function AboutPage() {
 
           <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-14 max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight text-balance">
                 {data.geelyGlobal.title}
               </h2>
-              <p className="text-blue-100 text-lg">{data.geelyGlobal.subtitle}</p>
+              <p className="text-blue-100 text-lg text-balance">{data.geelyGlobal.subtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -300,7 +292,7 @@ export default function AboutPage() {
         </section>
 
         {/* 4. Kerchanshe Group */}
-        <section className="py-20 bg-ice">
+        <section className="py-20 bg-ice dark:bg-midnight transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Left: 2x2 cards */}
@@ -328,19 +320,19 @@ export default function AboutPage() {
                 <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
                   {data.kerchansheGroup.eyebrow}
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy mb-6 tracking-tight leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice mb-6 tracking-tight leading-tight text-balance">
                   {data.kerchansheGroup.title}
                 </h2>
                 <div className="space-y-5 mb-6">
                   {data.kerchansheGroup.paragraphs.map((p, i) => (
-                    <p key={i} className="text-steel text-lg leading-relaxed">
+                    <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
                       {p}
                     </p>
                   ))}
                 </div>
                 <ul className="space-y-3">
                   {data.kerchansheGroup.sectors.map((s, i) => (
-                    <li key={i} className="flex items-start gap-3 text-steel text-lg">
+                    <li key={i} className="flex items-start gap-3 text-steel dark:text-steel-light text-lg">
                       <span className="text-gold font-bold mt-0.5">✓</span>
                       <span>{s}</span>
                     </li>
@@ -352,13 +344,13 @@ export default function AboutPage() {
         </section>
 
         {/* 5. Why Choose */}
-        <section className="py-20 sm:py-24 bg-white">
+        <section className="py-20 sm:py-24 bg-white dark:bg-midnight-surface transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-14 max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy tracking-tight mb-4">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-4 text-balance">
                 {data.whyChoose.title}
               </h2>
-              <p className="text-steel text-lg">{data.whyChoose.subtitle}</p>
+              <p className="text-steel dark:text-steel-light text-lg text-balance">{data.whyChoose.subtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -367,13 +359,13 @@ export default function AboutPage() {
                 return (
                   <div
                     key={i}
-                    className="group relative rounded-3xl p-8 bg-white border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all"
+                    className="group relative rounded-3xl p-8 bg-white dark:bg-midnight border border-slate-100 dark:border-midnight-line hover:border-transparent hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all"
                   >
                     <div className="w-14 h-14 rounded-2xl bg-geely-blue/10 text-geely-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform group-hover:bg-geely-blue group-hover:text-white">
                       <Icon size={26} />
                     </div>
-                    <h3 className="font-extrabold text-xl text-navy mb-3">{f.title}</h3>
-                    <p className="text-steel leading-relaxed">{f.description}</p>
+                    <h3 className="font-extrabold text-xl text-navy dark:text-ice mb-3">{f.title}</h3>
+                    <p className="text-steel dark:text-steel-light leading-relaxed">{f.description}</p>
                   </div>
                 );
               })}
@@ -387,10 +379,10 @@ export default function AboutPage() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60rem] h-[60rem] rounded-full bg-gold blur-3xl" />
           </div>
           <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight text-balance">
               {data.cta.title}
             </h2>
-            <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed text-balance">
               {data.cta.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -411,9 +403,6 @@ export default function AboutPage() {
           </div>
           {!loaded && null}
         </section>
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }

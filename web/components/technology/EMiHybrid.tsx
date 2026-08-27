@@ -88,7 +88,7 @@ export default function EMiHybrid() {
               EM-i Technology
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-white mb-6 leading-tight tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-ice dark:text-white mb-6 leading-tight tracking-tight">
               Super Hybrid
               <br />
               <span className="text-emerald-600 dark:text-emerald-400">Performance & Range</span>
@@ -104,7 +104,7 @@ export default function EMiHybrid() {
               {benefits.map((benefit, index) => (
                 <motion.div
                   key={benefit.title}
-                  className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700"
+                  className="bg-white dark:bg-midnight-surface dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -112,8 +112,8 @@ export default function EMiHybrid() {
                   whileHover={{ y: -5 }}
                 >
                   <benefit.icon className="w-10 h-10 text-emerald-600 dark:text-emerald-400 mb-3" />
-                  <div className="text-2xl font-bold text-navy dark:text-white mb-1">{benefit.stat}</div>
-                  <h3 className="font-bold text-navy dark:text-white mb-2">{benefit.title}</h3>
+                  <div className="text-2xl font-bold text-navy dark:text-ice dark:text-white mb-1">{benefit.stat}</div>
+                  <h3 className="font-bold text-navy dark:text-ice dark:text-white mb-2">{benefit.title}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{benefit.description}</p>
                 </motion.div>
               ))}

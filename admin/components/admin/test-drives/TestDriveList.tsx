@@ -77,7 +77,7 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-12 h-12 shrink-0 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <User className="w-6 h-6 text-geely-blue dark:text-blue-400" />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{testDrive.customerName}</h3>
@@ -134,14 +134,14 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
                 </>
               )}
               {testDrive.status === 'confirmed' && (
-                <button onClick={() => updateStatus(testDrive.id, 'completed')} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                <button onClick={() => updateStatus(testDrive.id, 'completed')} className="flex items-center gap-1 px-3 py-1.5 bg-geely-blue text-white rounded-lg hover:bg-navy transition-colors text-sm">
                   <Check className="w-4 h-4" />
                   Mark Complete
                 </button>
               )}
               <Link
                 href={`/admin/test-drives/${testDrive.id}`}
-                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                className="p-2 text-geely-blue dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
               >
                 <Eye className="w-4 h-4" />
               </Link>

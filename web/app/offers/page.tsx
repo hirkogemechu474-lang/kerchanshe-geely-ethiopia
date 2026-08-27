@@ -50,7 +50,7 @@ export default function OffersPage() {
     return (
       <MainLayout>
         <div className="flex items-center justify-center py-20">
-          <div className="text-steel">Loading offers...</div>
+          <div className="text-steel dark:text-steel-light">Loading offers...</div>
         </div>
       </MainLayout>
     );
@@ -59,15 +59,15 @@ export default function OffersPage() {
   return (
     <MainLayout>
       {/* Page Header */}
-      <div className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <div className="text-[13px] tracking-[0.14em] text-red-100 font-bold mb-3">
+      <div className="bg-gradient-to-br from-navy via-geely-blue to-navy text-white py-16">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <div className="text-[13px] tracking-[0.14em] text-gold-bright font-bold mb-3">
             SPECIAL OFFERS & PROMOTIONS
           </div>
           <h1 className="disp text-5xl font-bold mb-4">
             Current Offers
           </h1>
-          <p className="text-red-50 text-base max-w-2xl">
+          <p className="text-blue-50 text-base max-w-2xl">
             Discover exclusive offers and promotions on Geely vehicles. From special financing to seasonal discounts, find the perfect deal for your next vehicle.
           </p>
         </div>
@@ -75,14 +75,14 @@ export default function OffersPage() {
 
       {/* Featured Offers */}
       {featuredPromotions.length > 0 && (
-        <section className="py-16 bg-ice">
-          <div className="max-w-[1280px] mx-auto px-10">
-            <h2 className="disp text-3xl text-navy font-bold mb-8 text-center">
+        <section className="py-16 bg-ice dark:bg-midnight">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+            <h2 className="disp text-3xl text-navy dark:text-ice font-bold mb-8 text-center">
               Featured Offers
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {featuredPromotions.map((promo) => (
-                <div key={promo.id} className="bg-white border-2 border-gold rounded-lg overflow-hidden shadow-lg">
+                <div key={promo.id} className="bg-white dark:bg-midnight-surface border-2 border-gold rounded-lg overflow-hidden shadow-lg">
                   {/* Image */}
                   {promo.bannerImage ? (
                     <div className="h-48 overflow-hidden">
@@ -93,7 +93,7 @@ export default function OffersPage() {
                       />
                     </div>
                   ) : (
-                    <div className="h-48 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-steel text-sm text-center p-6">
+                    <div className="h-48 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-steel dark:text-steel-light text-sm text-center p-6">
                       {promo.title}
                       <br />
                       Promotional Banner
@@ -109,11 +109,11 @@ export default function OffersPage() {
                       </span>
                     </div>
                     
-                    <h3 className="text-2xl font-bold text-navy mb-3">{promo.title}</h3>
-                    <p className="text-steel text-sm leading-relaxed mb-4">{promo.description}</p>
+                    <h3 className="text-2xl font-bold text-navy dark:text-ice mb-3">{promo.title}</h3>
+                    <p className="text-steel dark:text-steel-light text-sm leading-relaxed mb-4">{promo.description}</p>
                     
                     {/* Validity */}
-                    <div className="flex items-center gap-2 text-xs text-steel mb-4">
+                    <div className="flex items-center gap-2 text-xs text-steel dark:text-steel-light mb-4">
                       <Calendar size={16} />
                       Valid until {new Date(promo.endDate).toLocaleDateString('en-US', { 
                         year: 'numeric', 
@@ -141,22 +141,22 @@ export default function OffersPage() {
 
       {/* All Active Offers */}
       <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h2 className="disp text-3xl text-navy font-bold mb-8">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h2 className="disp text-3xl text-navy dark:text-ice font-bold mb-8">
             All Current Offers
           </h2>
           
           {activePromotions.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-4xl mb-4">🎁</div>
-              <h3 className="text-xl font-bold text-navy mb-2">No Active Offers</h3>
-              <p className="text-steel">Check back soon for exciting promotions and special offers!</p>
+              <h3 className="text-xl font-bold text-navy dark:text-ice mb-2">No Active Offers</h3>
+              <p className="text-steel dark:text-steel-light">Check back soon for exciting promotions and special offers!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activePromotions.map((promo) => (
-                <div key={promo.id} className={`bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-all ${
-                  promo.isFeatured ? "border-gold" : "border-line"
+                <div key={promo.id} className={`bg-white dark:bg-midnight-surface border rounded-lg overflow-hidden hover:shadow-lg transition-all ${
+                  promo.isFeatured ? "border-gold" : "border-line dark:border-midnight-line"
                 }`}>
                   {/* Image */}
                   {promo.bannerImage ? (
@@ -168,7 +168,7 @@ export default function OffersPage() {
                       />
                     </div>
                   ) : (
-                    <div className="h-32 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel text-center p-4">
+                    <div className="h-32 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel dark:text-steel-light text-center p-4">
                       {promo.title} Banner
                     </div>
                   )}
@@ -184,11 +184,11 @@ export default function OffersPage() {
                       )}
                     </div>
                     
-                    <h3 className="font-bold text-navy mb-2 leading-tight">{promo.title}</h3>
-                    <p className="text-steel text-sm leading-relaxed mb-3 line-clamp-2">{promo.description}</p>
+                    <h3 className="font-bold text-navy dark:text-ice mb-2 leading-tight">{promo.title}</h3>
+                    <p className="text-steel dark:text-steel-light text-sm leading-relaxed mb-3 line-clamp-2">{promo.description}</p>
                     
                     {/* Validity */}
-                    <div className="flex items-center gap-2 text-xs text-steel mb-4">
+                    <div className="flex items-center gap-2 text-xs text-steel dark:text-steel-light mb-4">
                       <Calendar size={14} />
                       Until {new Date(promo.endDate).toLocaleDateString('en-US', { 
                         month: 'short', 
@@ -215,13 +215,13 @@ export default function OffersPage() {
       </section>
 
       {/* Terms & Conditions */}
-      <section className="py-12 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-10">
-          <h3 className="text-2xl font-bold text-navy mb-6 text-center">
+      <section className="py-12 bg-ice dark:bg-midnight">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <h3 className="text-2xl font-bold text-navy dark:text-ice mb-6 text-center">
             Terms & Conditions
           </h3>
-          <div className="bg-white p-6 rounded-lg border border-line">
-            <ul className="space-y-2 text-sm text-steel">
+          <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg border border-line dark:border-midnight-line">
+            <ul className="space-y-2 text-sm text-steel dark:text-steel-light">
               <li>• All offers are valid for new vehicle purchases only and cannot be combined with other promotions unless specified.</li>
               <li>• Financing offers are subject to credit approval and may vary based on creditworthiness.</li>
               <li>• Trade-in values are subject to vehicle inspection and market conditions.</li>
@@ -235,7 +235,7 @@ export default function OffersPage() {
 
       {/* CTA */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10 text-center">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 text-center">
           <h3 className="disp text-3xl font-bold mb-4">
             Ready to Take Advantage of These Offers?
           </h3>
@@ -251,13 +251,13 @@ export default function OffersPage() {
             </Link>
             <Link
               href="/dealers"
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
+              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
             >
               Visit Showroom
             </Link>
             <a
               href="tel:+251110000000"
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
+              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
             >
               Call Now
             </a>

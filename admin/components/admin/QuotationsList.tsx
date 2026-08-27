@@ -26,6 +26,7 @@ interface Stats {
   new: number;
   contacted: number;
   approved: number;
+  accepted: number;
   converted: number;
   closed: number;
 }
@@ -43,15 +44,17 @@ const STATUS_TONE: Record<string, Tone> = {
   contacted: 'blue',
   in_progress: 'orange',
   approved: 'green',
+  accepted: 'purple',
   converted: 'green',
   closed: 'gray',
 };
 
-const TABS: { key: 'all' | 'new' | 'contacted' | 'approved' | 'converted' | 'closed'; label: string }[] = [
+const TABS: { key: 'all' | 'new' | 'contacted' | 'approved' | 'accepted' | 'converted' | 'closed'; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'new', label: 'New' },
   { key: 'contacted', label: 'Contacted' },
   { key: 'approved', label: 'Approved' },
+  { key: 'accepted', label: 'Accepted' },
   { key: 'converted', label: 'Converted' },
   { key: 'closed', label: 'Closed' },
 ];
@@ -59,7 +62,7 @@ const TABS: { key: 'all' | 'new' | 'contacted' | 'approved' | 'converted' | 'clo
 export default function QuotationsList() {
   const router = useRouter();
   const [quotations, setQuotations] = useState<Quotation[] | null>(null);
-  const [stats, setStats] = useState<Stats>({ total: 0, new: 0, contacted: 0, approved: 0, converted: 0, closed: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, new: 0, contacted: 0, approved: 0, accepted: 0, converted: 0, closed: 0 });
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<(typeof TABS)[number]['key']>('all');
   const [page, setPage] = useState(1);
@@ -172,11 +175,11 @@ export default function QuotationsList() {
               </Td>
               <Td>
                 <div className="space-y-1">
-                  <a href={`tel:${quotation.phoneNumber}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  <a href={`tel:${quotation.phoneNumber}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-navy dark:hover:text-blue-400">
                     <Phone size={14} /> {quotation.phoneNumber}
                   </a>
                   {quotation.email && (
-                    <a href={`mailto:${quotation.email}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                    <a href={`mailto:${quotation.email}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-navy dark:hover:text-blue-400">
                       <Mail size={14} /> {quotation.email}
                     </a>
                   )}
@@ -192,7 +195,7 @@ export default function QuotationsList() {
                   onChange={(e) => handleStatusChange(quotation.id, e.target.value)}
                   className="border-0 rounded-full text-xs font-medium cursor-pointer bg-transparent"
                 >
-                  {['new', 'contacted', 'in_progress', 'approved', 'converted', 'closed'].map((s) => (
+                  {['new', 'contacted', 'in_progress', 'approved', 'accepted', 'converted', 'closed'].map((s) => (
                     <option key={s} value={s}>{s.replace('_', ' ')}</option>
                   ))}
                 </select>
@@ -205,10 +208,10 @@ export default function QuotationsList() {
               </Td>
               <Td>
                 <div className="flex gap-3 items-center">
-                  <Link href={`/admin/quotations/${quotation.id}`} className="text-blue-600 dark:text-blue-400 hover:underline" title="View">
+                  <Link href={`/admin/quotations/${quotation.id}`} className="text-geely-blue dark:text-blue-400 hover:underline" title="View">
                     <Eye size={16} />
                   </Link>
-                  {(quotation.status === 'approved' || quotation.status === 'converted') && (
+                  {(quotation.status === 'approved' || quotation.status === 'accepted' || quotation.status === 'converted') && (
                     <button
                       onClick={() => handleConvertToOrder(quotation.id)}
                       disabled={convertingId === quotation.id}

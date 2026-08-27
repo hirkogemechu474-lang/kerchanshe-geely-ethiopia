@@ -40,7 +40,7 @@ export default async function AccountPage() {
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
 
         {/* ── Profile card ──────────────────────────────────────────────────── */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-between gap-4 flex-wrap">
+        <section className="bg-white dark:bg-midnight-surface rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-geely-blue flex items-center justify-center text-white text-2xl font-bold shrink-0">
               {customer.name.charAt(0).toUpperCase()}
@@ -77,7 +77,7 @@ export default async function AccountPage() {
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-4 bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-geely-blue/30 transition-all group"
+                className="flex items-center gap-4 bg-white dark:bg-midnight-surface border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-geely-blue/30 transition-all group"
               >
                 <div className="w-11 h-11 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-geely-blue group-hover:text-white transition-colors">
                   <Icon className="w-5 h-5 text-geely-blue group-hover:text-white" />
@@ -107,7 +107,7 @@ export default async function AccountPage() {
               {promotions.map((promo: any) => (
                 <div
                   key={promo.id}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+                  className="bg-white dark:bg-midnight-surface rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
                 >
                   {promo.bannerImage && (
                     <img
@@ -152,7 +152,7 @@ export default async function AccountPage() {
           </div>
 
           {news.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl border border-gray-100 p-8 text-center text-gray-400">
               No updates yet — check back soon.
             </div>
           ) : (
@@ -161,7 +161,7 @@ export default async function AccountPage() {
                 <Link
                   key={article.id}
                   href={`/news/${article.id}`}
-                  className="flex gap-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-geely-blue/30 transition-all group"
+                  className="flex gap-4 bg-white dark:bg-midnight-surface rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-geely-blue/30 transition-all group"
                 >
                   {article.imageUrl ? (
                     <img

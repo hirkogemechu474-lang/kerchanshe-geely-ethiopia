@@ -94,11 +94,11 @@ export function WhatsAppWidget({
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-midnight-surface rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
           {/* Header */}
           <div className="bg-green-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-white dark:bg-midnight-surface rounded-full flex items-center justify-center">
                 <MessageCircle className="text-green-600" size={24} />
               </div>
               <div>
@@ -146,8 +146,8 @@ export function WhatsAppWidget({
 
             {/* Welcome Message */}
             <div className="mb-6">
-              <h4 className="font-bold text-navy mb-2">How can we help you?</h4>
-              <p className="text-sm text-steel">
+              <h4 className="font-bold text-navy dark:text-ice mb-2">How can we help you?</h4>
+              <p className="text-sm text-steel dark:text-steel-light">
                 Choose a topic below or start a general conversation with our team.
               </p>
             </div>
@@ -219,10 +219,10 @@ function QuickActionButton({
     >
       <span className="text-2xl">{icon}</span>
       <div className="flex-1">
-        <div className="font-semibold text-navy group-hover:text-green-600 transition-colors">
+        <div className="font-semibold text-navy dark:text-ice group-hover:text-green-600 transition-colors">
           {title}
         </div>
-        <div className="text-xs text-steel">{description}</div>
+        <div className="text-xs text-steel dark:text-steel-light">{description}</div>
       </div>
       <MessageCircle size={16} className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
     </button>
@@ -244,10 +244,25 @@ export function WhatsAppInlineCTA({
   dealerId?: string;
 }) {
   const status = getWhatsAppBusinessStatus();
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/contact-information')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.whatsapp) setWhatsappNumber(d.whatsapp);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleClick = () => {
     trackWhatsAppClick('inline-cta', { inquiryType, vehicleModel, dealerId });
-    openWhatsAppChat({ inquiryType, vehicleModel, dealerId });
+    openWhatsAppChat({
+      inquiryType,
+      vehicleModel,
+      dealerId,
+      ...(whatsappNumber ? { phone: whatsappNumber } : {}),
+    });
   };
 
   return (
@@ -259,8 +274,8 @@ export function WhatsAppInlineCTA({
         )}
       </div>
       <div className="flex-1">
-        <h3 className="font-bold text-navy text-lg mb-1">{title}</h3>
-        <p className="text-steel text-sm">{description}</p>
+        <h3 className="font-bold text-navy dark:text-ice text-lg mb-1">{title}</h3>
+        <p className="text-steel dark:text-steel-light text-sm">{description}</p>
         {status.available && (
           <p className="text-green-700 text-xs font-semibold mt-1 flex items-center gap-1">
             <CheckCircle size={12} />

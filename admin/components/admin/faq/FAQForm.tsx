@@ -111,7 +111,7 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
           onChange={(e) => setFormData({ ...formData, question: e.target.value })}
           required
           placeholder="e.g., What is the warranty period for Geely vehicles?"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
       </div>
 
@@ -126,7 +126,7 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
           required
           placeholder="Provide a detailed answer to the question..."
           rows={6}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           You can use basic HTML tags like &lt;p&gt;, &lt;strong&gt;, &lt;ul&gt;, &lt;li&gt;
@@ -143,7 +143,7 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           placeholder="e.g., Warranty, Service, Purchase, Financing"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Optional category for grouping FAQs
@@ -160,7 +160,7 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
           value={formData.displayOrder}
           onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
           min="0"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Lower numbers appear first (0 = first, 1 = second, etc.)
@@ -221,7 +221,7 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="flex-1 bg-geely-blue text-white py-3 rounded-lg hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">

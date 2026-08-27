@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, CreditCard, ShieldCheck } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
+import { withBasePath } from "@/lib/publicPath";
 
 interface Vehicle {
   id: string;
@@ -53,11 +54,11 @@ export default function PurchasePage() {
         </div>
       </section>
 
-      <section className="py-16 bg-ice">
+      <section className="py-16 bg-ice dark:bg-midnight transition-colors">
         <div className="max-w-[1280px] mx-auto px-6 md:px-10">
           <div className="text-center mb-10">
-            <h2 className="disp text-3xl md:text-4xl font-bold text-navy mb-3">A Simple Purchase Journey</h2>
-            <p className="text-steel max-w-2xl mx-auto">From selecting your Geely to receiving your delivery confirmation, every step is clear and secure.</p>
+            <h2 className="disp text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-3">A Simple Purchase Journey</h2>
+            <p className="text-steel dark:text-steel-light max-w-2xl mx-auto">From selecting your Geely to receiving your delivery confirmation, every step is clear and secure.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -65,10 +66,10 @@ export default function PurchasePage() {
               ["2", "Select Your Bank", "Choose from supported Ethiopian banks configured by our team."],
               ["3", "Pay and Confirm", "Authenticate through your bank and receive your purchase reference."],
             ].map(([step, title, description]) => (
-              <div key={step} className="bg-white rounded-xl border border-line p-7">
+              <div key={step} className="bg-white dark:bg-midnight-surface rounded-xl border border-line dark:border-midnight-line p-7">
                 <div className="w-11 h-11 rounded-full bg-geely-blue text-white flex items-center justify-center font-bold text-lg mb-5">{step}</div>
-                <h3 className="font-bold text-navy text-lg mb-2">{title}</h3>
-                <p className="text-sm text-steel leading-relaxed">{description}</p>
+                <h3 className="font-bold text-navy dark:text-ice text-lg mb-2">{title}</h3>
+                <p className="text-sm text-steel dark:text-steel-light leading-relaxed">{description}</p>
               </div>
             ))}
           </div>
@@ -80,7 +81,7 @@ export default function PurchasePage() {
           <div className="flex items-end justify-between gap-4 mb-8">
             <div>
               <div className="text-xs tracking-widest text-geely-blue font-bold mb-2 uppercase">AVAILABLE VEHICLES</div>
-              <h2 className="disp text-3xl md:text-4xl font-bold text-navy">Select Your Geely</h2>
+              <h2 className="disp text-3xl md:text-4xl font-bold text-navy dark:text-ice">Select Your Geely</h2>
             </div>
             <Link href="/financing/apply" className="hidden md:inline-block text-geely-blue font-bold hover:underline">Purchase now →</Link>
           </div>
@@ -88,12 +89,12 @@ export default function PurchasePage() {
             {vehicles.map((vehicle) => {
               const price = vehicle.finalPrice ?? vehicle.basePrice;
               return (
-                <div key={vehicle.id} className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-lg transition-all">
+                <div key={vehicle.id} className="bg-white dark:bg-midnight-surface rounded-xl border border-line dark:border-midnight-line overflow-hidden hover:shadow-lg transition-all">
                   <div className="h-44 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center">
-                    {vehicle.heroImageUrl ? <img src={vehicle.heroImageUrl} alt={vehicle.name} className="w-full h-full object-cover" /> : <span className="text-steel text-sm">{vehicle.name}</span>}
+                    {vehicle.heroImageUrl ? <img src={withBasePath(vehicle.heroImageUrl)} alt={vehicle.name} className="w-full h-full object-cover" /> : <span className="text-steel dark:text-steel-light text-sm">{vehicle.name}</span>}
                   </div>
                   <div className="p-5">
-                    <h3 className="font-bold text-navy mb-2">{vehicle.name}</h3>
+                    <h3 className="font-bold text-navy dark:text-ice mb-2">{vehicle.name}</h3>
                     <div className="text-geely-blue font-bold mb-4">
                       {vehicle.hidePrice ? "Price on request" : formatETB(price)}
                     </div>

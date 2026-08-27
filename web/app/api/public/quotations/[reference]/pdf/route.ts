@@ -4,7 +4,7 @@ import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { buildSalesQuotationPdf } from '@/lib/sales/salesQuotationPdf';
 
 // Public "display by link" view of a formal sales quotation — looked up by
-// the customer-facing reference (KER-GLY-...), not the raw row id, matching
+// the customer-facing reference (GY-SQ-...), not the raw row id, matching
 // the /api/public/status lookup convention. Same access pattern as the
 // public sales agreement PDF (web/app/api/agreement/[orderId]/pdf/route.ts):
 // always renders live from current row data, no PDF persisted to disk.

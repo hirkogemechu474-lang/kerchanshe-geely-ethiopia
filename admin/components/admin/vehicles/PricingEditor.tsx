@@ -80,7 +80,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
                 type="number"
                 value={priceData.basePrice}
                 onChange={(e) => handleChange('basePrice', parseFloat(e.target.value) || 0)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="0"
                 min="0"
                 step="1000"
@@ -99,7 +99,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
                 type="number"
                 value={priceData.taxRate}
                 onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="15"
                 min="0"
                 max="100"
@@ -114,7 +114,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
             type="checkbox"
             checked={priceData.includesTax}
             onChange={(e) => handleChange('includesTax', e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
           />
           <span className="text-sm font-medium text-gray-700">Price includes tax</span>
         </label>
@@ -124,7 +124,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
             type="checkbox"
             checked={priceData.hidePrice}
             onChange={(e) => handleChange('hidePrice', e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
           />
           <span className="text-sm font-medium text-gray-700">
             Hide price on website (show "Price on request")
@@ -147,7 +147,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
                 type="number"
                 value={priceData.discount}
                 onChange={(e) => handleChange('discount', parseFloat(e.target.value) || 0)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -161,7 +161,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
             <select
               value={priceData.discountType}
               onChange={(e) => handleChange('discountType', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="percentage">Percentage (%)</option>
               <option value="fixed">Fixed Amount (ETB)</option>
@@ -179,7 +179,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
             type="checkbox"
             checked={priceData.financingAvailable}
             onChange={(e) => handleChange('financingAvailable', e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
           />
           <span className="text-sm font-medium text-gray-700">Financing Available</span>
         </label>
@@ -193,7 +193,7 @@ export default function PricingEditor({ pricing, onChange }: PricingEditorProps)
               type="number"
               value={priceData.minDownPayment}
               onChange={(e) => handleChange('minDownPayment', parseFloat(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="20"
               min="0"
               max="100"

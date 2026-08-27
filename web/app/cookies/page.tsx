@@ -30,13 +30,13 @@ export default async function CookiePolicyPage() {
       <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8 mb-8">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
                 <Cookie className="text-orange-600" size={32} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-navy">Cookie Policy</h1>
+                <h1 className="text-3xl font-bold text-navy dark:text-ice">Cookie Policy</h1>
                 <p className="text-gray-600">How we use cookies to improve your experience</p>
               </div>
             </div>
@@ -46,7 +46,7 @@ export default async function CookiePolicyPage() {
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8">
             {cookieContent ? (
               <div className="prose max-w-none">
                 <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
@@ -78,8 +78,8 @@ export default async function CookiePolicyPage() {
           </div>
 
           {/* Managing Cookies */}
-          <div className="bg-white rounded-lg shadow-sm p-8 mt-8">
-            <h3 className="text-xl font-bold text-navy mb-4">How to Manage Cookies</h3>
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8 mt-8">
+            <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">How to Manage Cookies</h3>
             <p className="text-gray-600 mb-4">
               You can control and manage cookies in your browser settings. Here's how:
             </p>
@@ -134,7 +134,7 @@ export default async function CookiePolicyPage() {
               </a>
               <a
                 href="mailto:info@geelyethiopia.com"
-                className="inline-block bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
+                className="inline-block bg-white dark:bg-midnight-surface text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
               >
                 Email Us
               </a>

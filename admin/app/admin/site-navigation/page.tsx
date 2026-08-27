@@ -7,19 +7,17 @@ export default async function SiteNavigationPage() {
   await requirePermission('canManageContent');
 
   const items = await prisma.siteNavItem.findMany({
-    orderBy: [{ placement: 'asc' }, { displayOrder: 'asc' }],
+    where: { placement: 'TOP_NAV' },
+    orderBy: { displayOrder: 'asc' },
   });
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Site Navigation"
-        description="The header's main navigation bar and the Models dropdown's Quick Actions panel"
+        description="Controls both the desktop header's nav bar and the mobile menu drawer on the public site"
       />
-      <SiteNavManager
-        topNav={items.filter((i) => i.placement === 'TOP_NAV')}
-        quickActions={items.filter((i) => i.placement === 'MODELS_QUICK_ACTIONS')}
-      />
+      <SiteNavManager topNav={items} />
     </div>
   );
 }

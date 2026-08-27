@@ -28,8 +28,6 @@ interface MegaMenuProps {
   category: string;
   /** Pre-loaded services menu data passed from Header */
   servicesMenu?: MenuSection[];
-  /** Pre-loaded electric menu data passed from Header */
-  electricMenu?: MenuSection[];
   /** Pre-loaded vehicles data passed from Header (for dynamic models menu) */
   vehicles?: VehicleRecord[];
 }
@@ -60,33 +58,33 @@ function DynamicMenuSections({ sections, iconClass = 'text-geely-blue' }: { sect
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {sections.map((section) => (
           <div key={section.id} className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-line pb-2">
+            <div className="flex items-center gap-2 border-b border-line dark:border-midnight-line pb-2">
               {getIcon(section.items[0]?.icon ?? null, iconClass)}
-              <h3 className="font-bold text-navy">{section.title}</h3>
+              <h3 className="font-bold text-navy dark:text-ice">{section.title}</h3>
             </div>
             <div className="space-y-3">
               {section.items.map((item) => (
                 <Link
                   key={item.id}
                   href={item.url || '#'}
-                  className="block group hover:bg-ice p-2 rounded transition-colors"
+                  className="block group hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight p-2 rounded transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors flex items-center gap-2">
+                      <div className="font-semibold text-navy dark:text-ice group-hover:text-geely-blue transition-colors flex items-center gap-2">
                         {item.icon && getIcon(item.icon)}
                         {item.title}
                         {item.isFeatured && (
-                          <span className="text-xs bg-gold text-navy px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-xs bg-gold text-navy dark:text-ice px-2 py-0.5 rounded-full font-bold">
                             Featured
                           </span>
                         )}
                       </div>
                       {item.description && (
-                        <div className="text-sm text-steel mt-1">{item.description}</div>
+                        <div className="text-sm text-steel dark:text-steel-light mt-1">{item.description}</div>
                       )}
                     </div>
-                    <ArrowRight size={16} className="text-steel group-hover:text-geely-blue transition-colors flex-shrink-0" />
+                    <ArrowRight size={16} className="text-steel dark:text-steel-light group-hover:text-geely-blue transition-colors flex-shrink-0" />
                   </div>
                 </Link>
               ))}
@@ -125,24 +123,24 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
             const isElectric = catName.toLowerCase().includes('electric') || catName.toLowerCase().includes('ev');
             return (
               <div key={catName} className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-line pb-2">
+                <div className="flex items-center gap-2 border-b border-line dark:border-midnight-line pb-2">
                   {isElectric
                     ? <Zap size={18} className="text-green-600" />
                     : <Car size={18} className="text-geely-blue" />
                   }
-                  <h3 className="font-bold text-navy text-sm">{catName}</h3>
+                  <h3 className="font-bold text-navy dark:text-ice text-sm">{catName}</h3>
                 </div>
                 <div className="space-y-2">
                   {catVehicles.slice(0, 6).map((vehicle) => (
                     <Link
                       key={vehicle.id}
                       href={`/models/${vehicle.slug}`}
-                      className="block group hover:bg-ice p-2 rounded transition-colors"
+                      className="block group hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight p-2 rounded transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         {/* Thumbnail */}
                         {(vehicle.heroImageUrl || (Array.isArray(vehicle.images) && vehicle.images[0])) ? (
-                          <div className="w-12 h-9 rounded overflow-hidden flex-shrink-0 bg-ice">
+                          <div className="w-12 h-9 rounded overflow-hidden flex-shrink-0 bg-ice dark:bg-midnight">
                             <img
                               src={(vehicle.heroImageUrl || (Array.isArray(vehicle.images) && vehicle.images[0]) || '')}
                               alt={vehicle.name}
@@ -150,19 +148,19 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
                             />
                           </div>
                         ) : (
-                          <div className="w-12 h-9 rounded bg-ice flex-shrink-0 flex items-center justify-center">
-                            <Car size={14} className="text-steel" />
+                          <div className="w-12 h-9 rounded bg-ice dark:bg-midnight flex-shrink-0 flex items-center justify-center">
+                            <Car size={14} className="text-steel dark:text-steel-light" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors text-sm truncate">
+                          <div className="font-semibold text-navy dark:text-ice group-hover:text-geely-blue transition-colors text-sm truncate">
                             {vehicle.name}
                           </div>
                           <div className="text-xs text-geely-blue font-medium">
                             Price on request
                           </div>
                         </div>
-                        <ArrowRight size={14} className="text-steel group-hover:text-geely-blue transition-colors flex-shrink-0" />
+                        <ArrowRight size={14} className="text-steel dark:text-steel-light group-hover:text-geely-blue transition-colors flex-shrink-0" />
                       </div>
                     </Link>
                   ))}
@@ -173,9 +171,9 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
 
           {/* Quick actions column */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 border-b border-line pb-2">
+            <div className="flex items-center gap-2 border-b border-line dark:border-midnight-line pb-2">
               <Settings size={18} className="text-gold" />
-              <h3 className="font-bold text-navy text-sm">Quick Actions</h3>
+              <h3 className="font-bold text-navy dark:text-ice text-sm">Quick Actions</h3>
             </div>
             <div className="space-y-2">
               {[
@@ -189,12 +187,12 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="block group hover:bg-ice p-2 rounded transition-colors"
+                  className="block group hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight p-2 rounded transition-colors"
                 >
-                  <div className="font-semibold text-navy group-hover:text-geely-blue transition-colors text-sm">
+                  <div className="font-semibold text-navy dark:text-ice group-hover:text-geely-blue transition-colors text-sm">
                     {action.label}
                   </div>
-                  <div className="text-xs text-steel">{action.desc}</div>
+                  <div className="text-xs text-steel dark:text-steel-light">{action.desc}</div>
                 </Link>
               ))}
             </div>
@@ -211,15 +209,10 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
 export function MegaMenu({
   category,
   servicesMenu = [],
-  electricMenu = [],
   vehicles = [],
 }: MegaMenuProps) {
   if (category === 'services') {
     return <DynamicMenuSections sections={servicesMenu} iconClass="text-geely-blue" />;
-  }
-
-  if (category === 'electric') {
-    return <DynamicMenuSections sections={electricMenu} iconClass="text-green-600" />;
   }
 
   // Dynamic models content (replaces static MODELS_CONTENT)

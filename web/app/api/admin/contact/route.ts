@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 
 // Proxy endpoint to fetch contact info from admin server (server-to-server to avoid CORS)
 export async function GET() {
-  const ADMIN_URL = 'http://localhost:3001/admin/settings/contact-information';
+  const adminOrigin = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:3001';
+  const ADMIN_URL = `${adminOrigin}/admin/settings/contact-information`;
 
   try {
     const res = await fetch(ADMIN_URL);

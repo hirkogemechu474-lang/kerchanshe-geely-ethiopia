@@ -175,7 +175,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               required
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Move forward. In every direction."
             />
           </div>
@@ -188,7 +188,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               type="text"
               value={formData.subtitle}
               onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="GLOBAL ENGINEERING · BUILT FOR ETHIOPIA"
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -204,7 +204,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Explore the full Geely range..."
             />
           </div>
@@ -227,7 +227,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                   value="IMAGE"
                   checked={formData.mediaType === 'IMAGE'}
                   onChange={(e) => setFormData(prev => ({ ...prev, mediaType: e.target.value }))}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-geely-blue"
                 />
                 <ImageIcon size={20} />
                 <span>Image</span>
@@ -238,7 +238,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                   value="VIDEO"
                   checked={formData.mediaType === 'VIDEO'}
                   onChange={(e) => setFormData(prev => ({ ...prev, mediaType: e.target.value }))}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-geely-blue"
                 />
                 <Video size={20} />
                 <span>Video</span>
@@ -290,7 +290,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                         className="hidden"
                         disabled={uploading === 'imageUrl'}
                       />
-                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy">
                         <Upload size={16} />
                         Change Image
                       </div>
@@ -309,11 +309,11 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                     className="hidden"
                     disabled={uploading === 'imageUrl'}
                   />
-                  <div className="flex items-center justify-center gap-3 px-4 py-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all">
+                  <div className="flex items-center justify-center gap-3 px-4 py-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-navy hover:bg-blue-50 transition-all">
                     {uploading === 'imageUrl' ? (
                       <>
-                        <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-blue-600 font-medium">Uploading...</span>
+                        <div className="w-6 h-6 border-3 border-geely-blue border-t-transparent rounded-full animate-spin" />
+                        <span className="text-geely-blue font-medium">Uploading...</span>
                       </>
                     ) : (
                       <>
@@ -370,7 +370,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                         className="hidden"
                         disabled={uploading === 'videoUrl'}
                       />
-                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy">
                         <Upload size={16} />
                         Change Video
                       </div>
@@ -388,11 +388,11 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
                       className="hidden"
                       disabled={uploading === 'videoUrl'}
                     />
-                    <div className="flex items-center justify-center gap-3 px-4 py-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all">
+                    <div className="flex items-center justify-center gap-3 px-4 py-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-navy hover:bg-blue-50 transition-all">
                       {uploading === 'videoUrl' ? (
                         <>
-                          <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                          <span className="text-blue-600 font-medium">Uploading...</span>
+                          <div className="w-6 h-6 border-3 border-geely-blue border-t-transparent rounded-full animate-spin" />
+                          <span className="text-geely-blue font-medium">Uploading...</span>
                         </>
                       ) : (
                         <>
@@ -501,7 +501,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               type="text"
               value={formData.buttonText}
               onChange={(e) => setFormData(prev => ({ ...prev, buttonText: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Explore Models"
             />
           </div>
@@ -514,7 +514,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               type="text"
               value={formData.buttonLink}
               onChange={(e) => setFormData(prev => ({ ...prev, buttonLink: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="/models"
             />
           </div>
@@ -535,7 +535,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               min="0"
               value={formData.sortOrder}
               onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
             <p className="mt-1 text-xs text-gray-500">
               Lower numbers appear first (0 = first, 1 = second, etc.)
@@ -548,7 +548,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               id="isActive"
               checked={formData.isActive}
               onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
             />
             <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
               Show on homepage (active)
@@ -579,7 +579,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
           <button
             type="submit"
             disabled={saving || uploading !== null}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 bg-geely-blue text-white px-6 py-2 rounded-lg hover:bg-navy disabled:opacity-50"
           >
             <Save size={18} />
             {saving ? 'Saving...' : heroId ? 'Update Hero' : 'Create Hero'}

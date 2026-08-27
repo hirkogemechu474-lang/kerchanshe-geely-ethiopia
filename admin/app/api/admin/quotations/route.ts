@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         new: countFor('new'),
         contacted: countFor('contacted'),
         approved: countFor('approved'),
+        accepted: countFor('accepted'),
         converted: countFor('converted'),
         closed: countFor('closed'),
       },

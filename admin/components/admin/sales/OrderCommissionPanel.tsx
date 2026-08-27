@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Badge, type Tone } from '@/components/admin/ui';
 import { COMMISSION_STATUS_LABELS } from '@/lib/sales/orderStateMachine';
@@ -39,6 +39,14 @@ export default function OrderCommissionPanel({
   const [commissionRate, setCommissionRate] = useState(order.commissionRate?.toString() || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [reps, setReps] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/sales-reps')
+      .then((res) => (res.ok ? res.json() : { reps: [] }))
+      .then((data) => setReps(data.reps || []))
+      .catch(() => setReps([]));
+  }, []);
 
   const dirty = salesAgentId !== (order.salesAgentId || '') || commissionRate !== (order.commissionRate?.toString() || '');
 
@@ -82,7 +90,7 @@ export default function OrderCommissionPanel({
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Percent className="w-5 h-5 text-blue-600" />
+          <Percent className="w-5 h-5 text-geely-blue" />
           <h2 className="text-lg font-semibold text-gray-900">Commission</h2>
         </div>
         <Badge tone={STATUS_TONE[order.commissionStatus] ?? 'gray'}>
@@ -95,13 +103,26 @@ export default function OrderCommissionPanel({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Sales agent</label>
-          <input
+          <select
             value={salesAgentId}
             onChange={(e) => setSalesAgentId(e.target.value)}
             disabled={!canManage}
-            placeholder="Agent name"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
+          >
+            <option value="">Unassigned</option>
+            {/* Keep a stored name that no longer matches an active rep (e.g. deactivated)
+                selectable, rather than silently blanking it. */}
+            {salesAgentId && !reps.some((rep) => rep.name === salesAgentId) && (
+              <option value={salesAgentId} disabled>
+                {salesAgentId} (inactive)
+              </option>
+            )}
+            {reps.map((rep) => (
+              <option key={rep.id} value={rep.name}>
+                {rep.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Commission rate (%)</label>

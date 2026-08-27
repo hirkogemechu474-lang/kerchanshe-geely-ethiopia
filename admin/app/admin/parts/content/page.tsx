@@ -99,7 +99,7 @@ export default function PartsContentPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -138,7 +138,7 @@ export default function PartsContentPage() {
                 value={formData.heroTitle || ''}
                 onChange={handleChange('heroTitle')}
                 placeholder="Genuine Geely Parts & Accessories"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -148,7 +148,7 @@ export default function PartsContentPage() {
                 value={formData.heroSubtitle || ''}
                 onChange={handleChange('heroSubtitle')}
                 placeholder="100% authentic Geely parts with warranty"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,7 +191,7 @@ export default function PartsContentPage() {
                 value={formData.introHeading || ''}
                 onChange={handleChange('introHeading')}
                 placeholder="Quality parts for lasting performance"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function PartsContentPage() {
                 onChange={handleChange('introDescription')}
                 rows={4}
                 placeholder="Maintain your Geely's performance and safety with genuine spare parts..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function PartsContentPage() {
                 value={formData.ctaTitle || ''}
                 onChange={handleChange('ctaTitle')}
                 placeholder="Need Help Finding the Right Part?"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div className="md:col-span-2">
@@ -230,7 +230,7 @@ export default function PartsContentPage() {
                 onChange={handleChange('ctaDescription')}
                 rows={3}
                 placeholder="Our parts specialists can help you identify the correct parts..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -240,7 +240,7 @@ export default function PartsContentPage() {
                 value={formData.ctaButtonText || ''}
                 onChange={handleChange('ctaButtonText')}
                 placeholder="Contact Parts Department"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -250,7 +250,7 @@ export default function PartsContentPage() {
                 value={formData.ctaButtonLink || ''}
                 onChange={handleChange('ctaButtonLink')}
                 placeholder="/contact or tel:+251110000000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function PartsContentPage() {
                 onChange={handleChange('metaTitle')}
                 maxLength={60}
                 placeholder="Genuine Geely Spare Parts | Geely Ethiopia"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -281,7 +281,7 @@ export default function PartsContentPage() {
                 rows={3}
                 maxLength={160}
                 placeholder="Browse genuine Geely spare parts and accessories with manufacturer warranty..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
             <div>
@@ -291,7 +291,7 @@ export default function PartsContentPage() {
                 value={formData.metaKeywords || ''}
                 onChange={handleChange('metaKeywords')}
                 placeholder="Geely parts, Geely spare parts Ethiopia, genuine parts"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
           </div>
@@ -302,7 +302,7 @@ export default function PartsContentPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="flex-1 flex items-center justify-center gap-2 bg-geely-blue text-white py-3 rounded-lg hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             {saving ? 'Saving...' : 'Save Content'}

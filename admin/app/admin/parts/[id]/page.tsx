@@ -117,7 +117,7 @@ export default function EditSparePartPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function EditSparePartPage() {
     return (
       <div className="text-center py-20">
         <p className="text-lg text-gray-600 mb-4">Part not found.</p>
-        <Link href="/admin/parts" className="text-blue-600 hover:underline">Back to parts</Link>
+        <Link href="/admin/parts" className="text-geely-blue hover:underline">Back to parts</Link>
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function EditSparePartPage() {
               <Package className="w-4 h-4 inline mr-2" /> Part Name *
             </label>
             <input type="text" name="name" value={formData.name} onChange={handleChange} required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -163,14 +163,14 @@ export default function EditSparePartPage() {
                 <Hash className="w-4 h-4 inline mr-2" /> SKU *
               </label>
               <input type="text" name="sku" value={formData.sku} onChange={handleChange} required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Tag className="w-4 h-4 inline mr-2" /> Display Category *
               </label>
               <select name="category" value={formData.category} onChange={handleChange} required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent">
                 {['engine','filters','brakes','electrical','body','interior','fluids','accessories','other'].map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -181,7 +181,7 @@ export default function EditSparePartPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">CMS Category (on /parts page)</label>
             <select name="partCategoryId" value={formData.partCategoryId} onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent">
               <option value="">-- None --</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -192,7 +192,7 @@ export default function EditSparePartPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea name="description" value={formData.description} onChange={handleChange} rows={2}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,7 +208,7 @@ export default function EditSparePartPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Compatible Brand</label>
               <input type="text" name="brand" value={formData.brand} onChange={handleChange} placeholder="e.g., Coolray, Emgrand"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
           </div>
 
@@ -218,12 +218,12 @@ export default function EditSparePartPage() {
                 <TrendingUp className="w-4 h-4 inline mr-2" /> Current Stock *
               </label>
               <input type="number" name="stock" value={formData.stock} onChange={handleChange} required min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Reorder Point *</label>
               <input type="number" name="reorderPoint" value={formData.reorderPoint} onChange={handleChange} required min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
           </div>
 
@@ -233,12 +233,12 @@ export default function EditSparePartPage() {
                 <DollarSign className="w-4 h-4 inline mr-2" /> Unit Price (ETB) *
               </label>
               <input type="number" name="price" value={formData.price} onChange={handleChange} required min="0" step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
               <input type="text" name="supplier" value={formData.supplier} onChange={handleChange} required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
           </div>
 
@@ -246,17 +246,17 @@ export default function EditSparePartPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Display Order (featured)</label>
               <input type="number" name="displayOrder" value={formData.displayOrder} onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <label className="flex items-center gap-3">
-              <input type="checkbox" name="isFeatured" checked={formData.isFeatured} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <input type="checkbox" name="isFeatured" checked={formData.isFeatured} onChange={handleChange} className="w-4 h-4 text-geely-blue rounded" />
               <span className="text-sm text-gray-700 flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> Featured</span>
             </label>
             <label className="flex items-center gap-3">
-              <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} className="w-4 h-4 text-geely-blue rounded" />
               <span className="text-sm text-gray-700">Active</span>
             </label>
           </div>
@@ -265,7 +265,7 @@ export default function EditSparePartPage() {
         <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between rounded-b-lg">
           <Link href="/admin/parts" className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors">Cancel</Link>
           <button type="submit" disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            className="flex items-center gap-2 bg-geely-blue text-white px-6 py-2 rounded-lg hover:bg-navy transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>

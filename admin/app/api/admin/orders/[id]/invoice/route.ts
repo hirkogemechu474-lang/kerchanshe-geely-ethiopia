@@ -40,7 +40,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
   if (response) return response;
 
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { id } = await params;
-  const body = await request.json().catch(() => ({}));
 
   const order = await prisma.salesOrder.findUnique({ where: { id } });
   if (!order) {
@@ -59,15 +58,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'This order has already been invoiced' }, { status: 409 });
   }
 
-  const invoiceAmount = body.invoiceAmount !== undefined && body.invoiceAmount !== null
-    ? Number(body.invoiceAmount)
-    : order.totalPrice;
+  // System-generated, not staff-editable: always the order's own agreed
+  // price, so the invoice can never drift from what was actually approved.
+  const invoiceAmount = order.totalPrice;
 
-  const invoiceNo = await nextInvoiceNo();
-  const updated = await prisma.salesOrder.update({
-    where: { id },
-    data: { invoiceNo, invoiceAmount, invoicedAt: new Date(), invoicedById: session!.user.id },
-  });
+  let updated;
+  try {
+    const invoiceNo = await nextInvoiceNo();
+    updated = await prisma.salesOrder.update({
+      where: { id },
+      data: { invoiceNo, invoiceAmount, invoicedAt: new Date(), invoicedById: session!.user.id },
+    });
+  } catch (dbError) {
+    console.error('[orders:invoice:generate]', dbError);
+    return NextResponse.json({ error: 'Failed to generate invoice. Please try again.' }, { status: 500 });
+  }
 
   let notificationSent = false;
   if (updated.customerEmail) {
@@ -79,8 +84,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         entityType: 'sales order',
         status: 'invoiced',
         reference: updated.orderNo,
-        details: `Your invoice ${invoiceNo} is attached.`,
-        attachments: [{ filename: `${invoiceNo}.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' }],
+        details: `Your invoice ${updated.invoiceNo} is attached.`,
+        attachments: [{ filename: `${updated.invoiceNo}.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' }],
       });
     } catch (emailError) {
       console.error('[orders:invoice:email]', emailError);

@@ -20,6 +20,16 @@ interface BiData {
   generatedAt: string;
 }
 
+interface TrendPoint {
+  monthValue: string;
+  label: string;
+  jobsClosedCount: number;
+  firstTimeFixRate: number | null;
+  avgTurnaroundHours: number | null;
+  revenueTotal: number;
+  csiAverage: number | null;
+}
+
 function currentMonthValue() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -30,6 +40,8 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
   const [data, setData] = useState<BiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [trend, setTrend] = useState<TrendPoint[] | null>(null);
+  const [trendLoading, setTrendLoading] = useState(true);
 
   const load = useCallback(async (m: string) => {
     setLoading(true);
@@ -41,6 +53,15 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
   useEffect(() => {
     load(month);
   }, [month, load]);
+
+  useEffect(() => {
+    (async () => {
+      setTrendLoading(true);
+      const res = await fetch('/api/admin/workshop/bi-dashboard/trend?months=6');
+      if (res.ok) setTrend((await res.json()).trend);
+      setTrendLoading(false);
+    })();
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
@@ -111,10 +132,43 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
           </div>
 
           <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">First-Time-Fix Rate — 6 Month Trend</h3>
+              {trendLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+            </div>
+            {!trendLoading && (!trend || trend.every((p) => p.firstTimeFixRate === null)) ? (
+              <p className="text-sm text-gray-400">Not enough closed job cards yet to chart a trend.</p>
+            ) : trend ? (
+              <div className="flex items-end gap-3 h-32">
+                {trend.map((p) => {
+                  const heightPct = p.firstTimeFixRate ?? 0;
+                  const isCurrent = p.monthValue === month;
+                  return (
+                    <div key={p.monthValue} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
+                        {p.firstTimeFixRate === null ? '—' : `${p.firstTimeFixRate}%`}
+                      </span>
+                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-t-md h-full flex items-end overflow-hidden">
+                        <div
+                          className={`w-full rounded-t-md transition-all ${isCurrent ? 'bg-blue-600' : 'bg-blue-300 dark:bg-blue-800'}`}
+                          style={{ height: `${Math.max(heightPct, p.firstTimeFixRate === null ? 0 : 4)}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {p.label.split(' ')[0].slice(0, 3)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </Card>
+
+          <Card>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Revenue Mix — {data.period.label}</h3>
             <div className="space-y-4">
               {[
-                { label: 'Standard / Chargeable', value: data.revenue.standard, color: 'bg-blue-600' },
+                { label: 'Standard / Chargeable', value: data.revenue.standard, color: 'bg-geely-blue' },
                 { label: 'Warranty / Goodwill', value: data.revenue.warrantyGoodwill, color: 'bg-purple-600' },
               ].map((row) => {
                 const pct = data.revenue.total > 0 ? Math.round((row.value / data.revenue.total) * 100) : 0;

@@ -105,19 +105,19 @@ export default function VisitStartPage() {
       </div>
 
       {/* How it works */}
-      <section className="py-14 bg-ice">
+      <section className="py-14 bg-ice dark:bg-midnight">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-          <h2 className="disp text-2xl md:text-3xl text-navy font-bold text-center mb-10">
+          <h2 className="disp text-2xl md:text-3xl text-navy dark:text-ice font-bold text-center mb-10">
             How a Showroom Visit Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {STEPS.map((step) => (
-              <div key={step.title} className="bg-white rounded-xl border border-line p-6 text-center">
+              <div key={step.title} className="bg-white dark:bg-midnight-surface rounded-xl border border-line dark:border-midnight-line p-6 text-center">
                 <div className="w-12 h-12 bg-geely-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <step.icon className="text-geely-blue" size={24} />
                 </div>
                 <h3 className="font-bold text-navy mb-2">{step.title}</h3>
-                <p className="text-sm text-steel">{step.description}</p>
+                <p className="text-sm text-steel dark:text-steel-light">{step.description}</p>
               </div>
             ))}
           </div>
@@ -172,6 +172,7 @@ export default function VisitStartPage() {
                   <div className="flex gap-2 mt-4">
                     <Link
                       href={`/dealers/${dealer.id}`}
+                      aria-label={`View details for ${dealer.name}`}
                       className="flex-1 text-center bg-geely-blue text-white text-xs font-bold py-2 px-3 rounded hover:bg-opacity-90 transition-all"
                     >
                       View Details
@@ -181,7 +182,7 @@ export default function VisitStartPage() {
                         href={`https://www.google.com/maps?q=${dealer.coordinates.latitude},${dealer.coordinates.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-xs font-semibold text-navy border border-line py-2 px-3 rounded hover:bg-ice transition-all"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-navy dark:text-ice border border-line dark:border-midnight-line py-2 px-3 rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
                       >
                         <Navigation size={14} />
                         Directions

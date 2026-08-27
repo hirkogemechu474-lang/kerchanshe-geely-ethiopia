@@ -12,7 +12,6 @@ export default function LoginPage() {
   const registered = searchParams.get('registered') === 'true';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loginType, setLoginType] = useState<'customer' | 'dealer' | 'admin'>('customer');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -25,17 +24,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      if (loginType === 'admin') {
-        // Redirect to admin login
-        router.push('/admin/login');
-        return;
-      }
-
-      // Customer/Dealer login logic would go here
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, type: loginType }),
+        body: JSON.stringify(formData),
       });
 
       // Safely parse JSON — a 404 or 500 may return HTML, not JSON
@@ -51,10 +43,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Redirect based on the role the server actually authenticated —
-      // not the customer/dealer toggle the user happened to have selected
-      // before submitting, which could send a real customer down the
-      // dealer path (or vice versa) if they picked the wrong tab.
+      // Redirect based on the role the server actually authenticated.
       if (data.user?.role === 'dealer') {
         router.push('/dealer/dashboard');
       } else {
@@ -83,49 +72,12 @@ export default function LoginPage() {
                 <Car className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-navy mb-2">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-navy dark:text-ice mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to your Geely account</p>
           </div>
 
-          {/* Login Type Selector */}
-          <div className="bg-gray-100 rounded-lg p-1 mb-6 grid grid-cols-3 gap-1">
-            <button
-              type="button"
-              onClick={() => setLoginType('customer')}
-              className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginType === 'customer'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginType('dealer')}
-              className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginType === 'dealer'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Dealer
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginType('admin')}
-              className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginType === 'admin'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Admin
-            </button>
-          </div>
-
           {/* Form */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-lg border border-gray-200 p-8">
             {registered && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 shrink-0" />
@@ -135,6 +87,14 @@ export default function LoginPage() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
                 {error}
+                {error.toLowerCase().includes('admin login') && (
+                  <>
+                    {' '}
+                    <Link href="/admin/login" className="underline font-medium">
+                      Go to staff sign in
+                    </Link>
+                  </>
+                )}
               </div>
             )}
 
@@ -216,6 +176,14 @@ export default function LoginPage() {
             <Link href="/quote" className="hover:text-blue-600">Get a Quote</Link>
             {' • '}
             <Link href="/dealers" className="hover:text-blue-600">Find Dealers</Link>
+          </div>
+
+          {/* Staff sign-in */}
+          <div className="mt-3 text-center text-xs text-gray-400">
+            Geely staff member?{' '}
+            <Link href="/admin/login" className="text-gray-500 hover:text-blue-600 underline">
+              Sign in here
+            </Link>
           </div>
         </div>
       </div>

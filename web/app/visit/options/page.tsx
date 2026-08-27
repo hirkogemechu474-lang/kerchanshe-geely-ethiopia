@@ -44,8 +44,8 @@ function WelcomeContent() {
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertCircle className="w-8 h-8 text-red-600" />
         </div>
-        <h1 className="text-2xl font-bold text-navy mb-2">Something went wrong</h1>
-        <p className="text-steel">{error}</p>
+        <h1 className="text-2xl font-bold text-navy dark:text-ice mb-2">Something went wrong</h1>
+        <p className="text-steel dark:text-steel-light">{error}</p>
       </div>
     );
   }
@@ -55,10 +55,10 @@ function WelcomeContent() {
       <div className="w-16 h-16 bg-geely-blue/10 rounded-full flex items-center justify-center mx-auto mb-6">
         <Car className="w-8 h-8 text-geely-blue" />
       </div>
-      <h1 className="text-3xl font-bold text-navy mb-2">
+      <h1 className="text-3xl font-bold text-navy dark:text-ice mb-2">
         {visit?.fullName ? `Welcome, ${visit.fullName}!` : 'Welcome!'}
       </h1>
-      <p className="text-steel mb-8">
+      <p className="text-steel dark:text-steel-light mb-8">
         Explore our full range of Geely vehicles — photos, videos, and complete specifications for every model.
       </p>
       <button
@@ -74,7 +74,7 @@ function WelcomeContent() {
 export default function VisitOptionsPage() {
   return (
     <MainLayout>
-      <div className="py-16 bg-ice min-h-[70vh] flex items-center">
+      <div className="py-16 bg-ice dark:bg-midnight min-h-[70vh] flex items-center">
         <Suspense fallback={null}>
           <WelcomeContent />
         </Suspense>

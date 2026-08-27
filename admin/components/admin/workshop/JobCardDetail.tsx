@@ -259,7 +259,7 @@ export default function JobCardDetail({
             </p>
             <p className="text-sm text-gray-500">{state.customerName} · {state.customerPhone}{state.customerEmail ? ` · ${state.customerEmail}` : ''}</p>
             {state.customerVehicle && (
-              <p className="text-xs text-blue-600 mt-1">
+              <p className="text-xs text-geely-blue mt-1">
                 Linked vehicle record
                 {state.customerVehicle.jobCards.length > 1
                   ? ` · ${state.customerVehicle.jobCards.length - 1} other visit${state.customerVehicle.jobCards.length - 1 === 1 ? '' : 's'} on file`
@@ -539,7 +539,7 @@ export default function JobCardDetail({
           <ul className="space-y-2">
             {state.warrantyClaims.map((c) => (
               <li key={c.id} className="flex items-center justify-between text-sm">
-                <Link href={`/admin/workshop/warranty-claims/${c.id}`} className="text-blue-600 hover:underline">
+                <Link href={`/admin/workshop/warranty-claims/${c.id}`} className="text-geely-blue hover:underline">
                   {c.claimNo}
                 </Link>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${WARRANTY_CLAIM_STATUS_COLORS[c.status as keyof typeof WARRANTY_CLAIM_STATUS_COLORS]}`}>

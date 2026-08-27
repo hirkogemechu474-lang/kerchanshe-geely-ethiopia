@@ -63,7 +63,7 @@ export default function VehiclePickerList({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search vehicles..."
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
       </div>
       <TableCard>
@@ -104,13 +104,13 @@ export default function VehiclePickerList({
                   <Td className="text-gray-500 dark:text-gray-400">{vehicle.year}</Td>
                   <Td className="text-right">
                     {hrefFor ? (
-                      <Link href={hrefFor(vehicle.id)} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                      <Link href={hrefFor(vehicle.id)} className="text-geely-blue dark:text-blue-400 hover:underline font-medium">
                         Manage
                       </Link>
                     ) : (
                       <button
                         onClick={() => onSelect?.(vehicle.id)}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                        className="text-geely-blue dark:text-blue-400 hover:underline font-medium"
                       >
                         {active ? 'Selected' : 'Select'}
                       </button>

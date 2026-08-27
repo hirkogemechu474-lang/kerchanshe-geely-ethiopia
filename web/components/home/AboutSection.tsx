@@ -40,70 +40,62 @@ export default function AboutSection() {
   const keyPoints = content.keyPoints?.length ? content.keyPoints : DEFAULT_HOME_ABOUT.keyPoints;
 
   return (
-    <section className="bg-white py-16 md:py-24 border-t border-line">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Copy */}
-          <div>
-            <div className="text-[12px] tracking-[0.2em] text-geely-blue font-bold mb-4 uppercase">
-              Discover Geely
-            </div>
-            <h2 className="disp text-[30px] md:text-[42px] text-navy font-extrabold leading-[1.1] mb-6">
-              {content.title || DEFAULT_HOME_ABOUT.title}
-            </h2>
-            <p className="text-[15px] md:text-[16px] text-steel leading-relaxed mb-8 max-w-xl">
-              {content.description || DEFAULT_HOME_ABOUT.description}
-            </p>
+    <section className="relative overflow-hidden text-white">
+      {/* Full-bleed background image with a navy gradient overlay, mirroring
+          geely.com.eg's "About Geely" band rather than the old side-by-side
+          card layout. */}
+      <div className="absolute inset-0">
+        {content.image ? (
+          <img
+            src={content.image}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-navy" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/40" />
+      </div>
 
-            <ul className="space-y-3 mb-9">
-              {keyPoints.map((point, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-geely-blue shrink-0" />
-                  <span className="text-navy text-sm font-medium leading-relaxed">{point}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 bg-navy text-white text-[13px] font-bold px-7 py-3.5 rounded-lg hover:bg-geely-blue transition-colors"
-            >
-              Learn More
-              <span aria-hidden>&rarr;</span>
-            </Link>
+      <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-20 md:py-28">
+        <div className="max-w-xl">
+          <div className="text-[12px] tracking-[0.2em] text-gold font-bold mb-4 uppercase">
+            Discover Geely
           </div>
+          <h2 className="disp text-[30px] md:text-[42px] font-extrabold leading-[1.1] mb-6">
+            {content.title || DEFAULT_HOME_ABOUT.title}
+          </h2>
+          <p className="text-[15px] md:text-[16px] text-[#c3d2ea] leading-relaxed mb-8">
+            {content.description || DEFAULT_HOME_ABOUT.description}
+          </p>
 
-          {/* Visual */}
-          <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden aspect-[4/3] ring-1 ring-black/5">
-              {content.image ? (
-                <img
-                  src={content.image}
-                  alt={content.title || 'Geely Ethiopia'}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#e8eef8] to-[#cfdaef] flex items-center justify-center">
-                  <p className="text-navy/70 text-center px-6 font-semibold">
-                    {content.title || 'Geely Ethiopia'}
-                  </p>
-                </div>
-              )}
-            </div>
+          <ul className="space-y-3 mb-9">
+            {keyPoints.map((point, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+                <span className="text-white text-sm font-medium leading-relaxed">{point}</span>
+              </li>
+            ))}
+          </ul>
 
-            {/* Credential badge */}
-            <div className="absolute -bottom-6 -right-4 sm:right-6 bg-white rounded-2xl shadow-xl shadow-navy/10 p-4 ring-1 ring-black/5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-geely-blue/10 text-geely-blue flex items-center justify-center text-lg font-extrabold">
-                  G
-                </div>
-                <div>
-                  <div className="text-[15px] font-extrabold text-navy leading-none">Since 1997</div>
-                  <div className="text-[11px] text-steel mt-1">Global engineering, everywhere</div>
-                </div>
-              </div>
-            </div>
+          <Link
+            href="/about"
+            className="inline-flex items-center gap-2 bg-white text-navy text-[13px] font-bold px-7 py-3.5 rounded-lg hover:bg-gold transition-colors"
+          >
+            Know More
+            <span aria-hidden>&rarr;</span>
+          </Link>
+        </div>
+
+        {/* Credential badge */}
+        <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur rounded-2xl px-5 py-4 ring-1 ring-white/15 mt-14">
+          <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center text-lg font-extrabold shrink-0">
+            G
+          </div>
+          <div>
+            <div className="text-[15px] font-extrabold leading-none">Since 1997</div>
+            <div className="text-[11px] text-[#c3d2ea] mt-1">Global engineering, everywhere</div>
           </div>
         </div>
       </div>

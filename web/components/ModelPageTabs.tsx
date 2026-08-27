@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Camera, Settings, RotateCw, Star, Sliders } from 'lucide-react';
 
+// Ordered to match the anchor-nav pattern on Geely's regional model pages
+// (e.g. geely.com.eg/models/gx3-pro): Overview → 360° → Gallery → Specs,
+// with our own Build & Price configurator kept at the end as an addition.
 const TABS = [
   { id: 'overview',     label: 'Overview',       icon: Star,     href: '#section-overview' },
-  { id: 'gallery',      label: 'Gallery',        icon: Camera,   href: '#section-gallery' },
-  { id: 'configurator', label: 'Build & Price',  icon: Sliders,  href: '#section-configurator' },
-  { id: 'specs',        label: 'Specifications', icon: Settings, href: '#section-specs' },
   { id: '360',          label: '360° View',      icon: RotateCw, href: '#section-360' },
+  { id: 'gallery',      label: 'Gallery',        icon: Camera,   href: '#section-gallery' },
+  { id: 'specs',        label: 'Specifications', icon: Settings, href: '#section-specs' },
+  { id: 'configurator', label: 'Build & Price',  icon: Sliders,  href: '#section-options' },
 ];
 
 export function ModelPageTabs() {
@@ -46,7 +49,7 @@ export function ModelPageTabs() {
   };
 
   return (
-    <div className="sticky top-16 z-40 bg-white border-b border-line shadow-sm">
+    <div className="sticky top-16 z-40 bg-white dark:bg-midnight-surface border-b border-line dark:border-midnight-line shadow-sm">
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
         <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
           {TABS.map((tab) => {

@@ -14,10 +14,16 @@ interface Promotion {
   isFeatured: boolean;
 }
 
-export default function PromotionsBanner() {
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
+interface PromotionsBannerProps {
+  // Fetched server-side (see app/page.tsx) so the banner is present on first
+  // paint instead of popping in after a client fetch and shifting layout.
+  initialPromotions?: Promotion[];
+}
+
+export default function PromotionsBanner({ initialPromotions = [] }: PromotionsBannerProps) {
+  const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPromotions.length === 0);
 
   useEffect(() => {
     fetchPromotions();
@@ -51,7 +57,7 @@ export default function PromotionsBanner() {
 
   return (
     <section className="py-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-      <div className="max-w-[1280px] mx-auto px-10">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex items-center gap-6">
           {/* Slider */}
           <div className="flex-1 relative">
@@ -59,7 +65,7 @@ export default function PromotionsBanner() {
               {currentPromo.bannerImage ? (
                 <img
                   src={currentPromo.bannerImage}
-                  alt={currentPromo.title}
+                  alt=""
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -89,15 +95,15 @@ export default function PromotionsBanner() {
               <>
                 <button
                   onClick={handlePrevious}
+                  aria-label="Previous promotion"
                   className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors"
-                  title="Previous"
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button
                   onClick={handleNext}
+                  aria-label="Next promotion"
                   className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors"
-                  title="Next"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -112,10 +118,10 @@ export default function PromotionsBanner() {
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
+                  aria-label={`Go to promotion ${index + 1}`}
                   className={`w-3 h-3 rounded-full transition-colors ${
                     index === currentIndex ? 'bg-white' : 'bg-white/50'
                   }`}
-                  title={`Promotion ${index + 1}`}
                 />
               ))}
             </div>

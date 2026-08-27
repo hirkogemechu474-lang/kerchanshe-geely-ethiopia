@@ -35,7 +35,8 @@ export function Toast({ id, message, variant = 'info', duration = 4000, onClose 
       <p className="flex-1 text-sm text-gray-900 dark:text-gray-100">{message}</p>
       <button
         onClick={() => onClose(id)}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+        aria-label="Dismiss notification"
+        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 -m-2"
       >
         <X size={18} />
       </button>

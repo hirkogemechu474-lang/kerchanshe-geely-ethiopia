@@ -137,7 +137,7 @@ export default async function DealerDetailsPage({ params }: { params: Promise<{ 
             {dealer.website && (
               <div className="flex items-center gap-3 text-sm">
                 <Globe className="w-4 h-4 text-gray-400" />
-                <a href={dealer.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                <a href={dealer.website} target="_blank" rel="noopener noreferrer" className="text-geely-blue hover:underline">
                   {dealer.website}
                 </a>
               </div>

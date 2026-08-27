@@ -1,14 +1,19 @@
 /**
  * Admin API Client for Web
- * 
+ *
  * Web app connects to Admin backend API instead of direct database access.
- * Admin runs on port 3001 and owns Prisma/DB.
- * 
- * Environment: Set NEXT_PUBLIC_ADMIN_API_URL in web/.env
- * Default: http://localhost:3001
+ * Admin owns Prisma/DB.
+ *
+ * IMPORTANT: this module is called from client ('use client') hooks, so it
+ * must never build an absolute URL from NEXT_PUBLIC_ADMIN_API_URL directly —
+ * that var is inlined into the browser bundle at build time and points at
+ * this *server's* localhost, which would send every visitor's browser to
+ * their own machine. Requests must stay same-origin (relative, basePath-aware)
+ * and be forwarded server-side via the rewrites() in next.config.ts instead.
  */
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:3001';
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:7500';
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -16,8 +21,10 @@ async function apiRequest<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = `${ADMIN_API_URL}${endpoint}`;
-  
+  const url = typeof window === 'undefined'
+    ? `${ADMIN_API_URL}${endpoint}`
+    : `${BASE_PATH}${endpoint}`;
+
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -74,12 +81,6 @@ export const adminApi = {
   services: {
     getMenu: () =>
       apiRequest<{ sections: any[] }>('/api/public/services/menu'),
-  },
-
-  // Electric Menu
-  electric: {
-    getMenu: () =>
-      apiRequest<{ sections: any[] }>('/api/public/electric/menu'),
   },
 
   // Test Drive Requests

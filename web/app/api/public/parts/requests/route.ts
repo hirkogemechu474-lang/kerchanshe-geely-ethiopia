@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       quantity: Math.max(1, Number(item.quantity) || 1),
     }));
 
-    const reference = generateReference();
+    const reference = await generateReference();
     const partRequest = await prisma.partRequest.create({
       data: {
         name,

@@ -41,6 +41,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       vehicleModel: quotation.vehicleModel || 'General enquiry',
       configurationJson: quotation.configurationJson ?? undefined,
       financingStatus: quotation.financingInterest ? 'PENDING' : 'NOT_APPLICABLE',
+      // Inherit the rep already working this lead (see web/lib/assignSalesRep.ts)
+      // instead of starting the order unassigned.
+      salesAgentId: quotation.assignedTo ?? null,
+      commissionStatus: quotation.assignedTo ? 'PENDING' : 'NOT_APPLICABLE',
       status: 'BOOKED',
       statusHistory: {
         create: { fromStatus: null, toStatus: 'BOOKED', changedById: session!.user.id },

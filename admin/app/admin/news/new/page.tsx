@@ -141,7 +141,7 @@ export default function NewNewsPage() {
               value={formData.title}
               onChange={handleTitleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., Geely Opens New Showroom in Addis Ababa"
             />
           </div>
@@ -158,7 +158,7 @@ export default function NewNewsPage() {
               value={formData.slug}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="auto-generated-from-title"
             />
             <p className="mt-1 text-xs text-gray-500">URL-friendly version of the title (auto-generated)</p>
@@ -177,7 +177,7 @@ export default function NewNewsPage() {
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               >
                 <option value="company">Company News</option>
                 <option value="product">Product Updates</option>
@@ -200,7 +200,7 @@ export default function NewNewsPage() {
                 value={formData.author}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="e.g., Marketing Team"
               />
             </div>
@@ -218,7 +218,7 @@ export default function NewNewsPage() {
               onChange={handleChange}
               required
               rows={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="Write your article content here..."
             />
             <p className="mt-1 text-xs text-gray-500">Support for rich text editor coming soon</p>
@@ -235,7 +235,7 @@ export default function NewNewsPage() {
               id="image"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
             <p className="mt-1 text-xs text-gray-500">
               Upload image file (max 10MB) - PNG, JPG, JPEG, GIF supported
@@ -268,7 +268,7 @@ export default function NewNewsPage() {
                 value={formData.status}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
@@ -286,7 +286,7 @@ export default function NewNewsPage() {
                 name="publishDate"
                 value={formData.publishDate}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
               <p className="mt-1 text-xs text-gray-500">Leave empty to publish immediately</p>
             </div>

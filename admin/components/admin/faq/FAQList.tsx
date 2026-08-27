@@ -43,7 +43,7 @@ export default function FAQList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
         <span className="ml-2 text-gray-600">Loading FAQs...</span>
       </div>
     );
@@ -69,7 +69,7 @@ export default function FAQList() {
         </p>
         <Link
           href="/admin/faq/new"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-geely-blue text-white rounded-lg hover:bg-navy"
         >
           <HelpCircle className="w-5 h-5" />
           Create First FAQ
@@ -89,7 +89,7 @@ export default function FAQList() {
           <select
             value={selectedCategory ?? ''}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
           >
             {categories.map((category) => (
               <option key={category} value={category}>
@@ -104,10 +104,10 @@ export default function FAQList() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-blue-600" />
+            <HelpCircle className="w-5 h-5 text-geely-blue" />
             <span className="text-sm font-medium text-blue-900">Total FAQs</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600 mt-1">{faqs.length}</div>
+          <div className="text-2xl font-bold text-geely-blue mt-1">{faqs.length}</div>
         </div>
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -192,7 +192,7 @@ export default function FAQList() {
               <div className="flex items-center gap-2 ml-4">
                 <Link
                   href={`/admin/faq/${faq.id}/edit`}
-                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors"
+                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-navy rounded-lg transition-colors"
                   title="Edit FAQ"
                 >
                   <Edit className="w-4 h-4" />

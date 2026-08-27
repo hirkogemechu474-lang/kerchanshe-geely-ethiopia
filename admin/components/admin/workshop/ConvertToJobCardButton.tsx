@@ -28,7 +28,7 @@ export default function ConvertToJobCardButton({ bookingId }: { bookingId: strin
     <button
       onClick={convert}
       disabled={busy}
-      className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+      className="text-xs font-medium text-geely-blue hover:text-blue-800 disabled:opacity-50"
     >
       {busy ? 'Converting…' : 'Convert to Job Card'}
     </button>

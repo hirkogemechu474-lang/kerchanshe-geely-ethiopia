@@ -127,7 +127,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
   if (loadingSections) {
     return (
       <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -156,7 +156,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           value={formData.sectionId}
           onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         >
           <option value="">Select a section</option>
           {sections.map((section) => (
@@ -183,7 +183,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           required
           placeholder="e.g., Test Drive"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
       </div>
 
@@ -197,7 +197,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="e.g., Book a test drive today"
           rows={3}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Short description displayed in the menu
@@ -214,7 +214,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           value={formData.icon}
           onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
           placeholder="e.g., Car, Wrench, Shield, Phone"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Optional: Lucide icon name (Car, Wrench, Shield, Phone, etc.)
@@ -244,7 +244,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           value={formData.url}
           onChange={(e) => setFormData({ ...formData, url: e.target.value })}
           placeholder="/services/test-drive or https://external-link.com"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Link to internal page (/services/test-drive) or external URL
@@ -261,7 +261,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
           value={formData.displayOrder}
           onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
           min="0"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <p className="mt-1 text-sm text-gray-500">
           Lower numbers appear first (0 = first, 1 = second, etc.)
@@ -316,7 +316,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
         <button
           type="submit"
           disabled={loading || !formData.sectionId}
-          className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="flex-1 bg-geely-blue text-white py-3 rounded-lg hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">

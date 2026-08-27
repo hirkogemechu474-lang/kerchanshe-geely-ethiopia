@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { sendStatusEmail } from '@/lib/status-email';
-import { buildSalesAgreementPdf } from '@/lib/sales/salesAgreementPdf';
-import { env } from '@/lib/env';
 
 // Sales-agent approval step: "Sales Quotation -> Approval by sales agent ->
 // Generate Agreement -> e-sign/attach" (see docs/SWMS-INTEGRATION-BACKLOG.md
-// Phase 16). Approving unlocks the PDF agreement at
-// GET /api/admin/orders/[id]/agreement (staff view/print), emails the same
-// PDF to the customer, and — per direct follow-up request — the email also
-// links to a public self-service page (web/app/agreement/[orderId]) where
-// the customer can draw a signature or upload a photo of a signed printout
-// and then continue straight to payment. Reuses canManageQuotations rather
-// than a new permission flag: the diagram names the approver as "a sales
-// agent," the same actor who already manages this order.
+// Phase 16). Approving only finalizes approvedAt/approvedById — this is a
+// deliberate draft/review step: the agreement PDF is not built or emailed
+// here. Staff preview it (GET /api/admin/orders/[id]/agreement) and can
+// still adjust the price before a separate, explicit action
+// (POST .../send-agreement) actually generates and emails it to the
+// customer. Reuses canManageQuotations rather than a new permission flag:
+// the diagram names the approver as "a sales agent," the same actor who
+// already manages this order.
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
   if (response) return response;
@@ -38,29 +35,5 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     data: { approvedAt: new Date(), approvedById: session!.user.id },
   });
 
-  let notificationSent = false;
-  if (updated.customerEmail) {
-    try {
-      const siteUrl = env.app.url.replace(/\/$/, '');
-      const signingUrl = `${siteUrl}/agreement/${updated.id}`;
-      const pdfBytes = await buildSalesAgreementPdf(updated);
-      notificationSent = await sendStatusEmail({
-        to: updated.customerEmail,
-        name: updated.customerName,
-        entityType: 'sales order',
-        status: 'approved',
-        reference: updated.orderNo,
-        details: 'Your order has been approved! Your sales agreement is attached as a PDF — sign it online (draw a signature or upload a photo of a signed printout) to continue to payment.',
-        actionUrl: signingUrl,
-        actionLabel: 'Continue',
-        attachments: [
-          { filename: `${updated.orderNo}-agreement.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' },
-        ],
-      });
-    } catch (emailError) {
-      console.error('[orders:approve:email]', emailError);
-    }
-  }
-
-  return NextResponse.json({ order: updated, notificationSent });
+  return NextResponse.json({ order: updated });
 }

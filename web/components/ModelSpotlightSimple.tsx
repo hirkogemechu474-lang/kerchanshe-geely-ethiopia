@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, Play, Pause } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Play, Pause } from 'lucide-react';
 import { withBasePath } from '@/lib/publicPath';
 
 interface ModelSpotlightSimpleProps {
@@ -21,6 +21,24 @@ export function ModelSpotlightSimple({
 }: ModelSpotlightSimpleProps) {
   const [currentView, setCurrentView] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      containerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  };
+
+  React.useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   React.useEffect(() => {
     if (!isAutoPlaying) return;
@@ -41,7 +59,7 @@ export function ModelSpotlightSimple({
   };
 
   return (
-    <div className={`relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden ${className}`}>
       {/* Main Image */}
       <div className="relative aspect-[16/9]">
         <img
@@ -83,7 +101,7 @@ export function ModelSpotlightSimple({
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
             className={`p-3 rounded-lg backdrop-blur-sm transition-all ${
               isAutoPlaying 
-                ? 'bg-gold text-navy' 
+                ? 'bg-gold text-navy dark:text-ice' 
                 : 'bg-black/50 text-white hover:bg-black/70'
             }`}
             title={isAutoPlaying ? 'Pause' : 'Auto-Play'}
@@ -92,10 +110,11 @@ export function ModelSpotlightSimple({
           </button>
 
           <button
+            onClick={toggleFullscreen}
             className="p-3 bg-black/50 backdrop-blur-sm text-white rounded-lg hover:bg-black/70 transition-all"
-            title="Fullscreen"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            <Maximize2 size={20} />
+            {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
           </button>
         </div>
       </div>
@@ -138,7 +157,7 @@ export function ModelSpotlightSimple({
             className={`w-2 h-2 rounded-full transition-all ${
               currentView === index
                 ? 'bg-gold w-8'
-                : 'bg-white/30 hover:bg-white/60'
+                : 'bg-white dark:bg-midnight-surface/30 hover:bg-white/60'
             }`}
           />
         ))}

@@ -67,6 +67,13 @@ export default function VehiclePurchasePage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [initiatingPayment, setInitiatingPayment] = useState(false);
+  const [checkingApproval, setCheckingApproval] = useState(false);
+  // Gates the render below while the purchaseId-restore fetch is in
+  // flight, so a fresh page load from the "Continue" email link doesn't
+  // flash (or, on a slow/failed fetch, get permanently stuck on) the
+  // "Request a Quote First" gate before the real confirmation loads.
+  const [restoringPurchase, setRestoringPurchase] = useState(() => Boolean(searchParams.get("purchaseId")));
+  const [restoreFailed, setRestoreFailed] = useState(false);
   // Direct prefill fallback for entry points with no ShowroomVisit (e.g.
   // the sales-agreement signing page) — passed straight as query params
   // rather than fetched by visitId.
@@ -81,6 +88,46 @@ export default function VehiclePurchasePage() {
     bankId: "",
     consent: false,
   });
+
+  // Lets a customer land back on their confirmation screen from the
+  // "continue" link in their pending-purchase email, instead of losing it
+  // the moment they close the tab (the confirmation above only ever lived
+  // in this component's local state until now).
+  useEffect(() => {
+    const restorePurchaseId = searchParams.get("purchaseId");
+    if (!restorePurchaseId || confirmation) {
+      setRestoringPurchase(false);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/purchases/${encodeURIComponent(restorePurchaseId)}`);
+        const data = await res.json().catch(() => null);
+        if (!active) return;
+        if (!res.ok || !data?.success) {
+          setRestoreFailed(true);
+          return;
+        }
+        setConfirmation({
+          purchaseId: data.purchase.purchaseId,
+          transactionId: data.purchase.transactionId,
+          paymentReference: data.purchase.paymentReference,
+          paymentDate: "",
+          status: data.purchase.paymentStatus,
+          approved: data.purchase.approved,
+        });
+      } catch {
+        if (active) setRestoreFailed(true);
+      } finally {
+        if (active) setRestoringPurchase(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!visitId) return;
@@ -204,6 +251,32 @@ export default function VehiclePurchasePage() {
     }
   };
 
+  // Approval happens later, on the admin side, once a sales agent reviews
+  // the order — so this screen polls for it rather than making the customer
+  // reload. Once it flips true, the "Continue to Bank Payment" button below
+  // (already gated on confirmation.approved) appears without a refresh.
+  const checkApprovalStatus = async () => {
+    if (!confirmation?.purchaseId || confirmation.approved) return;
+    setCheckingApproval(true);
+    try {
+      const response = await fetch(`/api/public/purchases/${encodeURIComponent(confirmation.purchaseId)}`);
+      const result = await response.json().catch(() => null);
+      if (response.ok && result?.success && result.purchase?.approved) {
+        setConfirmation((current) => (current ? { ...current, approved: true } : current));
+      }
+    } catch {
+      /* silent — the next poll or manual check will retry */
+    } finally {
+      setCheckingApproval(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!confirmation || confirmation.status === "PAID" || confirmation.approved) return;
+    const interval = setInterval(() => void checkApprovalStatus(), 15000);
+    return () => clearInterval(interval);
+  }, [confirmation?.purchaseId, confirmation?.status, confirmation?.approved]);
+
   const continueToBankPayment = async () => {
     if (!confirmation?.purchaseId) return;
     setInitiatingPayment(true);
@@ -231,29 +304,58 @@ export default function VehiclePurchasePage() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={42} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">{confirmation.status === "PAID" ? "Purchase Confirmed!" : "Purchase Received"}</h1>
-            <p className="text-lg text-steel mb-8">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">{confirmation.status === "PAID" ? "Purchase Confirmed!" : "Purchase Received"}</h1>
+            <p className="text-lg text-steel dark:text-steel-light mb-8">
               {confirmation.status === "PAID" ? "Thank you for purchasing your Geely vehicle. Your payment has been successfully received." : "Your purchase request is pending payment confirmation from the selected bank."}
             </p>
-            <div className="bg-ice rounded-xl p-6 text-left space-y-3 mb-8">
-              <div className="flex justify-between gap-4"><span className="text-steel">Purchase ID</span><strong className="text-navy">{confirmation.purchaseId}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-steel">Payment reference</span><strong className="text-navy font-mono">{confirmation.paymentReference}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-steel">Transaction ID</span><strong className="text-navy font-mono">{confirmation.transactionId}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-steel">Payment status</span><strong className={confirmation.status === "PAID" ? "text-green-700" : "text-amber-700"}>{confirmation.status === "PAID" ? "Paid / Payment Confirmed" : "Payment Pending"}</strong></div>
+            <div className="bg-ice dark:bg-midnight rounded-xl p-6 text-left space-y-3 mb-8">
+              <div className="flex justify-between gap-4"><span className="text-steel dark:text-steel-light">Purchase ID</span><strong className="text-navy dark:text-ice">{confirmation.purchaseId}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-steel dark:text-steel-light">Payment reference</span><strong className="text-navy dark:text-ice font-mono">{confirmation.paymentReference}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-steel dark:text-steel-light">Transaction ID</span><strong className="text-navy dark:text-ice font-mono">{confirmation.transactionId}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-steel dark:text-steel-light">Payment status</span><strong className={confirmation.status === "PAID" ? "text-green-700" : "text-amber-700"}>{confirmation.status === "PAID" ? "Paid / Payment Confirmed" : "Payment Pending"}</strong></div>
             </div>
+            {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 text-left">{error}</div>}
             {confirmation.status !== "PAID" && (
               confirmation.approved ? (
-                <button type="button" onClick={() => void continueToBankPayment()} disabled={initiatingPayment} className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all mb-4 disabled:opacity-60">
-                  {initiatingPayment ? "Starting secure payment..." : "Continue to Bank Payment"}
-                </button>
+                <div className="mb-4">
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 text-left font-medium">
+                    Your order has been approved! Continue below to complete your payment.
+                  </div>
+                  <button type="button" onClick={() => void continueToBankPayment()} disabled={initiatingPayment} className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-60">
+                    {initiatingPayment ? "Starting secure payment..." : "Continue to Bank Payment"}
+                  </button>
+                </div>
               ) : (
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 text-left">
-                  Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign — you can continue to payment right after that.
+                  <p className="mb-3">
+                    Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign — you can continue to payment right after that. This page will update automatically once it's approved.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void checkApprovalStatus()}
+                    disabled={checkingApproval}
+                    className="text-amber-900 font-semibold underline hover:no-underline disabled:opacity-60"
+                  >
+                    {checkingApproval ? "Checking..." : "Continue — check approval status"}
+                  </button>
                 </div>
               )
             )}
-            <p className="text-sm text-steel mb-6">Our sales team will contact you with the next steps for vehicle delivery.</p>
+            <p className="text-sm text-steel dark:text-steel-light mb-6">Our sales team will contact you with the next steps for vehicle delivery.</p>
             <Link href="/" className="inline-block bg-geely-blue text-white font-bold px-8 py-3 rounded-lg hover:bg-navy transition-all">Back to Home</Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (restoringPurchase) {
+    return (
+      <MainLayout>
+        <div className="min-h-[70vh] flex items-center justify-center px-6 py-20">
+          <div className="flex items-center gap-3 text-steel dark:text-steel-light">
+            <LoaderCircle className="animate-spin" size={22} />
+            <span>Loading your purchase...</span>
           </div>
         </div>
       </MainLayout>
@@ -264,10 +366,12 @@ export default function VehiclePurchasePage() {
     return (
       <MainLayout>
         <div className="min-h-[70vh] flex items-center justify-center px-6 py-20">
-          <div className="max-w-xl rounded-2xl border border-line bg-white p-8 text-center shadow-lg">
-            <h1 className="disp mb-4 text-3xl font-bold text-navy">Request a Quote First</h1>
-            <p className="mb-7 text-steel leading-relaxed">
-              Please complete the quotation form first. After Geely Ethiopia reviews and approves your quote, you will receive a secure link to continue with direct vehicle payment.
+          <div className="max-w-xl rounded-2xl border border-line dark:border-midnight-line bg-white dark:bg-midnight-surface p-8 text-center shadow-lg">
+            <h1 className="disp mb-4 text-3xl font-bold text-navy dark:text-ice">Request a Quote First</h1>
+            <p className="mb-7 text-steel dark:text-steel-light leading-relaxed">
+              {restoreFailed
+                ? "We couldn't find that purchase, or it may have expired. Please start a new quote, or check the link from your confirmation email and try again."
+                : "Please complete the quotation form first. After Geely Ethiopia reviews and approves your quote, you will receive a secure link to continue with direct vehicle payment."}
             </p>
             <Link href="/quote" className="inline-flex rounded-lg bg-gold px-8 py-4 font-bold text-[#2c2308] hover:bg-opacity-90 transition-all">
               Start Your Quote
@@ -289,16 +393,16 @@ export default function VehiclePurchasePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-line shadow-lg overflow-hidden">
-          <div className="bg-ice p-6 border-b border-line">
-            <h2 className="text-2xl font-bold text-navy">Vehicle Purchase Details</h2>
-            <p className="text-sm text-steel mt-1">Your payment is processed as a direct vehicle purchase, not a loan.</p>
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line shadow-lg overflow-hidden">
+          <div className="bg-ice dark:bg-midnight p-6 border-b border-line dark:border-midnight-line">
+            <h2 className="text-2xl font-bold text-navy dark:text-ice">Vehicle Purchase Details</h2>
+            <p className="text-sm text-steel dark:text-steel-light mt-1">Your payment is processed as a direct vehicle purchase, not a loan.</p>
           </div>
           <div className="p-6 space-y-7">
             <div>
-              <h3 className="text-lg font-bold text-navy mb-4">1. Select Vehicle</h3>
-              {loading ? <p className="text-steel">Loading vehicles...</p> : (
-                <select required value={selectedVehicleId} onChange={(event) => setSelectedVehicleId(event.target.value)} className="w-full px-4 py-3 border border-line rounded-lg bg-white outline-none focus:ring-2 focus:ring-geely-blue">
+              <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">1. Select Vehicle</h3>
+              {loading ? <p className="text-steel dark:text-steel-light">Loading vehicles...</p> : (
+                <select required value={selectedVehicleId} onChange={(event) => setSelectedVehicleId(event.target.value)} className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight-surface outline-none focus:ring-2 focus:ring-geely-blue">
                   <option value="">Choose a Geely vehicle</option>
                   {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name} — {vehicle.hidePrice ? "Price on request" : formatETB(vehicle.finalPrice ?? vehicle.basePrice)}</option>)}
                 </select>
@@ -306,28 +410,28 @@ export default function VehiclePurchasePage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-navy mb-4">2. Customer Information</h3>
+              <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">2. Customer Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input required value={form.fullName} onChange={(event) => update("fullName", event.target.value)} placeholder="Full name *" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <input required type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="Phone number *" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <input required type="email" value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="Email address *" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <input required value={form.nationalId} onChange={(event) => update("nationalId", event.target.value)} placeholder="National ID / Passport *" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <input value={form.color} onChange={(event) => update("color", event.target.value)} placeholder="Preferred color" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <input required type="number" min="1" max="10" value={form.quantity} onChange={(event) => update("quantity", event.target.value)} placeholder="Quantity *" className="px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
-                <textarea required value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Customer address *" rows={3} className="md:col-span-2 px-4 py-3 border border-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue resize-none" />
+                <input required value={form.fullName} onChange={(event) => update("fullName", event.target.value)} placeholder="Full name *" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <input required type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="Phone number *" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <input required type="email" value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="Email address *" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <input required value={form.nationalId} onChange={(event) => update("nationalId", event.target.value)} placeholder="National ID / Passport *" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <input value={form.color} onChange={(event) => update("color", event.target.value)} placeholder="Preferred color" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <input required type="number" min="1" max="10" value={form.quantity} onChange={(event) => update("quantity", event.target.value)} placeholder="Quantity *" className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue" />
+                <textarea required value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Customer address *" rows={3} className="md:col-span-2 px-4 py-3 border border-line dark:border-midnight-line rounded-lg outline-none focus:ring-2 focus:ring-geely-blue resize-none" />
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-navy mb-4">3. Bank Payment</h3>
+              <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">3. Bank Payment</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select required value={form.bankId} onChange={(event) => update("bankId", event.target.value)} disabled={!selectedVehicleId || banks.length === 0} className="px-4 py-3 border border-line rounded-lg bg-white outline-none focus:ring-2 focus:ring-geely-blue disabled:bg-ice">
+                <select required value={form.bankId} onChange={(event) => update("bankId", event.target.value)} disabled={!selectedVehicleId || banks.length === 0} className="px-4 py-3 border border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight-surface outline-none focus:ring-2 focus:ring-geely-blue disabled:bg-ice dark:disabled:bg-midnight">
                   <option value="">{!selectedVehicleId ? "Select a vehicle first" : banks.length ? "Select your bank *" : "No payment banks available"}</option>
                   {banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}
                 </select>
-                <div className="px-4 py-3 bg-ice rounded-lg flex items-center justify-between gap-4">
-                  <span className="text-steel">Exact purchase amount</span>
-                  <strong className="text-navy text-lg">
+                <div className="px-4 py-3 bg-ice dark:bg-midnight rounded-lg flex items-center justify-between gap-4">
+                  <span className="text-steel dark:text-steel-light">Exact purchase amount</span>
+                  <strong className="text-navy dark:text-ice text-lg">
                     {selectedVehicle?.hidePrice ? "Price on request" : formatETB(purchaseAmount)}
                   </strong>
                 </div>
@@ -338,7 +442,7 @@ export default function VehiclePurchasePage() {
               </div>
             </div>
 
-            <label className="flex items-start gap-3 text-sm text-steel">
+            <label className="flex items-start gap-3 text-sm text-steel dark:text-steel-light">
               <input type="checkbox" required checked={form.consent} onChange={(event) => update("consent", event.target.checked)} className="mt-1 accent-geely-blue" />
               <span>I confirm these purchase details are correct and authorize Geely Ethiopia to process my vehicle purchase and contact me about delivery.</span>
             </label>
@@ -346,7 +450,7 @@ export default function VehiclePurchasePage() {
             <button type="submit" disabled={submitting || !selectedVehicle || !form.bankId} className="w-full bg-gold text-[#2c2308] font-bold text-base py-4 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {submitting ? <><LoaderCircle className="animate-spin" size={20} /> Processing payment...</> : <>Pay Now / Purchase Vehicle <ShieldCheck size={20} /></>}
             </button>
-            <p className="text-xs text-steel text-center">Payment confirmation and your purchase reference will appear after successful payment.</p>
+            <p className="text-xs text-steel dark:text-steel-light text-center">Payment confirmation and your purchase reference will appear after successful payment.</p>
           </div>
         </form>
       </div>

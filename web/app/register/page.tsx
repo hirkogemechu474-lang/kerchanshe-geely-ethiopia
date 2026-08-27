@@ -10,7 +10,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [accountType, setAccountType] = useState<'customer' | 'dealer'>('customer');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -49,11 +48,10 @@ export default function RegisterPage() {
     }
 
     try {
-      // Registration logic would go here
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, accountType }),
+        body: JSON.stringify(formData),
       });
 
       // Safely parse — server errors may return HTML instead of JSON
@@ -99,38 +97,12 @@ export default function RegisterPage() {
                 <Car className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-navy mb-2">Create Your Account</h1>
+            <h1 className="text-3xl font-bold text-navy dark:text-ice mb-2">Create Your Account</h1>
             <p className="text-gray-600">Join the Geely Ethiopia family today</p>
           </div>
 
-          {/* Account Type Selector */}
-          <div className="bg-white rounded-lg p-1 mb-6 grid grid-cols-2 gap-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setAccountType('customer')}
-              className={`py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-                accountType === 'customer'
-                  ? 'bg-geely-blue text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Customer Account
-            </button>
-            <button
-              type="button"
-              onClick={() => setAccountType('dealer')}
-              className={`py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-                accountType === 'dealer'
-                  ? 'bg-geely-blue text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Dealer Account
-            </button>
-          </div>
-
           {/* Form */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-lg border border-gray-200 p-8">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
                 {error}
@@ -332,26 +304,26 @@ export default function RegisterPage() {
           </div>
 
           {/* Benefits */}
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-bold text-navy mb-4 text-center">Benefits of Creating an Account</h3>
+          <div className="mt-8 bg-white dark:bg-midnight-surface rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="font-bold text-navy dark:text-ice mb-4 text-center">Benefits of Creating an Account</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
                   <CheckCircle className="text-green-600" size={20} />
                 </div>
-                <p className="text-xs text-steel">Save favorite vehicles</p>
+                <p className="text-xs text-steel dark:text-steel-light">Save favorite vehicles</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                   <CheckCircle className="text-blue-600" size={20} />
                 </div>
-                <p className="text-xs text-steel">Track test drives & quotes</p>
+                <p className="text-xs text-steel dark:text-steel-light">Track test drives & quotes</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
                   <CheckCircle className="text-purple-600" size={20} />
                 </div>
-                <p className="text-xs text-steel">Exclusive offers & updates</p>
+                <p className="text-xs text-steel dark:text-steel-light">Exclusive offers & updates</p>
               </div>
             </div>
           </div>

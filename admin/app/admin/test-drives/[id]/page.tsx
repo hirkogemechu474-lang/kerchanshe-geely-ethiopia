@@ -17,7 +17,7 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/test-drives" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"><ArrowLeft className="w-4 h-4" />Back to test drives</Link>
+      <Link href="/admin/test-drives" className="inline-flex items-center gap-2 text-sm text-geely-blue hover:text-blue-800"><ArrowLeft className="w-4 h-4" />Back to test drives</Link>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Test Drive Booking</h1>
@@ -29,8 +29,8 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-gray-900">Customer</h2>
           <div className="flex items-center gap-3"><User className="w-5 h-5 text-gray-400" /><span>{testDrive.customerName}</span></div>
-          <a className="flex items-center gap-3 text-blue-600" href={`mailto:${testDrive.customerEmail}`}><Mail className="w-5 h-5" />{testDrive.customerEmail}</a>
-          <a className="flex items-center gap-3 text-blue-600" href={`tel:${testDrive.customerPhone}`}><Phone className="w-5 h-5" />{testDrive.customerPhone}</a>
+          <a className="flex items-center gap-3 text-geely-blue" href={`mailto:${testDrive.customerEmail}`}><Mail className="w-5 h-5" />{testDrive.customerEmail}</a>
+          <a className="flex items-center gap-3 text-geely-blue" href={`tel:${testDrive.customerPhone}`}><Phone className="w-5 h-5" />{testDrive.customerPhone}</a>
         </Card>
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-gray-900">Appointment</h2>

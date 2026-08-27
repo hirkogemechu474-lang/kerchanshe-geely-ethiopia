@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,7 +23,6 @@ import {
   LogOut,
   ChevronRight,
   Image,
-  Zap,
   FolderTree,
   UtensilsCrossed,
   Globe,
@@ -41,11 +40,11 @@ import {
   LayoutGrid,
   UserCog,
   ShieldCheck,
-  Shield,
   Sun,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
   Layers,
   ListChecks,
   Palette,
@@ -115,7 +114,6 @@ const navSections: NavSection[] = [
       {
         items: [
           { name: 'User Management', href: '/admin/users', icon: Users, permission: 'canManageUsers' },
-          { name: 'Roles & Permissions', href: '/admin/users/roles', icon: Shield, permission: 'canManageUsers' },
         ],
       },
     ],
@@ -146,12 +144,6 @@ const navSections: NavSection[] = [
           { name: 'Gallery & Videos', href: '/admin/vehicles/gallery', icon: Images, permission: 'canManageVehicles' },
           { name: 'Vehicle Sections', href: '/admin/vehicles/sections', icon: LayoutPanelTop, permission: 'canManageVehicles' },
           { name: 'Vehicle Settings', href: '/admin/vehicles/settings', icon: Settings, permission: 'canManageVehicles' },
-        ],
-      },
-      {
-        label: 'Electric',
-        items: [
-          { name: 'Electric Pages', href: '/admin/electric', icon: Zap, permission: 'canManageContent' },
         ],
       },
       {
@@ -220,7 +212,6 @@ const navSections: NavSection[] = [
       {
         label: 'Service / Workshop',
         items: [
-          { name: 'Live Dashboard', href: '/admin/workshop/dashboard', icon: Gauge, permission: 'canViewJobCards' },
           { name: 'Management BI Dashboard', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
           { name: 'Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
           { name: 'Customers', href: '/admin/customers', icon: Users, permission: 'canViewJobCards' },
@@ -254,6 +245,36 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   // Desktop-only collapse to an icon rail — independent of the mobile
   // open/close overlay above. Persisted so it survives a reload.
   const [collapsed, setCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Nav badges keyed by href — proactive alerts (e.g. low-stock parts) that
+  // should be visible from anywhere in the admin, not just when someone
+  // happens to open that section's own page.
+  const [navBadges, setNavBadges] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch('/api/admin/parts/low-stock-count')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.count > 0) setNavBadges((prev) => ({ ...prev, '/admin/parts': data.count }));
+      })
+      .catch(() => {});
+  }, []);
+
+  // "/" focuses the sidebar search, like most professional admin panels —
+  // ignored while the user is already typing in a text field.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
   useEffect(() => {
     const stored = window.localStorage.getItem('admin-sidebar-collapsed');
     if (stored === '1') setCollapsed(true);
@@ -288,11 +309,16 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
       .map((section) => ({
         ...section,
         subgroups: section.subgroups
-          .map((subgroup) => ({ ...subgroup, items: subgroup.items.filter((item) => matchesItem(item, q)) }))
+          .map((subgroup) => ({
+            ...subgroup,
+            items: subgroup.items
+              .filter((item) => matchesItem(item, q))
+              .map((item) => (navBadges[item.href] ? { ...item, badge: navBadges[item.href] } : item)),
+          }))
           .filter((subgroup) => subgroup.items.length > 0),
       }))
       .filter((section) => section.subgroups.length > 0);
-  }, [query, permissions]);
+  }, [query, permissions, navBadges]);
 
   const activeSectionId = useMemo(() => {
     for (const section of navSections) {
@@ -318,12 +344,31 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   const isItemActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/');
 
+  // Header breadcrumb: section > subgroup > page, derived from the active nav item.
+  const breadcrumb = useMemo(() => {
+    for (const section of navSections) {
+      for (const subgroup of section.subgroups) {
+        for (const item of subgroup.items) {
+          if (isItemActive(item.href)) {
+            const parts: string[] = [];
+            if (section.label !== item.name) parts.push(section.label);
+            if (subgroup.label) parts.push(subgroup.label);
+            parts.push(item.name);
+            return parts;
+          }
+        }
+      }
+    }
+    return ['Admin'];
+  }, [pathname]);
+
   const toggleSection = (sectionId: string) => {
     setOpenSections((prev) => ({ ...prev, [sectionId]: !isSectionOpen(sectionId) }));
   };
 
   useEffect(() => {
     setSidebarOpen(false);
+    setUserMenuOpen(false);
     setIsNavigating(true);
     const timer = setTimeout(() => setIsNavigating(false), 300);
     return () => clearTimeout(timer);
@@ -345,15 +390,15 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 ${collapsed ? 'lg:w-20' : 'lg:w-72'} bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 transform transition-all duration-300 ease-in-out flex flex-col shadow-2xl ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 ${collapsed ? 'lg:w-20' : 'lg:w-72'} bg-midnight transform transition-all duration-300 ease-in-out flex flex-col shadow-2xl ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/70 bg-slate-950/90 shrink-0 backdrop-blur-sm">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-midnight-line/70 bg-midnight/90 shrink-0 backdrop-blur-sm">
           <Link href="/admin/analytics" className="flex items-center gap-3 group min-w-0">
-            <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-105">
-              <Car className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 shrink-0 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg shadow-black/20 group-hover:shadow-black/30 transition-all duration-300 group-hover:scale-105">
+              <img src="/assets/logos/geely-vertical-logo.svg" alt="Geely" className="w-full h-full object-contain" />
             </div>
             <div className={collapsed ? 'lg:hidden' : ''}>
               <span className="text-white font-bold text-xl leading-none tracking-tight">Geely</span>
@@ -362,14 +407,14 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-slate-800 rounded-lg"
+            className="lg:hidden text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-midnight-surface rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
           <button
             onClick={toggleCollapsed}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-slate-800 rounded-lg shrink-0"
+            className="hidden lg:flex text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-midnight-surface rounded-lg shrink-0"
           >
             {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
@@ -378,19 +423,29 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
         {/* Search */}
         <div className={`px-4 pt-4 shrink-0 ${collapsed ? 'lg:hidden' : ''}`}>
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-blue-bright transition-colors" />
             <input
+              ref={searchInputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               placeholder="Search menu..."
-              className="w-full bg-slate-800/70 border border-slate-700/70 text-sm text-gray-200 placeholder-gray-500 rounded-xl pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all"
+              className="w-full bg-midnight-surface/70 border border-midnight-line/70 text-sm text-gray-200 placeholder-gray-500 rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-geely-blue/50 focus:border-geely-blue/50 focus:bg-midnight-surface transition-all"
             />
+            {!query && !searchFocused && (
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-gray-500 border border-midnight-line rounded px-1.5 py-0.5 pointer-events-none">
+                /
+              </kbd>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="relative flex-1 min-h-0">
+          <div className="pointer-events-none absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-midnight to-transparent z-10" />
+          <nav className="h-full px-3 py-4 overflow-y-auto scrollbar-thin">
           {query.trim() ? (
             <>
               {filteredSections.map((section) => (
@@ -408,8 +463,8 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 transition-all duration-200 group ${
                           active
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-gray-400 hover:bg-slate-800 hover:text-white'
+                            ? 'bg-geely-blue text-white shadow-lg shadow-geely-blue/20'
+                            : 'text-gray-400 hover:bg-midnight-surface hover:text-white'
                         }`}
                       >
                         <ItemIcon className="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
@@ -444,8 +499,8 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${collapsed ? 'lg:justify-center' : ''} ${
                           active
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                            ? 'bg-geely-blue text-white shadow-lg shadow-geely-blue/20'
+                            : 'text-gray-300 hover:bg-midnight-surface hover:text-white'
                         }`}
                       >
                         <ItemIcon className="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
@@ -454,7 +509,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                     );
                   })}
               </div>
-              <div className="h-px bg-slate-800/70 mx-2 mb-3" />
+              <div className="h-px bg-midnight-line/70 mx-2 mb-3" />
 
               {/* Accordion groups — Content Management, SWMS */}
               {filteredSections
@@ -473,12 +528,17 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 group ${collapsed ? 'lg:justify-center' : ''} ${
                           open
-                            ? 'bg-slate-800/80 text-white'
-                            : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
+                            ? 'bg-midnight-surface/80 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-midnight-surface/50'
                         }`}
                       >
                         <span className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider">
-                          <SectionIcon className="w-[18px] h-[18px]" />
+                          <span className="relative">
+                            <SectionIcon className="w-[18px] h-[18px]" />
+                            {section.id === activeSectionId && (
+                              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-blue-bright shadow-[0_0_4px_rgba(102,163,255,0.8)]" />
+                            )}
+                          </span>
                           <span className={collapsed ? 'lg:hidden' : ''}>{section.label}</span>
                         </span>
                         <ChevronRight
@@ -507,17 +567,17 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                                   onClick={() => setSidebarOpen(false)}
                                   className={`flex items-center gap-3 pl-8 pr-3 py-2.5 rounded-lg mb-0.5 transition-all duration-200 group relative ${
                                     active
-                                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-                                      : 'text-gray-400 hover:bg-slate-800/60 hover:text-white'
+                                      ? 'bg-geely-blue text-white shadow-lg shadow-geely-blue/20'
+                                      : 'text-gray-400 hover:bg-midnight-surface/60 hover:text-white'
                                   }`}
                                 >
                                   {active && (
-                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-400 rounded-r-full shadow-lg shadow-blue-400/50" />
+                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-bright rounded-r-full shadow-lg shadow-blue-bright/50" />
                                   )}
                                   <ItemIcon className="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
                                   <span className="font-medium truncate text-sm">{item.name}</span>
                                   {item.badge !== undefined && item.badge > 0 && (
-                                    <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 shadow-sm">
+                                    <span className="ml-auto bg-geely-blue text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 shadow-sm">
                                       {item.badge}
                                     </span>
                                   )}
@@ -532,64 +592,111 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                 })}
             </>
           )}
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="px-3 pb-4 shrink-0 border-t border-slate-800/70 pt-4 bg-slate-950/50">
-          <div className={`flex items-center gap-3 px-2 py-2 rounded-lg ${collapsed ? 'lg:justify-center' : ''}`}>
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md shrink-0">
-              {user.name?.charAt(0).toUpperCase()}
-            </div>
-            <div className={`min-w-0 flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
-              <div className="text-sm font-semibold text-gray-100 truncate">{user.name}</div>
-              <div className="text-xs text-gray-500 truncate">{userRole}</div>
-            </div>
-            <button
-              onClick={handleSignOut}
-              title="Sign out"
-              className={`p-2 text-gray-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors ${collapsed ? 'lg:hidden' : ''}`}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className={`mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-slate-800 hover:text-white transition-colors ${collapsed ? 'lg:justify-center' : ''}`}
-          >
-            {theme === 'dark' ? <Sun className="w-[18px] h-[18px] flex-shrink-0" /> : <Moon className="w-[18px] h-[18px] flex-shrink-0" />}
-            <span className={`font-medium text-sm ${collapsed ? 'lg:hidden' : ''}`}>
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </span>
-          </button>
-          <Link
-            href="/"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={collapsed ? 'View Website' : undefined}
-            className={`mt-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-slate-800 hover:text-white transition-colors group ${collapsed ? 'lg:justify-center' : ''}`}
-          >
-            <Globe className="w-[18px] h-[18px] flex-shrink-0 group-hover:scale-110 transition-transform" />
-            <span className={`font-medium text-sm ${collapsed ? 'lg:hidden' : ''}`}>View Website</span>
-            <span className={`ml-auto text-xs text-gray-600 ${collapsed ? 'lg:hidden' : ''}`}>↗</span>
-          </Link>
+          </nav>
+          <div className="pointer-events-none absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-midnight to-transparent z-10" />
         </div>
       </div>
 
       {/* Main Content */}
       <div className={`transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
-        {/* Mobile-only menu control; desktop pages use the persistent sidebar. */}
-        <div className="lg:hidden h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-5 sticky top-0 z-30 shadow-sm">
-          <button onClick={() => setSidebarOpen(true)} className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors">
-            <Menu className="w-6 h-6" />
-            <span className="text-sm font-semibold">Admin menu</span>
-          </button>
+        {/* Persistent header — page breadcrumb, theme toggle, site link, user menu */}
+        <div className="h-16 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden -ml-1.5 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-sm min-w-0 truncate">
+              {breadcrumb.map((part, i) => (
+                <span key={part} className="flex items-center gap-1.5 min-w-0">
+                  {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 shrink-0" />}
+                  <span
+                    className={`truncate ${
+                      i === breadcrumb.length - 1
+                        ? 'text-gray-900 dark:text-gray-100 font-semibold'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    {part}
+                  </span>
+                </span>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+            </button>
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View Website"
+              className="hidden sm:inline-flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <Globe className="w-[18px] h-[18px]" />
+            </Link>
+            <div className="hidden sm:block w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1" />
+
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="flex items-center gap-2 p-1 pr-1.5 sm:pr-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="w-8 h-8 bg-geely-blue rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="hidden md:block text-left min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[9rem]">{user.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[9rem]">{userRole}</div>
+                </div>
+                <ChevronDown className={`hidden md:block w-4 h-4 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden">
+                    <div className="px-3.5 py-2.5 border-b border-gray-100 dark:border-gray-800">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{user.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
+                      <div className="mt-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md bg-geely-blue/10 dark:bg-geely-blue/15 text-geely-blue dark:text-blue-bright text-[11px] font-medium">
+                        {userRole}
+                      </div>
+                    </div>
+                    <Link
+                      href="/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="sm:hidden flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <Globe className="w-4 h-4" /> View Website
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" /> Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Page Content */}
         <main className="p-6">
           {isNavigating && (
-            <div className="fixed top-16 left-0 right-0 z-40 h-1 bg-blue-600 animate-pulse" />
+            <div className="fixed top-16 left-0 right-0 z-40 h-1 bg-geely-blue animate-pulse" />
           )}
           {children}
         </main>
@@ -598,7 +705,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

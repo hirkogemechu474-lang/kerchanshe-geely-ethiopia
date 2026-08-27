@@ -27,7 +27,7 @@ export default async function PartsPage() {
         </div>
         <Link
           href="/admin/parts/new"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-geely-blue text-white px-4 py-2 rounded-lg hover:bg-navy transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Part
@@ -36,7 +36,7 @@ export default async function PartsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <Package className="w-8 h-8 text-blue-600 mb-3" />
+          <Package className="w-8 h-8 text-geely-blue mb-3" />
           <h3 className="text-2xl font-bold text-gray-900">{totalParts}</h3>
           <p className="text-sm text-gray-500">Total Parts</p>
         </div>
@@ -78,7 +78,7 @@ export default async function PartsPage() {
                 <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                   <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   <p>No spare parts in inventory</p>
-                  <Link href="/admin/parts/new" className="text-blue-600 hover:underline mt-2 inline-block">
+                  <Link href="/admin/parts/new" className="text-geely-blue hover:underline mt-2 inline-block">
                     Add your first part
                   </Link>
                 </td>
@@ -102,7 +102,7 @@ export default async function PartsPage() {
                   <td className="px-6 py-4 text-gray-900">ETB {part.price.toLocaleString()}</td>
                   <td className="px-6 py-4 text-gray-500">{part.supplier}</td>
                   <td className="px-6 py-4 text-right">
-                    <Link href={`/admin/parts/${part.id}`} className="text-blue-600 hover:text-blue-700">
+                    <Link href={`/admin/parts/${part.id}`} className="text-geely-blue hover:text-navy">
                       Edit
                     </Link>
                   </td>

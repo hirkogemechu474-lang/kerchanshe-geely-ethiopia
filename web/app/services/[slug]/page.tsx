@@ -10,7 +10,7 @@ interface PageProps {
 async function getServicePage(slug: string) {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/public/services/pages/${slug}`,
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/public/services/pages/${slug}`,
       { cache: 'no-store' }
     );
 
@@ -144,7 +144,7 @@ export default async function ServicePage({ params }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm border border-gray-200 p-8">
               {page.content ? (
                 <div 
                   className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:text-gray-900"
@@ -170,7 +170,7 @@ export default async function ServicePage({ params }: PageProps) {
                 <div className="space-y-3">
                   <Link
                     href="/test-drive"
-                    className="block w-full bg-white text-blue-600 text-center py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
+                    className="block w-full bg-white dark:bg-midnight-surface text-blue-600 text-center py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
                   >
                     Book Test Drive
                   </Link>
@@ -184,7 +184,7 @@ export default async function ServicePage({ params }: PageProps) {
               </div>
 
               {/* Contact Card */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Need Help?</h3>
                 <div className="space-y-4 text-sm text-gray-600">
                   <div>
@@ -209,7 +209,7 @@ export default async function ServicePage({ params }: PageProps) {
               </div>
 
               {/* Quick Links */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Links</h3>
                 <div className="space-y-2 text-sm">
                   <Link href="/service" className="block text-gray-700 hover:text-blue-600 transition-colors">
@@ -235,7 +235,7 @@ export default async function ServicePage({ params }: PageProps) {
       </div>
 
       {/* Related Services Section */}
-      <div className="bg-white border-t border-gray-200 py-12">
+      <div className="bg-white dark:bg-midnight-surface border-t border-gray-200 py-12">
         <div className="max-w-[1280px] mx-auto px-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Other Services</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -219,6 +219,32 @@ export const rateLimitConfigs = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 5,
     message: 'Too many attempts. Please try again in a few minutes or contact us.'
+  },
+
+  // Public order-payment page — same "reached via an emailed link" shape
+  // as the agreement routes above.
+  paymentView: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 30,
+    message: 'Too many requests. Please try again in a few minutes.'
+  },
+  paymentSubmit: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many attempts. Please try again in a few minutes or contact us.'
+  },
+
+  // Public sales-quotation viewing/signing — same "reached via an emailed
+  // link" shape as the agreement routes above.
+  quotationView: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 30,
+    message: 'Too many requests. Please try again in a few minutes.'
+  },
+  quotationSign: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many attempts. Please try again in a few minutes or contact us.'
   }
 };
 

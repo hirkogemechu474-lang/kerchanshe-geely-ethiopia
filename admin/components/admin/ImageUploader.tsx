@@ -261,7 +261,7 @@ export default function ImageUploader({
             className="hidden"
           />
           {uploading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-blue-600">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-geely-blue">
               <Loader2 className="w-10 h-10 animate-spin" />
               <div className="font-semibold text-sm">Uploading… please wait</div>
             </div>
@@ -300,7 +300,7 @@ export default function ImageUploader({
                     applyUrl(draftUrl);
                   }
                 }}
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-geely-blue/30 focus:border-blue-500"
               />
               <div className="flex gap-2">
                 <button

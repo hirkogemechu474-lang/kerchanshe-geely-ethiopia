@@ -83,7 +83,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
             value={value || ''}
             onChange={(e) => updateField(tabId as keyof CanonicalSpecSections, key, e.target.value)}
             list={options?.length ? datalistId : undefined}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             placeholder={`Enter ${label.toLowerCase()}`}
           />
           {options?.length ? (
@@ -114,7 +114,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
               onClick={() => setSelectedTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                 selectedTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  ? 'border-geely-blue text-geely-blue dark:text-blue-bright'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
@@ -140,7 +140,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
               key={key}
               onClick={() => applyTemplate(template)}
               type="button"
-              className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:text-gray-200 rounded-lg text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-500 transition-colors"
+              className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:text-gray-200 rounded-lg text-sm hover:bg-geely-blue/10 dark:hover:bg-geely-blue/20 hover:border-geely-blue transition-colors"
             >
               {template.label}
             </button>

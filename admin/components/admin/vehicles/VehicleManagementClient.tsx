@@ -125,7 +125,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search vehicles by name, model, or SKU..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
           </div>
           <Button variant="secondary">
@@ -141,7 +141,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue"
             >
               <option value="all">All Categories</option>
               <option value="SUV">SUV</option>
@@ -156,7 +156,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue"
             >
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
@@ -172,7 +172,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
         <Card>
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-geely-blue border-t-transparent mb-4"></div>
               <p className="text-gray-600">Loading vehicles...</p>
             </div>
           </div>
@@ -247,7 +247,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/admin/vehicles/${vehicle.id}`}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors"
                           title="View"
                         >
                           <Eye className="w-4 h-4" />

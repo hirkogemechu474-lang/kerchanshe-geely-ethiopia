@@ -86,7 +86,7 @@ export default function TechnologyHero() {
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
-                className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20"
+                className="bg-white dark:bg-midnight-surface/10 backdrop-blur-md rounded-2xl p-6 border border-white/20"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}

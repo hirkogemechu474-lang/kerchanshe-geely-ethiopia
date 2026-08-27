@@ -292,7 +292,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="flex items-center gap-2 bg-geely-blue text-white font-semibold px-6 py-3 rounded hover:bg-blue-700 transition-all"
+                    className="flex items-center gap-2 bg-geely-blue text-white font-semibold px-6 py-3 rounded hover:bg-navy transition-all"
                   >
                     <Edit size={18} />
                     Edit
@@ -333,7 +333,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                     value={editData.title}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   />
                 </div>
 
@@ -348,7 +348,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                       value={editData.category}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     >
                       <option value="company">Company News</option>
                       <option value="product">Product Updates</option>
@@ -370,7 +370,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                       value={editData.author}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                     value={editData.excerpt}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Brief summary (optional)"
                   />
                 </div>
@@ -400,7 +400,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                     onChange={handleChange}
                     required
                     rows={12}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   />
                 </div>
 
@@ -414,7 +414,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   />
                   
                   {(editData.image || imagePreview) && (
@@ -439,7 +439,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                       value={editData.status}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     >
                       <option value="draft">Draft</option>
                       <option value="published">Published</option>
@@ -456,7 +456,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
                       name="publishDate"
                       value={editData.publishDate}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     />
                   </div>
                 </div>

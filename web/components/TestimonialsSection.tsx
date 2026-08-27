@@ -104,22 +104,22 @@ export default function TestimonialsSection({
     <div>
       {/* Section Header with Stats */}
       <div className="text-center mb-12">
-        <h2 className="disp text-4xl text-navy font-bold mb-4">
+        <h2 className="disp text-4xl text-navy dark:text-ice font-bold mb-4">
           What Our Customers Say
         </h2>
-        <p className="text-steel text-base max-w-2xl mx-auto mb-8">
+        <p className="text-steel dark:text-steel-light text-base max-w-2xl mx-auto mb-8">
           Real experiences from Geely owners across Ethiopia. Every review is verified and authentic.
         </p>
 
         {/* Overall Rating Display */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mb-8">
           <div className="text-center">
-            <div className="text-5xl font-bold text-navy mb-2">{averageRating}</div>
+            <div className="text-5xl font-bold text-navy dark:text-ice mb-2">{averageRating}</div>
             <div className="flex items-center gap-2 mb-2">
               {renderStars(Math.round(Number(averageRating)), "md")}
-              <span className="text-sm text-steel">({testimonials.length} reviews)</span>
+              <span className="text-sm text-steel dark:text-steel-light">({testimonials.length} reviews)</span>
             </div>
-            <div className="text-sm text-steel">Average Rating</div>
+            <div className="text-sm text-steel dark:text-steel-light">Average Rating</div>
           </div>
 
           {/* Rating Breakdown */}
@@ -127,7 +127,7 @@ export default function TestimonialsSection({
             {[5, 4, 3, 2, 1].map((rating) => (
               <div key={rating} className="flex items-center gap-3">
                 <div className="flex items-center gap-1 w-16">
-                  <span className="text-sm text-steel">{rating}</span>
+                  <span className="text-sm text-steel dark:text-steel-light">{rating}</span>
                   <Star size={14} className="text-yellow-400 fill-yellow-400" />
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2">
@@ -138,7 +138,7 @@ export default function TestimonialsSection({
                     }}
                   ></div>
                 </div>
-                <span className="text-sm text-steel w-8">
+                <span className="text-sm text-steel dark:text-steel-light w-8">
                   {ratingCounts[rating as keyof typeof ratingCounts]}
                 </span>
               </div>
@@ -149,8 +149,8 @@ export default function TestimonialsSection({
 
       {/* Filters */}
       {showFilters && (
-        <div className="flex flex-wrap gap-4 items-center mb-8 p-4 bg-ice rounded-lg">
-          <div className="flex items-center gap-2 text-steel text-sm font-semibold">
+        <div className="flex flex-wrap gap-4 items-center mb-8 p-4 bg-ice dark:bg-midnight rounded-lg">
+          <div className="flex items-center gap-2 text-steel dark:text-steel-light text-sm font-semibold">
             <Filter size={18} />
             Filter by:
           </div>
@@ -158,7 +158,7 @@ export default function TestimonialsSection({
           <select
             value={filterRating}
             onChange={(e) => setFilterRating(Number(e.target.value))}
-            className="px-3 py-2 border border-line rounded text-sm"
+            className="px-3 py-2 border border-line dark:border-midnight-line rounded text-sm"
           >
             <option value={0}>All Ratings</option>
             <option value={5}>5 Stars Only</option>
@@ -166,7 +166,7 @@ export default function TestimonialsSection({
             <option value={3}>3+ Stars</option>
           </select>
 
-          <div className="text-sm text-steel">
+          <div className="text-sm text-steel dark:text-steel-light">
             Showing {filteredTestimonials.length} of {testimonials.length} reviews
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function TestimonialsSection({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white border border-line rounded-lg overflow-hidden hover:shadow-lg transition-all"
+            className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-lg overflow-hidden hover:shadow-lg transition-all"
           >
             {/* Header */}
             <div className="p-6 pb-4">
@@ -193,17 +193,17 @@ export default function TestimonialsSection({
                 {/* Customer Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-navy truncate">{testimonial.customerName || 'Anonymous'}</h4>
+                    <h4 className="font-bold text-navy dark:text-ice truncate">{testimonial.customerName || 'Anonymous'}</h4>
                     {testimonial.verified && (
                       <Shield size={16} className="text-green-600 flex-shrink-0" aria-label="Verified Purchase" />
                     )}
                   </div>
                   {testimonial.location && (
-                    <div className="text-xs text-steel mb-2">{testimonial.location}</div>
+                    <div className="text-xs text-steel dark:text-steel-light mb-2">{testimonial.location}</div>
                   )}
                   <div className="flex items-center gap-2 mb-2">
                     {renderStars(testimonial.rating)}
-                    <span className="text-xs text-steel">
+                    <span className="text-xs text-steel dark:text-steel-light">
                       {new Date(testimonial.createdAt).toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'short', 
@@ -218,7 +218,7 @@ export default function TestimonialsSection({
               </div>
 
               {/* Review Text */}
-              <p className="text-sm text-steel leading-relaxed line-clamp-4">
+              <p className="text-sm text-steel dark:text-steel-light leading-relaxed line-clamp-4">
                 "{testimonial.comment}"
               </p>
             </div>
@@ -230,19 +230,19 @@ export default function TestimonialsSection({
       {filteredTestimonials.length === 0 && (
         <div className="text-center py-12">
           <div className="text-4xl mb-4">😔</div>
-          <h3 className="text-xl font-bold text-navy mb-2">No reviews found</h3>
-          <p className="text-steel">Try adjusting your filters to see more reviews.</p>
+          <h3 className="text-xl font-bold text-navy dark:text-ice mb-2">No reviews found</h3>
+          <p className="text-steel dark:text-steel-light">Try adjusting your filters to see more reviews.</p>
         </div>
       )}
 
       {/* CTA */}
       {!maxItems && (
         <div className="text-center mt-12">
-          <div className="bg-ice p-8 rounded-lg">
-            <h3 className="text-2xl font-bold text-navy mb-3">
+          <div className="bg-ice dark:bg-midnight p-8 rounded-lg">
+            <h3 className="text-2xl font-bold text-navy dark:text-ice mb-3">
               Share Your Geely Experience
             </h3>
-            <p className="text-steel mb-6">
+            <p className="text-steel dark:text-steel-light mb-6">
               Help other customers by sharing your experience with your Geely vehicle.
             </p>
             <button className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all">

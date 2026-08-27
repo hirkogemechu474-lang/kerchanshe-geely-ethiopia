@@ -5,6 +5,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { getAvailabilityBadge } from "@/lib/partsData";
 import { Search, Filter, ShoppingCart, Shield, Truck, Store, Star, X, Loader2, Plus, Minus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { withBasePath } from "@/lib/publicPath";
 
 const benefitIcons: Record<string, any> = {
   Shield,
@@ -134,7 +135,7 @@ export default function PartsPage() {
       <MainLayout>
         <div className="flex flex-col items-center justify-center py-32">
           <Loader2 className="w-8 h-8 animate-spin text-geely-blue mb-4" />
-          <p className="text-steel">Loading parts...</p>
+          <p className="text-steel dark:text-steel-light">Loading parts...</p>
         </div>
       </MainLayout>
     );
@@ -260,10 +261,10 @@ export default function PartsPage() {
         )}
         {content?.heroBannerImage && (
           <div className="absolute right-10 top-1/2 hidden lg:block w-64 opacity-40 -translate-y-1/2">
-            <img src={content.heroBannerImage} alt="" className="w-full rounded-2xl shadow-2xl" />
+            <img src={withBasePath(content.heroBannerImage)} alt="" className="w-full rounded-2xl shadow-2xl" />
           </div>
         )}
-        <div className="relative max-w-[1280px] mx-auto px-10">
+        <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             GENUINE GEELY PARTS
           </div>
@@ -279,8 +280,8 @@ export default function PartsPage() {
 
       {/* Benefits Bar */}
       {benefits.length > 0 && (
-        <div className="bg-ice py-6 border-b border-line">
-          <div className="max-w-[1280px] mx-auto px-10">
+        <div className="bg-ice dark:bg-midnight py-6 border-b border-line dark:border-midnight-line">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               {benefits.map((benefit) => {
                 const Icon = benefitIcons[benefit.icon || ""] || Shield;
@@ -288,9 +289,9 @@ export default function PartsPage() {
                   <div key={benefit.id} className="flex items-center justify-center gap-3">
                     <Icon className="text-geely-blue" size={24} />
                     <div className="text-left">
-                      <div className="font-bold text-navy text-sm">{benefit.title}</div>
+                      <div className="font-bold text-navy dark:text-ice text-sm">{benefit.title}</div>
                       {benefit.description && (
-                        <div className="text-xs text-steel">{benefit.description}</div>
+                        <div className="text-xs text-steel dark:text-steel-light">{benefit.description}</div>
                       )}
                     </div>
                   </div>
@@ -304,9 +305,9 @@ export default function PartsPage() {
       {/* Intro */}
       {content?.introHeading && (
         <section className="py-14">
-          <div className="max-w-[1280px] mx-auto px-10 text-center max-w-3xl">
-            <h2 className="disp text-3xl font-bold text-navy mb-4">{content.introHeading}</h2>
-            <p className="text-steel text-base leading-relaxed">{content.introDescription}</p>
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 text-center max-w-3xl">
+            <h2 className="disp text-3xl font-bold text-navy dark:text-ice mb-4">{content.introHeading}</h2>
+            <p className="text-steel dark:text-steel-light text-base leading-relaxed">{content.introDescription}</p>
           </div>
         </section>
       )}
@@ -314,24 +315,24 @@ export default function PartsPage() {
       {/* Categories */}
       {categories.length > 0 && (
         <section className="pb-14">
-          <div className="max-w-[1280px] mx-auto px-10">
-            <h2 className="disp text-3xl font-bold text-navy mb-6 text-center">Browse by Category</h2>
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+            <h2 className="disp text-3xl font-bold text-navy dark:text-ice mb-6 text-center">Browse by Category</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.name)}
-                  className="group bg-white border border-line rounded-lg p-4 text-center hover:shadow-lg transition-all"
+                  className="group bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-lg p-4 text-center hover:shadow-lg transition-all"
                 >
                   {cat.imageUrl ? (
-                    <img src={cat.imageUrl} alt={cat.name} className="w-full h-20 object-contain mb-2 rounded-md" />
+                    <img src={withBasePath(cat.imageUrl)} alt={cat.name} className="w-full h-20 object-contain mb-2 rounded-md" />
                   ) : (
-                    <div className="w-full h-20 flex items-center justify-center bg-ice rounded-md mb-2 text-xs text-steel">
+                    <div className="w-full h-20 flex items-center justify-center bg-ice dark:bg-midnight rounded-md mb-2 text-xs text-steel dark:text-steel-light">
                       {cat.name}
                     </div>
                   )}
-                  <div className="text-sm font-bold text-navy group-hover:text-geely-blue">{cat.name}</div>
-                  {cat.description && <div className="text-xs text-steel mt-1 line-clamp-2">{cat.description}</div>}
+                  <div className="text-sm font-bold text-navy dark:text-ice group-hover:text-geely-blue">{cat.name}</div>
+                  {cat.description && <div className="text-xs text-steel dark:text-steel-light mt-1 line-clamp-2">{cat.description}</div>}
                 </button>
               ))}
             </div>
@@ -341,19 +342,19 @@ export default function PartsPage() {
 
       {/* Brands */}
       {brands.length > 0 && (
-        <section className="py-10 bg-ice border-y border-line">
-          <div className="max-w-[1280px] mx-auto px-10">
-            <div className="text-center text-[13px] tracking-[0.14em] text-steel font-bold mb-6">
+        <section className="py-10 bg-ice dark:bg-midnight border-y border-line dark:border-midnight-line">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+            <div className="text-center text-[13px] tracking-[0.14em] text-steel dark:text-steel-light font-bold mb-6">
               COMPATIBLE WITH
             </div>
             <div className="flex flex-wrap justify-center gap-6">
               {brands.map((brand) =>
                 brand.imageUrl ? (
-                  <div key={brand.id} className="bg-white border border-line rounded-2xl px-6 py-4 flex items-center justify-center min-w-32">
-                    <img src={brand.imageUrl} alt={brand.name} className="h-8 object-contain" />
+                  <div key={brand.id} className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-2xl px-6 py-4 flex items-center justify-center min-w-32">
+                    <img src={withBasePath(brand.imageUrl)} alt={brand.name} className="h-8 object-contain" />
                   </div>
                 ) : (
-                  <div key={brand.id} className="bg-white border border-line rounded-2xl px-6 py-4 font-bold text-navy min-w-32 text-center flex items-center justify-center">
+                  <div key={brand.id} className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-2xl px-6 py-4 font-bold text-navy dark:text-ice min-w-32 text-center flex items-center justify-center">
                     {brand.name}
                   </div>
                 )
@@ -365,17 +366,17 @@ export default function PartsPage() {
 
       {/* Search & Filters */}
       <section className="py-8">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-steel" size={20} />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-steel dark:text-steel-light" size={20} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by part name, number, or vehicle..."
-                  className="w-full pl-12 pr-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                  className="w-full pl-12 pr-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                 />
               </div>
             </div>
@@ -384,7 +385,7 @@ export default function PartsPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
               >
                 <option value="all">All Categories</option>
                 {categoryOptions.map((cat) => (
@@ -397,7 +398,7 @@ export default function PartsPage() {
               <select
                 value={selectedAvailability}
                 onChange={(e) => setSelectedAvailability(e.target.value)}
-                className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
               >
                 <option value="all">All Availability</option>
                 <option value="in-stock">In Stock</option>
@@ -408,14 +409,14 @@ export default function PartsPage() {
 
             <button
               onClick={() => { setSearchQuery(""); setSelectedCategory("all"); setSelectedAvailability("all"); }}
-              className="flex items-center justify-center gap-2 px-4 py-3 border border-line rounded-lg text-sm font-semibold text-steel hover:bg-ice transition-all"
+              className="flex items-center justify-center gap-2 px-4 py-3 border border-line dark:border-midnight-line rounded-lg text-sm font-semibold text-steel dark:text-steel-light hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
             >
               <Filter size={18} /> Clear Filters
             </button>
           </div>
 
           <div className="flex justify-between items-center mb-6">
-            <div className="text-sm text-steel">Showing {filteredParts.length} of {parts.length} parts</div>
+            <div className="text-sm text-steel dark:text-steel-light">Showing {filteredParts.length} of {parts.length} parts</div>
             {cartCount > 0 && (
               <button
                 onClick={() => setCartOpen(true)}
@@ -430,7 +431,7 @@ export default function PartsPage() {
 
       {/* Parts Grid */}
       <section className="pb-16">
-        <div className="max-w-[1280px] mx-auto px-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           {filteredParts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredParts.map((part, index) => {
@@ -440,10 +441,10 @@ export default function PartsPage() {
                 const categoryName = part.category || (part.brand || "") || "General";
 
                 return (
-                  <motion.div key={part.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.05 }} className="bg-white border border-line rounded-lg overflow-hidden hover:shadow-lg transition-all">
-                    <div className="relative h-40 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel text-center p-4 overflow-hidden">
+                  <motion.div key={part.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.05 }} className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-lg overflow-hidden hover:shadow-lg transition-all">
+                    <div className="relative h-40 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel dark:text-steel-light text-center p-4 overflow-hidden">
                       {part.imageUrl ? (
-                        <img src={part.imageUrl} alt={part.name} className="w-full h-full object-contain p-2" />
+                        <img src={withBasePath(part.imageUrl)} alt={part.name} className="w-full h-full object-contain p-2" />
                       ) : (
                         <span>{part.name}<br />Product Image</span>
                       )}
@@ -458,16 +459,16 @@ export default function PartsPage() {
                     </div>
 
                     <div className="p-4">
-                      <div className="text-xs text-steel mb-1">{categoryName}</div>
-                      <h3 className="font-bold text-navy mb-2 text-sm leading-tight">{part.name}</h3>
-                      <div className="text-xs text-steel mb-3">Part #: {part.sku}</div>
+                      <div className="text-xs text-steel dark:text-steel-light mb-1">{categoryName}</div>
+                      <h3 className="font-bold text-navy dark:text-ice mb-2 text-sm leading-tight">{part.name}</h3>
+                      <div className="text-xs text-steel dark:text-steel-light mb-3">Part #: {part.sku}</div>
                       {part.brand && (
-                        <div className="text-xs text-steel mb-2"><span className="font-semibold text-navy">Fit:</span> {part.brand}</div>
+                        <div className="text-xs text-steel dark:text-steel-light mb-2"><span className="font-semibold text-navy dark:text-ice">Fit:</span> {part.brand}</div>
                       )}
-                      <p className="text-xs text-steel mb-3 leading-relaxed line-clamp-2">{part.description}</p>
+                      <p className="text-xs text-steel dark:text-steel-light mb-3 leading-relaxed line-clamp-2">{part.description}</p>
 
-                      <div className="border-t border-line pt-3">
-                        <div className="text-lg font-bold text-navy mb-3">{formatPrice(part.price)}</div>
+                      <div className="border-t border-line dark:border-midnight-line pt-3">
+                        <div className="text-lg font-bold text-navy dark:text-ice mb-3">{formatPrice(part.price)}</div>
                         <div className="flex gap-2">
                           {availability === "in-stock" || availability === "limited" ? (
                             <button onClick={() => isInCart ? removeFromCart(part.id) : addToCart(part.id)} className={`flex-1 text-xs font-bold py-2 px-3 rounded transition-all ${isInCart ? "bg-green-600 text-white" : "bg-geely-blue text-white hover:bg-opacity-90"}`}>
@@ -487,8 +488,8 @@ export default function PartsPage() {
             </div>
           ) : (
             <div className="text-center py-20">
-              <h3 className="text-2xl font-bold text-navy mb-3">No parts found</h3>
-              <p className="text-steel mb-6">Try adjusting your search terms or filters.</p>
+              <h3 className="text-2xl font-bold text-navy dark:text-ice mb-3">No parts found</h3>
+              <p className="text-steel dark:text-steel-light mb-6">Try adjusting your search terms or filters.</p>
             </div>
           )}
         </div>
@@ -498,13 +499,13 @@ export default function PartsPage() {
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50" onClick={() => setCartOpen(false)} />
-          <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col">
+          <div className="relative w-full max-w-md h-full bg-white dark:bg-midnight-surface shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-line bg-ice">
-              <h4 className="font-bold text-navy">
+            <div className="flex items-center justify-between p-4 border-b border-line dark:border-midnight-line bg-ice dark:bg-midnight">
+              <h4 className="font-bold text-navy dark:text-ice">
                 Parts Request ({cartCount} items)
               </h4>
-              <button onClick={() => setCartOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={() => setCartOpen(false)} aria-label="Close parts request cart" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -513,20 +514,20 @@ export default function PartsPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {cartItems.length > 0 ? (
                 cartItems.map(({ part, cart }) => (
-                  <div key={part.id} className="flex gap-3 border border-line rounded-lg p-3">
+                  <div key={part.id} className="flex gap-3 border border-line dark:border-midnight-line rounded-lg p-3">
                     <div className="w-16 h-16 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
                       {part.imageUrl ? (
-                        <img src={part.imageUrl} alt={part.name} className="w-full h-full object-contain p-1" />
+                        <img src={withBasePath(part.imageUrl)} alt={part.name} className="w-full h-full object-contain p-1" />
                       ) : (
-                        <span className="text-[10px] text-steel text-center px-1">img</span>
+                        <span className="text-[10px] text-steel dark:text-steel-light text-center px-1">img</span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-navy text-sm leading-tight">{part.name}</div>
-                      <div className="text-xs text-steel mb-1">Part #: {part.sku}</div>
-                      <div className="text-sm font-bold text-navy">{formatPrice(part.price)}</div>
+                      <div className="font-bold text-navy dark:text-ice text-sm leading-tight">{part.name}</div>
+                      <div className="text-xs text-steel dark:text-steel-light mb-1">Part #: {part.sku}</div>
+                      <div className="text-sm font-bold text-navy dark:text-ice">{formatPrice(part.price)}</div>
                       <div className="flex items-center gap-1 mt-2">
-                        <button onClick={() => updateQuantity(part.id, cart.quantity - 1)} className="w-7 h-7 flex items-center justify-center border border-line rounded hover:bg-ice transition-colors">
+                        <button onClick={() => updateQuantity(part.id, cart.quantity - 1)} className="w-7 h-7 flex items-center justify-center border border-line dark:border-midnight-line rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-colors">
                           <Minus className="w-3 h-3" />
                         </button>
                         <input
@@ -534,9 +535,9 @@ export default function PartsPage() {
                           min={1}
                           value={cart.quantity}
                           onChange={(e) => updateQuantity(part.id, Number(e.target.value))}
-                          className="w-12 text-center rounded-md border border-line py-1 text-sm"
+                          className="w-12 text-center rounded-md border border-line dark:border-midnight-line py-1 text-sm"
                         />
-                        <button onClick={() => updateQuantity(part.id, cart.quantity + 1)} className="w-7 h-7 flex items-center justify-center border border-line rounded hover:bg-ice transition-colors">
+                        <button onClick={() => updateQuantity(part.id, cart.quantity + 1)} className="w-7 h-7 flex items-center justify-center border border-line dark:border-midnight-line rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-colors">
                           <Plus className="w-3 h-3" />
                         </button>
                         <button onClick={() => removeFromCart(part.id)} className="ml-auto p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -547,7 +548,7 @@ export default function PartsPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-steel">
+                <div className="text-center py-12 text-steel dark:text-steel-light">
                   <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   <p>Your cart is empty</p>
                 </div>
@@ -556,15 +557,15 @@ export default function PartsPage() {
 
             {/* Footer */}
             {cartItems.length > 0 && (
-              <div className="p-4 border-t border-line space-y-3">
+              <div className="p-4 border-t border-line dark:border-midnight-line space-y-3">
                 <div className="flex justify-between items-center font-semibold">
-                  <span className="text-navy">Total Selected Items</span>
-                  <span className="text-navy">{cartCount}</span>
+                  <span className="text-navy dark:text-ice">Total Selected Items</span>
+                  <span className="text-navy dark:text-ice">{cartCount}</span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={clearCart}
-                    className="flex-1 text-sm font-semibold py-3 px-4 border border-line rounded-lg hover:bg-ice transition-all"
+                    className="flex-1 text-sm font-semibold py-3 px-4 border border-line dark:border-midnight-line rounded-lg hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
                   >
                     Clear Cart
                   </button>
@@ -585,10 +586,10 @@ export default function PartsPage() {
       {quoteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => { setQuoteOpen(false); setQuoteSuccess(false); }} />
-          <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-line bg-ice">
-              <h4 className="font-bold text-navy">Request Quote ({cartCount} items)</h4>
-              <button onClick={() => { setQuoteOpen(false); setQuoteSuccess(false); }} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+          <div className="relative w-full max-w-lg bg-white dark:bg-midnight-surface rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-line dark:border-midnight-line bg-ice dark:bg-midnight">
+              <h4 className="font-bold text-navy dark:text-ice">Request Quote ({cartCount} items)</h4>
+              <button onClick={() => { setQuoteOpen(false); setQuoteSuccess(false); }} aria-label="Close quote request" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -598,8 +599,8 @@ export default function PartsPage() {
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-navy mb-2">Request Submitted!</h3>
-                <p className="text-steel mb-6">
+                <h3 className="text-xl font-bold text-navy dark:text-ice mb-2">Request Submitted!</h3>
+                <p className="text-steel dark:text-steel-light mb-6">
                   Thank you for your parts request. Our parts team will contact you shortly to confirm your quote.
                 </p>
                 <button
@@ -616,50 +617,50 @@ export default function PartsPage() {
                 )}
 
                 {/* Selected parts summary */}
-                <div className="bg-ice border border-line rounded-lg p-3 text-xs text-steel space-y-1">
+                <div className="bg-ice dark:bg-midnight border border-line dark:border-midnight-line rounded-lg p-3 text-xs text-steel dark:text-steel-light space-y-1">
                   {cartItems.map(({ part, cart }) => (
                     <div key={part.id} className="flex justify-between">
                       <span className="truncate pr-2">{part.name} × {cart.quantity}</span>
-                      <span className="font-semibold text-navy flex-shrink-0">{formatPrice(part.price * cart.quantity)}</span>
+                      <span className="font-semibold text-navy dark:text-ice flex-shrink-0">{formatPrice(part.price * cart.quantity)}</span>
                     </div>
                   ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-1">Name <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Name <span className="text-red-500">*</span></label>
                     <input required type="text" value={quoteForm.name} onChange={(e) => setQuoteForm({ ...quoteForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Your full name" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-1">Company</label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Company</label>
                     <input type="text" value={quoteForm.company} onChange={(e) => setQuoteForm({ ...quoteForm, company: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Company (optional)" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-1">Phone <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Phone <span className="text-red-500">*</span></label>
                     <input required type="tel" value={quoteForm.phone} onChange={(e) => setQuoteForm({ ...quoteForm, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="+251 ..." />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-1">Email <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Email <span className="text-red-500">*</span></label>
                     <input required type="email" value={quoteForm.email} onChange={(e) => setQuoteForm({ ...quoteForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="you@email.com" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-1">Address</label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Address</label>
                     <input type="text" value={quoteForm.address} onChange={(e) => setQuoteForm({ ...quoteForm, address: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Delivery or pickup address (optional)" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-1">Notes</label>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-1">Notes</label>
                     <textarea rows={3} value={quoteForm.notes} onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
-                      className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-3 py-2 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Any additional information..." />
                   </div>
                 </div>
@@ -677,7 +678,7 @@ export default function PartsPage() {
 
       {/* CTA */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-10 text-center">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 text-center">
           <h3 className="disp text-3xl font-bold mb-4">
             {content?.ctaTitle || "Need Help Finding the Right Part?"}
           </h3>

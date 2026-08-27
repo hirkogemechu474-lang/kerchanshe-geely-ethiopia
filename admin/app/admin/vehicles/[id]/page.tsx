@@ -156,7 +156,7 @@ export default async function VehicleDetailsPage({ params }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href={`/admin/vehicles/${vehicle.id}/edit`}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-geely-blue px-4 py-2 text-white transition-colors hover:bg-navy"
           >
             <Edit className="h-4 w-4" />
             Edit Vehicle
@@ -171,7 +171,7 @@ export default async function VehicleDetailsPage({ params }: Props) {
           <p className="text-sm text-gray-500">Current Price</p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <Package className="mb-3 h-8 w-8 text-blue-600" />
+          <Package className="mb-3 h-8 w-8 text-geely-blue" />
           <div className="text-2xl font-bold text-gray-900">{vehicle.stock}</div>
           <p className="text-sm text-gray-500">Units in Stock</p>
         </div>
@@ -344,7 +344,7 @@ export default async function VehicleDetailsPage({ params }: Props) {
             {warranty}
           </div>
           <h3 className="mt-6 mb-3 text-base font-semibold text-gray-900">Media Gallery</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {/* Display Videos First */}
             {videos.map((videoUrl, index) => {
               const youtubeEmbed = getYouTubeEmbedUrl(videoUrl);

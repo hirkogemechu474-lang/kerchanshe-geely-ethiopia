@@ -255,10 +255,10 @@ export function ModelSpotlight360({
         {/* Instructions Overlay */}
         {showInstructions && !isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 transition-opacity pointer-events-none">
-            <div className="bg-white/95 px-8 py-6 rounded-lg shadow-2xl text-center max-w-sm">
+            <div className="bg-white dark:bg-midnight-surface/95 px-8 py-6 rounded-lg shadow-2xl text-center max-w-sm">
               <div className="text-4xl mb-3">👆</div>
-              <div className="text-navy font-bold text-lg mb-2">Interactive 360° View</div>
-              <div className="text-steel text-sm">
+              <div className="text-navy dark:text-ice font-bold text-lg mb-2">Interactive 360° View</div>
+              <div className="text-steel dark:text-steel-light text-sm">
                 Drag left or right to rotate the vehicle
               </div>
             </div>
@@ -272,7 +272,7 @@ export function ModelSpotlight360({
               <div className="text-white text-sm font-mono">
                 {String(currentFrame + 1).padStart(2, '0')} / {String(totalFrames).padStart(2, '0')}
               </div>
-              <div className="w-32 h-1 bg-white/20 rounded-full overflow-hidden">
+              <div className="w-32 h-1 bg-white dark:bg-midnight-surface/20 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gold transition-all duration-100"
                   style={{ width: `${((currentFrame + 1) / totalFrames) * 100}%` }}
@@ -289,7 +289,7 @@ export function ModelSpotlight360({
           onClick={toggleAutoRotate}
           className={`p-3 rounded-lg backdrop-blur-sm transition-all ${
             isAutoRotating 
-              ? 'bg-gold text-navy' 
+              ? 'bg-gold text-navy dark:text-ice' 
               : 'bg-black/50 text-white hover:bg-black/70'
           }`}
           title={isAutoRotating ? 'Stop Auto-Rotate' : 'Start Auto-Rotate'}

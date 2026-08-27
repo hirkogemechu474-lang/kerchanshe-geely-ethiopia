@@ -117,11 +117,11 @@ export default function FeaturedVehicles() {
                   className="border border-line rounded-lg overflow-hidden hover:border-geely-blue hover:shadow-[0_10px_24px_rgba(11,37,69,0.08)] transition-all"
                 >
                   {/* Vehicle Image */}
-                  <div className="h-[170px] bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-[11px] text-steel text-center px-4 overflow-hidden">
+                  <div className="h-[170px] bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-[11px] text-navy/70 text-center px-4 overflow-hidden">
                     {imageUrl ? (
-                      <img 
-                        src={imageUrl} 
-                        alt={vehicle.name}
+                      <img
+                        src={imageUrl}
+                        alt=""
                         className="w-full h-full object-cover"
                       />
                     ) : (

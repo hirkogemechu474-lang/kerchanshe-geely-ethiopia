@@ -1,5 +1,5 @@
 // Font optimization with next/font
-import { Inter, Noto_Sans_Ethiopic } from 'next/font/google';
+import { Inter, Manrope, Noto_Sans_Ethiopic } from 'next/font/google';
 
 // Primary font - Inter
 export const inter = Inter({
@@ -8,6 +8,18 @@ export const inter = Inter({
   variable: '--font-inter',
   preload: true,
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+  adjustFontFallback: true,
+});
+
+// Display font - Manrope. Used for the wordmark, nav, and headings to give
+// the premium geometric-sans feel of global.geely.com; Inter stays the body font.
+export const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-display',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'Segoe UI', 'Arial', 'sans-serif'],
   adjustFontFallback: true,
 });
 

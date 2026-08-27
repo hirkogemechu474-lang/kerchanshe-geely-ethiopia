@@ -131,7 +131,7 @@ export default function ServicesMenuList() {
         </p>
         <Link
           href="/admin/services-menu/sections/new"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 bg-geely-blue text-white px-6 py-3 rounded-lg hover:bg-navy transition-colors"
         >
           <Plus className="w-5 h-5" />
           Create First Section
@@ -195,7 +195,7 @@ export default function ServicesMenuList() {
               </Link>
               <Link
                 href={`/admin/services-menu/sections/${section.id}/edit`}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                 title="Edit section"
               >
                 <Edit size={18} />
@@ -218,7 +218,7 @@ export default function ServicesMenuList() {
                   <p className="mb-3">No items in this section yet</p>
                   <Link
                     href={`/admin/services-menu/items/new?sectionId=${section.id}`}
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                    className="inline-flex items-center gap-2 text-geely-blue hover:text-navy font-medium"
                   >
                     <Plus size={16} />
                     Add First Item
@@ -301,7 +301,7 @@ export default function ServicesMenuList() {
                         )}
                         <Link
                           href={`/admin/services-menu/items/${item.id}/edit`}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                           title="Edit menu item"
                         >
                           <Edit size={18} />

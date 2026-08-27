@@ -3,6 +3,104 @@
 @tailwind utilities;
 
 /* ============================================
+   BASE TYPOGRAPHY
+   Body copy stays on Inter; headings and the
+   nav/wordmark switch to the display face
+   (--font-display) for a bolder, more premium
+   automotive-brand feel.
+   ============================================ */
+
+@layer base {
+  :root {
+    --geely-black: #0a0b0d;
+    --geely-white: #ffffff;
+    --geely-neutral-50: #f7f8fa;
+    --geely-neutral-100: #eef0f2;
+    --geely-neutral-300: #d5d9de;
+    --geely-neutral-600: #69717b;
+    --geely-active-blue: #0066ff;
+    --geely-display-leading: 1.08;
+  }
+
+  body {
+    background: var(--geely-neutral-50);
+    color: var(--geely-black);
+    font-family: var(--font-inter), Arial, sans-serif;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), var(--font-inter), sans-serif;
+    letter-spacing: 0;
+    line-height: var(--geely-display-leading);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* Geely Bold is supplied as a proprietary brand face. Manrope is the
+     local display fallback, with the same geometric, elevated character. */
+  button, a {
+    font-family: var(--font-inter), Arial, sans-serif;
+  }
+
+  button, [role='button'] {
+    letter-spacing: 0.04em;
+  }
+
+  ::selection {
+    background: var(--geely-active-blue);
+    color: var(--geely-white);
+  }
+}
+
+@layer components {
+  .geely-page {
+    background: var(--geely-neutral-50);
+  }
+
+  .geely-kicker {
+    color: var(--geely-active-blue);
+    font-family: var(--font-inter), Arial, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .geely-cta {
+    align-items: center;
+    background: var(--geely-active-blue);
+    color: var(--geely-white);
+    display: inline-flex;
+    font-family: var(--font-inter), Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    justify-content: center;
+    letter-spacing: 0.12em;
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+    text-transform: uppercase;
+    transition: background-color 200ms ease, transform 200ms ease;
+  }
+
+  .geely-cta:hover {
+    background: #0052cc;
+    transform: translateY(-1px);
+  }
+
+  .geely-cta:focus-visible {
+    outline: 2px solid var(--geely-active-blue);
+    outline-offset: 3px;
+  }
+}
+
+/* ============================================
    MICRO-INTERACTIONS & ANIMATIONS
    ============================================ */
 
@@ -244,6 +342,29 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
 }
 
+/* Primary nav link — centered underline that grows from the middle on
+   hover, matching the understated automotive-brand nav treatment. */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 0;
+  height: 1.5px;
+  background: currentColor;
+  transform: translateX(-50%);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover::after,
+.nav-link[data-active='true']::after {
+  width: calc(100% - 4px);
+}
+
 /* Button ripple container */
 .btn-ripple {
   position: relative;
@@ -312,4 +433,3 @@ input:focus, textarea:focus, select:focus {
 *:focus:not(:focus-visible) {
   outline: none;
 }
-

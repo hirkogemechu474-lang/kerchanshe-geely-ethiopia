@@ -57,21 +57,21 @@ export default function CsiSurveyPage({ params }: { params: Promise<{ jobCardId:
 
   return (
     <MainLayout>
-      <div className="py-16 bg-ice min-h-[60vh]">
+      <div className="py-16 bg-ice dark:bg-midnight min-h-[60vh]">
         <div className="max-w-xl mx-auto px-4">
           {state.phase === 'loading' && (
-            <div className="text-center text-steel py-16">Loading…</div>
+            <div className="text-center text-steel dark:text-steel-light py-16">Loading…</div>
           )}
 
           {state.phase === 'ineligible' && (
-            <div className="bg-white rounded-xl p-8 shadow-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl p-8 shadow-lg text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <XCircle className="w-8 h-8 text-gray-400" />
               </div>
-              <h1 className="text-2xl font-bold text-navy mb-3">
+              <h1 className="text-2xl font-bold text-navy dark:text-ice mb-3">
                 {state.reason === 'already_submitted' ? 'Already submitted' : 'Survey unavailable'}
               </h1>
-              <p className="text-steel">
+              <p className="text-steel dark:text-steel-light">
                 {state.reason === 'already_submitted' &&
                   "We've already received your feedback for this visit — thank you!"}
                 {state.reason === 'not_closed' &&
@@ -82,19 +82,19 @@ export default function CsiSurveyPage({ params }: { params: Promise<{ jobCardId:
           )}
 
           {state.phase === 'submitted' && (
-            <div className="bg-white rounded-xl p-8 shadow-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl p-8 shadow-lg text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-navy mb-3">Thank you!</h1>
-              <p className="text-steel">Your feedback helps us improve our service.</p>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice mb-3">Thank you!</h1>
+              <p className="text-steel dark:text-steel-light">Your feedback helps us improve our service.</p>
             </div>
           )}
 
           {state.phase === 'ready' && (
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h1 className="text-2xl font-bold text-navy mb-1">How was your service visit?</h1>
-              <p className="text-steel text-sm mb-6">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
+              <h1 className="text-2xl font-bold text-navy dark:text-ice mb-1">How was your service visit?</h1>
+              <p className="text-steel dark:text-steel-light text-sm mb-6">
                 Job {state.jobCardNo}
                 {state.vehicleModel ? ` · ${state.vehicleModel}` : ''}
               </p>
@@ -117,7 +117,7 @@ export default function CsiSurveyPage({ params }: { params: Promise<{ jobCardId:
                         />
                       </button>
                     ))}
-                    {rating > 0 && <span className="ml-2 text-lg font-semibold text-navy">{rating}/5</span>}
+                    {rating > 0 && <span className="ml-2 text-lg font-semibold text-navy dark:text-ice">{rating}/5</span>}
                   </div>
                 </div>
 

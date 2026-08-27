@@ -360,7 +360,7 @@ export default function VehicleSettingsPage() {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex items-center gap-3 text-gray-600">
-          <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+          <RefreshCw className="w-5 h-5 animate-spin text-geely-blue" />
           Loading vehicle settings...
         </div>
       </div>

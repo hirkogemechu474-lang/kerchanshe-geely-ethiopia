@@ -64,7 +64,7 @@ export default function FeaturesSection() {
 
   return (
     <section className="py-16 bg-ice">
-      <div className="max-w-[1280px] mx-auto px-10">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-navy mb-4">

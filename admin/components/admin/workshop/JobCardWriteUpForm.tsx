@@ -156,7 +156,7 @@ export default function JobCardWriteUpForm({ technicians, bays }: { technicians:
           type="button"
           onClick={runLookup}
           disabled={lookup.status === 'loading' || (!form.plateNo.trim() && !form.vin.trim())}
-          className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-sm font-medium text-geely-blue hover:text-navy disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {lookup.status === 'loading' ? 'Looking up…' : '🔍 Look up vehicle by plate / VIN'}
         </button>

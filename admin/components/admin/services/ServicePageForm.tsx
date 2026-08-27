@@ -134,7 +134,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
           onChange={(e) => handleTitleChange(e.target.value)}
           required
           placeholder="e.g., Test Drive Services"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
       </div>
 
@@ -151,7 +151,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
             onChange={(e) => setFormData({ ...formData, slug: generateSlug(e.target.value) })}
             required
             placeholder="test-drive"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
           />
         </div>
         <p className="mt-1 text-sm text-gray-500">
@@ -170,7 +170,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
           placeholder="Brief summary of this service page (used in previews and search results)"
           rows={3}
           maxLength={200}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
         />
         <div className="flex justify-between mt-1">
           <p className="text-sm text-gray-500">Short summary for previews</p>
@@ -188,7 +188,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
           onChange={(e) => setFormData({ ...formData, content: e.target.value })}
           placeholder="Write your page content here... (HTML and markdown supported)"
           rows={12}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent font-mono text-sm"
         />
         <p className="mt-1 text-sm text-gray-500">
           Main content for the service page. HTML and markdown are supported.
@@ -222,7 +222,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
             value={formData.heroVideo}
             onChange={(e) => setFormData({ ...formData, heroVideo: e.target.value })}
             placeholder="https://www.youtube.com/embed/VIDEO_ID"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
           />
           <p className="mt-1 text-sm text-gray-500">
             Optional: YouTube embed URL (video takes priority over image)
@@ -245,7 +245,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
             onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
             placeholder="SEO title (auto-fills from page title)"
             maxLength={60}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
           />
           <div className="flex justify-between mt-1">
             <p className="text-sm text-gray-500">Displayed in search results</p>
@@ -266,7 +266,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
             placeholder="Brief description for search engines (160 characters recommended)"
             rows={3}
             maxLength={160}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
           />
           <div className="flex justify-between mt-1">
             <p className="text-sm text-gray-500">Displayed in search results</p>
@@ -307,7 +307,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="flex-1 bg-geely-blue text-white py-3 rounded-lg hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">

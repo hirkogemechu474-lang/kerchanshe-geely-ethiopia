@@ -38,7 +38,7 @@ export default function SmartFeatures() {
   ];
 
   return (
-    <section className="py-20 md:py-32 bg-white dark:bg-gray-900">
+    <section className="py-20 md:py-32 bg-white dark:bg-midnight-surface dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="grid md:grid-cols-5 gap-12 items-center">
           {/* Left: Content */}
@@ -53,7 +53,7 @@ export default function SmartFeatures() {
               Smart Technology
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-white mb-6 leading-tight tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-navy dark:text-ice dark:text-white mb-6 leading-tight tracking-tight">
               Connected
               <br />
               <span className="text-purple-600 dark:text-purple-400">Intelligence</span>
@@ -98,7 +98,7 @@ export default function SmartFeatures() {
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-navy dark:text-white mb-2">{feature.title}</h3>
+                  <h3 className="font-bold text-navy dark:text-ice dark:text-white mb-2">{feature.title}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                     {feature.description}
                   </p>

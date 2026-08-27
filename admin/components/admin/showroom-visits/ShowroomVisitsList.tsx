@@ -131,12 +131,12 @@ export default function ShowroomVisitsList() {
               <Td>
                 <div className="space-y-1">
                   {visit.phone && (
-                    <a href={`tel:${visit.phone}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                    <a href={`tel:${visit.phone}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-navy dark:hover:text-blue-400">
                       <Phone size={14} /> {visit.phone}
                     </a>
                   )}
                   {visit.email && (
-                    <a href={`mailto:${visit.email}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                    <a href={`mailto:${visit.email}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-navy dark:hover:text-blue-400">
                       <Mail size={14} /> {visit.email}
                     </a>
                   )}
@@ -153,7 +153,7 @@ export default function ShowroomVisitsList() {
               <Td>
                 <div className="flex gap-3 items-center text-sm">
                   {visit.quotationId && (
-                    <Link href={`/admin/quotations/${visit.quotationId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                    <Link href={`/admin/quotations/${visit.quotationId}`} className="text-geely-blue dark:text-blue-400 hover:underline">
                       Quote
                     </Link>
                   )}

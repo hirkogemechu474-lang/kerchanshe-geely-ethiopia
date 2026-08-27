@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
       phone,
       password,
       city,
-      accountType,
       acceptTerms,
       acceptMarketing
     } = body;

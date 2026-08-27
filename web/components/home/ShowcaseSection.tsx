@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ModelSpotlightSimple } from '@/components/ModelSpotlightSimple';
 
@@ -23,9 +24,15 @@ interface Showcase {
   sortOrder: number;
 }
 
-export default function ShowcaseSection() {
-  const [showcase, setShowcase] = useState<Showcase | null>(null);
-  const [loading, setLoading] = useState(true);
+interface ShowcaseSectionProps {
+  // Fetched server-side (see app/page.tsx) so this section's real markup is
+  // in the initial HTML instead of an empty aria-hidden shell that gets
+  // replaced after a client fetch — that swap was a major CLS contributor.
+  initialShowcase: Showcase | null;
+}
+
+export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProps) {
+  const showcase = initialShowcase;
   const sectionRef = useRef<HTMLElement>(null);
 
   // Parallax effects
@@ -39,53 +46,37 @@ export default function ShowcaseSection() {
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.8, 1, 1.1]);
   const goldBlobY = useTransform(scrollYProgress, [0, 1], [-50, 50]);
 
-  useEffect(() => {
-    fetch('/api/public/showcase')
-      .then((res) => res.json())
-      .then((data) => {
-        const items = data.showcases || [];
-        setShowcase(items[0] || null);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error loading homepage showcase:', error);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return null;
-  }
-
   if (!showcase || !Array.isArray(showcase.views) || showcase.views.length === 0) {
     return (
-      <motion.section 
+      <motion.section
         ref={sectionRef}
-        className="py-16 bg-white relative overflow-hidden"
+        className="py-16 bg-white dark:bg-midnight-surface relative overflow-hidden transition-colors"
         style={{ opacity }}
       >
         <div className="max-w-[1280px] mx-auto px-4 relative z-10">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             style={{ scale }}
           >
             <div className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-bold mb-4">
               INTERACTIVE EXPERIENCE
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-navy mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4">
               Explore the Geely Range
             </h2>
-            <p className="text-steel text-lg max-w-2xl mx-auto">
+            <p className="text-steel dark:text-steel-light text-lg max-w-2xl mx-auto">
               Take a closer look at our flagship models and experience them from every angle.
             </p>
           </motion.div>
 
           <Link href="/models" className="block group">
             <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
-              <img
+              <Image
                 src="/images/vehicles/ex5/ex5-hero.jpg"
                 alt="Geely vehicle showcase"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                fill
+                sizes="(min-width: 1024px) 1280px, 100vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-transparent to-transparent"></div>
               <div className="absolute bottom-4 left-4">
@@ -120,7 +111,7 @@ export default function ShowcaseSection() {
   return (
     <motion.section 
       ref={sectionRef}
-      className="py-16 bg-white relative overflow-hidden"
+      className="py-16 bg-white dark:bg-midnight-surface relative overflow-hidden transition-colors"
       style={{ opacity }}
     >
       {/* Parallax Background Elements */}
@@ -148,7 +139,7 @@ export default function ShowcaseSection() {
             {showcase.subtitle || 'INTERACTIVE EXPERIENCE'}
           </motion.div>
           <motion.h2 
-            className="text-4xl md:text-5xl font-bold text-navy mb-4"
+            className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -157,7 +148,7 @@ export default function ShowcaseSection() {
             {showcase.title}
           </motion.h2>
           <motion.p 
-            className="text-steel text-lg max-w-2xl mx-auto"
+            className="text-steel dark:text-steel-light text-lg max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

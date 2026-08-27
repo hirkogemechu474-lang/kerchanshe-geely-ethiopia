@@ -183,24 +183,24 @@ export default function ServiceCheckInPage() {
 
   return (
     <MainLayout>
-      <div className="py-16 bg-ice min-h-[70vh]">
+      <div className="py-16 bg-ice dark:bg-midnight min-h-[70vh]">
         <div className="max-w-xl mx-auto px-4">
           {result ? (
-            <div className="bg-white rounded-xl p-8 shadow-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl p-8 shadow-lg text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-navy mb-2">You&apos;re checked in!</h1>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice mb-2">You&apos;re checked in!</h1>
               {result.matchedAppointment ? (
-                <p className="text-steel mb-6">
+                <p className="text-steel dark:text-steel-light mb-6">
                   We found your appointment{result.serviceType ? ` for ${result.serviceType}` : ''} — please take a seat, an advisor will call you shortly.
                 </p>
               ) : (
-                <p className="text-steel mb-6">Please take a seat — an advisor will call you shortly.</p>
+                <p className="text-steel dark:text-steel-light mb-6">Please take a seat — an advisor will call you shortly.</p>
               )}
-              <div className="bg-ice rounded-lg p-6 inline-block">
+              <div className="bg-ice dark:bg-midnight rounded-lg p-6 inline-block">
                 <p className="text-xs uppercase tracking-wide text-steel">Queue position</p>
-                <p className="text-4xl font-bold text-navy">#{result.queuePosition}</p>
+                <p className="text-4xl font-bold text-navy dark:text-ice">#{result.queuePosition}</p>
                 <p className="text-xs text-steel mt-2">Reference {result.jobCardNo}</p>
               </div>
               <div className="mt-6">
@@ -210,7 +210,7 @@ export default function ServiceCheckInPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
               <div className="flex items-center gap-3 mb-1">
                 <Car className="w-6 h-6 text-geely-blue" />
                 <h1 className="text-2xl font-bold text-navy">Service Check-in</h1>
@@ -257,7 +257,7 @@ export default function ServiceCheckInPage() {
                     </div>
                   )}
 
-                  {vinLookup.status === 'loading' && <p className="text-xs text-steel mt-2">Looking up your vehicle…</p>}
+                  {vinLookup.status === 'loading' && <p className="text-xs text-steel dark:text-steel-light mt-2">Looking up your vehicle…</p>}
                   {vinLookup.status === 'found' && (
                     <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-start gap-2">
                       <CircleCheck className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
@@ -267,7 +267,7 @@ export default function ServiceCheckInPage() {
                     </div>
                   )}
                   {vinLookup.status === 'not_found' && (
-                    <p className="text-xs text-steel mt-2">
+                    <p className="text-xs text-steel dark:text-steel-light mt-2">
                       No record for this VIN yet — no problem, just fill in your details below.
                     </p>
                   )}

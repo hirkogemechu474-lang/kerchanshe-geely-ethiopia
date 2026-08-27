@@ -116,7 +116,7 @@ export default function ImageUpload({
               )}
               <button
                 onClick={() => setShowHeroImageBrowser(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-navy hover:bg-blue-50 transition-colors"
               >
                 <FolderOpen size={20} />
                 <span className="text-sm font-medium">
@@ -149,7 +149,7 @@ export default function ImageUpload({
               )}
               <button
                 onClick={() => setShowHeroVideoBrowser(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-navy hover:bg-blue-50 transition-colors"
               >
                 <Video size={20} />
                 <span className="text-sm font-medium">
@@ -180,7 +180,7 @@ export default function ImageUpload({
             <label htmlFor="image-upload" className="cursor-pointer">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-blue-600" />
+                  <Upload className="w-6 h-6 text-geely-blue" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
@@ -196,11 +196,11 @@ export default function ImageUpload({
 
           <button
             onClick={() => setShowImageBrowser(true)}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+            className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-navy hover:bg-blue-50 transition-colors"
           >
             <div className="flex flex-col items-center gap-3">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
-                <FolderOpen className="w-6 h-6 text-blue-600" />
+                <FolderOpen className="w-6 h-6 text-geely-blue" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">
@@ -230,7 +230,7 @@ export default function ImageUpload({
                 
                 {/* Primary Badge */}
                 {index === 0 && (
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded">
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-geely-blue text-white text-xs font-medium rounded">
                     Primary
                   </div>
                 )}

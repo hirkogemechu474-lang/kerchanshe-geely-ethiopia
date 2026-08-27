@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function CTAStrip() {
   return (
     <div className="bg-navy text-white">
-      <div className="max-w-[1280px] mx-auto px-10 flex flex-col md:flex-row justify-between items-center py-12 gap-8">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 flex flex-col md:flex-row justify-between items-center py-12 gap-8">
         <div>
           <h3 className="disp text-2xl font-bold mb-2 max-w-[460px]">
             Ready to feel it on the road?

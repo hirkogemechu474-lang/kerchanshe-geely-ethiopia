@@ -145,3 +145,43 @@ export async function getWorkshopBiSummary(period: BiPeriod) {
 }
 
 export type WorkshopBiSummary = Awaited<ReturnType<typeof getWorkshopBiSummary>>;
+
+export interface BiTrendPoint {
+  monthValue: string;
+  label: string;
+  jobsClosedCount: number;
+  firstTimeFixRate: number | null;
+  avgTurnaroundHours: number | null;
+  revenueTotal: number;
+  csiAverage: number | null;
+}
+
+/**
+ * The same monthly KPIs as `getWorkshopBiSummary`, computed across the last
+ * `months` calendar months (oldest first) so the dashboard can show a trend
+ * instead of only a single snapshot. Reuses the exact same per-month query —
+ * intentionally not a single aggregated query, since `months` is small
+ * (bounded to 12) and this keeps the two code paths from drifting apart.
+ */
+export async function getWorkshopBiTrend(months: number): Promise<BiTrendPoint[]> {
+  const clamped = Math.min(Math.max(months, 1), 12);
+  const now = new Date();
+
+  const periods: BiPeriod[] = Array.from({ length: clamped }, (_, i) => {
+    const monthsAgo = clamped - 1 - i;
+    const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+    return resolveMonthPeriod(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  });
+
+  const summaries = await Promise.all(periods.map((period) => getWorkshopBiSummary(period)));
+
+  return summaries.map((s) => ({
+    monthValue: s.period.monthValue,
+    label: s.period.label,
+    jobsClosedCount: s.kpis.jobsClosedCount,
+    firstTimeFixRate: s.kpis.firstTimeFixRate,
+    avgTurnaroundHours: s.kpis.avgTurnaroundHours,
+    revenueTotal: s.revenue.total,
+    csiAverage: (s.csi.available ? s.csi.averageRating : null) ?? null,
+  }));
+}

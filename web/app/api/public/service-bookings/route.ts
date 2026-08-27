@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please provide a valid preferred date.' }, { status: 400 });
     }
 
-    const reference = generateReference();
+    const reference = await generateReference();
     const booking = await prisma.serviceBooking.create({
       data: {
         customerName: `${body.firstName.trim()} ${body.lastName.trim()}`,

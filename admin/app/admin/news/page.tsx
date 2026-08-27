@@ -64,7 +64,7 @@ export default async function NewsPage() {
                   icon={FileText}
                   title="No articles yet"
                   action={
-                    <Link href="/admin/news/new" className="text-blue-600 hover:underline">
+                    <Link href="/admin/news/new" className="text-geely-blue hover:underline">
                       Create your first article
                     </Link>
                   }
@@ -88,7 +88,7 @@ export default async function NewsPage() {
                   <Badge tone={articleStatusTone(article.status)}>{article.status.toUpperCase()}</Badge>
                 </Td>
                 <Td className="text-right">
-                  <Link href={`/admin/news/${article.id}`} className="text-blue-600 hover:text-blue-700">
+                  <Link href={`/admin/news/${article.id}`} className="text-geely-blue hover:text-navy">
                     Edit
                   </Link>
                 </Td>

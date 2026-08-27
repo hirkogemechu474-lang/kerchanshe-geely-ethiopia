@@ -96,7 +96,7 @@ export default function NewPromotionPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., New Year Sale 2024"
             />
           </div>
@@ -112,7 +112,7 @@ export default function NewPromotionPage() {
               value={formData.type}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="percentage">Percentage Discount</option>
               <option value="fixed">Fixed Amount Discount</option>
@@ -135,7 +135,7 @@ export default function NewPromotionPage() {
               value={formData.discount}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., 15% or ETB 50,000 or Free Service"
             />
             <p className="mt-1 text-xs text-gray-500">Enter the discount amount (e.g., "15%", "ETB 50000", "Free Gift")</p>
@@ -155,7 +155,7 @@ export default function NewPromotionPage() {
                 value={formData.startDate}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
 
@@ -171,7 +171,7 @@ export default function NewPromotionPage() {
                 value={formData.endDate}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function NewPromotionPage() {
               value={formData.status}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="scheduled">Scheduled</option>
               <option value="active">Active</option>

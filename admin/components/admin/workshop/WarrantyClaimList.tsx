@@ -68,7 +68,7 @@ export default function WarrantyClaimList({ initialClaims }: { initialClaims: Wa
           {filtered.map((c) => (
             <Tr key={c.id}>
               <Td>
-                <Link href={`/admin/workshop/warranty-claims/${c.id}`} className="text-blue-600 font-medium hover:underline">
+                <Link href={`/admin/workshop/warranty-claims/${c.id}`} className="text-geely-blue font-medium hover:underline">
                   {c.claimNo}
                 </Link>
               </Td>

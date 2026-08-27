@@ -174,7 +174,7 @@ export default function PartsRequestsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-geely-blue" />
         </div>
       ) : requests.length === 0 ? (
         <EmptyState icon={Package} title="No part requests found" description="Requests submitted from the parts page will appear here." />
@@ -218,7 +218,7 @@ export default function PartsRequestsPage() {
                     <Td className="text-gray-500 dark:text-gray-400">{new Date(request.createdAt).toLocaleDateString()}</Td>
                     <Td>
                       <div className="flex items-center justify-end gap-3">
-                        <Link href={`/admin/parts-requests/${request.id}`} className="text-blue-600 dark:text-blue-400 hover:underline" title="View details">
+                        <Link href={`/admin/parts-requests/${request.id}`} className="text-geely-blue dark:text-blue-400 hover:underline" title="View details">
                           <Eye className="w-4 h-4" />
                         </Link>
                         <button

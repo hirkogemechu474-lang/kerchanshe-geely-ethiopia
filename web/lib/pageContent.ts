@@ -39,18 +39,6 @@ export interface AboutPageContent {
   };
 }
 
-export interface ElectricPageContent {
-  hero: {
-    eyebrow: string; title: string; content: string;
-    ctaPrimary: string; ctaSecondary: string;
-    batteryCardTitle: string; batteryCardDesc: string;
-  };
-  whyElectric: { title: string; subtitle: string; features: FeatureCard[] };
-  exploreBenefits: { title: string; subtitle: string; cards: { icon: IconName; title: string; description: string; href: string; cta: string; color: string }[] };
-  evModels: { eyebrow: string; title: string; subtitle: string; };
-  cta: { title: string; subtitle: string; primaryLabel: string; secondaryLabel: string; };
-}
-
 export interface ServicePageContent {
   hero: { eyebrow: string; title: string; subtitle: string; };
   benefits: FeatureCard[];
@@ -299,109 +287,6 @@ const aboutContent: Record<Language, AboutPageContent> = {
   },
 };
 
-const electricContent: Record<Language, ElectricPageContent> = {
-  en: {
-    hero: {
-      eyebrow: 'THE FUTURE IS ELECTRIC',
-      title: 'Electric Vehicles by Geely',
-      content:
-        'Discover the next generation of mobility with Geely Geometry and Zeekr electric vehicles. Zero emissions, low running costs, and cutting-edge technology — designed for the roads of tomorrow, available in Ethiopia today.',
-      ctaPrimary: 'Explore Our Electric Vehicles',
-      ctaSecondary: 'Book Test Drive',
-      batteryCardTitle: 'Battery & Warranty',
-      batteryCardDesc:
-        'Learn about Geely EV battery technology, capacity, range, charging, safety, warranty, and maintenance.',
-    },
-    whyElectric: {
-      title: 'Why Choose Electric?',
-      subtitle:
-        'Electric vehicles offer numerous advantages for Ethiopian drivers, from cost savings to environmental benefits and a smoother, quieter ride.',
-      features: [
-        { icon: 'Leaf', title: 'Zero Tailpipe Emissions', description: 'Contribute to cleaner air in Addis Ababa and Ethiopian cities. No exhaust means healthier communities and less carbon footprint.' },
-        { icon: 'DollarSign', title: 'Up to 70% Lower Running Costs', description: 'Electricity costs significantly less than petrol per kilometer. Save thousands of Birr annually on fuel.' },
-        { icon: 'Wrench', title: 'Fewer Moving Parts = Less Maintenance', description: 'No oil changes, no spark plugs, no filters, no exhaust system. EVs cut maintenance costs by 50% or more.' },
-        { icon: 'TrendingUp', title: 'Advanced Technology', description: 'Regenerative braking, smart connectivity, instant torque, OTA software updates, and semi-autonomous features on premium models.' },
-      ],
-    },
-    exploreBenefits: {
-      title: 'Explore the Electric Lifestyle',
-      subtitle:
-        'Dive deeper into what owning a Geely EV means for Ethiopian drivers — from charging to cost calculators and government incentives.',
-      cards: [
-        { icon: 'Battery', title: 'Battery Technology', description: 'Understand range, charging speeds, battery life, and thermal management in Geely EVs.', href: '/electric/battery', cta: 'Learn About Batteries', color: 'from-orange-500 to-red-500' },
-        { icon: 'Calculator', title: 'Savings Calculator', description: 'Estimate total cost of ownership vs your current petrol car over 5 years.', href: '/electric/calculator', cta: 'Calculate Savings', color: 'from-green-500 to-emerald-600' },
-        { icon: 'Gift', title: 'Government Incentives', description: 'Latest Ethiopian tax breaks, import duty relief, and EV policy updates.', href: '/electric/incentives', cta: 'View Incentives', color: 'from-blue-500 to-indigo-600' },
-        { icon: 'TreePine', title: 'Environment & Impact', description: 'Your personal contribution to cleaner air and a greener Ethiopia with zero emissions.', href: '/electric/environment', cta: 'Measure Your Impact', color: 'from-emerald-500 to-teal-600' },
-        { icon: 'Home', title: 'Home Charging Guide', description: 'Everything you need to install a charger at home or office in Ethiopia.', href: '/electric/battery#charging', cta: 'Set Up Home Charging', color: 'from-purple-500 to-fuchsia-600' },
-        { icon: 'Clock', title: 'Fast Charging Network', description: 'Upcoming public fast charger locations and road trip routes across Ethiopia.', href: '/electric/battery#network', cta: 'See Charging Map', color: 'from-cyan-500 to-blue-600' },
-      ],
-    },
-    evModels: {
-      eyebrow: 'GEOMETRY & ZEEKR',
-      title: 'Our Electric Lineup',
-      subtitle:
-        'From the compact Geometry C hatchback to the premium Zeekr 001 shooting brake — find the perfect EV for your lifestyle and budget.',
-    },
-    cta: {
-      title: 'Ready to Drive Electric?',
-      subtitle:
-        'Book a test drive today and experience instant torque, whisper-quiet ride, and zero-emission driving. Our team is ready to answer every question about charging, range, pricing, and financing.',
-      primaryLabel: 'Book an EV Test Drive',
-      secondaryLabel: 'Talk to an EV Specialist',
-    },
-  },
-  am: {
-    hero: {
-      eyebrow: 'የሕጊዜው ኤሌክትሪክ ነው',
-      title: 'የጂሊ ኤሌክትሪክ ተሽከርካሪዎች',
-      content:
-        'በጂሊ ጂኦሜትሪ እና ዚከር ኤሌክትሪክ ተሽከርካሪዎች የሚቀጥለውን የንቅለጥ ሥርዓት ይገኙ። ዜሮ የመንጣት ልዩነት፣ ዝቅተኛ የሥራ ወጪዎች እና የፈጠራ ቴክኖሎጂ — ለነገ ወደፊት መንገዶች የተነደፉ፣ በአሁኑ ጊዜ በኢትዮጵያ ይገኛሉ።',
-      ctaPrimary: 'የእኛን ኤሌክትሪክ ተሽከርካሪዎች ይመልከቱ',
-      ctaSecondary: 'የሙከራ መንዳት ያስይዙ',
-      batteryCardTitle: 'ባትሪ እና ዋስትና',
-      batteryCardDesc:
-        'ስለ ጂሊ EV የባትሪ ቴክኖሎጂ፣ አቅም፣ ርቀት፣ ማሙላት፣ ደህንነት፣ ዋስትና እና ጥገና ይወቁ።',
-    },
-    whyElectric: {
-      title: 'ለምን ኤሌክትሪክ ይምረጡ?',
-      subtitle:
-        'ከዋጋ ቆጣቢነት እስከ አካባቢያዊ ጥቅሞችና የበለጠ ለስላሳ እና ዝም የሆነ ጉዞ፣ ኤሌክትሪክ ተሽከርካሪዎች ለኢትዮጵያ ዲራይቨሮች በርካታ ጥቅሞችን ይሰጣሉ።',
-      features: [
-        { icon: 'Leaf', title: 'ዜሮ የመኪና መንጣት', description: 'በአዲስ አበባ እና በኢትዮጵያ ከተሞች ውስጥ ንጹህ አየር ለመስጠት ያበረታታሉ። የለም የመውጫ ማግለል ማለት የበለጠ ጤናማ ማህበረሰብ እና ከሌለው የካርቦን ዱካ መዉጫ ነው።' },
-        { icon: 'DollarSign', title: 'እስከ 70% ዝቅተኛ የሥራ ወጪዎች', description: 'በኪሎ ሜትር ኤሌክትሪሲቲ ከቤንዚን በከፍተኛ ሁኔታ ዝቅ ዋጋ ያላት፣ በዓመት በበርካታ ሺህ ብር በነዳጅ ቆጠራ።' },
-        { icon: 'Wrench', title: 'ከነዚያ ያነሱ የሚንቀሳቀሱ ክፍሎች = አነስተኛ ጥገና', description: 'የዘይት ለውጦች የሉም፣ የእሳት መከላከያዎች የሉም፣ ማጣሪያዎች የሉም፣ የመውጫ ስርዓት የለም። EVዎች የጥገና ወጪን በ50% በላይ ይቀንሳሉ።' },
-        { icon: 'TrendingUp', title: 'ከፍተኛ ቴክኖሎጂ', description: 'መልሶ የሚገኝ ብሬኪንግ፣ ስማርት ተያያዥነት፣ ፈጣን torque፣ OTA ሶፍትዌር ማሻሻያዎች እና በፕሪሚየም ሞዴሎች ላይ ግማሽ-በራስ የሚነዳ ባህሪያት።' },
-      ],
-    },
-    exploreBenefits: {
-      title: 'የኤሌክትሪክ የአኗኗር ዘይቤን ይመልከቱ',
-      subtitle:
-        'ጂሊ EV ከመይዝዎ በኋላ ለኢትዮጵያ ዲራይቨሮች ምን ማለት እንደሆነ ጥልቅ ያስቡ — ከማሙላት እስከ ዋጋ ማሳያ እና የመንግስት ቅናሾች።',
-      cards: [
-        { icon: 'Battery', title: 'የባትሪ ቴክኖሎጂ', description: 'ርቀት፣ የማሙላት ፍጥነት፣ የባትሪ ሕይወት እና በጂሊ EVዎች ውስጥ የሙቀት አስተዳዳሪን ይረዱ።', href: '/electric/battery', cta: 'ስለ ባትሪዎች ይወቁ', color: 'from-orange-500 to-red-500' },
-        { icon: 'Calculator', title: 'የቆጠራ ማስላያ', description: 'በ5 ዓመት ውስጥ ከአሁኑ የቤንዚን መኪናዎ ጋር ያነጻጸረው የንግድ ስራ ዋጋ ያስሉ።', href: '/electric/calculator', cta: 'ቆጠራዎን አስሉ', color: 'from-green-500 to-emerald-600' },
-        { icon: 'Gift', title: 'የመንግስት ቅናሾች', description: 'የቅርብ ጊዜ የኢትዮጵያ ግብር ቅናሾች፣ የግዢ ተግባር ልቅና እና የEV ፖሊሲ ዝመናዎች።', href: '/electric/incentives', cta: 'ቅናሾችን ይመልከቱ', color: 'from-blue-500 to-indigo-600' },
-        { icon: 'TreePine', title: 'አካባቢያዊ ሁኔታ እና ተጽእኖ', description: 'የአንተ የግል አበረታታሊያ ለንጹህ አየር እና ለአረንጓዴ ኢትዮጵያ በዜሮ ልዩነት።', href: '/electric/environment', cta: 'ተጽዕኖህን ያስሉ', color: 'from-emerald-500 to-teal-600' },
-        { icon: 'Home', title: 'የቤት ማሙላት መመሪያ', description: 'በኢትዮጵያ በቤትዎ ወይም ቢሮዎ የማሙላ መሳሪያ ለመጫን የሚያስፈልግዎት ሁሉ።', href: '/electric/battery#charging', cta: 'የቤት ማሙላትን ያዋቅሩ', color: 'from-purple-500 to-fuchsia-600' },
-        { icon: 'Clock', title: 'ፈጣን የማሙላት አውታር', description: 'የቅርብ ጊዜ የህዝብ ፈጣን የማሙላት ቦታዎች እና በኢትዮጵያ ዙሪያ የጉዞ መንገዶች።', href: '/electric/battery#network', cta: 'የማሙላት ካርታውን ይመልከቱ', color: 'from-cyan-500 to-blue-600' },
-      ],
-    },
-    evModels: {
-      eyebrow: 'ጂኦሜትሪ እና ዚከር',
-      title: 'የእኛ ኤሌክትሪክ ዝርዝሮች',
-      subtitle:
-        'ከአናንተው ጂኦሜትሪ C ሃችባክ እስከ ፕሪሚየም ዚከር 001 ሹቲንግ ብሬክ — ለአኗኗር ዘይቤዎ እና ለበጀትዎ ተስማሚ የሆነውን ፍጹም EV ይግኙ።',
-    },
-    cta: {
-      title: 'ኤሌክትሪክ መንዳት ዝግጁ ነዎት?',
-      subtitle:
-        'የሙከራ መንዳት ዛሬ ይያዙ እና ፈጣን torqueን፣ የሚያዝናኝ ዝም ጉዞን እና ዜሮ-ልዩነት መንዳትን ይለማመዱ። የቡድናችን ስለ ማሙላት፣ ርቀት፣ ዋጋ እና የገንዘብ ድጋፍ እያንዳንዱን ጥያቄ ለመልስ ዝግጁ ነው።',
-      primaryLabel: 'የEV የሙከራ መንዳት ያስይዙ',
-      secondaryLabel: 'ከEV ባለሙያ ጋር ይነጋገሩ',
-    },
-  },
-};
-
 const serviceContent: Record<Language, ServicePageContent> = {
   en: {
     hero: { eyebrow: 'PROFESSIONAL SERVICE', title: 'Schedule Service Appointment', subtitle: 'Keep your Geely running smoothly with professional service from our certified technicians. Book your appointment today.' },
@@ -457,16 +342,11 @@ const serviceContent: Record<Language, ServicePageContent> = {
 
 export const pageContent = {
   about: aboutContent,
-  electric: electricContent,
   service: serviceContent,
 };
 
 export function getAboutContent(lang: Language): AboutPageContent {
   return pageContent.about[lang];
-}
-
-export function getElectricContent(lang: Language): ElectricPageContent {
-  return pageContent.electric[lang];
 }
 
 export function getServiceContent(lang: Language): ServicePageContent {

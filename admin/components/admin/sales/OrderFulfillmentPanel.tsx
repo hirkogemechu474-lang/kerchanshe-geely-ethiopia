@@ -20,6 +20,20 @@ interface OrderFulfillmentData {
   invoicedAt: string | null;
 }
 
+// A non-2xx response isn't guaranteed to carry a JSON body (a proxy/timeout
+// error, or a route that threw before it could respond, sends one that's
+// empty or plain text) — res.json() throws "Unexpected end of JSON input"
+// on that, masking the real failure behind a confusing parse error.
+async function parseJsonResponse(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: `Server error (${res.status}). Please try again.` };
+  }
+}
+
 export default function OrderFulfillmentPanel({
   order,
   canManage,
@@ -31,7 +45,6 @@ export default function OrderFulfillmentPanel({
 }) {
   const router = useRouter();
   const [registrationNumber, setRegistrationNumber] = useState(order.registrationNumber || '');
-  const [invoiceAmount, setInvoiceAmount] = useState(order.totalPrice?.toString() || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [invoiceNotice, setInvoiceNotice] = useState('');
@@ -45,7 +58,7 @@ export default function OrderFulfillmentPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ registrationNumber }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Update failed');
       onUpdated();
       router.refresh();
@@ -60,12 +73,8 @@ export default function OrderFulfillmentPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/invoice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceAmount: invoiceAmount || null }),
-      });
-      const data = await res.json();
+      const res = await fetch(`/api/admin/orders/${order.id}/invoice`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to generate invoice');
       setInvoiceNotice(
         order.invoicedAt
@@ -86,7 +95,7 @@ export default function OrderFulfillmentPanel({
   return (
     <Card className="space-y-5">
       <div className="flex items-center gap-2">
-        <ClipboardCheck className="w-5 h-5 text-blue-600" />
+        <ClipboardCheck className="w-5 h-5 text-geely-blue" />
         <h2 className="text-lg font-semibold text-gray-900">Registration &amp; Invoice</h2>
       </div>
 
@@ -132,7 +141,7 @@ export default function OrderFulfillmentPanel({
               href={`/api/admin/orders/${order.id}/invoice`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline mt-1"
+              className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline mt-1"
             >
               <FileText className="w-4 h-4" />
               View / Download Invoice PDF
@@ -143,12 +152,10 @@ export default function OrderFulfillmentPanel({
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Invoice amount</label>
-                <input
-                  type="number"
-                  value={invoiceAmount}
-                  onChange={(e) => setInvoiceAmount(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                />
+                <p className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700">
+                  {order.totalPrice != null ? `ETB ${order.totalPrice.toLocaleString('en-US')}` : 'To be confirmed'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Set automatically from the order's agreed price.</p>
               </div>
               <Button onClick={generateInvoice} disabled={busy}>
                 Generate Invoice

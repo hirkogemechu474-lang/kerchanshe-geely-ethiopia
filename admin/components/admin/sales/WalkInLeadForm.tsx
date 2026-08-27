@@ -82,7 +82,7 @@ export default function WalkInLeadForm() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         {deduped && (
-          <p className="text-sm text-blue-600">
+          <p className="text-sm text-geely-blue">
             This phone number already has an open inquiry — opening the existing lead instead of creating a duplicate.
           </p>
         )}

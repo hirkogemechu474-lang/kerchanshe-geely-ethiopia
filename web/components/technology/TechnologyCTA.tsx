@@ -54,7 +54,7 @@ export default function TechnologyCTA() {
           >
             <Link
               href="/test-drive"
-              className="group inline-flex items-center justify-center gap-3 bg-gold text-navy font-bold text-lg px-10 py-5 rounded-xl hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-2xl shadow-gold/30"
+              className="group inline-flex items-center justify-center gap-3 bg-gold text-navy dark:text-ice font-bold text-lg px-10 py-5 rounded-xl hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-2xl shadow-gold/30"
             >
               <Calendar className="w-6 h-6" />
               <span>Book Test Drive</span>
@@ -63,7 +63,7 @@ export default function TechnologyCTA() {
             
             <Link
               href="/models"
-              className="group inline-flex items-center justify-center gap-3 bg-white/10 backdrop-blur-md text-white font-bold text-lg px-10 py-5 rounded-xl hover:bg-white/20 transition-all duration-300 border-2 border-white/30 hover:border-white/60"
+              className="group inline-flex items-center justify-center gap-3 bg-white dark:bg-midnight-surface/10 backdrop-blur-md text-white font-bold text-lg px-10 py-5 rounded-xl hover:bg-white/20 transition-all duration-300 border-2 border-white/30 hover:border-white/60"
             >
               <Car className="w-6 h-6" />
               <span>Explore Models</span>
@@ -73,7 +73,7 @@ export default function TechnologyCTA() {
 
           {/* Trust Indicators */}
           <motion.div
-            className="grid grid-cols-3 gap-8 mt-20 max-w-4xl mx-auto"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-20 max-w-4xl mx-auto"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}

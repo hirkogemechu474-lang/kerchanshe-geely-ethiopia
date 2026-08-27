@@ -81,7 +81,7 @@ export function PWAInstallPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white rounded-lg shadow-2xl border-2 border-geely-blue z-50 animate-slide-up">
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white dark:bg-midnight-surface rounded-lg shadow-2xl border-2 border-geely-blue z-50 animate-slide-up">
       <div className="p-6">
         {/* Close button */}
         <button
@@ -98,13 +98,13 @@ export function PWAInstallPrompt() {
             <span className="text-3xl">🚗</span>
           </div>
           <div>
-            <h3 className="font-bold text-navy text-lg">Install Geely Ethiopia</h3>
-            <p className="text-sm text-steel">Quick access from your home screen</p>
+            <h3 className="font-bold text-navy dark:text-ice text-lg">Install Geely Ethiopia</h3>
+            <p className="text-sm text-steel dark:text-steel-light">Quick access from your home screen</p>
           </div>
         </div>
 
         {/* Benefits */}
-        <ul className="space-y-2 mb-6 text-sm text-steel">
+        <ul className="space-y-2 mb-6 text-sm text-steel dark:text-steel-light">
           <li className="flex items-start gap-2">
             <span className="text-green-600 mt-0.5">✓</span>
             <span>Browse vehicles offline</span>
@@ -134,7 +134,7 @@ export function PWAInstallPrompt() {
           </button>
           <button
             onClick={handleDismiss}
-            className="px-4 py-3 text-steel hover:text-navy font-semibold transition-colors"
+            className="px-4 py-3 text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice dark:hover:text-ice dark:hover:text-ice font-semibold transition-colors"
           >
             Not Now
           </button>

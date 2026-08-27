@@ -502,7 +502,7 @@ export default function FinancingManagementPage() {
   return (
     <div className="space-y-6 relative">
       {/* Toasts */}
-      <div className="fixed top-4 right-4 z-[100] space-y-2 w-80">
+      <div className="fixed top-4 right-4 z-[100] space-y-2 w-80 max-w-[calc(100vw-2rem)]">
         {toasts.map(t => (
           <div
             key={t.id}
@@ -541,7 +541,7 @@ export default function FinancingManagementPage() {
           {activeTab === 'banks' && (
             <button
               onClick={openNewBank}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800"
             >
               <Plus size={18} /> Add Payment Bank
             </button>
@@ -549,7 +549,7 @@ export default function FinancingManagementPage() {
           {activeTab === 'programs' && (
             <button
               onClick={openNewProgram}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800"
             >
               <Plus size={18} /> Add Purchase Option
             </button>
@@ -638,7 +638,7 @@ export default function FinancingManagementPage() {
                       <p className="text-sm mb-4">Add your first banking partner to create financing programs</p>
                       <button
                         onClick={openNewBank}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy text-sm"
                       >
                         <Plus size={16} /> Add Your First Bank
                       </button>
@@ -649,7 +649,7 @@ export default function FinancingManagementPage() {
                     <tr key={b.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-geely-blue to-navy text-white flex items-center justify-center shrink-0">
                             {b.logoUrl ? (
                               <img src={b.logoUrl} alt={b.name} className="w-full h-full rounded-lg object-contain bg-white" />
                             ) : (
@@ -662,7 +662,7 @@ export default function FinancingManagementPage() {
                               <div className="text-sm text-gray-500 truncate max-w-xs">{b.shortDescription}</div>
                             )}
                             {b.websiteUrl && (
-                              <a href={b.websiteUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline truncate">
+                              <a href={b.websiteUrl} target="_blank" rel="noreferrer" className="text-xs text-geely-blue hover:underline truncate">
                                 {b.websiteUrl}
                               </a>
                             )}
@@ -670,7 +670,7 @@ export default function FinancingManagementPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <code className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">{b.slug}</code>
+                        <code className="text-sm text-geely-blue bg-blue-50 px-2 py-1 rounded">{b.slug}</code>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600 space-y-0.5">
@@ -710,7 +710,7 @@ export default function FinancingManagementPage() {
                           <button
                             onClick={() => openEditBank(b)}
                             title="Edit"
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                           >
                             <Edit size={16} />
                           </button>
@@ -757,7 +757,7 @@ export default function FinancingManagementPage() {
                       <p className="text-sm mb-4">Create a payment option and assign it to a bank and vehicle</p>
                       <button
                         onClick={openNewProgram}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy text-sm"
                       >
                         <Plus size={16} /> Create First Purchase Option
                       </button>
@@ -801,7 +801,7 @@ export default function FinancingManagementPage() {
                             <CheckCircle2 className="w-3 h-3" /> All vehicles
                           </span>
                         ) : p.vehicle ? (
-                          <span className="text-blue-600 font-medium">{p.vehicle.name}</span>
+                          <span className="text-geely-blue font-medium">{p.vehicle.name}</span>
                         ) : p.vehicleCategory ? (
                           <span className="text-indigo-600 font-medium">📂 {p.vehicleCategory.name}</span>
                         ) : (
@@ -846,7 +846,7 @@ export default function FinancingManagementPage() {
                           <button
                             onClick={() => openEditProgram(p)}
                             title="Edit"
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-geely-blue hover:bg-blue-50 rounded transition-colors"
                           >
                             <Edit size={16} />
                           </button>
@@ -879,7 +879,7 @@ export default function FinancingManagementPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-geely-blue to-navy text-white flex items-center justify-center">
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div>
@@ -900,7 +900,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.name}
                     onChange={e => setEditingBank({ ...editingBank, name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Commercial Bank of Ethiopia"
                   />
                 </div>
@@ -911,7 +911,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.slug}
                     onChange={e => setEditingBank({ ...editingBank, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="cbe-bank"
                   />
                 </div>
@@ -921,7 +921,7 @@ export default function FinancingManagementPage() {
                     type="number"
                     value={editingBank.displayOrder}
                     onChange={e => setEditingBank({ ...editingBank, displayOrder: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -930,7 +930,7 @@ export default function FinancingManagementPage() {
                     rows={2}
                     value={editingBank.shortDescription || ''}
                     onChange={e => setEditingBank({ ...editingBank, shortDescription: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent resize-none"
                     placeholder="Brief description about this bank"
                   />
                 </div>
@@ -939,7 +939,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.logoUrl || ''}
                     onChange={e => setEditingBank({ ...editingBank, logoUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="https://..."
                   />
                 </div>
@@ -948,7 +948,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.websiteUrl || ''}
                     onChange={e => setEditingBank({ ...editingBank, websiteUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="https://..."
                   />
                 </div>
@@ -957,7 +957,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.phoneNumber || ''}
                     onChange={e => setEditingBank({ ...editingBank, phoneNumber: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="+251 ..."
                   />
                 </div>
@@ -967,7 +967,7 @@ export default function FinancingManagementPage() {
                     type="email"
                     value={editingBank.email || ''}
                     onChange={e => setEditingBank({ ...editingBank, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="info@bank.com"
                   />
                 </div>
@@ -976,7 +976,7 @@ export default function FinancingManagementPage() {
                   <input
                     value={editingBank.branchAddress || ''}
                     onChange={e => setEditingBank({ ...editingBank, branchAddress: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="Addis Ababa, Churchill Ave"
                   />
                 </div>
@@ -988,7 +988,7 @@ export default function FinancingManagementPage() {
                     onClick={() => setEditingBank({ ...editingBank, isActive: !editingBank.isActive })}
                     className="text-gray-600 hover:text-gray-800 transition-colors"
                   >
-                    {editingBank.isActive ? <ToggleRight className="w-10 h-10 text-blue-600" /> : <ToggleLeft className="w-10 h-10 text-gray-400" />}
+                    {editingBank.isActive ? <ToggleRight className="w-10 h-10 text-geely-blue" /> : <ToggleLeft className="w-10 h-10 text-gray-400" />}
                   </button>
                   <div>
                     <div className="text-sm font-medium text-gray-800">Active on Website</div>
@@ -1007,7 +1007,7 @@ export default function FinancingManagementPage() {
               <button
                 onClick={saveBank}
                 disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
               >
                 <Save size={18} />
                 {submitting ? 'Saving...' : 'Save Bank'}
@@ -1272,7 +1272,7 @@ export default function FinancingManagementPage() {
               {/* Section: CTA Toggles */}
               <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-geely-blue to-navy text-white flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <h3 className="font-semibold text-gray-800">Purchase Flow Actions</h3>
@@ -1286,7 +1286,7 @@ export default function FinancingManagementPage() {
                           onClick={() => setEditingProgram({ ...editingProgram, applyEnabled: !editingProgram.applyEnabled })}
                           className="transition-colors"
                         >
-                          {editingProgram.applyEnabled ? <ToggleRight className="w-8 h-8 text-blue-600" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
+                          {editingProgram.applyEnabled ? <ToggleRight className="w-8 h-8 text-geely-blue" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
                         </button>
                         <span className="font-semibold text-gray-800">Purchase Vehicle</span>
                       </div>
@@ -1301,7 +1301,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.applyLabel || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, applyLabel: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="Purchase Vehicle"
                           />
                         </div>
@@ -1310,7 +1310,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.applyUrl || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, applyUrl: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="/financing/apply"
                           />
                         </div>
@@ -1326,7 +1326,7 @@ export default function FinancingManagementPage() {
                           onClick={() => setEditingProgram({ ...editingProgram, directPayEnabled: !editingProgram.directPayEnabled })}
                           className="transition-colors"
                         >
-                          {editingProgram.directPayEnabled ? <ToggleRight className="w-8 h-8 text-blue-600" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
+                          {editingProgram.directPayEnabled ? <ToggleRight className="w-8 h-8 text-geely-blue" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
                         </button>
                         <span className="font-semibold text-gray-800">Bank Payment Online</span>
                       </div>
@@ -1341,7 +1341,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.directPayLabel || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, directPayLabel: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="Pay Online"
                           />
                         </div>
@@ -1350,7 +1350,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.directPayUrl || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, directPayUrl: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="https://..."
                           />
                         </div>
@@ -1366,7 +1366,7 @@ export default function FinancingManagementPage() {
                           onClick={() => setEditingProgram({ ...editingProgram, visitShowroomEnabled: !editingProgram.visitShowroomEnabled })}
                           className="transition-colors"
                         >
-                          {editingProgram.visitShowroomEnabled ? <ToggleRight className="w-8 h-8 text-blue-600" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
+                          {editingProgram.visitShowroomEnabled ? <ToggleRight className="w-8 h-8 text-geely-blue" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
                         </button>
                         <span className="font-semibold text-gray-800">Visit Showroom</span>
                       </div>
@@ -1381,7 +1381,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.visitShowroomLabel || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, visitShowroomLabel: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="Visit Showroom"
                           />
                         </div>
@@ -1390,7 +1390,7 @@ export default function FinancingManagementPage() {
                           <input
                             value={editingProgram.visitShowroomUrl || ''}
                             onChange={e => setEditingProgram({ ...editingProgram, visitShowroomUrl: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                             placeholder="/showrooms"
                           />
                         </div>
@@ -1406,7 +1406,7 @@ export default function FinancingManagementPage() {
                           onClick={() => setEditingProgram({ ...editingProgram, scheduleEnabled: !editingProgram.scheduleEnabled })}
                           className="transition-colors"
                         >
-                          {editingProgram.scheduleEnabled ? <ToggleRight className="w-8 h-8 text-blue-600" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
+                          {editingProgram.scheduleEnabled ? <ToggleRight className="w-8 h-8 text-geely-blue" /> : <ToggleLeft className="w-8 h-8 text-gray-400" />}
                         </button>
                         <span className="font-semibold text-gray-800">Schedule Consultation</span>
                       </div>
@@ -1420,7 +1420,7 @@ export default function FinancingManagementPage() {
                         <input
                           value={editingProgram.scheduleUrl || ''}
                           onChange={e => setEditingProgram({ ...editingProgram, scheduleUrl: e.target.value })}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                           placeholder="/schedule"
                         />
                       </div>

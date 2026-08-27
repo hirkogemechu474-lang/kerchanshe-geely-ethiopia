@@ -51,7 +51,7 @@ export default function ShowroomQrPage() {
 
       <Card>
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-geely-blue to-navy flex items-center justify-center">
             <QrCode className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -67,7 +67,7 @@ export default function ShowroomQrPage() {
               value={siteUrl}
               onChange={(e) => setSiteUrl(e.target.value)}
               placeholder="https://www.geelyethiopia.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
             <p className="text-xs text-gray-500 mt-1">
               {targetUrl ? `The QR code will link to: ${targetUrl}` : 'The QR code will link to <this URL>/visit/start'}
@@ -78,7 +78,7 @@ export default function ShowroomQrPage() {
 
           <button
             onClick={generate}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-geely-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-navy transition-colors"
           >
             <QrCode className="w-4 h-4" />
             Generate QR Code

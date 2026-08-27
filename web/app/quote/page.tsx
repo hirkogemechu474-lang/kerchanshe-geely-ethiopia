@@ -10,7 +10,6 @@ import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { CheckCircle, FileText, DollarSign, AlertCircle } from "lucide-react";
 
 const TIMEFRAME_LABELS: Record<string, string> = {
-  immediate: 'Within 2 weeks',
   '1-month': 'Within 1 month',
   '2-3-months': '2-3 months',
   '3-6-months': '3-6 months',
@@ -48,6 +47,7 @@ export default function QuotePage() {
   const [emailNotificationSent, setEmailNotificationSent] = useState<boolean | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
+  const [quoteReference, setQuoteReference] = useState<string | null>(null);
   const [quotedVehicleId, setQuotedVehicleId] = useState<string | null>(null);
 
   const {
@@ -219,6 +219,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       const quotationResult = await quotationRequest;
       setEmailNotificationSent(quotationResult.notificationSent ?? false);
       setQuoteId(quotationResult.quotation?.id || null);
+      setQuoteReference(quotationResult.reference || null);
       setQuotedVehicleId(data.vehicleId);
 
       if (visitId) {
@@ -246,10 +247,10 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Quote Request Received!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Thank you for your interest in Geely Ethiopia. Our sales team will review your requirements and send you a detailed quotation within 24-48 hours.
             </p>
             {emailNotificationSent === false && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">Your quote was saved, but the confirmation email could not be sent. Please check the web server SMTP settings or contact Geely Ethiopia directly.</p>}
@@ -259,11 +260,11 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
             >
               Continue after quote to direct payment
             </Link>}
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-2">
-                <strong className="text-navy">What's included in your quote?</strong>
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-2">
+                <strong className="text-navy dark:text-ice">What's included in your quote?</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ Complete vehicle pricing breakdown</li>
                 <li>✓ Available financing options</li>
                 <li>✓ Trade-in valuation (if applicable)</li>
@@ -280,10 +281,29 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
               </button>
               <a
                 href="/financing"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
               >
                 Calculate Financing
               </a>
+              <a
+                href={quoteReference ? `/status?ref=${encodeURIComponent(quoteReference)}` : '/status'}
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight transition-all"
+              >
+                Check Your Status
+              </a>
+            </div>
+            {quoteReference && (
+              <p className="text-xs text-steel dark:text-steel-light mt-4">
+                Your reference number is <strong className="text-navy">{quoteReference}</strong> — save it to check your status later.
+              </p>
+            )}
+            <div className="mt-8 text-left">
+              <WhatsAppInlineCTA
+                title="Prefer to talk now?"
+                description="Chat with our sales team directly on WhatsApp about your quote request"
+                inquiryType="quote"
+                vehicleModel={vehicles.find((v) => v.id === quotedVehicleId)?.name}
+              />
             </div>
           </div>
         </div>
@@ -312,7 +332,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       <section className="py-12 bg-ice">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <FileText className="text-geely-blue" size={24} />
               </div>
@@ -355,17 +375,17 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
             <div className="p-6 space-y-6">
               {/* Personal Information */}
               <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Personal Information</h3>
+                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Personal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("firstName", { required: "First name is required" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.firstName ? "border-red-500" : "border-line"
+                        errors.firstName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="Enter your first name"
                     />
@@ -375,14 +395,14 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("lastName", { required: "Last name is required" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.lastName ? "border-red-500" : "border-line"
+                        errors.lastName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="Enter your last name"
                     />
@@ -392,7 +412,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -405,7 +425,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                         },
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.email ? "border-red-500" : "border-line"
+                        errors.email ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="your.email@example.com"
                     />
@@ -415,7 +435,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -428,7 +448,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                         },
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.phone ? "border-red-500" : "border-line"
+                        errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       placeholder="+251 91 234 5678"
                     />
@@ -441,16 +461,16 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
               {/* Vehicle & Purchase Details */}
               <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Vehicle & Purchase Details</h3>
+                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Vehicle & Purchase Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Vehicle of Interest <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("vehicleId", { required: "Please select a vehicle" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleId ? "border-red-500" : "border-line"
+                        errors.vehicleId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                       disabled={vehiclesLoading}
                     >
@@ -476,17 +496,17 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       When do you plan to purchase? <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("purchaseTimeframe", { required: "Please select a timeframe" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.purchaseTimeframe ? "border-red-500" : "border-line"
+                        errors.purchaseTimeframe ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Select timeframe</option>
-                      <option value="immediate">Within 2 weeks</option>
+                       <option value="Immediately">Immediately</option>
                       <option value="1-month">Within 1 month</option>
                       <option value="2-3-months">2-3 months</option>
                       <option value="3-6-months">3-6 months</option>
@@ -498,13 +518,13 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Do you need financing? <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("financingNeeded", { required: "Please select an option" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.financingNeeded ? "border-red-500" : "border-line"
+                        errors.financingNeeded ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     >
                       <option value="yes">Yes, I need financing</option>
@@ -517,13 +537,13 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Do you have a vehicle to trade in? <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("tradeIn", { required: "Please select an option" })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.tradeIn ? "border-red-500" : "border-line"
+                        errors.tradeIn ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
                     >
                       <option value="no">No</option>
@@ -536,26 +556,26 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
                   {watchTradeIn === "yes" && (
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-navy mb-2">
+                      <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                         Trade-in Vehicle Details
                       </label>
                       <textarea
                         {...register("tradeInDetails")}
                         rows={3}
-                        className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                        className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                         placeholder="Please provide: Make, Model, Year, Mileage, Condition"
                       ></textarea>
                     </div>
                   )}
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Additional Message (Optional)
                     </label>
                     <textarea
                       {...register("message")}
                       rows={4}
-                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Any specific requirements, questions, or preferred vehicle configuration?"
                     ></textarea>
                   </div>
@@ -563,7 +583,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
               </div>
 
               {/* Consent */}
-              <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                 <input
                   type="checkbox"
                   {...register("consent", {
@@ -572,7 +592,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   className="mt-1 w-4 h-4 accent-geely-blue"
                 />
                 <div>
-                  <label className="text-sm text-navy">
+                  <label className="text-sm text-navy dark:text-ice">
                     <span className="text-red-500">* </span>
                     I agree to be contacted by Geely Ethiopia regarding my quote request and consent to the collection of my personal information as per the{" "}
                     <a href="/privacy" className="text-geely-blue hover:underline">
@@ -616,7 +636,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     "Request Quote"
                   )}
                 </button>
-                <p className="text-xs text-steel text-center mt-3">
+                <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                   Your quote will be sent within 24-48 hours
                 </p>
               </div>
@@ -625,7 +645,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
           {/* Contact Alternative */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-steel mb-3">Need immediate assistance?</p>
+            <p className="text-sm text-steel dark:text-steel-light mb-3">Need immediate assistance?</p>
             <div className="flex gap-4 justify-center flex-wrap">
               {contactInfo.phone ? (
                 <a
@@ -640,7 +660,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   })()}
                 </a>
               ) : (
-                <span className="inline-flex items-center gap-2 text-steel">Call us</span>
+                <span className="inline-flex items-center gap-2 text-steel dark:text-steel-light">Call us</span>
               )}
 
               {contactInfo.whatsapp ? (
@@ -653,7 +673,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                   WhatsApp Us
                 </a>
               ) : (
-                <span className="inline-flex items-center gap-2 text-steel">WhatsApp</span>
+                <span className="inline-flex items-center gap-2 text-steel dark:text-steel-light">WhatsApp</span>
               )}
             </div>
           </div>

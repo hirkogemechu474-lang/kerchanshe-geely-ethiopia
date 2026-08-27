@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload, X, Plus, Save } from 'lucide-react';
+import Link from 'next/link';
 import ImageUpload from './ImageUpload';
 import SpecificationsEditor from './SpecificationsEditor';
 import PricingEditor from './PricingEditor';
@@ -12,6 +13,13 @@ interface VehicleFormProps {
   initialData?: any;
   /** Opens the wizard directly on this step (e.g. deep-linked from Gallery & Videos or Vehicle Sections). */
   initialStep?: number;
+}
+
+interface VehicleCategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
 }
 
 const EMPTY_SPECIFICATIONS = {
@@ -74,11 +82,14 @@ function normalizeInventory(vehicle: any) {
 
 export default function VehicleForm({ mode, initialData, initialStep }: VehicleFormProps) {
   const [currentStep, setCurrentStep] = useState(initialStep && initialStep >= 1 && initialStep <= 5 ? initialStep : 1);
+  const [categories, setCategories] = useState<VehicleCategoryOption[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [formData, setFormData] = useState({
     // Basic Information
     name: initialData?.name ?? '',
     model: initialData?.model ?? '',
     year: initialData?.year ?? new Date().getFullYear(),
+    categoryId: initialData?.categoryId ?? '',
     category: initialData?.category ?? '',
     description: initialData?.description ?? '',
     
@@ -100,6 +111,23 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     status: initialData?.status ?? 'draft',
     featured: initialData?.featured ?? initialData?.isFeatured ?? false,
   });
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch('/api/admin/categories');
+        if (!response.ok) throw new Error('Failed to load categories');
+        const data = await response.json();
+        setCategories(data.categories || []);
+      } catch (error) {
+        console.error('Error fetching vehicle categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   const steps = [
     { id: 1, name: 'Basic Info', description: 'Vehicle details' },
@@ -123,7 +151,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
       return;
     }
     
-    if (!formData.category) {
+    if (!formData.categoryId) {
       alert('Category is required');
       setCurrentStep(1);
       return;
@@ -183,7 +211,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                 onClick={() => setCurrentStep(step.id)}
                 className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                   currentStep === step.id
-                    ? 'bg-blue-50 border-2 border-blue-600 text-blue-700'
+                    ? 'bg-geely-blue/10 border-2 border-geely-blue text-geely-blue'
                     : 'border border-gray-200 hover:bg-gray-50'
                 }`}
               >
@@ -191,7 +219,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
                       currentStep === step.id
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-geely-blue text-white'
                         : 'bg-gray-100 text-gray-600'
                     }`}
                   >
@@ -230,7 +258,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="e.g., Coolray"
                     required
                   />
@@ -244,7 +272,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                     type="text"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     placeholder="e.g., SX11"
                     required
                   />
@@ -258,7 +286,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                     type="number"
                     value={formData.year}
                     onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     min="2020"
                     max={new Date().getFullYear() + 1}
                     required
@@ -270,18 +298,39 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                     Category *
                   </label>
                   <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.categoryId}
+                    onChange={(e) => {
+                      const selected = categories.find((c) => c.id === e.target.value);
+                      setFormData({
+                        ...formData,
+                        categoryId: e.target.value,
+                        category: selected?.slug ?? '',
+                      });
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     required
+                    disabled={categoriesLoading}
                   >
-                    <option value="">Select Category</option>
-                    <option value="suv">SUV</option>
-                    <option value="sedan">Sedan</option>
-                    <option value="hatchback">Hatchback</option>
-                    <option value="electric">Electric</option>
-                    <option value="hybrid">Hybrid</option>
+                    <option value="">
+                      {categoriesLoading ? 'Loading categories...' : 'Select Category'}
+                    </option>
+                    {categories
+                      .filter((c) => c.isActive || c.id === formData.categoryId)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                   </select>
+                  {!categoriesLoading && categories.length === 0 && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      No categories yet.{' '}
+                      <Link href="/admin/categories" className="text-geely-blue hover:underline">
+                        Create one
+                      </Link>{' '}
+                      first.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -292,7 +341,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                   rows={5}
                   placeholder="Enter vehicle description..."
                 />
@@ -304,7 +353,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                     type="checkbox"
                     checked={formData.featured}
                     onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-geely-blue border-gray-300 rounded focus:ring-geely-blue"
                   />
                   <span className="text-sm font-medium text-gray-700">Featured Vehicle</span>
                 </label>
@@ -362,7 +411,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
               {currentStep < steps.length ? (
                 <button
                   onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 bg-geely-blue text-white rounded-lg hover:bg-navy transition-colors"
                 >
                   Next Step
                 </button>

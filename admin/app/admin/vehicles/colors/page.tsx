@@ -233,7 +233,7 @@ export default function VehicleColorsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Colors"
-        description="Manage per-vehicle color, interior, and wheel options — shown live in the public configurator"
+        description="Manage per-vehicle color, interior, and wheel options — shown live in the public configurator and as swatches on the model page's 360° view"
       />
 
       {!vehicleId ? (
@@ -287,17 +287,30 @@ export default function VehicleColorsPage() {
                   ) : (
                     colors.map((color) => (
                       <Tr key={color.id}>
-                        <Td><div className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600" style={{ backgroundColor: color.colorCode }} /></Td>
+                        <Td>
+                          {color.imageUrl ? (
+                            <img
+                              src={color.imageUrl}
+                              alt={color.name}
+                              className="w-9 h-9 rounded-lg object-cover border border-gray-300 dark:border-gray-600"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600" style={{ backgroundColor: color.colorCode }} />
+                          )}
+                        </Td>
                         <Td className="font-medium text-gray-900 dark:text-gray-100">
                           {color.name}
                           {color.isDefault && <span className="ml-2"><Badge tone="blue">Default</Badge></span>}
+                          {!color.imageUrl && (
+                            <span className="ml-2"><Badge tone="gray">No image — won&apos;t appear in 360° view</Badge></span>
+                          )}
                         </Td>
                         <Td className="text-gray-500 dark:text-gray-400">{color.colorCode}</Td>
                         <Td className="text-gray-500 dark:text-gray-400">{color.price ? `+${color.price}` : '—'}</Td>
                         <Td><Badge tone={color.inStock ? 'green' : 'red'}>{color.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditColor(color)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEditColor(color)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeColor(color)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>
@@ -342,7 +355,7 @@ export default function VehicleColorsPage() {
                         <Td><Badge tone={interior.inStock ? 'green' : 'red'}>{interior.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditInterior(interior)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEditInterior(interior)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeInterior(interior)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>
@@ -392,7 +405,7 @@ export default function VehicleColorsPage() {
                         <Td><Badge tone={wheel.inStock ? 'green' : 'red'}>{wheel.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditWheel(wheel)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEditWheel(wheel)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => removeWheel(wheel)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </Td>
@@ -434,6 +447,9 @@ export default function VehicleColorsPage() {
                   <ImageIcon className="w-4 h-4" />{colorForm.imageUrl ? 'Change' : 'Choose'} Image
                 </Button>
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                A shot of the vehicle in this color. Used as the swatch thumbnail and swapped into the model page&apos;s 360° viewer when selected.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

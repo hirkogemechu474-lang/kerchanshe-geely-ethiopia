@@ -56,20 +56,20 @@ export default async function NewsArticlePage({ params }: Props) {
   return (
     <MainLayout>
       {/* Breadcrumbs */}
-      <div className="bg-ice py-4 border-b border-line">
+      <div className="bg-ice dark:bg-midnight py-4 border-b border-line dark:border-midnight-line">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center gap-2 text-sm text-steel">
+          <div className="flex items-center gap-2 text-sm text-steel dark:text-steel-light">
             <Link href="/" className="hover:text-geely-blue">Home</Link>
             <span>/</span>
             <Link href="/news" className="hover:text-geely-blue">News</Link>
             <span>/</span>
-            <span className="text-navy font-medium">{article.title}</span>
+            <span className="text-navy dark:text-ice font-medium">{article.title}</span>
           </div>
         </div>
       </div>
 
       {/* Article Header */}
-      <div className="bg-white py-12 border-b border-line">
+      <div className="bg-white dark:bg-midnight-surface py-12 border-b border-line dark:border-midnight-line">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="flex items-center justify-between mb-6">
             <Link
@@ -95,12 +95,12 @@ export default async function NewsArticlePage({ params }: Props) {
             <span className="inline-block bg-geely-blue text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
               {article.category}
             </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-navy mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4">
               {article.title}
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-sm text-steel">
+          <div className="flex flex-wrap items-center gap-6 text-sm text-steel dark:text-steel-light">
             <div className="flex items-center gap-2">
               <User size={16} />
               <span>{article.author}</span>
@@ -124,7 +124,7 @@ export default async function NewsArticlePage({ params }: Props) {
               <NewsImageWithFallback
                 src={withBasePath(article.imageUrl)}
                 alt={article.title}
-                className="w-full h-64 md:h-80 object-cover rounded-lg border border-line"
+                className="w-full h-64 md:h-80 object-cover rounded-lg border border-line dark:border-midnight-line"
               />
             </div>
           )}
@@ -145,24 +145,24 @@ export default async function NewsArticlePage({ params }: Props) {
 
       {/* Related Articles */}
       {relatedArticles.length > 0 && (
-        <section className="py-12 bg-ice border-t border-line">
+        <section className="py-12 bg-ice dark:bg-midnight border-t border-line dark:border-midnight-line">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-            <h2 className="text-2xl font-bold text-navy mb-8">Related Articles</h2>
+            <h2 className="text-2xl font-bold text-navy dark:text-ice mb-8">Related Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedArticles.map((related) => (
                 <Link
                   key={related.id}
                   href={`/news/${related.id}`}
-                  className="bg-white border border-line rounded-lg overflow-hidden hover:border-geely-blue hover:shadow-lg transition-all group"
+                  className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-lg overflow-hidden hover:border-geely-blue hover:shadow-lg transition-all group"
                 >
                   <div className="p-6">
                     <div className="text-xs text-gold font-bold mb-2">
                       {related.category}
                     </div>
-                    <h3 className="text-lg font-bold text-navy mb-2 group-hover:text-geely-blue transition-colors line-clamp-2">
+                    <h3 className="text-lg font-bold text-navy dark:text-ice mb-2 group-hover:text-geely-blue transition-colors line-clamp-2">
                       {related.title}
                     </h3>
-                    <div className="text-sm text-steel flex items-center gap-4">
+                    <div className="text-sm text-steel dark:text-steel-light flex items-center gap-4">
                       <span>{formatDate(related.publishDate)}</span>
                       <span>•</span>
                       <span>{related.author}</span>

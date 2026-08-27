@@ -55,7 +55,7 @@ export default function VehicleSpecificationsPage() {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
         <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+          <RefreshCw className="w-5 h-5 animate-spin text-geely-blue" />
           Loading specifications...
         </div>
       </div>

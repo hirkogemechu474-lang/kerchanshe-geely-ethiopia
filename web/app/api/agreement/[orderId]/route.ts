@@ -53,6 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     vehicleId: vehicle?.id || null,
     signedDocumentUrl: order.signedDocumentUrl,
     signedAt: order.signedAt,
+    countersignedAt: order.countersignedAt,
     quotationId: order.quotationId,
     purchaseReference,
   });

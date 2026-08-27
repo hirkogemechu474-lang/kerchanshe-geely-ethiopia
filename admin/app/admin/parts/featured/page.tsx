@@ -86,7 +86,7 @@ export default function FeaturedPartsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-geely-blue" />
       </div>
     );
   }
@@ -117,7 +117,7 @@ export default function FeaturedPartsPage() {
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b bg-blue-50">
           <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-blue-600 fill-current" />
+            <Star className="w-5 h-5 text-geely-blue fill-current" />
             <h2 className="font-semibold text-gray-900">Currently Featured ({featuredParts.length})</h2>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function FeaturedPartsPage() {
                       type="number"
                       value={part.displayOrder}
                       onChange={(e) => updateOrder(part.id, parseInt(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-geely-blue"
                     />
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -180,7 +180,7 @@ export default function FeaturedPartsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search parts..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-geely-blue"
             />
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function FeaturedPartsPage() {
                       <button
                         onClick={() => toggleFeature(part)}
                         disabled={!part.isActive}
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1 text-geely-blue hover:text-navy font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Star className="w-4 h-4" /> Feature
                       </button>

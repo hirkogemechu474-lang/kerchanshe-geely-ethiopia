@@ -38,7 +38,7 @@ export default async function NewsPage() {
         </div>
       </div>
 
-      <section className="bg-ice py-16">
+      <section className="bg-ice dark:bg-midnight py-16">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
           {articles.length === 0 ? (
             <div className="py-12 text-center">
@@ -55,7 +55,7 @@ export default async function NewsPage() {
                   <Link
                     key={article.id}
                     href={`/news/${article.id}`}
-                    className="group overflow-hidden rounded-lg border border-line bg-white transition-all hover:shadow-lg"
+                    className="group overflow-hidden rounded-lg border border-line dark:border-midnight-line bg-white dark:bg-midnight-surface transition-all hover:shadow-lg"
                   >
                     <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       {article.imageUrl ? (
@@ -65,14 +65,14 @@ export default async function NewsPage() {
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center p-6 text-center text-sm text-steel">
+                        <div className="flex h-full items-center justify-center p-6 text-center text-sm text-steel dark:text-steel-light">
                           {article.title}
                         </div>
                       )}
                     </div>
 
                     <div className="p-6">
-                      <div className="mb-3 flex items-center gap-4 text-xs text-steel">
+                      <div className="mb-3 flex items-center gap-4 text-xs text-steel dark:text-steel-light">
                         <div className="flex items-center gap-1">
                           <Tag size={14} />
                           <span className="capitalize">{article.category}</span>
@@ -89,15 +89,15 @@ export default async function NewsPage() {
                         </div>
                       </div>
 
-                      <h3 className="mb-3 text-xl font-bold text-navy transition-colors group-hover:text-geely-blue line-clamp-2">
+                      <h3 className="mb-3 text-xl font-bold text-navy dark:text-ice transition-colors group-hover:text-geely-blue line-clamp-2">
                         {article.title}
                       </h3>
-                      <p className="mb-4 text-sm leading-relaxed text-steel line-clamp-3">
+                      <p className="mb-4 text-sm leading-relaxed text-steel dark:text-steel-light line-clamp-3">
                         {excerpt}
                       </p>
 
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-steel">By {article.author}</span>
+                        <span className="text-steel dark:text-steel-light">By {article.author}</span>
                         <span className="font-semibold text-geely-blue group-hover:underline">
                           Read more -
                         </span>

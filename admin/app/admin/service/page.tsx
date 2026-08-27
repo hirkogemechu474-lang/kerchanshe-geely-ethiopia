@@ -21,7 +21,7 @@ export default async function ServicePage() {
   ]);
 
   const cards = [
-    { label: 'Scheduled', value: scheduled, icon: Calendar, color: 'text-blue-600' },
+    { label: 'Scheduled', value: scheduled, icon: Calendar, color: 'text-geely-blue' },
     { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-yellow-600' },
     { label: 'Completed', value: completed, icon: CheckCircle, color: 'text-green-600' },
     { label: 'Technicians', value: technicians.length, icon: Wrench, color: 'text-purple-600' },
@@ -66,7 +66,7 @@ export default async function ServicePage() {
               <Td><StatusBadge status={booking.status} /></Td>
               <Td>
                 {booking.jobCard ? (
-                  <Link href={`/admin/workshop/job-cards/${booking.jobCard.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                  <Link href={`/admin/workshop/job-cards/${booking.jobCard.id}`} className="text-xs font-medium text-geely-blue hover:underline">
                     {booking.jobCard.jobCardNo}
                   </Link>
                 ) : (

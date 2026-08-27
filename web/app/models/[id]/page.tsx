@@ -3,17 +3,19 @@ import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { Check, Phone, MessageCircle, Download, FileDown } from "lucide-react";
+import { Check, Phone, MessageCircle, Download } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { getBreadcrumbSchema } from "@/lib/schema";
 import { Metadata } from "next";
-import { formatVehiclePrice, getAvailabilityBadge } from "@/lib/vehicleData";
+import { getAvailabilityBadge } from "@/lib/vehicleData";
 import { Model360Section } from "@/components/Model360Section";
 import { StickyCTABar } from "@/components/StickyCTABar";
 import { ModelPageTabs } from "@/components/ModelPageTabs";
-import { TrimColorWheelPicker } from "@/components/TrimColorWheelPicker";
+import { VehicleOptionsShowcase } from "@/components/VehicleOptionsShowcase";
+import { QuickRequestCallback } from "@/components/QuickRequestCallback";
+import { withBasePath } from "@/lib/publicPath";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://geelyethiopia.com";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://geelyethiopia.com";
 const SETTING_KEY = "vehicle_settings";
 
 function publicBrochureUrl(url: string | undefined, fallback: string) {
@@ -27,11 +29,7 @@ function publicBrochureUrl(url: string | undefined, fallback: string) {
 }
 
 function publicMediaUrl(url: string | null | undefined) {
-  if (!url) return '';
-  if (/^https?:\/\//i.test(url)) return url;
-  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ||
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : '');
-  return `${adminUrl}${url}`;
+  return withBasePath(url);
 }
 
 async function getVehicle(id: string) {
@@ -187,10 +185,41 @@ export default async function VehicleDetailPage({
   const publicImageList = imageList.map((image) => publicMediaUrl(image));
   const publicHeroImageUrl = publicMediaUrl(vehicle.heroImageUrl) || publicImageList[0] || '';
   const publicHeroVideoUrl = publicMediaUrl(vehicle.heroVideoUrl);
-  const displayPrice = vehicle.finalPrice || vehicle.basePrice;
   const badge = vehicle.badge || getAvailabilityBadge(vehicle.status || "published").label;
-  const badgeColor = getAvailabilityBadge(vehicle.status || "published").color;
   const specs = (vehicle.specifications || {}) as any;
+
+  // Real per-vehicle options from the admin panel (/admin/vehicles/colors,
+  // /admin/vehicles/models-variants). Price is intentionally never selected
+  // here — this is a browsing page, and price stays visible only on the
+  // Financing Calculator / Configurator per the site's pricing convention.
+  const [optionColors, optionInteriors, optionWheels, optionPackages, optionAccessories] =
+    await Promise.all([
+      prisma.vehicleColor.findMany({
+        where: { vehicleId: vehicle.id, inStock: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true, colorCode: true, imageUrl: true, isDefault: true },
+      }),
+      prisma.vehicleInterior.findMany({
+        where: { vehicleId: vehicle.id, inStock: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true, description: true, materialType: true, imageUrl: true, isDefault: true },
+      }),
+      prisma.vehicleWheel.findMany({
+        where: { OR: [{ vehicleId: vehicle.id }, { vehicleId: null }], inStock: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true, size: true, imageUrl: true, isDefault: true },
+      }),
+      prisma.vehiclePackage.findMany({
+        where: { vehicleId: vehicle.id },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true, description: true, features: true, isDefault: true },
+      }),
+      prisma.vehicleAccessory.findMany({
+        where: { OR: [{ vehicleId: vehicle.id }, { vehicleId: null }], inStock: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true, description: true, category: true, imageUrl: true },
+      }),
+    ]);
 
   const relatedVehicles = await prisma.vehicle.findMany({
     where: {
@@ -254,6 +283,8 @@ export default async function VehicleDetailPage({
     { name: vehicle.name, url: `${BASE_URL}/models/${vehicle.slug}` },
   ]);
 
+  const publicOptionColors = optionColors.map((c) => ({ ...c, imageUrl: publicMediaUrl(c.imageUrl) }));
+
   const galleries = publicImageList.slice(0, 8);
   const featuredFeatures: string[] = (() => {
     if (specs?.features) {
@@ -275,132 +306,125 @@ export default async function VehicleDetailPage({
         }}
       />
 
-      {/* ── HERO SECTION ──────────────────────────────────────────────────── */}
-      <div id="section-overview" className="bg-gradient-to-br from-navy via-[#123a72] to-geely-blue text-white py-12 scroll-mt-16">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[11px] tracking-wider mb-4">
-            <Link href={`/models${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`} className="opacity-70 hover:opacity-100 transition-opacity">
-              Models
-            </Link>
-            <span className="opacity-50">›</span>
-            <span>{vehicle.name}</span>
-          </div>
+      {/* ── HERO SECTION — full-bleed image, minimal chrome, no price on this
+           browsing page (matches the pattern on Geely's regional model pages,
+           e.g. geely.com.eg/models/gx3-pro, which show no pricing at all) ── */}
+      <div id="section-overview" className="relative bg-ink text-white scroll-mt-16">
+        <div className="relative h-[70vh] min-h-[420px] max-h-[720px] w-full overflow-hidden">
+          {publicHeroVideoUrl ? (
+            <video
+              src={publicHeroVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 h-full w-full object-cover"
+              aria-label={`${vehicle.name} hero video`}
+            />
+          ) : publicHeroImageUrl ? (
+            <img
+              src={publicHeroImageUrl}
+              alt={vehicle.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-navy to-geely-blue" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            {/* Left: info */}
-            <div>
-              <div className="text-[11px] text-gold font-bold tracking-wider mb-3 uppercase">
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="max-w-[1280px] mx-auto px-4 md:px-10 pb-10">
+              <div className="flex items-center gap-2 text-[11px] tracking-wider mb-3 text-white/70">
+                <Link href={`/models${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`} className="hover:text-white transition-colors">
+                  Models
+                </Link>
+                <span>›</span>
+                <span className="text-white">{vehicle.name}</span>
+              </div>
+              <div className="text-[11px] text-gold-bright font-bold tracking-wider mb-2 uppercase">
                 {vehicle.vehicleCategory?.name || vehicle.category}
               </div>
-              <h1 className="disp text-5xl font-bold mb-4">{vehicle.name}</h1>
-              <p className="text-[#d8e4f5] text-base mb-6 leading-relaxed">
-                {vehicle.description || "Vehicle details are managed from the admin panel."}
-              </p>
+              <h1 className="disp text-4xl md:text-6xl font-extrabold mb-6 max-w-2xl">{vehicle.name}</h1>
 
-              {/* Price + badge */}
-              <div className="flex items-center gap-4 mb-6 flex-wrap">
-                <div className={`${badgeColor} text-white text-xs font-bold px-4 py-2 rounded-full`}>
-                  {badge}
-                </div>
-                <div className="text-2xl font-bold">
-                  Price on request
-                </div>
-                <div className="text-sm text-blue-100">
-                  {vehicle.brand?.name || "Geely"}
-                </div>
-              </div>
-
-              {/* Primary CTAs */}
-              <div className="flex gap-3 flex-wrap mb-4">
-                <Link
-                  href={`/quote?model=${vehicle.slug}${visitParam}`}
-                  className="bg-gold text-[#2c2308] font-bold text-sm px-7 py-4 rounded hover:bg-opacity-90 transition-all"
-                >
-                  Get a Quote
-                </Link>
+              <div className="flex gap-3 flex-wrap">
                 <Link
                   href={`/test-drive?model=${vehicle.slug}${visitParam}`}
-                  className="border border-white border-opacity-50 text-white font-semibold text-sm px-7 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
+                  className="bg-white text-ink font-bold text-sm px-7 py-4 rounded hover:bg-opacity-90 transition-all"
                 >
-                  Book Test Drive
+                  Schedule Test Drive
                 </Link>
-                <a
-                    href={brochureUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 border border-white border-opacity-50 text-white font-semibold text-sm px-7 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
-                  >
-                    <FileDown size={16} />
-                    Download Brochure
-                </a>
-              </div>
-
-              {/* Secondary actions */}
-              <div className="flex gap-4 flex-wrap">
-                <a
-                  href={brochureUrl}
-                  download
-                  className="flex items-center gap-2 text-[#d8e4f5] text-sm hover:text-white transition-colors"
+                <Link
+                  href="/compare"
+                  className="border border-white/50 text-white font-semibold text-sm px-7 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
                 >
-                  <Download size={15} />
-                  Download Brochure
-                </a>
-                <ShareButton title={vehicle.name} />
+                  Compare
+                </Link>
               </div>
-            </div>
-
-            {/* Right: hero image */}
-            <div className="h-[350px] bg-white bg-opacity-[0.08] border border-dashed border-white border-opacity-40 rounded-xl overflow-hidden">
-              {publicHeroVideoUrl ? (
-                <video
-                  src={publicHeroVideoUrl}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full object-cover"
-                  aria-label={`${vehicle.name} hero video`}
-                />
-              ) : publicHeroImageUrl ? (
-                <img
-                  src={publicHeroImageUrl}
-                  alt={vehicle.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-white text-opacity-65 text-center">
-                  {vehicle.name} Hero Image
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── QUICK ACTION BAR (always visible) ─────────────────────────── */}
-      <div className="bg-ice border-b border-line">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-3 flex flex-wrap gap-4 justify-between items-center">
-          <div className="flex gap-5 flex-wrap">
-            <a
-              href={contactPhoneHref}
-              className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-geely-blue transition-colors"
-            >
-              <Phone size={16} />
-              Call Us
+      {/* ── KEY FACTS STRIP — a few headline specs, not the full table ── */}
+      <div className="bg-white border-b border-line">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+            {(() => {
+              const fromSpecs: [string, string][] = [
+                ["Engine", specs?.engine?.type || specs?.engine],
+                ["Transmission", specs?.engine?.transmission || specs?.transmission],
+                ["0-100 km/h", specs?.engine?.acceleration],
+                ["Drivetrain / Power", specs?.engine?.drivetrain || specs?.engine?.power || specs?.power],
+              ].filter(([, value]) => Boolean(value)) as [string, string][];
+
+              // Specs aren't always filled in from the admin panel — fall
+              // back to facts every vehicle always has, so the strip never
+              // renders empty.
+              const fallback: [string, string][] = [
+                ["Category", vehicle.vehicleCategory?.name || vehicle.category],
+                ["Availability", badge],
+                ["Brand", vehicle.brand?.name || "Geely"],
+              ];
+
+              return [...fromSpecs, ...fallback].slice(0, 3).map(([label, value]) => (
+                <div key={label}>
+                  <div className="text-lg md:text-xl font-display font-bold text-ink">{value}</div>
+                  <div className="text-xs text-steel uppercase tracking-wider mt-1">{label}</div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      </div>
+
+      {/* ── OVERVIEW COPY + SECONDARY ACTIONS ─────────────────────────── */}
+      <div className="bg-white">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-10">
+          <p className="text-steel text-base leading-relaxed max-w-3xl mb-6">
+            {vehicle.description || "Vehicle details are managed from the admin panel."}
+          </p>
+          <div className="flex gap-5 flex-wrap items-center text-sm">
+            <a href={contactPhoneHref} className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors">
+              <Phone size={16} /> Call Us
             </a>
             <a
               href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicle.name}`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-geely-blue transition-colors"
+              className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors"
             >
-              <MessageCircle size={16} />
-              WhatsApp
+              <MessageCircle size={16} /> WhatsApp
             </a>
+            <Link href={`/quote?model=${vehicle.slug}${visitParam}`} className="font-semibold text-navy hover:text-geely-blue transition-colors">
+              Get a Quote
+            </Link>
+            <a href={brochureUrl} download className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors">
+              <Download size={15} /> Download Brochure
+            </a>
+            <QuickRequestCallback vehicleModel={vehicle.name} />
+            <ShareButton title={vehicle.name} />
           </div>
-          <Link href="/compare" className="text-sm font-semibold text-geely-blue hover:underline">
-            Compare with other models →
-          </Link>
         </div>
       </div>
 
@@ -437,17 +461,25 @@ export default async function VehicleDetailPage({
         </div>
       </section>
 
-      {/* ── INTERACTIVE CONFIGURATOR (BUILD & PRICE) ──────────────────── */}
-      <TrimColorWheelPicker
+      {/* ── COLORS, TRIMS & ACCESSORIES (no price — see convention note above) ── */}
+      <VehicleOptionsShowcase
         vehicleSlug={vehicle.slug}
         vehicleName={vehicle.name}
-        basePrice={displayPrice}
         heroImage={publicHeroImageUrl || undefined}
-        galleryImages={publicImageList}
+        colors={publicOptionColors}
+        interiors={optionInteriors.map((i) => ({ ...i, imageUrl: publicMediaUrl(i.imageUrl) }))}
+        wheels={optionWheels.map((w) => ({ ...w, imageUrl: publicMediaUrl(w.imageUrl) }))}
+        packages={optionPackages.map((p) => ({
+          ...p,
+          features: Array.isArray(p.features) ? (p.features as string[]) : [],
+        }))}
+        accessories={optionAccessories.map((a) => ({ ...a, imageUrl: publicMediaUrl(a.imageUrl) }))}
         visitId={visitId}
       />
 
-      {/* ── 360° SPOTLIGHT SECTION ────────────────────────────────────── */}
+      {/* ── 360° SPOTLIGHT SECTION — color swatches (from the same admin-managed
+           Vehicle Colors used above) let a visitor swap the displayed color,
+           mirroring geely.com.eg/models/gx3-pro#360's "Discover Every Angle" ── */}
       <Model360Section
         modelName={vehicle.name}
         modelId={vehicle.slug}
@@ -455,18 +487,19 @@ export default async function VehicleDetailPage({
         heroImageUrl={publicHeroImageUrl}
         showcaseViews={showcaseViews}
         showcaseVideoUrl={showcaseVideoUrl}
+        colors={publicOptionColors}
       />
 
-      {/* ── SPECIFICATIONS ─────────────────────────────────────────────── */}
-      <section id="section-specs" className="py-12 bg-ice scroll-mt-16">
+      {/* ── SPECIFICATIONS — plain tabular layout, light typography, no
+           boxed cards, matching the reference's spec table treatment ── */}
+      <section id="section-specs" className="py-16 bg-white scroll-mt-16">
         <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <h2 className="disp text-3xl text-navy font-bold mb-8">Technical Specifications</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Engine & Performance */}
-            <div className="bg-white p-6 rounded-xl border border-line">
-              <h3 className="text-lg font-bold text-navy mb-4">Engine & Performance</h3>
-              <div className="space-y-3 text-sm">
-                {[
+          <h2 className="disp text-3xl text-navy font-bold mb-10">Technical Specifications</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+            {[
+              {
+                title: "Engine & Performance",
+                rows: [
                   ["Engine", specs?.engine?.type || specs?.engine],
                   ["Power", specs?.engine?.power || specs?.power],
                   ["Transmission", specs?.engine?.transmission || specs?.transmission],
@@ -474,89 +507,62 @@ export default async function VehicleDetailPage({
                   ["Drivetrain", specs?.engine?.drivetrain || specs?.drivetrain],
                   ["Range (EV)", specs?.engine?.range || specs?.range],
                   ["Battery", specs?.engine?.batteryCapacity || specs?.batteryCapacity],
-                ]
-                  .filter(([, value]) => Boolean(value))
-                  .map(([label, value]) => (
-                    <div key={label} className="flex justify-between border-b border-line pb-2">
-                      <span className="text-steel">{label}</span>
-                      <span className="font-semibold text-navy">{value as string}</span>
-                    </div>
-                  ))}
-                {!specs?.engine && (
-                  <p className="text-steel text-xs">Specifications managed in admin panel.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Dimensions */}
-            <div className="bg-white p-6 rounded-xl border border-line">
-              <h3 className="text-lg font-bold text-navy mb-4">Dimensions & Capacity</h3>
-              <div className="space-y-3 text-sm">
-                {[
+                ],
+              },
+              {
+                title: "Dimensions & Capacity",
+                rows: [
                   ["Length", specs?.dimensions?.length],
                   ["Width", specs?.dimensions?.width],
                   ["Height", specs?.dimensions?.height],
                   ["Wheelbase", specs?.dimensions?.wheelbase],
                   ["Ground Clearance", specs?.dimensions?.groundClearance],
                   ["Seating Capacity", specs?.dimensions?.seatingCapacity || specs?.seating],
-                  ["Boot Space", specs?.dimensions?.bootSpace],
-                ]
-                  .filter(([, value]) => Boolean(value))
-                  .map(([label, value]) => (
-                    <div key={label} className="flex justify-between border-b border-line pb-2">
-                      <span className="text-steel">{label}</span>
-                      <span className="font-semibold text-navy">{value as string}</span>
+                  ["Cargo Volume", specs?.dimensions?.cargoVolume || specs?.dimensions?.bootSpace],
+                ],
+              },
+            ].map(({ title, rows }) => {
+              const filled = rows.filter(([, value]) => Boolean(value));
+              return (
+                <div key={title}>
+                  <h3 className="text-base font-bold text-navy mb-4 uppercase tracking-wider">{title}</h3>
+                  {filled.length > 0 ? (
+                    <div>
+                      {filled.map(([label, value]) => (
+                        <div key={label} className="flex justify-between py-3 border-b border-line text-sm">
+                          <span className="text-steel">{label}</span>
+                          <span className="font-semibold text-navy">{value as string}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* Highlights */}
-            <div className="bg-white p-6 rounded-xl border border-line">
-              <h3 className="text-lg font-bold text-navy mb-4">Overview</h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <span className="text-steel block mb-1">Brand</span>
-                  <span className="font-semibold text-navy">{vehicle.brand?.name || "Geely"}</span>
+                  ) : (
+                    <p className="text-steel text-sm">Specifications managed in admin panel.</p>
+                  )}
                 </div>
-                <div>
-                  <span className="text-steel block mb-1">Category</span>
-                  <span className="font-semibold text-navy">
-                    {vehicle.vehicleCategory?.name || vehicle.category}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-steel block mb-1">Pricing</span>
-                  <span className="font-bold text-geely-blue text-lg">
-                    Price on request
-                  </span>
-                </div>
-                {publicHeroVideoUrl && (
-                  <div className="mt-4">
-                    <a
-                      href={publicHeroVideoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-geely-blue font-semibold hover:underline"
-                    >
-                      ▶ Watch Video →
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
+              );
+            })}
           </div>
+          {publicHeroVideoUrl && (
+            <a
+              href={publicHeroVideoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-8 text-sm text-geely-blue font-semibold hover:underline"
+            >
+              ▶ Watch Full Video →
+            </a>
+          )}
         </div>
       </section>
 
       {/* ── FEATURES SECTION ──────────────────────────────────────────── */}
       {featuredFeatures.length > 0 && (
-        <section className="py-12 bg-white">
+        <section className="py-16 bg-ice">
           <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-            <h2 className="disp text-3xl text-navy font-bold mb-6">Vehicle Features</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <h2 className="disp text-3xl text-navy font-bold mb-8">Vehicle Features</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
               {featuredFeatures.map((feature, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-ice border border-line">
+                <div key={index} className="flex items-start gap-3 py-1">
                   <Check size={18} className="text-geely-blue flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-navy">{feature}</span>
                 </div>
@@ -566,66 +572,21 @@ export default async function VehicleDetailPage({
         </section>
       )}
 
-      {/* ── FINANCING ESTIMATOR ────────────────────────────────────────── */}
-      <section className="py-12 bg-ice">
+      {/* ── DIRECT PURCHASE CTA ──────────────────────────────────────────── */}
+      <section className="py-16 bg-white">
         <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <div className="bg-gradient-to-br from-navy to-[#123a72] text-white rounded-2xl p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <div className="text-gold text-xs font-bold tracking-wider mb-3 uppercase">Direct Vehicle Purchase</div>
-                <h2 className="disp text-3xl font-bold mb-3">Own the {vehicle.name}</h2>
-                <p className="text-[#d8e4f5] text-sm mb-6">
-                  Purchase directly through a supported Ethiopian bank and receive a purchase confirmation reference.
-                </p>
-                <div className="flex gap-3 flex-wrap">
-                  <Link
-                    href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
-                    className="bg-gold text-[#2c2308] font-bold text-sm px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
-                  >
-                    Purchase This Vehicle
-                  </Link>
-                  <Link
-                    href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
-                    className="border border-white/40 text-white font-semibold text-sm px-6 py-3 rounded-lg hover:bg-white/10 transition-all"
-                  >
-                    Purchase Vehicle
-                  </Link>
-                </div>
-              </div>
-
-              {/* Quick estimate */}
-              <div className="hidden bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-sm text-[#d8e4f5] mb-4 font-semibold">Quick Payment Estimate</div>
-                <div className="space-y-3 text-sm">
-                  {[
-                    { term: "24 months", rate: 15, label: "2 Years" },
-                    { term: "36 months", rate: 15, label: "3 Years" },
-                    { term: "48 months", rate: 15, label: "4 Years" },
-                    { term: "60 months", rate: 15, label: "5 Years" },
-                  ].map(({ term, rate, label }) => {
-                    const months = parseInt(term);
-                    const monthlyRate = rate / 100 / 12;
-                    const downPayment = displayPrice * 0.3;
-                    const loanAmount = displayPrice - downPayment;
-                    const monthly =
-                      loanAmount *
-                      (monthlyRate * Math.pow(1 + monthlyRate, months)) /
-                      (Math.pow(1 + monthlyRate, months) - 1);
-                    return (
-                      <div key={term} className="flex justify-between items-center py-2 border-b border-white/10">
-                        <span className="text-[#d8e4f5]">{label} (30% down)</span>
-                        <span className="font-bold text-white">
-                          {formatVehiclePrice(Math.round(monthly))}/mo
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 text-xs text-[#8fafd4]">
-                  * Estimates at 15% p.a. interest. Actual rates vary by institution.
-                </div>
-              </div>
-            </div>
+          <div className="bg-gradient-to-br from-navy to-[#123a72] text-white rounded-2xl p-10 text-center">
+            <div className="text-gold text-xs font-bold tracking-wider mb-3 uppercase">Direct Vehicle Purchase</div>
+            <h2 className="disp text-3xl font-bold mb-3">Own the {vehicle.name}</h2>
+            <p className="text-[#d8e4f5] text-sm mb-6 max-w-xl mx-auto">
+              Purchase directly through a supported Ethiopian bank and receive a purchase confirmation reference.
+            </p>
+            <Link
+              href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
+              className="inline-block bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
+            >
+              Purchase This Vehicle
+            </Link>
           </div>
         </div>
       </section>
@@ -652,14 +613,6 @@ export default async function VehicleDetailPage({
             >
               Request a Quote
             </Link>
-            <a
-              href={brochureUrl}
-              download
-              className="flex items-center gap-2 border border-white border-opacity-30 text-[#d8e4f5] font-semibold text-sm px-8 py-4 rounded-lg hover:bg-white hover:bg-opacity-5 transition-all"
-            >
-              <Download size={16} />
-              Download Brochure
-            </a>
           </div>
         </div>
       </div>
@@ -711,6 +664,7 @@ export default async function VehicleDetailPage({
         price="Price on request"
         brochureUrl={brochureUrl}
         visitId={visitId}
+        contactPhone={contactPhone}
       />
     </MainLayout>
   );

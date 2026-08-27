@@ -69,7 +69,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
           </div>
         </div>
         
-        <div className="grid grid-cols-4 gap-4 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
             <div className={`text-2xl font-bold text-${status.color}-900`}>{inventoryData.stock}</div>
             <div className={`text-xs text-${status.color}-700 mt-1`}>Total Stock</div>
@@ -102,7 +102,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.stock}
               onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="0"
               min="0"
               required
@@ -117,7 +117,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.reservedStock}
               onChange={(e) => handleChange('reservedStock', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="0"
               min="0"
             />
@@ -131,7 +131,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.lowStockThreshold}
               onChange={(e) => handleChange('lowStockThreshold', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="5"
               min="0"
             />
@@ -152,7 +152,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="text"
               value={inventoryData.sku}
               onChange={(e) => handleChange('sku', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., COOL-2024-001"
               required
             />
@@ -168,7 +168,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
                 type="text"
                 value={inventoryData.warehouseLocation}
                 onChange={(e) => handleChange('warehouseLocation', e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="e.g., Warehouse A, Bay 12"
               />
             </div>
@@ -189,7 +189,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.reorderPoint}
               onChange={(e) => handleChange('reorderPoint', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="3"
               min="0"
             />
@@ -204,7 +204,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.maxStock}
               onChange={(e) => handleChange('maxStock', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="50"
               min="0"
             />
@@ -219,7 +219,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="number"
               value={inventoryData.incomingStock}
               onChange={(e) => handleChange('incomingStock', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="0"
               min="0"
             />
@@ -236,7 +236,7 @@ export default function InventoryManager({ inventory, onChange }: InventoryManag
               type="date"
               value={inventoryData.expectedDate}
               onChange={(e) => handleChange('expectedDate', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
           </div>
         )}

@@ -358,7 +358,7 @@ export function FinancingSettingsEditor() {
             <button
               onClick={save}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
             >
               <Save size={18} />
               {saving ? 'Saving...' : 'Save Changes'}
@@ -371,7 +371,7 @@ export function FinancingSettingsEditor() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/30">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-geely-blue to-navy text-white flex items-center justify-center shadow-md shadow-geely-blue/30">
                 <Calculator className="w-7 h-7" />
               </div>
               <div>
@@ -385,7 +385,7 @@ export function FinancingSettingsEditor() {
                 onClick={() => setSettings(s => ({ ...s, enabled: !s.enabled }))}
                 className="text-gray-600 hover:text-gray-800 transition-colors"
               >
-                {settings.enabled ? <ToggleRight className="w-10 h-10 text-blue-600" /> : <ToggleLeft className="w-10 h-10 text-gray-400" />}
+                {settings.enabled ? <ToggleRight className="w-10 h-10 text-geely-blue" /> : <ToggleLeft className="w-10 h-10 text-gray-400" />}
               </button>
             </div>
           </div>
@@ -397,7 +397,7 @@ export function FinancingSettingsEditor() {
                   type="checkbox"
                   checked={settings.calculator.enabled}
                   onChange={e => setSettings(s => ({ ...s, calculator: { ...s.calculator, enabled: e.target.checked } }))}
-                  className="rounded text-blue-500 focus:ring-blue-500"
+                  className="rounded text-blue-500 focus:ring-geely-blue"
                 />
                 <span className="text-sm font-medium text-gray-700">Show Calculator</span>
               </label>
@@ -423,7 +423,7 @@ export function FinancingSettingsEditor() {
                   type="number"
                   value={settings.calculator.minDownPayment}
                   onChange={e => setSettings(s => ({ ...s, calculator: { ...s.calculator, minDownPayment: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 />
               </div>
               <div>
@@ -435,7 +435,7 @@ export function FinancingSettingsEditor() {
                   type="number"
                   value={settings.calculator.maxDownPayment}
                   onChange={e => setSettings(s => ({ ...s, calculator: { ...s.calculator, maxDownPayment: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 />
               </div>
               <div>
@@ -446,7 +446,7 @@ export function FinancingSettingsEditor() {
                   type="number"
                   value={settings.calculator.defaultDownPayment}
                   onChange={e => setSettings(s => ({ ...s, calculator: { ...s.calculator, defaultDownPayment: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 />
               </div>
             </div>
@@ -605,7 +605,7 @@ export function FinancingSettingsEditor() {
               <div key={index} className="relative border border-gray-200 rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-navy text-white flex items-center justify-center font-bold text-lg shrink-0">
                       {step.step}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1165,7 +1165,7 @@ export function FinancingSettingsEditor() {
             <button
               onClick={save}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-geely-blue to-navy text-white rounded-lg shadow-md shadow-geely-blue/20 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60"
             >
               <Save size={18} />
               {saving ? 'Saving...' : 'Save All Changes'}

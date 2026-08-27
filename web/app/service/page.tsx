@@ -108,20 +108,20 @@ export default function ServicePage() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy mb-4">
+            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Service Appointment Confirmed!
             </h1>
-            <p className="text-lg text-steel mb-8 leading-relaxed">
+            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
               Thank you for scheduling your service with Geely Ethiopia. We've received your appointment request and will send you a confirmation email shortly.
             </p>
             {bookingReference && (
-              <p className="mb-6 text-base text-navy">
+              <p className="mb-6 text-base text-navy dark:text-ice">
                 Service Request Reference: <span className="font-bold">{bookingReference}</span>
               </p>
             )}
             {submitError && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">{submitError}</p>}
-            <div className="bg-ice p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel mb-2">
+            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
+              <p className="text-sm text-steel dark:text-steel-light mb-2">
                 <strong className="text-navy">What to bring:</strong>
               </p>
               <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
@@ -140,7 +140,7 @@ export default function ServicePage() {
               </button>
               <a
                 href="/parts"
-                className="border border-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
               >
                 Order Parts
               </a>
@@ -179,7 +179,7 @@ export default function ServicePage() {
       <section className="py-12 bg-ice">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg text-center">
+            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
               <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Wrench className="text-geely-blue" size={24} />
               </div>
@@ -544,7 +544,7 @@ export default function ServicePage() {
 
           {/* Contact Alternative */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-steel mb-3">
+            <p className="text-sm text-steel dark:text-steel-light mb-3">
               Need emergency service?
             </p>
             <a

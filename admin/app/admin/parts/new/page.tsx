@@ -108,7 +108,7 @@ export default function NewSparePartPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., Oil Filter, Brake Pads"
             />
           </div>
@@ -126,7 +126,7 @@ export default function NewSparePartPage() {
               value={formData.sku}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., GF-001, BP-2024"
             />
             <p className="mt-1 text-xs text-gray-500">Unique identifier for this part</p>
@@ -144,7 +144,7 @@ export default function NewSparePartPage() {
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
               <option value="engine">Engine Parts</option>
               <option value="filters">Filters</option>
@@ -173,7 +173,7 @@ export default function NewSparePartPage() {
                 onChange={handleChange}
                 required
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="e.g., 50"
               />
             </div>
@@ -190,7 +190,7 @@ export default function NewSparePartPage() {
                 onChange={handleChange}
                 required
                 min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                 placeholder="e.g., 10"
               />
               <p className="mt-1 text-xs text-gray-500">Alert when stock falls below this level</p>
@@ -212,7 +212,7 @@ export default function NewSparePartPage() {
               required
               min="0"
               step="0.01"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., 350.00"
             />
           </div>
@@ -229,7 +229,7 @@ export default function NewSparePartPage() {
               value={formData.supplier}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               placeholder="e.g., Geely Parts Co., AutoParts Ltd"
             />
           </div>
@@ -242,7 +242,7 @@ export default function NewSparePartPage() {
               name="isActive"
               checked={formData.isActive}
               onChange={handleChange}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-geely-blue rounded focus:ring-geely-blue"
             />
             <label htmlFor="isActive" className="text-sm text-gray-700">
               Part is active and available for sale
@@ -261,7 +261,7 @@ export default function NewSparePartPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-geely-blue text-white px-6 py-2 rounded-lg hover:bg-navy transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             {loading ? 'Creating...' : 'Add Spare Part'}

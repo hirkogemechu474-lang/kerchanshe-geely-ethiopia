@@ -30,13 +30,13 @@ export default async function TermsOfServicePage() {
       <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8 mb-8">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                 <FileText className="text-green-600" size={32} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-navy">Terms of Service</h1>
+                <h1 className="text-3xl font-bold text-navy dark:text-ice">Terms of Service</h1>
                 <p className="text-gray-600">Rules and conditions for using our services</p>
               </div>
             </div>
@@ -46,7 +46,7 @@ export default async function TermsOfServicePage() {
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="bg-white dark:bg-midnight-surface rounded-lg shadow-sm p-8">
             {termsContent ? (
               <div className="prose max-w-none">
                 <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
@@ -98,7 +98,7 @@ export default async function TermsOfServicePage() {
               </a>
               <a
                 href="mailto:info@geelyethiopia.com"
-                className="inline-block bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
+                className="inline-block bg-white dark:bg-midnight-surface text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 text-center"
               >
                 Email Us
               </a>
