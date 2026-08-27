@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { lookupSignatureToken } from '@/lib/services/staffSignature/staffSignatureService';
 
 // Public — same random-token-as-access-key pattern as every other
 // self-service link in this codebase, just for a staff member setting up
@@ -11,16 +11,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { token } = await params;
-  const user = await prisma.user.findUnique({ where: { signatureSetupToken: token } });
-  if (!user) {
-    return NextResponse.json({ error: 'This signature link is invalid or has already been used.' }, { status: 404 });
-  }
-  if (!user.signatureSetupTokenExpiresAt || user.signatureSetupTokenExpiresAt < new Date()) {
-    return NextResponse.json({ error: 'This signature link has expired. Ask your admin to send a new one.' }, { status: 409 });
+  const result = await lookupSignatureToken(token);
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  return NextResponse.json({
-    name: user.name,
-    hasExistingSignature: Boolean(user.signatureUrl),
-  });
+  return NextResponse.json({ name: result.name, hasExistingSignature: result.hasExistingSignature });
 }
