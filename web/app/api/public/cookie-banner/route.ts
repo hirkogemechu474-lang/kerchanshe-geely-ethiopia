@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { settingRepository } from '@/repositories/settingRepository';
 
 /**
  * GET /api/public/cookie-banner
@@ -7,9 +7,7 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { key: 'cookie_banner' }
-    });
+    const setting = await settingRepository.findByKey('cookie_banner');
 
     if (!setting) {
       // Return default configuration

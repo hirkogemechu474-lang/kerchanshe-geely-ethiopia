@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'contact_information';
 
@@ -39,9 +39,7 @@ const DEFAULT_CONTACT_INFORMATION = {
 
 export async function GET() {
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const setting = await settingRepository.findByKey(SETTING_KEY);
 
     if (!setting) {
       return NextResponse.json(DEFAULT_CONTACT_INFORMATION);

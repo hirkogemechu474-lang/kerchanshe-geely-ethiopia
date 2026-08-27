@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'about_content';
 
@@ -164,7 +164,7 @@ const DEFAULT_ABOUT: AboutContent = {
 
 export async function GET() {
   try {
-    const row = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
+    const row = await settingRepository.findByKey(SETTING_KEY);
     if (!row) return NextResponse.json(DEFAULT_ABOUT);
     const parsed = JSON.parse(row.value);
     return NextResponse.json({ ...DEFAULT_ABOUT, ...parsed });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'vehicle_settings';
 
@@ -21,7 +21,7 @@ const DEFAULT_VEHICLE_SETTINGS = {
 
 export async function GET() {
   try {
-    const setting = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
+    const setting = await settingRepository.findByKey(SETTING_KEY);
     if (!setting) {
       return NextResponse.json(DEFAULT_VEHICLE_SETTINGS);
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 /**
  * GET /api/public/hero
@@ -7,28 +7,7 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
-    const heroSections = await prisma.heroSection.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        sortOrder: 'asc',
-      },
-      select: {
-        id: true,
-        title: true,
-        subtitle: true,
-        description: true,
-        mediaType: true,
-        imageUrl: true,
-        videoUrl: true,
-        posterUrl: true,
-        buttonText: true,
-        buttonLink: true,
-        sortOrder: true,
-      },
-    });
-
+    const heroSections = await contentRepository.findActiveHeroSections();
     return NextResponse.json(heroSections);
   } catch (error) {
     console.error('Error fetching hero sections:', error);

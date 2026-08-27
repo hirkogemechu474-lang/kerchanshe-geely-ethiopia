@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Get active showcases for frontend
 export async function GET() {
   try {
-    const showcases = await prisma.vehicleShowcase.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: { sortOrder: 'asc' },
-    });
-
+    const showcases = await contentRepository.findActiveShowcases();
     return NextResponse.json({ showcases });
   } catch (error) {
     console.error('Error fetching showcases:', error);

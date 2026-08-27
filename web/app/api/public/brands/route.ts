@@ -1,22 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 export async function GET() {
   try {
-    const brands = await prisma.vehicleBrand.findMany({
-      where: { isActive: true },
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        logoUrl: true,
-        displayOrder: true,
-        isActive: true,
-      },
-    });
-
+    const brands = await contentRepository.findActiveBrands();
     return NextResponse.json(brands);
   } catch (error) {
     console.error('Error fetching brands:', error);
