@@ -411,7 +411,7 @@ async function main() {
   console.log('  📄 8 Service Pages (all published)\n');
 
   console.log('🌐 Test Admin:');
-  console.log('  → http://localhost:3000/admin/services-menu\n');
+  console.log('  → http://localhost:7501/admin/services-menu\n');
 
   console.log('🔗 Test Frontend (coming soon):');
   console.log('  → Hover over "Services" in navigation');

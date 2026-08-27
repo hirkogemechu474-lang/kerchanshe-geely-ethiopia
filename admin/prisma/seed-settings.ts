@@ -624,14 +624,14 @@ You can withdraw your consent at any time by:
   console.log('');
   console.log('🌐 Test the results:');
   console.log('  Public Pages:');
-  console.log('    → http://localhost:3000/privacy');
-  console.log('    → http://localhost:3000/terms');
-  console.log('    → http://localhost:3000/cookies');
+  console.log('    → http://localhost:7501/privacy');
+  console.log('    → http://localhost:7501/terms');
+  console.log('    → http://localhost:7501/cookies');
   console.log('  Admin Pages:');
-  console.log('    → http://localhost:3001/admin/settings/policies');
-  console.log('    → http://localhost:3001/admin/settings/social-media');
-  console.log('    → http://localhost:3001/admin/settings/contact-information');
-  console.log('    → http://localhost:3001/admin/vehicles/settings');
+  console.log('    → http://localhost:7500/admin/settings/policies');
+  console.log('    → http://localhost:7500/admin/settings/social-media');
+  console.log('    → http://localhost:7500/admin/settings/contact-information');
+  console.log('    → http://localhost:7500/admin/vehicles/settings');
   console.log('');
   console.log('🎉 Ready to test!');
 }

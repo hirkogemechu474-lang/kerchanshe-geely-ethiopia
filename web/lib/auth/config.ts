@@ -10,9 +10,9 @@ import { prisma } from '@/lib/prisma';
  * Allows:
  *   - CUSTOMER role → /login for account portal (/account)
  *   - DEALER role   → /login for dealer portal
- *   - ADMIN roles   → Redirected to /admin/login (the admin panel on port 3001)
+ *   - ADMIN roles   → Redirected to /admin/login (the admin panel on port 7500)
  *
- * Admin panel auth lives in the ADMIN app (port 3001), not here.
+ * Admin panel auth lives in the ADMIN app (port 7500), not here.
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // Admin staff: redirect them to use the admin panel on port 3001 instead
+          // Admin staff: redirect them to use the admin panel on port 7500 instead
           if (isAdminRole(user.role)) {
             return null;
           }

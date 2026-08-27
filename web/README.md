@@ -1,6 +1,6 @@
 # Geely Ethiopia — Web (Public Frontend)
 
-**Port:** 3002  
+**Port:** 7501 (dev) / 7502 (local prod build)  
 **Type:** Next.js 15 (App Router)  
 **Database:** None (API client only)
 
@@ -18,7 +18,7 @@
                              │
                     ┌────────┴────────┐
                     │      ADMIN      │
-                    │    :3001        │
+                    │    :7500        │
                     │ Prisma + API    │
                     └────────▲────────┘
                              │
@@ -26,7 +26,7 @@
                              │
                     ┌────────┴────────┐
                     │       WEB       │  ← YOU ARE HERE
-                    │     :3002       │
+                    │     :7501       │
                     │   Next.js       │
                     └─────────────────┘
 ```
@@ -40,7 +40,7 @@
 ### Prerequisites
 - Node.js 18+
 - npm or pnpm
-- Admin backend running on port 3001
+- Admin backend running on port 7500
 
 ### Installation
 
@@ -55,10 +55,10 @@ Copy `.env.example` to `.env` and configure:
 
 ```bash
 # Admin API URL (backend)
-NEXT_PUBLIC_ADMIN_API_URL=http://localhost:3001
+NEXT_PUBLIC_ADMIN_API_URL=http://localhost:7500
 
 # NextAuth
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:7501
 NEXTAUTH_SECRET=your-secret-key-here
 
 # Optional: Analytics
@@ -72,7 +72,7 @@ NEXT_PUBLIC_GTM_ID=
 npm run dev
 ```
 
-Opens on http://localhost:3002
+Opens on http://localhost:7501
 
 ### Build & Deploy
 
@@ -234,7 +234,7 @@ Each feature is self-contained in `features/`:
 ## Scripts
 
 ```bash
-npm run dev          # Development server (port 3002)
+npm run dev          # Development server (port 7501)
 npm run build        # Production build
 npm start            # Start production server
 npm run lint         # Run ESLint
@@ -265,7 +265,7 @@ npm run lint         # Run ESLint
 ## Troubleshooting
 
 ### Web can't connect to Admin
-- Ensure Admin is running on port 3001
+- Ensure Admin is running on port 7500
 - Check `NEXT_PUBLIC_ADMIN_API_URL` in `.env`
 - In production, use full URL: `https://admin.geelyethiopia.com`
 

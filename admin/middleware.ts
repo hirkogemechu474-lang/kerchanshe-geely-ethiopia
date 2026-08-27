@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 // draws these onto a <canvas> with crossOrigin="anonymous", which requires
 // an explicit CORS header even though the files are public). Configured via
 // CORS_ORIGINS in .env — falls back to localhost dev origins if unset.
-const FALLBACK_DEV_ORIGINS = ['http://localhost:3002', 'http://127.0.0.1:3002'];
+const FALLBACK_DEV_ORIGINS = ['http://localhost:7501', 'http://127.0.0.1:7501'];
 
 function allowedOrigins(): string[] {
   const fromEnv = (process.env.CORS_ORIGINS || '')

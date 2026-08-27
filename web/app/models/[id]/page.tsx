@@ -21,10 +21,10 @@ const SETTING_KEY = "vehicle_settings";
 function publicBrochureUrl(url: string | undefined, fallback: string) {
   if (!url) return fallback;
   if (/^https?:\/\//i.test(url)) return url;
-  // Admin owns uploaded files. In development it runs on port 3001; in
+  // Admin owns uploaded files. In development it runs on port 7500; in
   // production NEXT_PUBLIC_ADMIN_URL can point at its public asset host.
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ||
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : '');
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:7500' : '');
   return `${adminUrl}${url}`;
 }
 

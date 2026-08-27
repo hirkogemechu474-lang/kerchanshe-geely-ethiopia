@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
   // Compression
   compress: true,
 
-  // Media uploads are stored by the admin app (http://localhost:3001, see
+  // Media uploads are stored by the admin app (http://localhost:7500, see
   // NEXT_PUBLIC_ADMIN_API_URL). Serve them from the same origin so <Image "/uploads/...">
   // URLs resolve without a hardcoded cross-origin dependency.
   async rewrites() {

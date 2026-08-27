@@ -343,8 +343,8 @@ async function main() {
   }
 
   console.log('🎉 Financing data seeded successfully!');
-  console.log('\n💡 Public page: http://localhost:3002/financing');
-  console.log('💡 Admin page: http://localhost:3001/admin/financing');
+  console.log('\n💡 Public page: http://localhost:7501/financing');
+  console.log('💡 Admin page: http://localhost:7500/admin/financing');
 }
 
 main()

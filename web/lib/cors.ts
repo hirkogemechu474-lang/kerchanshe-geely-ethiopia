@@ -2,8 +2,8 @@
  * CORS helper for Web API routes.
  *
  * Web runs on a different host than admin:
- *   - WEB on GoDaddy (https://geelyethiopia.com) / localhost:3002
- *   - ADMIN on 192.168.1.20:3001 / localhost:3001
+ *   - WEB on GoDaddy (https://geelyethiopia.com) / localhost:7501
+ *   - ADMIN on 192.168.1.20:7500 / localhost:7500
  *
  * Many pages in the public site submit form data (test-drive, quote, contact)
  * and when those forms use the admin API from a different origin the browser
@@ -11,11 +11,10 @@
  */
 
 const DEFAULT_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://192.168.1.20:3001',
-  'http://192.168.1.20:3002',
+  'http://localhost:7500',
+  'http://localhost:7501',
+  'http://192.168.1.20:7500',
+  'http://192.168.1.20:7501',
   'https://geelyethiopia.com',
   'https://www.geelyethiopia.com',
 ];

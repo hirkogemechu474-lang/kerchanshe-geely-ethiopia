@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
  * CORS helper for API routes.
  *
  * Both apps have different origins:
- *   - WEB on GoDaddy (https://geelyethiopia.com) or localhost:3002
- *   - ADMIN on 192.168.1.20:3001 or localhost:3001
+ *   - WEB on GoDaddy (https://geelyethiopia.com) or localhost:7501
+ *   - ADMIN on 192.168.1.20:7500 or localhost:7500
  *
  * When the browser makes a cross-origin request (e.g. web form submits to
  * admin's /api/public/*, or admin panel reads public data endpoints)
@@ -13,11 +13,10 @@ import { NextResponse } from 'next/server';
  */
 
 const DEFAULT_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://192.168.1.20:3001',
-  'http://192.168.1.20:3002',
+  'http://localhost:7500',
+  'http://localhost:7501',
+  'http://192.168.1.20:7500',
+  'http://192.168.1.20:7501',
   'https://geelyethiopia.com',
   'https://www.geelyethiopia.com',
 ];

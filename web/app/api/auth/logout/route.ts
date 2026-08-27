@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   const response = NextResponse.redirect(
-    new URL('/login', process.env.NEXTAUTH_URL || 'http://localhost:3000')
+    new URL('/login', process.env.NEXTAUTH_URL || 'http://localhost:7501')
   );
 
   // Clear the customer session cookie

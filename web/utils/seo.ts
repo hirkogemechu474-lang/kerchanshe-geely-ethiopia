@@ -7,18 +7,20 @@
 import type { Vehicle } from '@/types/vehicle';
 import type { Dealer } from '@/types/dealer';
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+
 // ─── Organization ─────────────────────────────────────────────────────────────
 
 export function getOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'AutomotiveBusiness',
-    '@id': 'https://geelyethiopia.com/#organization',
+    '@id': `${SITE_URL}/#organization`,
     name: 'Geely Ethiopia',
     alternateName: 'Geely Auto Ethiopia',
     legalName: 'Geely Ethiopia by Kerchanshe Auto',
-    url: 'https://geelyethiopia.com',
-    logo: 'https://geelyethiopia.com/images/geely-logo.png',
+    url: SITE_URL,
+    logo: `${SITE_URL}/images/geely-logo.png`,
     description:
       'Official distributor of Geely vehicles in Ethiopia. Explore SUVs, sedans, and electric vehicles with nationwide dealer support.',
     foundingDate: '2024',
@@ -60,7 +62,7 @@ export function getVehicleSchema(vehicle: Vehicle) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Car',
-    '@id': `https://geelyethiopia.com/models/${vehicle.id}#vehicle`,
+    '@id': `${SITE_URL}/models/${vehicle.id}#vehicle`,
     name: vehicle.name,
     description: vehicle.description,
     brand: { '@type': 'Brand', name: 'Geely' },
@@ -92,7 +94,7 @@ export function getVehicleSchema(vehicle: Vehicle) {
         .toISOString()
         .split('T')[0],
       itemCondition: 'https://schema.org/NewCondition',
-      url: `https://geelyethiopia.com/models/${vehicle.id}`,
+      url: `${SITE_URL}/models/${vehicle.id}`,
     },
     image: [vehicle.image, ...(vehicle.gallery ?? [])],
     ...(vehicle.rating && {
@@ -103,7 +105,7 @@ export function getVehicleSchema(vehicle: Vehicle) {
         worstRating: '1',
       },
     }),
-    url: `https://geelyethiopia.com/models/${vehicle.id}`,
+    url: `${SITE_URL}/models/${vehicle.id}`,
   };
 }
 
@@ -118,7 +120,7 @@ export function getDealerSchema(dealer: Dealer) {
   return {
     '@context': 'https://schema.org',
     '@type': 'AutoDealer',
-    '@id': `https://geelyethiopia.com/dealers/${dealer.id}#dealer`,
+    '@id': `${SITE_URL}/dealers/${dealer.id}#dealer`,
     name: dealer.name,
     address: {
       '@type': 'PostalAddress',
@@ -130,7 +132,7 @@ export function getDealerSchema(dealer: Dealer) {
     ...(lat && lng && { geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } }),
     telephone: dealer.phone,
     email: dealer.email,
-    url: `https://geelyethiopia.com/dealers/${dealer.id}`,
+    url: `${SITE_URL}/dealers/${dealer.id}`,
     parentOrganization: { '@type': 'AutomotiveBusiness', name: 'Geely Ethiopia' },
   };
 }
@@ -166,16 +168,16 @@ export function getWebsiteSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    '@id': 'https://geelyethiopia.com/#website',
-    url: 'https://geelyethiopia.com',
+    '@id': `${SITE_URL}/#website`,
+    url: SITE_URL,
     name: 'Geely Ethiopia',
     description: 'Official Geely Ethiopia website',
-    publisher: { '@id': 'https://geelyethiopia.com/#organization' },
+    publisher: { '@id': `${SITE_URL}/#organization` },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://geelyethiopia.com/models?search={search_term_string}',
+        urlTemplate: `${SITE_URL}/models?search={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -198,7 +200,7 @@ export function getOfferSchema(offer: {
     priceValidUntil: offer.validUntil,
     availability: 'https://schema.org/InStock',
     seller: { '@type': 'AutomotiveBusiness', name: 'Geely Ethiopia' },
-    url: `https://geelyethiopia.com/offers/${offer.id}`,
+    url: `${SITE_URL}/offers/${offer.id}`,
   };
 }
 

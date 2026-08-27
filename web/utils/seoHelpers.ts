@@ -70,7 +70,7 @@ export function generateArticleSchema(article: {
       name: 'Geely Ethiopia',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://geelyethiopia.com/images/logo.png',
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com'}/images/logo.png`,
       },
     },
     mainEntityOfPage: {

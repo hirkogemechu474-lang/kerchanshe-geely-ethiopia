@@ -124,9 +124,9 @@ async function main() {
   console.log('═══════════════════════════════════════\n');
 
   console.log('🌐 Test:');
-  console.log('  → Homepage FAQ section: http://localhost:3000');
-  console.log('  → FAQ page: http://localhost:3000/faq');
-  console.log('  → Admin FAQ management: http://localhost:3000/admin/faq\n');
+  console.log('  → Homepage FAQ section: http://localhost:7501');
+  console.log('  → FAQ page: http://localhost:7501/faq');
+  console.log('  → Admin FAQ management: http://localhost:7501/admin/faq\n');
 }
 
 main()

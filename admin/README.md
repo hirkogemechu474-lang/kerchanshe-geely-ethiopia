@@ -1,6 +1,6 @@
 # Geely Ethiopia — Admin (Backend + Admin Panel)
 
-**Port:** 3001  
+**Port:** 7500 (dev) / 7600 (local prod build)  
 **Type:** Next.js 15 (App Router) + Prisma ORM  
 **Database:** PostgreSQL (or MySQL)
 
@@ -18,7 +18,7 @@
                              │
                     ┌────────┴────────┐
                     │      ADMIN      │  ← YOU ARE HERE
-                    │    :3001        │
+                    │    :7500        │
                     │ DB + API + UI   │
                     └────────▲────────┘
                              │
@@ -26,7 +26,7 @@
                              │
                     ┌────────┴────────┐
                     │       WEB       │
-                    │     :3000       │
+                    │     :7501       │
                     │   Next.js       │
                     └─────────────────┘
 ```
@@ -58,7 +58,7 @@ Copy `.env.example` to `.env` and configure:
 DATABASE_URL="postgresql://user:password@localhost:5432/geely_ethiopia"
 
 # NextAuth
-NEXTAUTH_URL=http://localhost:3001
+NEXTAUTH_URL=http://localhost:7500
 NEXTAUTH_SECRET=your-secret-key-here
 
 # Optional: Email (for password reset)
@@ -90,7 +90,7 @@ npm run create:admin
 npm run dev
 ```
 
-Opens on http://localhost:3001
+Opens on http://localhost:7500
 
 ### Build & Deploy
 
@@ -339,7 +339,7 @@ await requirePermission('canManageVehicles');
 ## Scripts
 
 ```bash
-npm run dev              # Development server (port 3001)
+npm run dev              # Development server (port 7500)
 npm run build            # Production build
 npm start                # Start production server
 npm run lint             # Run ESLint
@@ -383,7 +383,7 @@ npm run verify           # Verify seed data
    ```
 
 5. **Configure reverse proxy:**
-   - Point `admin.geelyethiopia.com` to port 3001
+   - Point `admin.geelyethiopia.com` to port 7500
    - Or use subfolder: `geelyethiopia.com/admin`
 
 ---
@@ -419,7 +419,7 @@ npm run db:generate
 - Verify password hash in database
 
 ### Web can't connect to Admin API
-- Ensure Admin is running on port 3001
+- Ensure Admin is running on port 7500
 - Check CORS configuration for Web domain
 - Verify `/api/public/*` routes are accessible without auth
 

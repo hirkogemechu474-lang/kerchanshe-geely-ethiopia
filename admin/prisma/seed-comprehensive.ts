@@ -1756,25 +1756,25 @@ Contact: info@geelyethiopia.com | +251 11 000 0000`,
   console.log('  ⚙️  Settings (social media, policies, vehicle settings)\n');
 
   console.log('🌐 Test Your Pages:');
-  console.log('  → http://localhost:3000 (homepage with hero sections)');
-  console.log('  → http://localhost:3000/offers (promotions page)');
-  console.log('  → http://localhost:3000/models (all vehicles)');
-  console.log('  → http://localhost:3000/models/suvs (SUV category)');
-  console.log('  → http://localhost:3000/models/sedans (Sedan category)');
-  console.log('  → http://localhost:3000/models/electric (Electric category)');
-  console.log('  → http://localhost:3000/vehicle/coolray (vehicle detail)');
-  console.log('  → http://localhost:3000/news (news articles)');
-  console.log('  → http://localhost:3000/dealers (dealer locations)');
-  console.log('  → http://localhost:3000/reviews (customer testimonials)\n');
+  console.log('  → http://localhost:7501 (homepage with hero sections)');
+  console.log('  → http://localhost:7501/offers (promotions page)');
+  console.log('  → http://localhost:7501/models (all vehicles)');
+  console.log('  → http://localhost:7501/models/suvs (SUV category)');
+  console.log('  → http://localhost:7501/models/sedans (Sedan category)');
+  console.log('  → http://localhost:7501/models/electric (Electric category)');
+  console.log('  → http://localhost:7501/vehicle/coolray (vehicle detail)');
+  console.log('  → http://localhost:7501/news (news articles)');
+  console.log('  → http://localhost:7501/dealers (dealer locations)');
+  console.log('  → http://localhost:7501/reviews (customer testimonials)\n');
 
   console.log('🔧 Admin Pages:');
-  console.log('  → http://localhost:3000/admin/promotions');
-  console.log('  → http://localhost:3000/admin/content/hero');
-  console.log('  → http://localhost:3000/admin/vehicles (manage vehicles)');
-  console.log('  → http://localhost:3000/admin/categories/new (add category)');
-  console.log('  → http://localhost:3000/admin/news');
-  console.log('  → http://localhost:3000/admin/dealers');
-  console.log('  → http://localhost:3000/admin/reviews\n');
+  console.log('  → http://localhost:7501/admin/promotions');
+  console.log('  → http://localhost:7501/admin/content/hero');
+  console.log('  → http://localhost:7501/admin/vehicles (manage vehicles)');
+  console.log('  → http://localhost:7501/admin/categories/new (add category)');
+  console.log('  → http://localhost:7501/admin/news');
+  console.log('  → http://localhost:7501/admin/dealers');
+  console.log('  → http://localhost:7501/admin/reviews\n');
 
   console.log('═══════════════════════════════════════');
   console.log('🎉 Ready to test! Run: npm run dev');

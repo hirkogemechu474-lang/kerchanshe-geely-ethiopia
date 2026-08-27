@@ -10,7 +10,7 @@ interface PageProps {
 async function getServicePage(slug: string) {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/public/services/pages/${slug}`,
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:7501'}/api/public/services/pages/${slug}`,
       { cache: 'no-store' }
     );
 
