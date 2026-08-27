@@ -22,6 +22,14 @@ interface Bank {
   logoUrl?: string | null;
 }
 
+interface QuoteSummary {
+  id: string;
+  vehicleModel: string | null;
+  hasFormalPrice: boolean;
+  totalPrice: number | null;
+  signedAt: string | null;
+}
+
 interface PurchaseForm {
   fullName: string;
   phone: string;
@@ -61,6 +69,7 @@ export default function VehiclePurchasePage() {
   const visitId = searchParams.get("visitId") || "";
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [quote, setQuote] = useState<QuoteSummary | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState(preselectedVehicle);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -129,6 +138,31 @@ export default function VehiclePurchasePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The `quote` param is the id of a Quotation the customer already
+  // requested (see web/app/quote/page.tsx and
+  // admin/app/api/admin/quotations/[id]/route.ts, which both generate this
+  // link). Once a Sales Consultant has formally priced that quotation
+  // (unitPrice set via QuotationPdfPanel) and the customer has e-signed it,
+  // that agreed price is what should be charged here — not the vehicle's
+  // generic catalog price.
+  useEffect(() => {
+    if (!quoteReference) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/quotations/by-id/${encodeURIComponent(quoteReference)}`);
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !active) return;
+        setQuote(data);
+      } catch {
+        /* silent — falls back to the vehicle's catalog price */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [quoteReference]);
+
   useEffect(() => {
     if (!visitId) return;
     let active = true;
@@ -157,7 +191,11 @@ export default function VehiclePurchasePage() {
     [vehicles, selectedVehicleId]
   );
   const quantity = Math.max(1, Number(form.quantity) || 1);
-  const purchaseAmount = (selectedVehicle?.finalPrice ?? selectedVehicle?.basePrice ?? 0) * quantity;
+  // A signed quote's price is a single agreed total for the whole deal —
+  // it already accounts for quantity, so it isn't re-multiplied here the
+  // way the generic catalog price is.
+  const quotedPrice = quote?.hasFormalPrice ? quote.totalPrice : null;
+  const purchaseAmount = quotedPrice ?? (selectedVehicle?.finalPrice ?? selectedVehicle?.basePrice ?? 0) * quantity;
 
   useEffect(() => {
     async function loadVehicles() {
@@ -430,12 +468,21 @@ export default function VehiclePurchasePage() {
                   {banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}
                 </select>
                 <div className="px-4 py-3 bg-ice dark:bg-midnight rounded-lg flex items-center justify-between gap-4">
-                  <span className="text-steel dark:text-steel-light">Exact purchase amount</span>
+                  <span className="text-steel dark:text-steel-light">
+                    {quotedPrice != null ? "Your quoted price" : "Exact purchase amount"}
+                  </span>
                   <strong className="text-navy dark:text-ice text-lg">
-                    {selectedVehicle?.hidePrice ? "Price on request" : formatETB(purchaseAmount)}
+                    {selectedVehicle?.hidePrice && quotedPrice == null ? "Price on request" : formatETB(purchaseAmount)}
                   </strong>
                 </div>
               </div>
+              {quotedPrice != null && (
+                <p className="mt-2 text-xs text-steel dark:text-steel-light">
+                  {quote?.signedAt
+                    ? `This is the price you signed and agreed to on ${new Date(quote.signedAt).toLocaleDateString()}.`
+                    : "This is your quoted price from Geely Ethiopia — sign your quotation to confirm it before paying."}
+                </p>
+              )}
               <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 rounded-lg text-sm text-blue-900">
                 <CreditCard className="shrink-0 mt-0.5" size={18} />
                 <span>You will be directed to the selected bank payment service to authenticate and complete payment.</span>
