@@ -13,6 +13,7 @@
     "start:passenger": "node server.js",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"
   },
