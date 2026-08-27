@@ -9,8 +9,16 @@ interface PageProps {
 
 async function getServicePage(slug: string) {
   try {
+    // Self-fetch from this same server — must use the internal (localhost)
+    // origin, not the public NEXT_PUBLIC_SITE_URL. Behind a reverse proxy
+    // (production, or a local prod-mode build simulating one) that var is
+    // the public-facing domain, which this server can't reliably reach a
+    // loopback request to. Mirrors the NEXTAUTH_URL/NEXTAUTH_URL_INTERNAL
+    // split already used for auth.
+    const internalBaseUrl =
+      process.env.SITE_URL_INTERNAL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:7501';
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:7501'}/api/public/services/pages/${slug}`,
+      `${internalBaseUrl}/api/public/services/pages/${slug}`,
       { cache: 'no-store' }
     );
 
