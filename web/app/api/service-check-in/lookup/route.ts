@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { customerVehicleRepository } from '@/repositories/customerVehicleRepository';
 
 // Live VIN-scan lookup for the check-in kiosk: a barcode scanner (hardware,
 // keyboard-wedge style, or the in-browser camera scanner) fills the VIN
@@ -19,11 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'vin is required' }, { status: 400 });
   }
 
-  const matched = await prisma.customerVehicle.findFirst({
-    where: { vin: { equals: vin, mode: 'insensitive' } },
-    include: { customer: { select: { fullName: true, phone: true, email: true } } },
-    orderBy: { updatedAt: 'desc' },
-  });
+  const matched = await customerVehicleRepository.findByVin(vin);
 
   if (!matched) {
     return NextResponse.json({ found: false });
