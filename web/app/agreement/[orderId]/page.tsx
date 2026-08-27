@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle, CreditCard, Clock } from 'lucide-react';
+import { isPdfUrl } from '@/lib/fileType';
 
 interface OrderSummary {
   id: string;
@@ -196,25 +197,45 @@ export default function AgreementSigningPage() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                   <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed &amp; Approved</h2>
-                  <p className="text-sm text-steel dark:text-steel-light mb-6">
+                  <p className="text-sm text-steel dark:text-steel-light mb-4">
                     Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you — you're ready to continue.
                   </p>
-                  <Link
-                    href={`/payment/order/${order.id}`}
-                    className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all"
+                  <a
+                    href={order.signedDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-6"
                   >
-                    <CreditCard className="w-4 h-4" />
-                    Continue to Payment
-                  </Link>
+                    <FileText className="w-4 h-4" />
+                    {isPdfUrl(order.signedDocumentUrl) ? 'View Your Signed Agreement' : 'View Your Signed Copy'}
+                  </a>
+                  <div>
+                    <Link
+                      href={`/payment/order/${order.id}`}
+                      className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Continue to Payment
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                   <Clock className="w-10 h-10 text-geely-blue mx-auto mb-3" />
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed</h2>
-                  <p className="text-sm text-steel dark:text-steel-light">
+                  <p className="text-sm text-steel dark:text-steel-light mb-4">
                     Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Your agreement is now under review by our
                     sales manager — we'll email you a payment link as soon as it's approved.
                   </p>
+                  <a
+                    href={order.signedDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
+                  >
+                    <FileText className="w-4 h-4" />
+                    {isPdfUrl(order.signedDocumentUrl) ? 'View Your Signed Agreement' : 'View Your Signed Copy'}
+                  </a>
                 </div>
               )
             ) : (

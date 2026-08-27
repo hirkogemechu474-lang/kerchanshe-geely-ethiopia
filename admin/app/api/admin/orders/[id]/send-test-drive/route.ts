@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { sendStatusEmail } from '@/lib/status-email';
 import { generateReference } from '@/lib/reference';
+import { env } from '@/lib/env';
 
 /**
  * POST /api/admin/orders/[id]/send-test-drive
@@ -13,10 +14,10 @@ import { generateReference } from '@/lib/reference';
  * (typically after the order is booked, before or after payment), without
  * asking them to re-enter their own details on the public form.
  *
- * Creates a real TestDrive row (salesOrderId set) with its own reference,
- * so the customer can track it the same way as any other request via
- * GET /api/public/status?ref=... — reused as-is, no new tracking page
- * needed since TestDrive is already one of the lookup types there.
+ * Creates a real TestDrive row (salesOrderId set) with its own reference —
+ * trackable the same way as any other request via GET
+ * /api/public/status?ref=... — and emails the customer a link to
+ * web/app/test-drive/confirm/[id], where they confirm they'll be there.
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   let notificationSent = false;
   try {
+    const siteUrl = env.app.url.replace(/\/$/, '');
     notificationSent = await sendStatusEmail({
       to: order.customerEmail,
       name: order.customerName,
@@ -87,6 +89,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       status: 'requested',
       reference,
       details: `Your sales consultant has arranged a test drive for your ${order.vehicleModel} on ${preferredDate} at ${preferredTime}, at ${location}. Please bring a valid driver's license.`,
+      actionUrl: `${siteUrl}/test-drive/confirm/${testDrive.id}`,
+      actionLabel: 'Confirm Test Drive',
     });
   } catch (emailError) {
     console.error('[orders:send-test-drive:email]', emailError);

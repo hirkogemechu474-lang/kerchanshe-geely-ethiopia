@@ -24,10 +24,12 @@ interface Bank {
 
 interface QuoteSummary {
   id: string;
+  reference: string | null;
   vehicleModel: string | null;
   hasFormalPrice: boolean;
   totalPrice: number | null;
   signedAt: string | null;
+  signedDocumentUrl: string | null;
 }
 
 interface PurchaseForm {
@@ -481,6 +483,22 @@ export default function VehiclePurchasePage() {
                   {quote?.signedAt
                     ? `This is the price you signed and agreed to on ${new Date(quote.signedAt).toLocaleDateString()}.`
                     : "This is your quoted price from Geely Ethiopia — sign your quotation to confirm it before paying."}
+                  {quote?.signedDocumentUrl && (
+                    <>
+                      {" "}
+                      <a href={quote.signedDocumentUrl} target="_blank" rel="noopener noreferrer" className="text-geely-blue hover:underline font-medium">
+                        View your signed quotation
+                      </a>
+                    </>
+                  )}
+                  {!quote?.signedDocumentUrl && quote?.reference && (
+                    <>
+                      {" "}
+                      <a href={`/api/public/quotations/${quote.reference}/pdf`} target="_blank" rel="noopener noreferrer" className="text-geely-blue hover:underline font-medium">
+                        View quotation PDF
+                      </a>
+                    </>
+                  )}
                 </p>
               )}
               <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 rounded-lg text-sm text-blue-900">

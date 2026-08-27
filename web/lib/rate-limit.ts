@@ -234,6 +234,14 @@ export const rateLimitConfigs = {
     message: 'Too many attempts. Please try again in a few minutes or contact us.'
   },
 
+  // Public agent-sent test-drive confirm link — same "reached via an
+  // emailed link" shape as the agreement/handover routes above.
+  testDriveConfirm: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many attempts. Please try again in a few minutes or contact us.'
+  },
+
   // Public order-payment page — same "reached via an emailed link" shape
   // as the agreement routes above.
   paymentView: {

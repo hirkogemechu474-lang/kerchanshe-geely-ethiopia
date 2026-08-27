@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
-import { PackageCheck, PenLine, Upload, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { PackageCheck, PenLine, Upload, CheckCircle, AlertCircle, Clock, FileText } from 'lucide-react';
+import { isPdfUrl } from '@/lib/fileType';
 
 interface HandoverSummary {
   id: string;
@@ -195,18 +196,36 @@ export default function HandoverSigningPage() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                   <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Handover Complete</h2>
-                  <p className="text-sm text-steel dark:text-steel-light">
+                  <p className="text-sm text-steel dark:text-steel-light mb-4">
                     Signed {order.handoverSignedAt ? new Date(order.handoverSignedAt).toLocaleString() : ''} and confirmed by Geely Ethiopia.
                     Congratulations on your new vehicle!
                   </p>
+                  <a
+                    href={order.handoverSignedDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
+                  >
+                    <FileText className="w-4 h-4" />
+                    {isPdfUrl(order.handoverSignedDocumentUrl) ? 'View Your Signed Confirmation' : 'View Your Signed Copy'}
+                  </a>
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                   <Clock className="w-10 h-10 text-geely-blue mx-auto mb-3" />
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Handover Signed</h2>
-                  <p className="text-sm text-steel dark:text-steel-light">
+                  <p className="text-sm text-steel dark:text-steel-light mb-4">
                     Signed {order.handoverSignedAt ? new Date(order.handoverSignedAt).toLocaleString() : ''}. Awaiting final confirmation from our team.
                   </p>
+                  <a
+                    href={order.handoverSignedDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
+                  >
+                    <FileText className="w-4 h-4" />
+                    {isPdfUrl(order.handoverSignedDocumentUrl) ? 'View Your Signed Confirmation' : 'View Your Signed Copy'}
+                  </a>
                 </div>
               )
             ) : (

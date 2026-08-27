@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { isPdfUrl } from '@/lib/fileType';
 
 interface QuotationSummary {
   reference: string;
@@ -189,10 +190,19 @@ export default function QuotationSigningPage() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                 <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                 <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Quotation Signed</h2>
-                <p className="text-sm text-steel dark:text-steel-light">
+                <p className="text-sm text-steel dark:text-steel-light mb-4">
                   Signed {quotation.signedAt ? new Date(quotation.signedAt).toLocaleString() : ''}. Thank you — our sales team will
                   be in touch with next steps.
                 </p>
+                <a
+                  href={quotation.signedDocumentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
+                >
+                  <FileText className="w-4 h-4" />
+                  {isPdfUrl(quotation.signedDocumentUrl) ? 'View Your Signed Quotation' : 'View Your Signed Copy'}
+                </a>
               </div>
             ) : (
               <>
