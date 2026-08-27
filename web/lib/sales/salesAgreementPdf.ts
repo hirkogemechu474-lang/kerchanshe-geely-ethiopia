@@ -20,6 +20,9 @@ export const SIGNATURE_AREA = {
   customerLineY: 190,
   lineWidth: 220,
   maxImageHeight: 50,
+  get agentLineX() {
+    return this.customerLineX + this.lineWidth + 60;
+  },
 };
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -108,7 +111,7 @@ export async function buildSalesAgreementPdf(order: SalesOrder): Promise<Uint8Ar
   });
   page.drawText('Customer Signature & Date', { x: SIGNATURE_AREA.customerLineX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
 
-  const agentX = SIGNATURE_AREA.customerLineX + SIGNATURE_AREA.lineWidth + 60;
+  const agentX = SIGNATURE_AREA.agentLineX;
   page.drawLine({
     start: { x: agentX, y: sigY },
     end: { x: agentX + SIGNATURE_AREA.lineWidth, y: sigY },
@@ -144,6 +147,34 @@ export async function stampSignatureOnPdf(pdfBytes: Uint8Array, signaturePngData
     y: SIGNATURE_AREA.customerLineY + 4,
     width: targetWidth,
     height: targetHeight,
+  });
+
+  return doc.save();
+}
+
+// web-only: stamps the countersigning manager's name + date as plain text
+// onto the "Sales Agent Signature & Date" line — called once
+// admin/app/api/admin/orders/[id]/countersign records countersignedAt, so
+// the already-saved customer-signed PDF stops showing that line blank.
+// Text, not a drawn image, matching the countersign's own identity+
+// timestamp-only convention (no signature capture UI exists for staff).
+export async function stampAgentSignatureText(pdfBytes: Uint8Array, agentName: string, date: Date): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(pdfBytes);
+  const page = doc.getPage(0);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+
+  page.drawText(agentName, {
+    x: SIGNATURE_AREA.agentLineX,
+    y: SIGNATURE_AREA.customerLineY + 22,
+    size: 11,
+    font,
+  });
+  page.drawText(date.toLocaleDateString(), {
+    x: SIGNATURE_AREA.agentLineX,
+    y: SIGNATURE_AREA.customerLineY + 4,
+    size: 9,
+    font,
+    color: rgb(0.35, 0.35, 0.35),
   });
 
   return doc.save();

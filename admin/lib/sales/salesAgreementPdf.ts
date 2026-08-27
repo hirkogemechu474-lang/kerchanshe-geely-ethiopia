@@ -20,6 +20,9 @@ export const SIGNATURE_AREA = {
   customerLineY: 190,
   lineWidth: 220,
   maxImageHeight: 50,
+  get agentLineX() {
+    return this.customerLineX + this.lineWidth + 60;
+  },
 };
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -108,7 +111,7 @@ export async function buildSalesAgreementPdf(order: SalesOrder): Promise<Uint8Ar
   });
   page.drawText('Customer Signature & Date', { x: SIGNATURE_AREA.customerLineX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
 
-  const agentX = SIGNATURE_AREA.customerLineX + SIGNATURE_AREA.lineWidth + 60;
+  const agentX = SIGNATURE_AREA.agentLineX;
   page.drawLine({
     start: { x: agentX, y: sigY },
     end: { x: agentX + SIGNATURE_AREA.lineWidth, y: sigY },

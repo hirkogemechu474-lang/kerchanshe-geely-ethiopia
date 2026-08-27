@@ -19,6 +19,9 @@ export const HANDOVER_SIGNATURE_AREA = {
   customerLineY: 220,
   lineWidth: 220,
   maxImageHeight: 50,
+  get agentLineX() {
+    return this.customerLineX + this.lineWidth + 60;
+  },
 };
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -100,7 +103,7 @@ export async function buildHandoverPdf(order: SalesOrder): Promise<Uint8Array> {
   });
   page.drawText('Customer Signature & Date', { x: HANDOVER_SIGNATURE_AREA.customerLineX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
 
-  const agentX = HANDOVER_SIGNATURE_AREA.customerLineX + HANDOVER_SIGNATURE_AREA.lineWidth + 60;
+  const agentX = HANDOVER_SIGNATURE_AREA.agentLineX;
   page.drawLine({
     start: { x: agentX, y: sigY },
     end: { x: agentX + HANDOVER_SIGNATURE_AREA.lineWidth, y: sigY },

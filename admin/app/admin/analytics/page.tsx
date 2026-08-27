@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   TrendingUp, Calendar, Car, FileText, Star, Wrench, Loader2,
   AlertTriangle, Gauge, ClipboardList, ShieldCheck, PackageSearch, MessageSquare, Plus, BarChart3, QrCode, RefreshCw,
+  Wallet, FileCheck2, PackageCheck, CreditCard,
 } from 'lucide-react';
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
 import { OverviewTile, RankedBarChart, StatusBarChart } from '@/components/admin/analytics/AnalyticsCharts';
@@ -55,6 +56,16 @@ interface AnalyticsData {
     bays: { id: string; name: string; status: string }[];
     warrantyClaimsByStatus: { status: string; count: number }[];
   } | null;
+  salesPipeline: {
+    payment: { unpaid: number; pendingReview: number; paid: number; totalCollected: number };
+    agreement: { approved: number; sent: number; signed: number; countersigned: number };
+    handover: { delivered: number; signed: number; countersigned: number };
+    orderLinkedTestDrives: number;
+  } | null;
+}
+
+function formatETB(value: number) {
+  return `ETB ${Math.round(value).toLocaleString('en-US')}`;
 }
 
 function formatMinutes(mins: number | null) {
@@ -255,6 +266,54 @@ export default function AnalyticsPage() {
           />
         </div>
       </div>
+
+      {/* Sales Pipeline: payment, agreement, and handover progress — only
+          present for viewers who can see quotations/orders */}
+      {data.salesPipeline && (
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sales Pipeline</h2>
+            <LinkButton href="/admin/orders" variant="secondary" size="sm">
+              <FileText className="w-4 h-4" /> View Orders
+            </LinkButton>
+          </div>
+
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+            <Wallet className="w-3.5 h-3.5" /> Payment
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <StatTile label="Unpaid" value={data.salesPipeline.payment.unpaid} icon={AlertTriangle} tone={data.salesPipeline.payment.unpaid > 0 ? 'highlight' : 'default'} />
+            <StatTile label="Pending Review" value={data.salesPipeline.payment.pendingReview} icon={ClipboardList} tone={data.salesPipeline.payment.pendingReview > 0 ? 'highlight' : 'default'} />
+            <StatTile label="Paid" value={data.salesPipeline.payment.paid} icon={CreditCard} />
+            <StatTile label="Total Collected" value={formatETB(data.salesPipeline.payment.totalCollected)} icon={TrendingUp} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+                <FileCheck2 className="w-3.5 h-3.5" /> Agreement
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <StatTile label="Approved" value={data.salesPipeline.agreement.approved} icon={FileCheck2} />
+                <StatTile label="Sent to Customer" value={data.salesPipeline.agreement.sent} icon={FileText} />
+                <StatTile label="Signed" value={data.salesPipeline.agreement.signed} icon={FileCheck2} />
+                <StatTile label="Countersigned" value={data.salesPipeline.agreement.countersigned} icon={FileCheck2} />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+                <PackageCheck className="w-3.5 h-3.5" /> Handover &amp; Other
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <StatTile label="Delivered" value={data.salesPipeline.handover.delivered} icon={PackageCheck} />
+                <StatTile label="Handover Signed" value={data.salesPipeline.handover.signed} icon={PackageCheck} />
+                <StatTile label="Handover Countersigned" value={data.salesPipeline.handover.countersigned} icon={PackageCheck} />
+                <StatTile label="Order-Linked Test Drives" value={data.salesPipeline.orderLinkedTestDrives} icon={Calendar} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Workshop Operations — only present for viewers who can see workshop data */}
       {data.workshop && (

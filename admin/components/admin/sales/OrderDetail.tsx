@@ -16,6 +16,7 @@ import OrderFulfillmentPanel from '@/components/admin/sales/OrderFulfillmentPane
 import OrderCommissionPanel from '@/components/admin/sales/OrderCommissionPanel';
 import OrderHandoverPanel from '@/components/admin/sales/OrderHandoverPanel';
 import OrderTestDrivePanel from '@/components/admin/sales/OrderTestDrivePanel';
+import OrderAllocationPanel from '@/components/admin/sales/OrderAllocationPanel';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
 import { FileText } from 'lucide-react';
 
@@ -78,6 +79,7 @@ interface OrderData {
   statusHistory: StatusHistoryEntry[];
   quotation: { id: string } | null;
   testDrives: OrderTestDrive[];
+  vehicleAllocation: { vehicleId: string; vin: string | null; status: string; vehicle?: { id: string; name: string; model: string; stock: number } } | null;
   handoverSignedDocumentUrl: string | null;
   handoverSignedAt: string | null;
   handoverCountersignedAt: string | null;
@@ -230,6 +232,8 @@ export default function OrderDetail({
 
       <ConfigurationSummary configuration={state.configurationJson} />
 
+      <OrderAllocationPanel orderId={state.id} allocation={state.vehicleAllocation} canManage={permissions.canManageVehicles} />
+
       <Card className="space-y-4">
         <h2 className="font-semibold text-gray-900">Financing &amp; Price</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -265,6 +269,17 @@ export default function OrderDetail({
             {state.approvedAt && (
               <p className="mt-1 text-xs text-gray-500">Price locked — order approved.</p>
             )}
+          </div>
+          <div className="md:col-span-2 rounded-lg bg-ice px-4 py-3 flex items-center justify-between gap-4">
+            <span className="text-sm font-medium text-gray-700">Amount Paid</span>
+            <span className={`text-lg font-bold ${state.paymentStatus === 'PAID' ? 'text-green-700' : 'text-gray-400'}`}>
+              {state.paymentStatus === 'PAID' && state.totalPrice != null
+                ? `ETB ${state.totalPrice.toLocaleString('en-US')}`
+                : 'ETB 0'}
+              {state.totalPrice != null && (
+                <span className="text-xs font-normal text-gray-400"> / {`ETB ${state.totalPrice.toLocaleString('en-US')}`}</span>
+              )}
+            </span>
           </div>
         </div>
       </Card>

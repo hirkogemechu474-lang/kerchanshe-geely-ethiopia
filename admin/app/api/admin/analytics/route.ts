@@ -3,6 +3,61 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { getWorkshopSummary } from '@/lib/workshop/dashboardSummary';
 
+// Payment, agreement, and handover progress across every SalesOrder —
+// requested as "all report for payment and also on agreement and also on
+// other" for the main dashboard. Each funnel count is independent (an
+// order can be, e.g., both approved AND signed AND countersigned at once)
+// rather than mutually exclusive buckets, so a viewer can see exactly
+// where orders are piling up in the pipeline.
+async function getSalesPipelineSummary() {
+  const [
+    unpaidCount,
+    pendingReviewCount,
+    paidAgg,
+    approvedCount,
+    sentCount,
+    signedCount,
+    countersignedCount,
+    deliveredCount,
+    handoverSignedCount,
+    handoverCountersignedCount,
+    orderLinkedTestDrives,
+  ] = await Promise.all([
+    prisma.salesOrder.count({ where: { paymentStatus: 'UNPAID' } }),
+    prisma.salesOrder.count({ where: { paymentStatus: 'PENDING_REVIEW' } }),
+    prisma.salesOrder.aggregate({ where: { paymentStatus: 'PAID' }, _sum: { totalPrice: true }, _count: true }),
+    prisma.salesOrder.count({ where: { approvedAt: { not: null } } }),
+    prisma.salesOrder.count({ where: { agreementSentAt: { not: null } } }),
+    prisma.salesOrder.count({ where: { signedDocumentUrl: { not: null } } }),
+    prisma.salesOrder.count({ where: { countersignedAt: { not: null } } }),
+    prisma.salesOrder.count({ where: { status: 'DELIVERED' } }),
+    prisma.salesOrder.count({ where: { handoverSignedDocumentUrl: { not: null } } }),
+    prisma.salesOrder.count({ where: { handoverCountersignedAt: { not: null } } }),
+    prisma.testDrive.count({ where: { salesOrderId: { not: null } } }),
+  ]);
+
+  return {
+    payment: {
+      unpaid: unpaidCount,
+      pendingReview: pendingReviewCount,
+      paid: paidAgg._count,
+      totalCollected: paidAgg._sum.totalPrice ?? 0,
+    },
+    agreement: {
+      approved: approvedCount,
+      sent: sentCount,
+      signed: signedCount,
+      countersigned: countersignedCount,
+    },
+    handover: {
+      delivered: deliveredCount,
+      signed: handoverSignedCount,
+      countersigned: handoverCountersignedCount,
+    },
+    orderLinkedTestDrives,
+  };
+}
+
 export async function GET() {
   const { session, response } = await requireAdminApiSession();
   if (response) return response;
@@ -126,10 +181,11 @@ export async function GET() {
     // sales-only session never receives workshop internals and vice versa.
     const permissions = session!.user.permissions;
 
-    const [workshop, pendingReviewCount, unreadMessageCount] = await Promise.all([
+    const [workshop, pendingReviewCount, unreadMessageCount, salesPipeline] = await Promise.all([
       permissions.canViewJobCards ? getWorkshopSummary() : Promise.resolve(null),
       permissions.canModerateReviews ? prisma.review.count({ where: { status: 'pending' } }) : Promise.resolve(0),
       permissions.canViewMessages ? prisma.message.count({ where: { status: 'unread' } }) : Promise.resolve(0),
+      permissions.canViewQuotations ? getSalesPipelineSummary() : Promise.resolve(null),
     ]);
 
     const needsAttention = {
@@ -170,6 +226,7 @@ export async function GET() {
             warrantyClaimsByStatus: workshop.warrantyClaimsByStatus,
           }
         : null,
+      salesPipeline,
     };
 
     return NextResponse.json(analyticsData);
