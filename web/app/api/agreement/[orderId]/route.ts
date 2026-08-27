@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { salesOrderRepository } from '@/repositories/salesOrderRepository';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // Public order summary for the self-service agreement signing page. The
 // order's own id (a random UUID, only ever shared via the approval email)
@@ -14,10 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
-  const order = await prisma.salesOrder.findUnique({
-    where: { id: orderId },
-    include: { quotation: { select: { message: true } } },
-  });
+  const order = await salesOrderRepository.findByIdWithQuotationMessage(orderId);
   if (!order) {
     return NextResponse.json({ error: 'Agreement not found' }, { status: 404 });
   }
@@ -29,10 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // right vehicle — SalesOrder.vehicleModel is a plain string, not an FK
   // (Phase 8's deliberate scope decision: no VIN-level catalog link), so
   // this is a name match, not a guaranteed resolution.
-  const vehicle = await prisma.vehicle.findFirst({
-    where: { name: order.vehicleModel, isActive: true, status: 'published' },
-    select: { id: true },
-  });
+  const vehicle = await vehicleRepository.findActivePublishedByName(order.vehicleModel);
 
   // If this order came from a direct purchase (not just a quote request),
   // the linked Quotation's message embeds the original purchase reference

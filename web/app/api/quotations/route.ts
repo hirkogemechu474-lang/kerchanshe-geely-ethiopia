@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { prisma } from '@/lib/prisma';
-import { sendFormEmail } from '@/lib/form-email';
-import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
-import { nextSalesRep } from '@/lib/assignSalesRep';
+import { submitLeadQuotation } from '@/lib/services/quotations/quotationService';
 
 // POST - Submit new quotation
 export async function POST(request: NextRequest) {
@@ -41,60 +38,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
-    const assignedRep = await nextSalesRep(preferredDealer);
-    const quotation = await prisma.quotation.create({
-      data: {
-        customerName,
-        phoneNumber,
-        email,
-        vehicleModel,
-        preferredDealer: preferredDealer || null,
-        financingInterest: financingInterest ?? false,
-        tradeInInterest: tradeInInterest ?? false,
-        message: message || null,
-        configurationJson: configuration ?? undefined,
-        source,
-        status: 'new',
-        reference,
-        assignedTo: assignedRep?.name ?? null,
-      },
+    const { quotation, reference, notificationSent } = await submitLeadQuotation({
+      customerName,
+      phoneNumber,
+      email,
+      vehicleModel,
+      preferredDealer,
+      financingInterest,
+      tradeInInterest,
+      message,
+      configuration,
+      source,
+      visitId,
     });
-
-    if (visitId) {
-      await prisma.showroomVisit.update({ where: { id: visitId }, data: { quotationId: quotation.id } }).catch((error) => {
-        console.error('[quotations:visit-link]', error);
-      });
-    }
-
-    let notificationSent = false;
-    try {
-      notificationSent = await sendFormEmail({
-        type: 'quotation request',
-        name: customerName,
-        email,
-        phone: phoneNumber,
-        reference,
-        subject: `New quotation request — ${vehicleModel}`,
-        details: [
-          `Vehicle: ${vehicleModel}`,
-          configuration?.trim ? `Trim: ${configuration.trim}` : '',
-          configuration?.color ? `Color: ${configuration.color}` : '',
-          configuration?.wheels ? `Wheels: ${configuration.wheels}` : '',
-          configuration?.interior ? `Interior: ${configuration.interior}` : '',
-          Array.isArray(configuration?.accessories) && configuration.accessories.length > 0
-            ? `Accessories: ${configuration.accessories.join(', ')}`
-            : '',
-          `Financing requested: ${financingInterest ? 'Yes' : 'No'}`,
-          `Trade-in requested: ${tradeInInterest ? 'Yes' : 'No'}`,
-          preferredDealer ? `Preferred dealer: ${preferredDealer}` : '',
-          assignedRep ? `Assigned Sales Consultant: ${assignedRep.name}` : '',
-          message ? `Message:\n${message}` : '',
-        ].filter(Boolean).join('\n'),
-      });
-    } catch (error) {
-      console.error('[quotations:email] Failed to send notification:', error);
-    }
 
     return NextResponse.json({
       quotation,
@@ -108,5 +64,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to submit quotation' },
       { status: 500 }
     );
-  } 
+  }
 }

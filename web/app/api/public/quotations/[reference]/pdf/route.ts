@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { buildSalesQuotationPdf } from '@/lib/services/sales/salesQuotationPdf';
+import { quotationRepository } from '@/repositories/quotationRepository';
 
 // Public "display by link" view of a formal sales quotation — looked up by
 // the customer-facing reference (GY-SQ-...), not the raw row id, matching
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { reference } = await params;
-  const quotation = await prisma.quotation.findUnique({ where: { reference } });
+  const quotation = await quotationRepository.findByReference(reference);
   if (!quotation) {
     return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
   }

@@ -207,4 +207,21 @@ export const vehicleRepository = {
   async softDelete(id: string) {
     return prisma.vehicle.update({ where: { id }, data: { isActive: false } });
   },
+
+  /** Best-effort name match — used to preselect a vehicle from a SalesOrder's
+   *  plain-string vehicleModel field (no FK link, by design). */
+  async findActivePublishedByName(name: string) {
+    return prisma.vehicle.findFirst({
+      where: { name, isActive: true, status: 'published' },
+      select: { id: true },
+    });
+  },
+
+  /** Price lookup for the public quote form */
+  async findForQuote(id: string) {
+    return prisma.vehicle.findUnique({
+      where: { id },
+      select: { id: true, name: true, finalPrice: true, basePrice: true },
+    });
+  },
 };

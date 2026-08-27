@@ -37,4 +37,9 @@ export const showroomVisitRepository = {
   async updateRegistration(id: string, data: { fullName: string; phone: string; email: string | null; status: string; registeredAt: Date }) {
     return prisma.showroomVisit.update({ where: { id }, data });
   },
+
+  /** Best-effort link back to the quotation this visit's browsing produced */
+  async linkQuotation(id: string, quotationId: string) {
+    return prisma.showroomVisit.update({ where: { id }, data: { quotationId } });
+  },
 };

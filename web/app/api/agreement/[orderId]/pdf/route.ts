@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
+import { salesOrderRepository } from '@/repositories/salesOrderRepository';
 
 // Public — same access-token pattern as the summary route. Always renders
 // the unsigned base agreement live from current order data (matches
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id: orderId } });
+  const order = await salesOrderRepository.findById(orderId);
   if (!order) {
     return NextResponse.json({ error: 'Agreement not found' }, { status: 404 });
   }

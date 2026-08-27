@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { prisma } from '@/lib/prisma';
-import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
-import { nextSalesRep } from '@/lib/assignSalesRep';
+import { submitQuoteFormQuotation } from '@/lib/services/quotations/quotationService';
 
 // POST - Create new quotation from public quote form
 export async function POST(request: NextRequest) {
@@ -35,62 +33,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
-    const assignedRep = await nextSalesRep();
-
-    // Build customer name
-    const customerName = `${firstName} ${lastName}`;
-
-    // Build notes with all details
-    const notes = `
-Purchase Timeframe: ${purchaseTimeframe || 'Not specified'}
-Financing Needed: ${financingNeeded || 'Not specified'}
-Trade-In: ${tradeIn || 'No'}
-${tradeInDetails ? `Trade-In Details: ${tradeInDetails}` : ''}
-${message ? `Additional Message: ${message}` : ''}
-    `.trim();
-
-    // Fetch vehicle details to get price
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { 
-        id: true, 
-        name: true,
-        finalPrice: true,
-        basePrice: true,
-      },
+    const result = await submitQuoteFormQuotation({
+      firstName,
+      lastName,
+      email,
+      phone,
+      vehicleId,
+      vehicleName,
+      purchaseTimeframe,
+      financingNeeded,
+      tradeIn,
+      tradeInDetails,
+      message,
     });
 
-    if (!vehicle) {
-      return NextResponse.json(
-        { error: 'Vehicle not found' },
-        { status: 404 }
-      );
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
-
-    const amount = vehicle.finalPrice || vehicle.basePrice;
-
-    // Create quotation
-    const quotation = await prisma.quotation.create({
-      data: {
-        customerName,
-        email,
-        phoneNumber: phone,
-        vehicleModel: vehicleName || vehicle.name,
-        message: notes,
-        financingInterest: Boolean(financingNeeded),
-        tradeInInterest: Boolean(tradeIn),
-        status: 'new',
-        reference,
-        assignedTo: assignedRep?.name ?? null,
-      },
-    });
 
     return NextResponse.json(
       {
         success: true,
-        quotation,
-        reference,
+        quotation: result.quotation,
+        reference: result.reference,
         message: 'Quote request submitted successfully',
       },
       { status: 201 }
@@ -102,5 +67,5 @@ ${message ? `Additional Message: ${message}` : ''}
       { error: 'Failed to create quotation' },
       { status: 500 }
     );
-  } 
+  }
 }

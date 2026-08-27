@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { computeQuotationTotals } from '@/lib/services/sales/salesQuotationPdf';
+import { quotationRepository } from '@/repositories/quotationRepository';
 
 // Public quotation price summary, looked up by the raw row id (the `quote`
 // query param used by /financing/apply and the two places that generate
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { id } = await params;
-  const quotation = await prisma.quotation.findUnique({ where: { id } });
+  const quotation = await quotationRepository.findById(id);
   if (!quotation) {
     return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
   }
