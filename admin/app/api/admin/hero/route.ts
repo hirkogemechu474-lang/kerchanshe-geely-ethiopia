@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Fetch all hero sections
 export async function GET(request: NextRequest) {
@@ -11,18 +11,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    const where = includeInactive ? {} : { isActive: true };
-
-    const heroSections = await prisma.heroSection.findMany({
-      where,
-      orderBy: { sortOrder: 'asc' },
-    });
+    const heroSections = await contentRepository.findHeroSections(includeInactive);
 
     return NextResponse.json({ heroSections });
   } catch (error) {
     console.error('Error fetching hero sections:', error);
     return NextResponse.json({ error: 'Failed to fetch hero sections' }, { status: 500 });
-  } 
+  }
 }
 
 // POST - Create new hero section
@@ -68,21 +63,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const heroSection = await prisma.heroSection.create({
-      data: {
-        title,
-        subtitle,
-        description,
-        mediaType,
-        imageUrl,
-        videoUrl,
-        posterUrl,
-        buttonText,
-        buttonLink,
-        sortOrder: sortOrder ?? 0,
-        isActive: isActive ?? false,
-        status: status || 'draft',
-      },
+    const heroSection = await contentRepository.createHeroSection({
+      title,
+      subtitle,
+      description,
+      mediaType,
+      imageUrl,
+      videoUrl,
+      posterUrl,
+      buttonText,
+      buttonLink,
+      sortOrder: sortOrder ?? 0,
+      isActive: isActive ?? false,
+      status: status || 'draft',
     });
 
     return NextResponse.json({ heroSection }, { status: 201 });
@@ -92,5 +85,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create hero section' },
       { status: 500 }
     );
-  } 
+  }
 }

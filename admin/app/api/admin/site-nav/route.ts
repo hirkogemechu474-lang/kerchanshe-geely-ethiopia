@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 import type { SiteNavPlacement } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -9,10 +9,7 @@ export async function GET(request: NextRequest) {
 
   const placement = request.nextUrl.searchParams.get('placement') as SiteNavPlacement | null;
 
-  const items = await prisma.siteNavItem.findMany({
-    where: placement ? { placement } : undefined,
-    orderBy: [{ placement: 'asc' }, { displayOrder: 'asc' }],
-  });
+  const items = await contentRepository.findSiteNavItems(placement);
 
   return NextResponse.json({ items });
 }
@@ -33,18 +30,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'placement, label, and href are required' }, { status: 400 });
     }
 
-    const item = await prisma.siteNavItem.create({
-      data: {
-        placement,
-        label,
-        subtitle: subtitle || null,
-        icon: icon || null,
-        href,
-        openInNewTab: Boolean(openInNewTab),
-        isHighlighted: Boolean(isHighlighted),
-        isActive: isActive !== undefined ? isActive : true,
-        displayOrder: displayOrder !== undefined ? Number(displayOrder) : 0,
-      },
+    const item = await contentRepository.createSiteNavItem({
+      placement,
+      label,
+      subtitle: subtitle || null,
+      icon: icon || null,
+      href,
+      openInNewTab: Boolean(openInNewTab),
+      isHighlighted: Boolean(isHighlighted),
+      isActive: isActive !== undefined ? isActive : true,
+      displayOrder: displayOrder !== undefined ? Number(displayOrder) : 0,
     });
 
     return NextResponse.json({ item }, { status: 201 });

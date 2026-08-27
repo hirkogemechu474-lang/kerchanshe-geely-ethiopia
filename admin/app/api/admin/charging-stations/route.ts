@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - List all charging stations
 export async function GET(request: NextRequest) {
@@ -11,27 +11,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const electricPageId = searchParams.get('electricPageId');
 
-    const where = electricPageId ? { electricPageId } : {};
-
-    const stations = await prisma.chargingStation.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      include: {
-        electricPage: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-          },
-        },
-      },
-    });
+    const stations = await contentRepository.findChargingStations(electricPageId);
 
     return NextResponse.json({ stations });
   } catch (error) {
     console.error('Error fetching charging stations:', error);
     return NextResponse.json({ error: 'Failed to fetch stations' }, { status: 500 });
-  } 
+  }
 }
 
 // POST - Create new charging station
@@ -67,25 +53,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const station = await prisma.chargingStation.create({
-      data: {
-        name,
-        address,
-        city,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        stationType,
-        chargerCount: chargerCount ?? 1,
-        maxPower,
-        connector,
-        availability: availability || 'operational',
-        pricing,
-        hours,
-        amenities,
-        images,
-        electricPageId,
-        isActive: isActive ?? true,
-      },
+    const station = await contentRepository.createChargingStation({
+      name,
+      address,
+      city,
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      stationType,
+      chargerCount: chargerCount ?? 1,
+      maxPower,
+      connector,
+      availability: availability || 'operational',
+      pricing,
+      hours,
+      amenities,
+      images,
+      electricPage: electricPageId ? { connect: { id: electricPageId } } : undefined,
+      isActive: isActive ?? true,
     });
 
     return NextResponse.json({ station }, { status: 201 });
@@ -95,5 +79,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create station' },
       { status: 500 }
     );
-  } 
+  }
 }

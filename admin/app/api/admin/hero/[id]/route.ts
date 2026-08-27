@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Fetch single hero section
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;
-
-    const heroSection = await prisma.heroSection.findUnique({
-      where: { id },
-    });
+    const heroSection = await contentRepository.findHeroSectionById(id);
 
     if (!heroSection) {
       return NextResponse.json({ error: 'Hero section not found' }, { status: 404 });
@@ -24,18 +22,19 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching hero section:', error);
     return NextResponse.json({ error: 'Failed to fetch hero section' }, { status: 500 });
-  } 
+  }
 }
 
 // PUT - Update hero section
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;
     const body = await request.json();
 
     const {
@@ -53,48 +52,43 @@ export async function PUT(
       status,
     } = body;
 
-    const heroSection = await prisma.heroSection.update({
-      where: { id },
-      data: {
-        title,
-        subtitle,
-        description,
-        mediaType,
-        imageUrl,
-        videoUrl,
-        posterUrl,
-        buttonText,
-        buttonLink,
-        sortOrder,
-        isActive,
-        status,
-      },
+    const heroSection = await contentRepository.updateHeroSection(id, {
+      title,
+      subtitle,
+      description,
+      mediaType,
+      imageUrl,
+      videoUrl,
+      posterUrl,
+      buttonText,
+      buttonLink,
+      sortOrder,
+      isActive,
+      status,
     });
 
     return NextResponse.json({ heroSection });
   } catch (error) {
     console.error('Error updating hero section:', error);
     return NextResponse.json({ error: 'Failed to update hero section' }, { status: 500 });
-  } 
+  }
 }
 
 // DELETE - Delete hero section
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;
-
-    await prisma.heroSection.delete({
-      where: { id },
-    });
+    await contentRepository.deleteHeroSection(id);
 
     return NextResponse.json({ success: true, message: 'Hero section deleted successfully' });
   } catch (error) {
     console.error('Error deleting hero section:', error);
     return NextResponse.json({ error: 'Failed to delete hero section' }, { status: 500 });
-  } 
+  }
 }

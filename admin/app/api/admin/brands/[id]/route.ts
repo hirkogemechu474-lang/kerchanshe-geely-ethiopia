@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 function slugify(value: string) {
   return value
@@ -12,30 +12,17 @@ function slugify(value: string) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
     if (!session!.user.permissions.canViewVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const brand = await prisma.vehicleBrand.findUnique({
-      where: { id: id },
-      include: {
-        categories: true,
-        vehicles: {
-          take: 10,
-          orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-        },
-        _count: {
-          select: {
-            vehicles: true,
-            categories: true,
-          },
-        },
-      },
-    });
+    const brand = await contentRepository.findBrandById(id);
 
     if (!brand) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
@@ -50,8 +37,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
     if (!session!.user.permissions.canManageVehicles) {
@@ -59,16 +48,13 @@ export async function PUT(
     }
 
     const data = await request.json();
-    const brand = await prisma.vehicleBrand.update({
-      where: { id: id },
-      data: {
-        name: data.name ? String(data.name).trim() : undefined,
-        slug: data.slug ? String(data.slug).trim() : data.name ? slugify(String(data.name)) : undefined,
-        description: data.description ?? undefined,
-        logoUrl: data.logoUrl ?? undefined,
-        isActive: data.isActive !== undefined ? Boolean(data.isActive) : undefined,
-        displayOrder: data.displayOrder !== undefined ? Number(data.displayOrder) : undefined,
-      },
+    const brand = await contentRepository.updateBrand(id, {
+      name: data.name ? String(data.name).trim() : undefined,
+      slug: data.slug ? String(data.slug).trim() : data.name ? slugify(String(data.name)) : undefined,
+      description: data.description ?? undefined,
+      logoUrl: data.logoUrl ?? undefined,
+      isActive: data.isActive !== undefined ? Boolean(data.isActive) : undefined,
+      displayOrder: data.displayOrder !== undefined ? Number(data.displayOrder) : undefined,
     });
 
     return NextResponse.json(brand);
@@ -80,15 +66,17 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
     if (!session!.user.permissions.canManageVehicles) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await prisma.vehicleBrand.delete({ where: { id: id } });
+    await contentRepository.deleteBrand(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting brand:', error);

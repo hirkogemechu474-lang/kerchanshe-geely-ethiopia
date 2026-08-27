@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Get single showcase
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
-    const showcase = await prisma.vehicleShowcase.findUnique({
-      where: { id: id },
-    });
+  const { id } = await params;
+  try {
+    const showcase = await contentRepository.findShowcaseById(id);
 
     if (!showcase) {
       return NextResponse.json(
@@ -34,27 +34,26 @@ export async function GET(
 // PUT - Update showcase
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     const body = await request.json();
 
-    const showcase = await prisma.vehicleShowcase.update({
-      where: { id: id },
-      data: {
-        vehicleId: body.vehicleId,
-        vehicleName: body.vehicleName,
-        title: body.title,
-        subtitle: body.subtitle || null,
-        views: body.views || [],
-        videoUrl: body.videoUrl || null,
-        ctaText: body.ctaText || null,
-        ctaLink: body.ctaLink || null,
-        sortOrder: body.sortOrder || 0,
-        isActive: body.isActive !== undefined ? body.isActive : false,
-      },
+    const showcase = await contentRepository.updateShowcase(id, {
+      vehicleId: body.vehicleId,
+      vehicleName: body.vehicleName,
+      title: body.title,
+      subtitle: body.subtitle || null,
+      views: body.views || [],
+      videoUrl: body.videoUrl || null,
+      ctaText: body.ctaText || null,
+      ctaLink: body.ctaLink || null,
+      sortOrder: body.sortOrder || 0,
+      isActive: body.isActive !== undefined ? body.isActive : false,
     });
 
     return NextResponse.json(showcase);
@@ -70,14 +69,14 @@ export async function PUT(
 // DELETE - Delete showcase
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
-    await prisma.vehicleShowcase.delete({
-      where: { id: id },
-    });
+  const { id } = await params;
+  try {
+    await contentRepository.deleteShowcase(id);
 
     return NextResponse.json({ message: 'Showcase deleted successfully' });
   } catch (error) {

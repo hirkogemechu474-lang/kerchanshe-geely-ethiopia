@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Get single category
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
-    const category = await prisma.vehicleCategory.findUnique({
-      where: { id: id },
-      include: {
-        brand: true,
-        vehicles: true,
-      },
-    });
+  const { id } = await params;
+  try {
+    const category = await contentRepository.findCategoryById(id);
 
     if (!category) {
       return NextResponse.json(
@@ -41,29 +37,28 @@ export async function GET(
 // PUT - Update category
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     const body = await request.json();
 
-    const category = await prisma.vehicleCategory.update({
-      where: { id: id },
-      data: {
-        name: body.name,
-        slug: body.slug,
-        description: body.description,
-        imageUrl: body.imageUrl,
-        iconUrl: body.iconUrl,
-        heroImageUrl: body.heroImageUrl,
-        heroVideoUrl: body.heroVideoUrl,
-        metaTitle: body.metaTitle,
-        metaDescription: body.metaDescription,
-        brandId: body.brandId || null,
-        isActive: body.isActive !== false,
-        displayOrder: body.displayOrder || 0,
-      },
+    const category = await contentRepository.updateCategory(id, {
+      name: body.name,
+      slug: body.slug,
+      description: body.description,
+      imageUrl: body.imageUrl,
+      iconUrl: body.iconUrl,
+      heroImageUrl: body.heroImageUrl,
+      heroVideoUrl: body.heroVideoUrl,
+      metaTitle: body.metaTitle,
+      metaDescription: body.metaDescription,
+      brand: body.brandId ? { connect: { id: body.brandId } } : { disconnect: true },
+      isActive: body.isActive !== false,
+      displayOrder: body.displayOrder || 0,
     });
 
     return NextResponse.json({
@@ -82,34 +77,27 @@ export async function PUT(
 // DELETE - Delete category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { response } = await requireAdminApiSession();
-    if (response) return response;
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { response } = await requireAdminApiSession();
+  if (response) return response;
 
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     // Check if category has vehicles
-    const category = await prisma.vehicleCategory.findUnique({
-      where: { id: id },
-      include: {
-        _count: {
-          select: { vehicles: true },
-        },
-      },
-    });
+    const category = await contentRepository.findCategoryVehicleCount(id);
 
     if (category && category._count.vehicles > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Cannot delete category with ${category._count.vehicles} vehicles. Please reassign or delete vehicles first.` 
+        {
+          success: false,
+          error: `Cannot delete category with ${category._count.vehicles} vehicles. Please reassign or delete vehicles first.`
         },
         { status: 400 }
       );
     }
 
-    await prisma.vehicleCategory.delete({
-      where: { id: id },
-    });
+    await contentRepository.deleteCategory(id);
 
     return NextResponse.json({
       success: true,

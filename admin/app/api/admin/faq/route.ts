@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Get all FAQs for admin
 export async function GET() {
@@ -8,9 +8,7 @@ export async function GET() {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const faqs = await prisma.fAQ.findMany({
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-    });
+    const faqs = await contentRepository.findAllFaqs();
 
     return NextResponse.json({
       success: true,
@@ -41,15 +39,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const faq = await prisma.fAQ.create({
-      data: {
-        question,
-        answer,
-        category: category || null,
-        displayOrder: displayOrder || 0,
-        isActive: isActive !== undefined ? isActive : true,
-        isFeatured: isFeatured !== undefined ? isFeatured : false,
-      },
+    const faq = await contentRepository.createFaq({
+      question,
+      answer,
+      category: category || null,
+      displayOrder: displayOrder || 0,
+      isActive: isActive !== undefined ? isActive : true,
+      isFeatured: isFeatured !== undefined ? isFeatured : false,
     });
 
     return NextResponse.json({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -15,18 +15,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json();
     const { label, subtitle, icon, href, openInNewTab, isHighlighted, isActive, displayOrder } = body;
 
-    const item = await prisma.siteNavItem.update({
-      where: { id },
-      data: {
-        ...(label !== undefined && { label }),
-        ...(subtitle !== undefined && { subtitle: subtitle || null }),
-        ...(icon !== undefined && { icon: icon || null }),
-        ...(href !== undefined && { href }),
-        ...(openInNewTab !== undefined && { openInNewTab: Boolean(openInNewTab) }),
-        ...(isHighlighted !== undefined && { isHighlighted: Boolean(isHighlighted) }),
-        ...(isActive !== undefined && { isActive }),
-        ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
-      },
+    const item = await contentRepository.updateSiteNavItem(id, {
+      ...(label !== undefined && { label }),
+      ...(subtitle !== undefined && { subtitle: subtitle || null }),
+      ...(icon !== undefined && { icon: icon || null }),
+      ...(href !== undefined && { href }),
+      ...(openInNewTab !== undefined && { openInNewTab: Boolean(openInNewTab) }),
+      ...(isHighlighted !== undefined && { isHighlighted: Boolean(isHighlighted) }),
+      ...(isActive !== undefined && { isActive }),
+      ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
     });
 
     return NextResponse.json({ item });
@@ -46,7 +43,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   try {
     const { id } = await params;
-    await prisma.siteNavItem.delete({ where: { id } });
+    await contentRepository.deleteSiteNavItem(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting site nav item:', error);

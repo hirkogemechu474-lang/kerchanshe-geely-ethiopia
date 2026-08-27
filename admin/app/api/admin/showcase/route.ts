@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - List all showcases
 export async function GET() {
@@ -8,9 +8,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const showcases = await prisma.vehicleShowcase.findMany({
-      orderBy: { sortOrder: 'asc' },
-    });
+    const showcases = await contentRepository.findAllShowcases();
 
     return NextResponse.json(showcases);
   } catch (error) {
@@ -30,19 +28,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const showcase = await prisma.vehicleShowcase.create({
-      data: {
-        vehicleId: body.vehicleId,
-        vehicleName: body.vehicleName,
-        title: body.title,
-        subtitle: body.subtitle || null,
-        views: body.views || [],
-        videoUrl: body.videoUrl || null,
-        ctaText: body.ctaText || null,
-        ctaLink: body.ctaLink || null,
-        sortOrder: body.sortOrder || 0,
-        isActive: body.isActive !== undefined ? body.isActive : false,
-      },
+    const showcase = await contentRepository.createShowcase({
+      vehicleId: body.vehicleId,
+      vehicleName: body.vehicleName,
+      title: body.title,
+      subtitle: body.subtitle || null,
+      views: body.views || [],
+      videoUrl: body.videoUrl || null,
+      ctaText: body.ctaText || null,
+      ctaLink: body.ctaLink || null,
+      sortOrder: body.sortOrder || 0,
+      isActive: body.isActive !== undefined ? body.isActive : false,
     });
 
     return NextResponse.json(showcase, { status: 201 });

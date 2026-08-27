@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { contentRepository } from '@/repositories/contentRepository';
 
 function slugify(value: string) {
   return value
@@ -18,17 +18,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const brands = await prisma.vehicleBrand.findMany({
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-      include: {
-        _count: {
-          select: {
-            vehicles: true,
-            categories: true,
-          },
-        },
-      },
-    });
+    const brands = await contentRepository.findAllBrands();
 
     return NextResponse.json(brands);
   } catch (error) {
@@ -52,15 +42,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Brand name is required' }, { status: 400 });
     }
 
-    const brand = await prisma.vehicleBrand.create({
-      data: {
-        name,
-        slug: data.slug ? String(data.slug).trim() : slugify(name),
-        description: data.description || null,
-        logoUrl: data.logoUrl || null,
-        isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
-        displayOrder: Number(data.displayOrder || 0),
-      },
+    const brand = await contentRepository.createBrand({
+      name,
+      slug: data.slug ? String(data.slug).trim() : slugify(name),
+      description: data.description || null,
+      logoUrl: data.logoUrl || null,
+      isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+      displayOrder: Number(data.displayOrder || 0),
     });
 
     return NextResponse.json(brand, { status: 201 });

@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - Get single FAQ
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const faq = await prisma.fAQ.findUnique({
-      where: { id: id },
-    });
+    const faq = await contentRepository.findFaqById(id);
 
     if (!faq) {
       return NextResponse.json(
@@ -34,7 +33,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 // PUT - Update FAQ
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
@@ -48,16 +48,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    const faq = await prisma.fAQ.update({
-      where: { id: id },
-      data: {
-        question,
-        answer,
-        category: category || null,
-        displayOrder: displayOrder || 0,
-        isActive: isActive !== undefined ? isActive : true,
-        isFeatured: isFeatured !== undefined ? isFeatured : false,
-      },
+    const faq = await contentRepository.updateFaq(id, {
+      question,
+      answer,
+      category: category || null,
+      displayOrder: displayOrder || 0,
+      isActive: isActive !== undefined ? isActive : true,
+      isFeatured: isFeatured !== undefined ? isFeatured : false,
     });
 
     return NextResponse.json({
@@ -76,13 +73,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 // DELETE - Delete FAQ
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    await prisma.fAQ.delete({
-      where: { id: id },
-    });
+    await contentRepository.deleteFaq(id);
 
     return NextResponse.json({
       success: true,

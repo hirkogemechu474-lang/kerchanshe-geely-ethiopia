@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { contentRepository } from '@/repositories/contentRepository';
 
 // GET - List all categories
 export async function GET() {
@@ -8,15 +8,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const categories = await prisma.vehicleCategory.findMany({
-      include: {
-        brand: true,
-        _count: {
-          select: { vehicles: true },
-        },
-      },
-      orderBy: { displayOrder: 'asc' },
-    });
+    const categories = await contentRepository.findAllCategories();
 
     return NextResponse.json({
       success: true,
@@ -39,21 +31,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const category = await prisma.vehicleCategory.create({
-      data: {
-        name: body.name,
-        slug: body.slug,
-        description: body.description,
-        imageUrl: body.imageUrl,
-        iconUrl: body.iconUrl,
-        heroImageUrl: body.heroImageUrl,
-        heroVideoUrl: body.heroVideoUrl,
-        metaTitle: body.metaTitle,
-        metaDescription: body.metaDescription,
-        brandId: body.brandId || null,
-        isActive: body.isActive !== false,
-        displayOrder: body.displayOrder || 0,
-      },
+    const category = await contentRepository.createCategory({
+      name: body.name,
+      slug: body.slug,
+      description: body.description,
+      imageUrl: body.imageUrl,
+      iconUrl: body.iconUrl,
+      heroImageUrl: body.heroImageUrl,
+      heroVideoUrl: body.heroVideoUrl,
+      metaTitle: body.metaTitle,
+      metaDescription: body.metaDescription,
+      brand: body.brandId ? { connect: { id: body.brandId } } : undefined,
+      isActive: body.isActive !== false,
+      displayOrder: body.displayOrder || 0,
     });
 
     return NextResponse.json({
