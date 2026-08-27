@@ -21,4 +21,15 @@ export const dealerRepository = {
   async findBySlug(slug: string) {
     return prisma.dealer.findFirst({ where: { id: slug } });
   },
+
+  async findAllActive() {
+    return prisma.dealer.findMany({
+      where: { active: true },
+      orderBy: [{ featured: 'desc' }, { name: 'asc' }],
+    });
+  },
+
+  async findActiveById(id: string) {
+    return prisma.dealer.findFirst({ where: { id, active: true } });
+  },
 };
