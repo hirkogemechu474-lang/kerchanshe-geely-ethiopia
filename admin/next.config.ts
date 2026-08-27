@@ -2,6 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 
+  // `next dev` and `next build`/`next start` default to the SAME .next
+  // output directory. Running a dev server and a production instance of
+  // this app at the same time (e.g. local production-mode verification
+  // alongside the day-to-day dev server) means dev's live compilation
+  // keeps mutating the exact files `next start` just read, corrupting the
+  // production build mid-flight — surfaces as `[TypeError:
+  // routesManifest.dataRoutes is not iterable]` on `next start`. Next's
+  // CLI always sets NODE_ENV itself (development for `dev`, production for
+  // `build`/`start`) before this file loads, so splitting on it here gives
+  // production its own isolated build directory with no script changes
+  // needed anywhere else.
+  distDir: process.env.NODE_ENV === 'production' ? '.next-prod' : '.next',
+
   // Skip ESLint during builds (stricter rules than codebase currently satisfies).
   // TypeScript type-checking still runs and fails builds on type errors.
   eslint: {

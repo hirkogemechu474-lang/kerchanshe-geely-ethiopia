@@ -4,9 +4,7 @@ import { sendStatusEmail } from '@/lib/status-email';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { env } from '@/lib/env';
 
-interface Params {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
 // GET - Fetch single quotation
 export async function GET(
@@ -17,8 +15,9 @@ export async function GET(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const quotation = await prisma.quotation.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!quotation) {
@@ -41,11 +40,12 @@ export async function PUT(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const body = await request.json();
     const { status, internalNotes, assignedTo } = body;
 
     const quotation = await prisma.quotation.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(status && { status }),
         ...(internalNotes !== undefined && { internalNotes }),
@@ -93,8 +93,9 @@ export async function DELETE(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     await prisma.quotation.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Quotation deleted successfully' });

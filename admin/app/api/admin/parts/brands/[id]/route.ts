@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
-interface Params {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
 // PUT – Update a brand
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
@@ -12,10 +10,11 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const body = await request.json();
 
     const brand = await prisma.partBrand.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
@@ -38,7 +37,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    await prisma.partBrand.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.partBrand.delete({ where: { id } });
 
     return NextResponse.json({ message: 'Brand deleted' });
   } catch (error) {

@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { prisma } from '@/lib/prisma';
 
-interface Params {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
 // PUT – Update a benefit
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
@@ -12,10 +10,11 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const body = await request.json();
 
     const benefit = await prisma.partBenefit.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(body.title !== undefined && { title: body.title }),
         ...(body.description !== undefined && { description: body.description }),
@@ -38,7 +37,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    await prisma.partBenefit.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.partBenefit.delete({ where: { id } });
 
     return NextResponse.json({ message: 'Benefit deleted' });
   } catch (error) {

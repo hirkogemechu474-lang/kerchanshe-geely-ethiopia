@@ -7,7 +7,7 @@ const SETTING_KEY = 'vehicle_specifications';
 const LEGACY_SETTING_KEY = 'vehicle_settings'; // one-time fallback source, see GET
 const SETTING_TYPE = 'cms';
 
-export const DEFAULT_VEHICLE_SPECIFICATIONS: VehicleSpecificationLists = {
+const DEFAULT_VEHICLE_SPECIFICATIONS: VehicleSpecificationLists = {
   engine: [
     '1.5T Turbocharged Petrol - 173 HP',
     '1.5L Naturally Aspirated Petrol - 114 HP',

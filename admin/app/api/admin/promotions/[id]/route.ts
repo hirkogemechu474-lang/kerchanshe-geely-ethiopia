@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 
-interface Params {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
 // GET - Fetch single promotion
 export async function GET(
@@ -15,8 +13,9 @@ export async function GET(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const promotion = await prisma.promotion.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!promotion) {
@@ -39,6 +38,7 @@ export async function PUT(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const body = await request.json();
 
     if (!body.title || !body.description || !body.startDate || !body.endDate) {
@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     const promotion = await prisma.promotion.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: body.title,
         description: body.description,
@@ -83,8 +83,9 @@ export async function DELETE(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     await prisma.promotion.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Promotion deleted successfully' });

@@ -7,7 +7,7 @@ const SETTING_KEY = 'vehicle_features';
 const LEGACY_SETTING_KEY = 'vehicle_settings'; // one-time fallback source, see GET
 const SETTING_TYPE = 'cms';
 
-export const DEFAULT_VEHICLE_FEATURES: VehicleFeatureLists = {
+const DEFAULT_VEHICLE_FEATURES: VehicleFeatureLists = {
   safety: [
     'ABS (Anti-lock Braking System)',
     'EBD (Electronic Brakeforce Distribution)',

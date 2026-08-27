@@ -3,9 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
 import { requireAdminApiSession } from '@/lib/auth/api';
 
-interface Params {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
 // GET - Fetch single review
 export async function GET(
@@ -16,8 +14,9 @@ export async function GET(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const review = await prisma.review.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!review) {
@@ -40,6 +39,7 @@ export async function PUT(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     const body = await request.json();
     const {
       status,
@@ -50,7 +50,7 @@ export async function PUT(
     } = body;
 
     const review = await prisma.review.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(status && { status }),
         ...(isFeatured !== undefined && { isFeatured }),
@@ -91,8 +91,9 @@ export async function DELETE(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    const { id } = await params;
     await prisma.review.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Review deleted successfully' });

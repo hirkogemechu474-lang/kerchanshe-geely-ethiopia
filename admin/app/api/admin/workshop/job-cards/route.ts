@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { nextJobCardNo } from '@/lib/workshop/jobCardNumber';
+import { findBayConflict } from '@/lib/workshop/bayConflict';
 import type { JobCardStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -167,24 +168,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating job card:', error);
     return NextResponse.json({ error: 'Failed to create job card' }, { status: 500 });
   }
-}
-
-/** Shared by create/assign routes: finds a conflicting job card on the same bay/time window (BR-008). */
-export async function findBayConflict(
-  bayId: string,
-  start: Date,
-  end: Date,
-  excludeJobCardId?: string
-) {
-  return prisma.jobCard.findFirst({
-    where: {
-      bayId,
-      id: excludeJobCardId ? { not: excludeJobCardId } : undefined,
-      status: { notIn: ['CANCELLED', 'INVOICED_CLOSED'] },
-      scheduledStart: { not: null },
-      scheduledEnd: { not: null },
-      AND: [{ scheduledStart: { lt: end } }, { scheduledEnd: { gt: start } }],
-    },
-    select: { id: true, jobCardNo: true },
-  });
 }

@@ -75,7 +75,7 @@ export interface AboutContent {
   homeStats: { label: string; value: string }[];
 }
 
-export const DEFAULT_ABOUT: AboutContent = {
+const DEFAULT_ABOUT: AboutContent = {
   sectionHero: {
     eyebrow: 'ABOUT US',
     title: 'About Geely Ethiopia',
