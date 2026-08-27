@@ -9,6 +9,7 @@ import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { nextSalesRep } from '@/lib/assignSalesRep';
 import { UPLOADS_ROOT } from '@/lib/upload-utils';
 import { buildSalesQuotationPdf, stampSignatureOnQuotationPdf } from '@/lib/services/sales/salesQuotationPdf';
+import { notifyManagersOfNewLead, notifyAssignedRep } from '@/lib/services/quotations/leadNotifications';
 
 export interface LeadQuotationInput {
   customerName: string;
@@ -50,6 +51,11 @@ export async function submitLeadQuotation(input: LeadQuotationInput) {
       console.error('[quotations:visit-link]', error);
     });
   }
+
+  await Promise.all([
+    notifyManagersOfNewLead(quotation, assignedRep?.name ?? null),
+    notifyAssignedRep(quotation, assignedRep?.id ?? null),
+  ]);
 
   let notificationSent = false;
   try {
@@ -135,6 +141,11 @@ ${input.message ? `Additional Message: ${input.message}` : ''}
     reference,
     assignedTo: assignedRep?.name ?? null,
   });
+
+  await Promise.all([
+    notifyManagersOfNewLead(quotation, assignedRep?.name ?? null),
+    notifyAssignedRep(quotation, assignedRep?.id ?? null),
+  ]);
 
   return { ok: true, quotation, reference };
 }

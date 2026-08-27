@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { env } from '@/lib/env';
+import { notifyAssignedRep } from '@/lib/services/quotations/leadNotifications';
 
 type Params = Promise<{ id: string }>;
 
@@ -46,7 +47,11 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, internalNotes, assignedTo } = body;
+    const { status, internalNotes, assignedTo, assignedToId } = body;
+
+    const before = assignedTo !== undefined
+      ? await prisma.quotation.findUnique({ where: { id }, select: { assignedTo: true } })
+      : null;
 
     const quotation = await prisma.quotation.update({
       where: { id },
@@ -56,6 +61,24 @@ export async function PUT(
         ...(assignedTo !== undefined && { assignedTo }),
       },
     });
+
+    if (assignedTo !== undefined && quotation.assignedTo !== before?.assignedTo) {
+      let repId: string | null = assignedToId || null;
+      if (!repId && quotation.assignedTo) {
+        // Defensive fallback for a caller that doesn't supply assignedToId —
+        // name isn't unique, so this is best-effort, not the primary path.
+        const rep = await prisma.user.findFirst({
+          where: {
+            name: quotation.assignedTo,
+            role: { in: ['sales', 'sales_representative', 'sales_manager'] },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        repId = rep?.id ?? null;
+      }
+      await notifyAssignedRep(quotation, repId);
+    }
 
     if (status && ['approved', 'converted', 'closed'].includes(status) && quotation.email) {
       try {

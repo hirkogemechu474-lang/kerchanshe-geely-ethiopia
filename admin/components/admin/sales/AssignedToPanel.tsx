@@ -31,10 +31,11 @@ export default function AssignedToPanel({
     setBusy(true);
     setError('');
     try {
+      const rep = salesReps.find((r) => r.name === repName);
       const res = await fetch(`/api/admin/quotations/${quotationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignedTo: repName || null }),
+        body: JSON.stringify({ assignedTo: repName || null, assignedToId: rep?.id || null }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

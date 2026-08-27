@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { nextSalesRep } from '@/lib/assignSalesRep';
+import { notifyManagersOfNewLead, notifyAssignedRep } from '@/lib/services/quotations/leadNotifications';
 
 // GET - Paginated quotations, optionally filtered by status. Status counts
 // are computed across the whole table (not just the current page/filter) so
@@ -98,6 +99,11 @@ export async function POST(request: NextRequest) {
       assignedTo: assignedRep?.name ?? null,
     },
   });
+
+  await Promise.all([
+    notifyManagersOfNewLead(quotation, assignedRep?.name ?? null),
+    notifyAssignedRep(quotation, assignedRep?.id ?? null),
+  ]);
 
   return NextResponse.json({ quotation, deduped: false }, { status: 201 });
 }
