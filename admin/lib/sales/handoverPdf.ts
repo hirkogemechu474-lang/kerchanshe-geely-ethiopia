@@ -1,0 +1,115 @@
+import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
+import type { SalesOrder } from '@prisma/client';
+
+// Vehicle handover confirmation — the customer's own acknowledgement of
+// receiving the vehicle, distinct from the earlier sales agreement (see
+// salesAgreementPdf.ts, which this deliberately mirrors layout-for-layout
+// so the two documents feel like one continuous paper trail). Signed by the
+// customer at web/app/handover/[orderId], then countersigned by a manager
+// (admin/app/api/admin/orders/[id]/handover-countersign) — same two-step
+// pattern as the agreement's sign/countersign. Keep this file and its
+// web/ mirror byte-identical, same convention as salesAgreementPdf.ts.
+const PAGE_WIDTH = 595.28; // A4
+const PAGE_HEIGHT = 841.89;
+const MARGIN = 56;
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+
+export const HANDOVER_SIGNATURE_AREA = {
+  customerLineX: MARGIN,
+  customerLineY: 220,
+  lineWidth: 220,
+  maxImageHeight: 50,
+};
+
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(test, size) > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+export async function buildHandoverPdf(order: SalesOrder): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+
+  let y = PAGE_HEIGHT - MARGIN;
+
+  page.drawText('Vehicle Handover Confirmation', { x: MARGIN, y, size: 20, font: bold });
+  y -= 22;
+  page.drawText(`Order ${order.orderNo} — Geely Ethiopia · Kerchanshe Auto`, {
+    x: MARGIN, y, size: 10, font, color: rgb(0.4, 0.4, 0.4),
+  });
+  y -= 34;
+
+  const section = (title: string) => {
+    page.drawText(title, { x: MARGIN, y, size: 13, font: bold });
+    y -= 6;
+    page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) });
+    y -= 16;
+  };
+
+  const row = (label: string, value: string) => {
+    page.drawText(label, { x: MARGIN, y, size: 10, font, color: rgb(0.35, 0.35, 0.35) });
+    page.drawText(value, { x: MARGIN + 140, y, size: 10, font });
+    y -= 18;
+  };
+
+  section('Customer');
+  row('Name', order.customerName);
+  row('Phone', order.customerPhone);
+  if (order.customerEmail) row('Email', order.customerEmail);
+  y -= 10;
+
+  section('Vehicle');
+  row('Model', order.vehicleModel);
+  row('Order Total', order.totalPrice != null ? `ETB ${order.totalPrice.toLocaleString('en-US')}` : 'To be confirmed');
+  if (order.registrationNumber) row('Registration No.', order.registrationNumber);
+  if (order.invoiceNo) row('Invoice No.', order.invoiceNo);
+  y -= 10;
+
+  section('Confirmation');
+  const terms = [
+    'By signing below, the customer confirms receipt of the vehicle described above, in good condition, together with all agreed documents (registration, invoice, and warranty booklet) and accessories.',
+    'This handover confirmation is countersigned by a Geely Ethiopia representative to close out the order.',
+  ];
+  for (const paragraph of terms) {
+    for (const line of wrapText(paragraph, font, 9, CONTENT_WIDTH)) {
+      page.drawText(line, { x: MARGIN, y, size: 9, font, color: rgb(0.2, 0.2, 0.2) });
+      y -= 13;
+    }
+    y -= 6;
+  }
+
+  const sigY = HANDOVER_SIGNATURE_AREA.customerLineY;
+  page.drawLine({
+    start: { x: HANDOVER_SIGNATURE_AREA.customerLineX, y: sigY },
+    end: { x: HANDOVER_SIGNATURE_AREA.customerLineX + HANDOVER_SIGNATURE_AREA.lineWidth, y: sigY },
+    thickness: 1, color: rgb(0.1, 0.1, 0.1),
+  });
+  page.drawText('Customer Signature & Date', { x: HANDOVER_SIGNATURE_AREA.customerLineX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+
+  const agentX = HANDOVER_SIGNATURE_AREA.customerLineX + HANDOVER_SIGNATURE_AREA.lineWidth + 60;
+  page.drawLine({
+    start: { x: agentX, y: sigY },
+    end: { x: agentX + HANDOVER_SIGNATURE_AREA.lineWidth, y: sigY },
+    thickness: 1, color: rgb(0.1, 0.1, 0.1),
+  });
+  page.drawText('Geely Ethiopia Representative & Date', { x: agentX, y: sigY - 14, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+
+  const footer = `Delivered ${order.deliveredAt ? new Date(order.deliveredAt).toLocaleString() : ''} · Order created ${new Date(order.orderDate).toLocaleDateString()}`;
+  page.drawText(footer, { x: MARGIN, y: 40, size: 8, font, color: rgb(0.55, 0.55, 0.55) });
+
+  return doc.save();
+}

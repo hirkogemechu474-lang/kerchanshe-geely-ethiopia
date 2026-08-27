@@ -15,6 +15,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       pdiItems: { orderBy: { createdAt: 'asc' } },
       statusHistory: { orderBy: { changedAt: 'asc' } },
       quotation: { select: { id: true } },
+      testDrives: { orderBy: { createdAt: 'desc' } },
     },
   });
 

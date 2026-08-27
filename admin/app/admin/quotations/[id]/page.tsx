@@ -31,7 +31,7 @@ export default async function QuotationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await requirePermission('canManageContent');
+  const session = await requirePermission('canViewQuotations');
   const { id } = await params;
   const quotation = await prisma.quotation.findUnique({ where: { id } });
 

@@ -19,6 +19,10 @@ export interface OrderTransitionContext {
   // Approved by a sales agent AND the signed agreement has been attached —
   // see admin/app/api/admin/orders/[id]/approve and .../agreement.
   agreementComplete: boolean;
+  // paymentStatus === 'PAID' — see .../payment/confirm and the public
+  // mock-pay/proof routes. Required before "ready for delivery" so a
+  // vehicle can never be prepped for handover on an unpaid order.
+  paymentComplete: boolean;
   // Vehicle registration recorded — see .../register-vehicle.
   registrationComplete: boolean;
   // Sales invoice generated — see .../invoice.
@@ -58,6 +62,10 @@ export function assertOrderTransitionAllowed(from: OrderStatus, to: OrderStatus,
 
   if (to === 'READY_FOR_DELIVERY' && !ctx.agreementComplete) {
     throw new OrderTransitionError('Cannot mark ready for delivery until the order is approved and the signed agreement is attached.');
+  }
+
+  if (to === 'READY_FOR_DELIVERY' && !ctx.paymentComplete) {
+    throw new OrderTransitionError('Cannot mark ready for delivery until payment has been confirmed.');
   }
 
   if (to === 'DELIVERED' && !ctx.registrationComplete) {

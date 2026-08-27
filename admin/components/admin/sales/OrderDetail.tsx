@@ -15,6 +15,7 @@ import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';
 import OrderFulfillmentPanel from '@/components/admin/sales/OrderFulfillmentPanel';
 import OrderCommissionPanel from '@/components/admin/sales/OrderCommissionPanel';
 import OrderHandoverPanel from '@/components/admin/sales/OrderHandoverPanel';
+import OrderTestDrivePanel from '@/components/admin/sales/OrderTestDrivePanel';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
 import { FileText } from 'lucide-react';
 
@@ -30,6 +31,15 @@ interface StatusHistoryEntry {
   fromStatus: string | null;
   toStatus: string;
   changedAt: string;
+}
+
+interface OrderTestDrive {
+  id: string;
+  status: string;
+  preferredDate: string;
+  preferredTime: string;
+  location: string;
+  reference: string | null;
 }
 
 interface OrderData {
@@ -67,6 +77,10 @@ interface OrderData {
   pdiItems: PdiItem[];
   statusHistory: StatusHistoryEntry[];
   quotation: { id: string } | null;
+  testDrives: OrderTestDrive[];
+  handoverSignedDocumentUrl: string | null;
+  handoverSignedAt: string | null;
+  handoverCountersignedAt: string | null;
 }
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -97,9 +111,7 @@ export default function OrderDetail({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [totalPrice, setTotalPrice] = useState(state.totalPrice?.toString() || '');
-  const canCountersign =
-    permissions.canManageQuotations &&
-    (role === AdminRole.SALES_MANAGER || role === AdminRole.ADMIN || role === AdminRole.SUPER_ADMIN);
+  const canCountersign = permissions.canManageQuotations && permissions.canCountersignAgreements;
 
   const refresh = async () => {
     const res = await fetch(`/api/admin/orders/${state.id}`);
@@ -185,11 +197,13 @@ export default function OrderDetail({
 
   const pdiComplete = state.pdiItems.length > 0 && state.pdiItems.every((p) => p.isChecked);
   const agreementComplete = Boolean(state.approvedAt) && Boolean(state.signedDocumentUrl);
+  const paymentComplete = state.paymentStatus === 'PAID';
   const registrationComplete = Boolean(state.registeredAt);
   const invoiceComplete = Boolean(state.invoicedAt);
   const allowedTransitions = getAllowedOrderTransitions(state.status as any, {
     pdiComplete,
     agreementComplete,
+    paymentComplete,
     registrationComplete,
     invoiceComplete,
   });
@@ -343,6 +357,13 @@ export default function OrderDetail({
         )}
       </Card>
 
+      <OrderTestDrivePanel
+        order={{ id: state.id, vehicleModel: state.vehicleModel, customerEmail: state.customerEmail }}
+        testDrives={state.testDrives}
+        canManage={permissions.canManageQuotations}
+        onUpdated={refresh}
+      />
+
       <OrderFulfillmentPanel
         order={{
           id: state.id,
@@ -376,8 +397,12 @@ export default function OrderDetail({
           deliveredAt: state.deliveredAt,
           handoverNotifiedAt: state.handoverNotifiedAt,
           customerEmail: state.customerEmail,
+          handoverSignedDocumentUrl: state.handoverSignedDocumentUrl,
+          handoverSignedAt: state.handoverSignedAt,
+          handoverCountersignedAt: state.handoverCountersignedAt,
         }}
         canManage={permissions.canManageQuotations}
+        canCountersign={canCountersign}
         onUpdated={refresh}
       />
 
@@ -399,6 +424,11 @@ export default function OrderDetail({
           {state.status === 'BOOKED' && pdiComplete && !agreementComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Approve the order and attach the signed agreement above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {state.status === 'BOOKED' && pdiComplete && agreementComplete && !paymentComplete && (
+            <p className="text-xs text-orange-600 mt-2">
+              Confirm payment above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
           {state.status === 'READY_FOR_DELIVERY' && (!registrationComplete || !invoiceComplete) && (

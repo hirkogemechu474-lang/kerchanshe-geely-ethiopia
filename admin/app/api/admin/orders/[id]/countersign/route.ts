@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { AdminRole } from '@/lib/auth/types';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
 
@@ -9,21 +8,17 @@ import { env } from '@/lib/env';
 // customer has e-signed the agreement (see .../[id]/route.ts's
 // signedDocumentUrl PATCH and web/app/api/agreement/[orderId]/sign/route.ts).
 // Unlike the customer's signature, this doesn't capture a drawn image —
-// just identity + timestamp, matching approvedAt/approvedById. Restricted
-// to Sales Manager/Admin (unlike approve/send-agreement, which any rep with
-// canManageQuotations can do) since this is explicitly the manager's
-// countersignature. Immediately emails the customer a payment link.
+// just identity + timestamp, matching approvedAt/approvedById. Gated on the
+// canCountersignAgreements permission (editable per-role in Roles &
+// Permissions — see admin/lib/auth/permissionGroups.ts) rather than a
+// hardcoded role check, so this authority can be granted/revoked without a
+// code change. Immediately emails the customer a payment link.
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
   if (response) return response;
 
-  const role = session!.user.role;
-  if (
-    role !== AdminRole.SALES_MANAGER &&
-    role !== AdminRole.ADMIN &&
-    role !== AdminRole.SUPER_ADMIN
-  ) {
-    return NextResponse.json({ error: 'Only a sales manager can countersign this agreement.' }, { status: 403 });
+  if (!session!.user.permissions.canCountersignAgreements) {
+    return NextResponse.json({ error: 'You do not have permission to countersign agreements.' }, { status: 403 });
   }
 
   const { id } = await params;

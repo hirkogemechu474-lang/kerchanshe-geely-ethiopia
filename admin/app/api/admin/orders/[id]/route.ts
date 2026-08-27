@@ -13,6 +13,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       pdiItems: { orderBy: { createdAt: 'asc' } },
       statusHistory: { orderBy: { changedAt: 'asc' } },
       quotation: { select: { id: true, message: true } },
+      testDrives: { orderBy: { createdAt: 'desc' } },
     },
   });
 

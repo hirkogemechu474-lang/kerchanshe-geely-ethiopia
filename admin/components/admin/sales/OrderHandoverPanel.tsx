@@ -17,6 +17,9 @@ interface OrderHandoverData {
   deliveredAt: string | null;
   handoverNotifiedAt: string | null;
   customerEmail: string | null;
+  handoverSignedDocumentUrl: string | null;
+  handoverSignedAt: string | null;
+  handoverCountersignedAt: string | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -32,20 +35,64 @@ async function parseJsonResponse(res: Response): Promise<any> {
 export default function OrderHandoverPanel({
   order,
   canManage,
+  canCountersign,
   onUpdated,
 }: {
   order: OrderHandoverData;
   canManage: boolean;
+  canCountersign: boolean;
   onUpdated: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [signOffBusy, setSignOffBusy] = useState(false);
+  const [signOffError, setSignOffError] = useState('');
+  const [signOffNotice, setSignOffNotice] = useState('');
 
   if (order.status !== 'READY_FOR_DELIVERY' && order.status !== 'DELIVERED') {
     return null;
   }
+
+  const sendSignOff = async () => {
+    setSignOffBusy(true);
+    setSignOffError('');
+    setSignOffNotice('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/send-handover-signoff`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Unable to send the handover sign-off link.');
+      setSignOffNotice(
+        data.notificationSent
+          ? `Sign-off link emailed to ${order.customerEmail}.`
+          : 'Could not email the sign-off link — check SMTP settings.'
+      );
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setSignOffError(err.message);
+    } finally {
+      setSignOffBusy(false);
+    }
+  };
+
+  const countersign = async () => {
+    setSignOffBusy(true);
+    setSignOffError('');
+    setSignOffNotice('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/handover-countersign`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Unable to countersign this handover.');
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setSignOffError(err.message);
+    } finally {
+      setSignOffBusy(false);
+    }
+  };
 
   const completeHandover = async () => {
     setBusy(true);
@@ -116,6 +163,43 @@ export default function OrderHandoverPanel({
             </Button>
           </div>
         )
+      )}
+
+      {order.status === 'DELIVERED' && (
+        <div className="border-t border-gray-100 pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900">Customer Sign-Off</h3>
+          {signOffError && <p className="text-sm text-red-600">{signOffError}</p>}
+          {signOffNotice && <p className="text-sm text-blue-700">{signOffNotice}</p>}
+
+          {!order.handoverSignedDocumentUrl ? (
+            canManage && (
+              <div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Emails the customer a link to confirm receipt of the vehicle (draw a signature or upload a signed printout).
+                  {!order.customerEmail && ' No customer email is on file, so no link can be sent.'}
+                </p>
+                <Button variant="secondary" onClick={sendSignOff} disabled={signOffBusy || !order.customerEmail}>
+                  {signOffBusy ? 'Sending…' : 'Send Handover Sign-Off Link'}
+                </Button>
+              </div>
+            )
+          ) : (
+            <div className="text-sm text-gray-700 space-y-2">
+              <p>Customer signed {order.handoverSignedAt ? new Date(order.handoverSignedAt).toLocaleString() : ''}.</p>
+              {order.handoverCountersignedAt ? (
+                <p className="text-green-600 font-medium">
+                  Countersigned {new Date(order.handoverCountersignedAt).toLocaleString()} — handover complete.
+                </p>
+              ) : canCountersign ? (
+                <Button onClick={countersign} disabled={signOffBusy}>
+                  {signOffBusy ? 'Countersigning…' : 'Countersign Handover'}
+                </Button>
+              ) : (
+                <p className="text-orange-600">Awaiting manager countersignature.</p>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </Card>
   );

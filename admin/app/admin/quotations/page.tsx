@@ -4,7 +4,7 @@ import { FileText } from 'lucide-react';
 import QuotationsList from '@/components/admin/QuotationsList';
 
 export default async function AdminQuotationsPage() {
-  await requirePermission('canManageContent');
+  await requirePermission('canViewQuotations');
 
   return (
     <div className="space-y-6">

@@ -27,11 +27,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const pdiComplete = order.pdiItems.length > 0 && order.pdiItems.every((p) => p.isChecked);
   const agreementComplete = Boolean(order.approvedAt) && Boolean(order.signedDocumentUrl);
+  const paymentComplete = order.paymentStatus === 'PAID';
   const registrationComplete = Boolean(order.registeredAt);
   const invoiceComplete = Boolean(order.invoicedAt);
 
   try {
-    assertOrderTransitionAllowed(order.status, toStatus, { pdiComplete, agreementComplete, registrationComplete, invoiceComplete });
+    assertOrderTransitionAllowed(order.status, toStatus, { pdiComplete, agreementComplete, paymentComplete, registrationComplete, invoiceComplete });
   } catch (err) {
     if (err instanceof OrderTransitionError) {
       return NextResponse.json({ error: err.message }, { status: 409 });

@@ -25,6 +25,8 @@ export const PERMISSION_GROUPS: { label: string; keys: { key: keyof AdminPermiss
     keys: [
       { key: 'canManageTestDrives', label: 'Manage test drives' },
       { key: 'canViewQuotations', label: 'View quote requests' },
+      { key: 'canManageQuotations', label: 'Manage quotations & sales orders' },
+      { key: 'canCountersignAgreements', label: 'Countersign agreements & handovers' },
       { key: 'canManageMessages', label: 'Manage messages' },
     ],
   },

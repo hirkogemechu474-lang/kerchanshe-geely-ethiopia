@@ -221,6 +221,19 @@ export const rateLimitConfigs = {
     message: 'Too many attempts. Please try again in a few minutes or contact us.'
   },
 
+  // Public vehicle-handover viewing/signing — same "reached via an emailed
+  // link" shape as the agreement routes above.
+  handoverView: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 30,
+    message: 'Too many requests. Please try again in a few minutes.'
+  },
+  handoverSign: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: 'Too many attempts. Please try again in a few minutes or contact us.'
+  },
+
   // Public order-payment page — same "reached via an emailed link" shape
   // as the agreement routes above.
   paymentView: {

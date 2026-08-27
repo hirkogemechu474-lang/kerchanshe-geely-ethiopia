@@ -140,6 +140,12 @@ model TestDrive {
   internalNotes   String?
   emailConfirm    Boolean   @default(true)
   smsReminder     Boolean   @default(true)
+  // Set when a sales agent sends a test-drive invite from a specific
+  // SalesOrder (post-quote, e.g. "before you pay, take it for a spin") —
+  // present iff this test drive was agent-initiated rather than a
+  // standalone booking from the public /test-drive page.
+  salesOrderId    String?
+  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id])
   // Digital ID capture (BRD FR-104: "book a test drive with digital ID
   // capture, so that test drives are tracked and accountable"). Captured by
   // the Sales Executive when the customer arrives for the drive — see
@@ -328,6 +334,15 @@ model SalesOrder {
   // the DELIVERED status transition itself, fired by the dedicated Handover
   // panel. Not a one-way lock: resending updates this timestamp again.
   handoverNotifiedAt DateTime?
+  // Handover dual sign-off — the customer's own acknowledgement that they
+  // received the vehicle, distinct from handoverNotifiedAt (a staff-sent
+  // email) above. Mirrors the agreement e-sign/countersign pair exactly:
+  // customer signs first (web/app/handover/[orderId]), then a manager
+  // countersigns (admin/app/api/admin/orders/[id]/handover-countersign).
+  handoverSignedDocumentUrl  String?
+  handoverSignedAt           DateTime?
+  handoverCountersignedAt    DateTime?
+  handoverCountersignedById  String?
   // Sales agreement approval/e-sign (BRD-adjacent: "Sales Quotation
   // Approval by sales agent -> Generate Agreement -> e-sign/attach").
   // approvedById is a loose actor reference (no FK), matching every other
@@ -390,6 +405,7 @@ model SalesOrder {
   updatedAt       DateTime                  @updatedAt
   pdiItems        PdiChecklistItem[]
   statusHistory   SalesOrderStatusHistory[]
+  testDrives      TestDrive[]
 
   @@index([status])
 }
