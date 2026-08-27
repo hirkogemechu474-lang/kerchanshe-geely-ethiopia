@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/middleware';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import QuotationPdfPanel from '@/components/admin/sales/QuotationPdfPanel';
+import AssignedToPanel from '@/components/admin/sales/AssignedToPanel';
 import { env } from '@/lib/env';
+import { listSalesReps } from '@/lib/assignSalesRep';
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat('en-ET', {
@@ -36,6 +38,8 @@ export default async function QuotationDetailPage({
   const quotation = await prisma.quotation.findUnique({ where: { id } });
 
   if (!quotation) notFound();
+
+  const salesReps = await listSalesReps();
 
   const status = quotation.status || 'new';
   const webAppUrl = env.app.url.replace(/\/$/, '');
@@ -88,7 +92,17 @@ export default async function QuotationDetailPage({
             <div><dt className="text-gray-500">Lead source</dt><dd className="font-semibold text-gray-900 capitalize">{quotation.source.replace('-', ' ')}</dd></div>
             <div><dt className="text-gray-500">Financing</dt><dd className="font-semibold text-gray-900">{quotation.financingInterest ? 'Requested' : 'Not requested'}</dd></div>
             <div><dt className="text-gray-500">Trade-in</dt><dd className="font-semibold text-gray-900">{quotation.tradeInInterest ? 'Yes' : 'No'}</dd></div>
-            <div><dt className="text-gray-500">Assigned to</dt><dd className="font-semibold text-gray-900">{quotation.assignedTo || 'Unassigned'}</dd></div>
+            <div>
+              <dt className="text-gray-500 mb-1">Assigned to</dt>
+              <dd>
+                <AssignedToPanel
+                  quotationId={quotation.id}
+                  assignedTo={quotation.assignedTo}
+                  salesReps={salesReps}
+                  canManage={session.user.permissions.canManageQuotations}
+                />
+              </dd>
+            </div>
           </dl>
         </section>
       </div>

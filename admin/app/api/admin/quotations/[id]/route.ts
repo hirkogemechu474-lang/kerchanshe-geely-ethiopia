@@ -40,6 +40,10 @@ export async function PUT(
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
+    if (!session!.user.permissions.canManageQuotations) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { status, internalNotes, assignedTo } = body;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { nextSalesRep } from '@/lib/assignSalesRep';
 
 // GET - Paginated quotations, optionally filtered by status. Status counts
 // are computed across the whole table (not just the current page/filter) so
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ quotation: existing, deduped: true });
   }
 
+  const assignedRep = await nextSalesRep();
   const quotation = await prisma.quotation.create({
     data: {
       customerName,
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
       source: source || 'walk-in',
       message: message || null,
       status: 'new',
+      assignedTo: assignedRep?.name ?? null,
     },
   });
 
