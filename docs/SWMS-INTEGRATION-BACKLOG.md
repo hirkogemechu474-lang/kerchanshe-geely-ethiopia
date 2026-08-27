@@ -373,6 +373,17 @@ reading or writing it from the database.
 - **Two pre-existing gaps were found but deliberately NOT fixed in this pass**, to keep this batch scoped to what was asked: `/admin/users/new` and `/admin/users/[id]` have no `requirePermission` gate at all (same class of gap Phase 10 found and fixed on the old quotations/new stub) — the mutation endpoints are still properly gated server-side, so this is an unauthorized-page-*view* gap, not a privilege-escalation one, but it's a real gap worth a future pass.
 - **Verified against the live database and the running dev servers, not just typechecked**: proved an already-authenticated session (same cookie, no re-login) sees a permission toggle take effect on its very next request; confirmed the `super_admin` lock and unknown-permission-key rejection; confirmed reset-one-cell and reset-a-whole-role both work; confirmed the previously-unblocked `sales`/`service_advisor` staff accounts are now correctly rejected by the public login endpoint while real customer/dealer accounts still succeed and return the correct role; ran the full find-user → assign-role → verify round trip against a disposable account. All test overrides and accounts removed afterward.
 
+**Follow-up (picked from "Suggested next phase") — closed the page-view permission gap this section flagged:** `/admin/users/new` and `/admin/users/[id]` had no `requirePermission` call at all — reachable by any authenticated session regardless of role, though the underlying `POST`/`PUT`/`DELETE /api/admin/users` routes were (and remain) correctly gated on `canManageUsers` server-side, so this was a page-view gap, not a privilege-escalation one.
+
+| What shipped | Where |
+|---|---|
+| Both pages were `'use client'` components themselves, and `requirePermission` (uses `getServerSession`/`redirect`) can only run in a server component — so each was split into a thin async server `page.tsx` that calls `requirePermission('canManageUsers')` (matching the sibling `/admin/users` list page's own gate) and a client component carrying the exact pre-existing form logic unchanged | `admin/app/admin/users/new/page.tsx` → `admin/components/admin/users/NewUserForm.tsx`; `admin/app/admin/users/[id]/page.tsx` → `admin/components/admin/users/EditUserForm.tsx` |
+
+**Scope decisions:**
+- **No behavior change to the forms themselves** — every field, handler, and API call was moved verbatim into the new client components; only the permission guard and the page/component split are new.
+- **Gated on `canManageUsers`, not `canViewUsers`.** The list page these two sub-pages hang off of already requires `canManageUsers` to reach at all (see Phase 14/this section's own precedent), so a user without it could never have discovered these URLs through the UI in the first place — matching that existing gate keeps the whole `/admin/users/*` area consistent rather than introducing a looser view-only tier here.
+- **Verified via `tsc --noEmit`** (clean in `admin`) — a live-session check wasn't repeated since this reuses the exact same `requirePermission` call already proven working (session-permission-change-takes-effect-immediately, `super_admin` lock, etc.) by this section's original verification pass above.
+
 ## Delivered in Phase 15 — Connect the Showroom QR Flow into the SalesOrder Pipeline
 
 A direct user request following on from the showroom QR walk-in flow (visitor scans a QR →
