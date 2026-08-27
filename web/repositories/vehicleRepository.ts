@@ -224,4 +224,12 @@ export const vehicleRepository = {
       select: { id: true, name: true, finalPrice: true, basePrice: true },
     });
   },
+
+  /** Price lookup for the direct-purchase flow — only active, published vehicles */
+  async findActivePublishedForPurchase(id: string) {
+    return prisma.vehicle.findFirst({
+      where: { id, isActive: true, status: 'published' },
+      select: { id: true, name: true, finalPrice: true, basePrice: true },
+    });
+  },
 };

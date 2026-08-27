@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+import { getOrderPaymentSummary } from '@/lib/services/orders/orderPaymentService';
 
 // Public order/payment summary for the self-service payment page — same
 // "order id as access token" pattern as /api/agreement/[orderId]. Only
@@ -12,21 +12,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id: orderId } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.countersignedAt) {
-    return NextResponse.json({ error: 'This order is not yet ready for payment.' }, { status: 409 });
+  const result = await getOrderPaymentSummary(orderId);
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  return NextResponse.json({
-    id: order.id,
-    orderNo: order.orderNo,
-    customerName: order.customerName,
-    vehicleModel: order.vehicleModel,
-    totalPrice: order.totalPrice,
-    paymentStatus: order.paymentStatus,
-    paymentProofUrl: order.paymentProofUrl,
-  });
+  return NextResponse.json(result.order);
 }

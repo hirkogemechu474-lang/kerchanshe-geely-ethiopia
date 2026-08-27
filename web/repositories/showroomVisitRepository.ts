@@ -42,4 +42,10 @@ export const showroomVisitRepository = {
   async linkQuotation(id: string, quotationId: string) {
     return prisma.showroomVisit.update({ where: { id }, data: { quotationId } });
   },
+
+  /** Best-effort link back to both the quotation and sales order a direct
+   *  purchase produced */
+  async linkQuotationAndOrder(id: string, quotationId: string, salesOrderId: string) {
+    return prisma.showroomVisit.update({ where: { id }, data: { quotationId, salesOrderId } });
+  },
 };
