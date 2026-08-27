@@ -170,3 +170,38 @@ export async function stampHandoverAgentSignatureText(pdfBytes: Uint8Array, agen
 
   return doc.save();
 }
+
+// web-only: stamps the countersigning manager's own on-file signature
+// image (see User.signatureUrl) onto the "Geely Ethiopia Representative &
+// Date" line, plus the date as text — same mechanism as
+// stampAgentSignatureImage in salesAgreementPdf.ts, used instead of
+// stampHandoverAgentSignatureText whenever the countersigning person has
+// a signature on file.
+export async function stampHandoverAgentSignatureImage(pdfBytes: Uint8Array, signatureImageBytes: Uint8Array, date: Date): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(pdfBytes);
+  const page = doc.getPage(0);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+
+  const isPng = signatureImageBytes[0] === 0x89 && signatureImageBytes[1] === 0x50;
+  const image = isPng ? await doc.embedPng(signatureImageBytes) : await doc.embedJpg(signatureImageBytes);
+
+  const targetWidth = HANDOVER_SIGNATURE_AREA.lineWidth;
+  const scale = targetWidth / image.width;
+  const targetHeight = Math.min(image.height * scale, HANDOVER_SIGNATURE_AREA.maxImageHeight);
+
+  page.drawImage(image, {
+    x: HANDOVER_SIGNATURE_AREA.agentLineX,
+    y: HANDOVER_SIGNATURE_AREA.customerLineY + 4,
+    width: targetWidth,
+    height: targetHeight,
+  });
+  page.drawText(date.toLocaleDateString(), {
+    x: HANDOVER_SIGNATURE_AREA.agentLineX + targetWidth + 8,
+    y: HANDOVER_SIGNATURE_AREA.customerLineY + 8,
+    size: 9,
+    font,
+    color: rgb(0.35, 0.35, 0.35),
+  });
+
+  return doc.save();
+}

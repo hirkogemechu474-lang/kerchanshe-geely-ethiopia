@@ -38,6 +38,7 @@ import {
   Gauge,
   ClipboardList,
   LayoutGrid,
+  PenTool,
   UserCog,
   ShieldCheck,
   Sun,
@@ -114,6 +115,7 @@ const navSections: NavSection[] = [
       {
         items: [
           { name: 'User Management', href: '/admin/users', icon: Users, permission: 'canManageUsers' },
+          { name: 'Staff Signatures', href: '/admin/signatures', icon: PenTool, permission: 'canManageUsers' },
         ],
       },
     ],

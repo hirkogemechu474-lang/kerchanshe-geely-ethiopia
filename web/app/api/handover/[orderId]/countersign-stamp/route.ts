@@ -3,28 +3,36 @@ import { writeFile, readFile } from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { resolveUploadUrl } from '@/lib/upload-utils';
-import { stampHandoverAgentSignatureText } from '@/lib/sales/handoverPdf';
+import { stampHandoverAgentSignatureText, stampHandoverAgentSignatureImage } from '@/lib/sales/handoverPdf';
 import { isPdfUrl } from '@/lib/fileType';
 
 // Called server-to-server by
 // admin/app/api/admin/orders/[id]/handover-countersign right after it
 // records handoverCountersignedAt/handoverCountersignedById — mirrors
 // /api/agreement/[orderId]/countersign-stamp exactly, just for the
-// handover confirmation instead of the sales agreement.
+// handover confirmation instead of the sales agreement. Uses the
+// countersigning user's own on-file signature image when they have one,
+// falling back to their typed name otherwise.
 export async function POST(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   const rateLimitResult = await rateLimit(request, rateLimitConfigs.paymentView);
   if (rateLimitResult) return rateLimitResult;
 
   const { orderId } = await params;
   const body = await request.json().catch(() => null);
-  const agentName = typeof body?.agentName === 'string' ? body.agentName.trim() : '';
-  if (!agentName) {
-    return NextResponse.json({ error: 'agentName is required' }, { status: 400 });
+  const agentId = typeof body?.agentId === 'string' ? body.agentId.trim() : '';
+  if (!agentId) {
+    return NextResponse.json({ error: 'agentId is required' }, { status: 400 });
   }
 
-  const order = await prisma.salesOrder.findUnique({ where: { id: orderId } });
+  const [order, agent] = await Promise.all([
+    prisma.salesOrder.findUnique({ where: { id: orderId } }),
+    prisma.user.findUnique({ where: { id: agentId }, select: { name: true, signatureUrl: true } }),
+  ]);
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+  }
+  if (!agent) {
+    return NextResponse.json({ error: 'Countersigning user not found' }, { status: 404 });
   }
   if (!order.handoverSignedDocumentUrl || !order.handoverCountersignedAt) {
     return NextResponse.json({ error: 'This order has no countersigned handover to stamp.' }, { status: 409 });
@@ -40,7 +48,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const bytes = await readFile(filePath);
-    const stamped = await stampHandoverAgentSignatureText(bytes, agentName, order.handoverCountersignedAt);
+    let stamped: Uint8Array;
+    if (agent.signatureUrl) {
+      const signaturePath = resolveUploadUrl(agent.signatureUrl);
+      const signatureBytes = signaturePath ? await readFile(signaturePath) : null;
+      stamped = signatureBytes
+        ? await stampHandoverAgentSignatureImage(bytes, signatureBytes, order.handoverCountersignedAt)
+        : await stampHandoverAgentSignatureText(bytes, agent.name, order.handoverCountersignedAt);
+    } else {
+      stamped = await stampHandoverAgentSignatureText(bytes, agent.name, order.handoverCountersignedAt);
+    }
     await writeFile(filePath, Buffer.from(stamped));
   } catch (error) {
     console.error('[handover:countersign-stamp]', error);

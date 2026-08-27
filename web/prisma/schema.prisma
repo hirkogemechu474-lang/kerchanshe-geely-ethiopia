@@ -21,6 +21,20 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   lastLogin    DateTime?
+  // On-file signature image — drawn/uploaded once via the link an admin
+  // sends (see .../users/[id]/signature-link), then reused automatically
+  // every time this person countersigns an agreement or handover, instead
+  // of only stamping their typed name. signatureSetupToken/ExpiresAt are
+  // that link's one-time, time-limited access token (same shape as
+  // otpCode/otpExpiry above, just link- rather than code-based); cleared
+  // once used. The signature file itself lives on web's disk (uploaded via
+  // web/app/staff-signature/[token], matching every other "email link, no
+  // admin auth required" upload in this codebase — agreement/handover/
+  // quotation signing), so signatureUrl is a web-hosted /uploads/... path.
+  signatureUrl                String?
+  signatureUpdatedAt          DateTime?
+  signatureSetupToken         String?   @unique
+  signatureSetupTokenExpiresAt DateTime?
 }
 
 // Per-role permission overrides on top of the hardcoded defaults in
@@ -119,6 +133,7 @@ model Vehicle {
   packages         VehiclePackage[]
   interiors        VehicleInterior[]
   wheels           VehicleWheel[]
+  allocations      VehicleAllocation[]
 }
 
 // Test Drives
@@ -406,6 +421,7 @@ model SalesOrder {
   pdiItems        PdiChecklistItem[]
   statusHistory   SalesOrderStatusHistory[]
   testDrives      TestDrive[]
+  vehicleAllocation VehicleAllocation?
 
   @@index([status])
 }
@@ -1173,55 +1189,6 @@ model VehicleWheel {
   @@index([vehicleId])
 }
 
-// Dynamic Mega Menu System
-model MegaMenuSection {
-  id           String         @id @default(uuid())
-  name         String // e.g., "Electric", "Services"
-  slug         String         @unique // e.g., "electric", "services"
-  description  String?
-  isActive     Boolean        @default(true)
-  displayOrder Int            @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  categories   MenuCategory[]
-}
-
-model MenuCategory {
-  id           String          @id @default(uuid())
-  sectionId    String
-  section      MegaMenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  title        String // e.g., "Models", "Charging", "Benefits"
-  slug         String
-  description  String?
-  iconUrl      String?
-  isActive     Boolean         @default(true)
-  displayOrder Int             @default(0)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  items        MenuItem[]
-}
-
-model MenuItem {
-  id            String       @id @default(uuid())
-  categoryId    String
-  category      MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  title         String // e.g., "Test Drive", "Geometry EX5"
-  subtitle      String? // Short description
-  description   String? // Longer description
-  iconUrl       String?
-  imageUrl      String?
-  url           String? // Direct URL or route
-  pageReference String? // Reference to CMS page or vehicle
-  referenceType String? // "vehicle", "page", "custom"
-  referenceId   String? // ID of the referenced item
-  isFeatured    Boolean      @default(false)
-  isActive      Boolean      @default(true)
-  displayOrder  Int          @default(0)
-  openInNewTab  Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
 // Services Menu System
 model ServiceSection {
   id           String        @id @default(uuid())
@@ -1459,4 +1426,32 @@ model SiteNavItem {
   updatedAt     DateTime         @updatedAt
 
   @@index([placement, isActive, displayOrder])
+}
+
+enum VehicleAllocationStatus {
+  RESERVED
+  ALLOCATED
+  RELEASED
+  DELIVERED
+}
+
+// Local allocation ledger prepared for a future ERP/OEM connector.
+model VehicleAllocation {
+  id            String                  @id @default(uuid())
+  orderId       String                  @unique
+  vehicleId     String
+  vin           String?
+  status        VehicleAllocationStatus @default(RESERVED)
+  erpSystem     String?
+  erpReference  String?
+  allocatedAt   DateTime                @default(now())
+  releasedAt    DateTime?
+  allocatedById String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  order         SalesOrder              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle                 @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  @@index([vehicleId, status])
+  @@index([vin])
 }

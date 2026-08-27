@@ -6,6 +6,7 @@ import { ArrowLeft, Save, User, Mail, Lock, Shield, Building } from 'lucide-reac
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
+import { ROLE_OPTIONS } from '@/lib/auth/roleDescriptions';
 
 export default function NewUserForm() {
   const router = useRouter();
@@ -203,18 +204,9 @@ export default function NewUserForm() {
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
-              <option value="super_admin">Super Admin - Full system access</option>
-              <option value="manager">Manager - Manage most operations</option>
-              <option value="sales">Sales - Handle sales & quotations</option>
-              <option value="service">Service - Manage service bookings</option>
-              <option value="marketing">Marketing - Content & promotions</option>
-              <option value="service_advisor">Service Advisor - Job cards & write-up</option>
-              <option value="service_manager">Service Manager - Workshop, bays & QC</option>
-              <option value="gm_geely">GM-Geely - Cross-department oversight</option>
-              <option value="sales_manager">Sales Manager - Oversees sales reps</option>
-              <option value="after_sales_manager">After Sales Manager - Workshop, parts & warranty</option>
-              <option value="sales_representative">Sales Representative - Quotations & test drives</option>
-              <option value="workshop_manager">Workshop Manager - Bays, technicians & QC</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             <RolePermissionPreview role={formData.role} />
           </div>

@@ -179,3 +179,39 @@ export async function stampAgentSignatureText(pdfBytes: Uint8Array, agentName: s
 
   return doc.save();
 }
+
+// web-only: stamps the countersigning manager's own on-file signature
+// image (see User.signatureUrl, set once via
+// web/app/staff-signature/[token]) onto the "Sales Agent Signature &
+// Date" line, plus the date as text below it — same mechanism as
+// stampSignatureOnPdf's customer-signature embedding, just at the agent
+// line, and used instead of stampAgentSignatureText whenever the
+// countersigning person has a signature on file.
+export async function stampAgentSignatureImage(pdfBytes: Uint8Array, signatureImageBytes: Uint8Array, date: Date): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(pdfBytes);
+  const page = doc.getPage(0);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+
+  const isPng = signatureImageBytes[0] === 0x89 && signatureImageBytes[1] === 0x50;
+  const image = isPng ? await doc.embedPng(signatureImageBytes) : await doc.embedJpg(signatureImageBytes);
+
+  const targetWidth = SIGNATURE_AREA.lineWidth;
+  const scale = targetWidth / image.width;
+  const targetHeight = Math.min(image.height * scale, SIGNATURE_AREA.maxImageHeight);
+
+  page.drawImage(image, {
+    x: SIGNATURE_AREA.agentLineX,
+    y: SIGNATURE_AREA.customerLineY + 4,
+    width: targetWidth,
+    height: targetHeight,
+  });
+  page.drawText(date.toLocaleDateString(), {
+    x: SIGNATURE_AREA.agentLineX + targetWidth + 8,
+    y: SIGNATURE_AREA.customerLineY + 8,
+    size: 9,
+    font,
+    color: rgb(0.35, 0.35, 0.35),
+  });
+
+  return doc.save();
+}

@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
+        signatureUrl: true,
+        signatureUpdatedAt: true,
       },
     });
 

@@ -6,6 +6,7 @@ import { ArrowLeft, Save, User, Mail, Shield, Building, Trash2 } from 'lucide-re
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
+import { ROLE_OPTIONS } from '@/lib/auth/roleDescriptions';
 
 export default function EditUserForm({ id }: { id: string }) {
   const router = useRouter();
@@ -206,13 +207,9 @@ export default function EditUserForm({ id }: { id: string }) {
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             >
-              <option value="super_admin">Super Admin - Full system access</option>
-              <option value="manager">Manager - Manage most operations</option>
-              <option value="sales">Sales - Handle sales & quotations</option>
-              <option value="service">Service - Manage service bookings</option>
-              <option value="marketing">Marketing - Content & promotions</option>
-              <option value="service_advisor">Service Advisor - Job cards & write-up</option>
-              <option value="service_manager">Service Manager - Workshop, bays & QC</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             <RolePermissionPreview role={formData.role} />
           </div>

@@ -57,15 +57,17 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     data: { countersignedAt: new Date(), countersignedById: session!.user.id },
   });
 
-  // Stamps the manager's name + date onto the "Sales Agent Signature &
-  // Date" line of the already-saved signed PDF, which lives on web's disk
-  // — best-effort, never blocks the countersign itself on a network hiccup.
+  // Stamps the manager's own on-file signature (or their typed name, if
+  // they haven't set one up yet — see /admin/signatures) onto the "Sales
+  // Agent Signature & Date" line of the already-saved signed PDF, which
+  // lives on web's disk — best-effort, never blocks the countersign
+  // itself on a network hiccup.
   try {
     const siteUrl = env.app.url.replace(/\/$/, '');
     await fetch(`${siteUrl}/api/agreement/${id}/countersign-stamp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentName: session!.user.name }),
+      body: JSON.stringify({ agentId: session!.user.id }),
     });
   } catch (stampError) {
     console.error('[orders:countersign:stamp]', stampError);

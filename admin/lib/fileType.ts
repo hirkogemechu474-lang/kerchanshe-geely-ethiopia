@@ -19,7 +19,13 @@ export function isPdfUrl(url: string): boolean {
 // that's admin's own staff "Attach Signed Copy" upload
 // (OrderApprovalPanel.tsx), which lives in admin's own public/uploads and
 // must stay relative.
-const WEB_OWNED_UPLOAD_PREFIXES = ['/uploads/signed-agreements/', '/uploads/signed-quotations/', '/uploads/payment-proofs/'];
+const WEB_OWNED_UPLOAD_PREFIXES = [
+  '/uploads/signed-agreements/',
+  '/uploads/signed-quotations/',
+  '/uploads/signed-handovers/',
+  '/uploads/payment-proofs/',
+  '/uploads/staff-signatures/',
+];
 
 export function resolveDocumentUrl(url: string, webAppUrl: string): string {
   if (WEB_OWNED_UPLOAD_PREFIXES.some((prefix) => url.startsWith(prefix))) {
