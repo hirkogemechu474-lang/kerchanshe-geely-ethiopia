@@ -39,4 +39,11 @@ export const testDriveRepository = {
   async create(data: Prisma.TestDriveCreateInput) {
     return prisma.testDrive.create({ data, include: { vehicle: true } });
   },
+
+  async findByReferenceForStatus(reference: string) {
+    return prisma.testDrive.findUnique({
+      where: { reference },
+      select: { status: true, createdAt: true },
+    });
+  },
 };

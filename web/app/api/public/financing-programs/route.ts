@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { financingRepository } from '@/repositories/financingRepository';
 
 // GET /api/public/financing-programs
 // Query params:
@@ -13,40 +13,7 @@ export async function GET(req: NextRequest) {
     const bankId = searchParams.get('bankId') || undefined;
     const categoryId = searchParams.get('categoryId') || undefined;
 
-    const programs = await prisma.financingProgram.findMany({
-      where: {
-        status: 'PUBLISHED',
-        ...(bankId ? { bankId } : {}),
-        ...(vehicleId
-          ? {
-              OR: [
-                { appliesToAllVehicles: true },
-                { vehicleId },
-                ...(categoryId ? [{ vehicleCategoryId: categoryId }] : []),
-              ],
-            }
-          : categoryId
-          ? { OR: [{ appliesToAllVehicles: true }, { vehicleCategoryId: categoryId }] }
-          : {}),
-      },
-      orderBy: [{ displayOrder: 'asc' }, { interestRate: 'asc' }],
-      include: {
-        bank: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logoUrl: true,
-            websiteUrl: true,
-            phoneNumber: true,
-            email: true,
-            branchAddress: true,
-          },
-        },
-        vehicle: { select: { id: true, name: true, slug: true, basePrice: true, finalPrice: true } },
-        vehicleCategory: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    const programs = await financingRepository.findPublishedPrograms({ vehicleId, bankId, categoryId });
 
     const sanitized = programs.map(p => ({
       ...p,

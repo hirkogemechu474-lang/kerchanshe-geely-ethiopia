@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { redirectRepository } from '@/repositories/redirectRepository';
 
 /**
  * POST /api/redirects/hit
@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing id' }, { status: 400 });
   }
 
-  prisma.redirect
-    .update({ where: { id }, data: { hitCount: { increment: 1 } } })
-    .catch(() => {});
+  redirectRepository.incrementHitCount(id).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

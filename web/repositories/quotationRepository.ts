@@ -49,4 +49,11 @@ export const quotationRepository = {
   async updateStatus(id: string, status: string) {
     return prisma.quotation.update({ where: { id }, data: { status } });
   },
+
+  async findByReferenceForStatus(reference: string) {
+    return prisma.quotation.findUnique({
+      where: { reference },
+      select: { status: true, createdAt: true, vehicleModel: true, quotationNo: true },
+    });
+  },
 };

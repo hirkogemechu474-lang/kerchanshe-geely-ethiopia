@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { redirectRepository } from '@/repositories/redirectRepository';
 
 /**
  * GET /api/redirects/list
@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const redirects = await prisma.redirect.findMany({
-      where: { isActive: true },
-      select: { id: true, fromPath: true, toPath: true, statusCode: true },
-    });
+    const redirects = await redirectRepository.findActive();
 
     return NextResponse.json({ redirects });
   } catch (err) {

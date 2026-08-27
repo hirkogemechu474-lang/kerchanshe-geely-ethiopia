@@ -232,4 +232,14 @@ export const vehicleRepository = {
       select: { id: true, name: true, finalPrice: true, basePrice: true },
     });
   },
+
+  /** CRM lead intake: match by id if given, else by name/slug from free text */
+  async findByIdOrNameOrSlug(params: { id?: string; nameOrSlug?: string }) {
+    return prisma.vehicle.findFirst({
+      where: params.id
+        ? { id: params.id }
+        : { OR: [{ name: params.nameOrSlug || '' }, { slug: params.nameOrSlug || '' }] },
+      select: { id: true, name: true },
+    });
+  },
 };

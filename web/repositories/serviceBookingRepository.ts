@@ -32,4 +32,11 @@ export const serviceBookingRepository = {
       orderBy: { date: 'asc' },
     });
   },
+
+  async findByReferenceForStatus(reference: string) {
+    return prisma.serviceBooking.findUnique({
+      where: { reference },
+      select: { status: true, createdAt: true, serviceType: true },
+    });
+  },
 };
