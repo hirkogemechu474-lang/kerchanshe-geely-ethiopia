@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
-import { buildSalesQuotationPdf, computeQuotationTotals } from '@/lib/sales/salesQuotationPdf';
+import { buildSalesQuotationPdf, computeQuotationTotals } from '@/lib/services/sales/salesQuotationPdf';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
 

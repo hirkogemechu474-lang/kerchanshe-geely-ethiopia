@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextOrderNo } from '@/lib/sales/orderNumber';
-import { PDI_CHECKLIST_TEMPLATE } from '@/lib/sales/pdiChecklistTemplate';
+import { nextOrderNo } from '@/lib/services/sales/orderNumber';
+import { PDI_CHECKLIST_TEMPLATE } from '@/lib/services/sales/pdiChecklistTemplate';
 import type { OrderStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {

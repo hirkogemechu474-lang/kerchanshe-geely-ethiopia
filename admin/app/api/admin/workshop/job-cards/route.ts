@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextJobCardNo } from '@/lib/workshop/jobCardNumber';
-import { findBayConflict } from '@/lib/workshop/bayConflict';
+import { nextJobCardNo } from '@/lib/services/workshop/jobCardNumber';
+import { findBayConflict } from '@/lib/services/workshop/bayConflict';
 import type { JobCardStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {

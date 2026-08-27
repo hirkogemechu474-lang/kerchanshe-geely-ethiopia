@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { assertTransitionAllowed, JobCardTransitionError } from '@/lib/workshop/jobCardStateMachine';
-import { sendJobCardMilestoneNotification } from '@/lib/workshop/customerNotifications';
-import { sendCsiSurveyInvite } from '@/lib/workshop/csiSurvey';
+import { assertTransitionAllowed, JobCardTransitionError } from '@/lib/services/workshop/jobCardStateMachine';
+import { sendJobCardMilestoneNotification } from '@/lib/services/workshop/customerNotifications';
+import { sendCsiSurveyInvite } from '@/lib/services/workshop/csiSurvey';
 import type { JobCardStatus } from '@prisma/client';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

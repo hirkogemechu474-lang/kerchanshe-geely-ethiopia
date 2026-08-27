@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { getWorkshopBiTrend } from '@/lib/workshop/biSummary';
+import { getWorkshopBiTrend } from '@/lib/services/workshop/biSummary';
 
 // Multi-month view of the same KPIs as /api/admin/workshop/bi-dashboard —
 // the dashboard was snapshot-only (one month at a time); this adds the

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Badge, type Tone } from '@/components/admin/ui';
-import { COMMISSION_STATUS_LABELS } from '@/lib/sales/orderStateMachine';
+import { COMMISSION_STATUS_LABELS } from '@/lib/services/sales/orderStateMachine';
 import { Percent } from 'lucide-react';
 
 // Commission is earned automatically when the order is DELIVERED (see

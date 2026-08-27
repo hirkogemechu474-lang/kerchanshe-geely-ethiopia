@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile, Pagination } from '@/components/admin/ui';
-import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/lib/sales/orderStateMachine';
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/lib/services/sales/orderStateMachine';
 import { ClipboardList, Truck, Hourglass, CheckCircle2 } from 'lucide-react';
 
 const PAGE_SIZE = 25;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextClaimNo } from '@/lib/workshop/jobCardNumber';
+import { nextClaimNo } from '@/lib/services/workshop/jobCardNumber';
 import type { WarrantyClaimStatus } from '@prisma/client';
 
 // UC-09: list warranty claims, optionally filtered by status.

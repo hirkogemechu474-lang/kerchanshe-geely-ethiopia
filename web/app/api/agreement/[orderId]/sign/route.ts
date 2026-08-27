@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { UPLOADS_ROOT, resolveUploadUrl } from '@/lib/upload-utils';
-import { buildSalesAgreementPdf, stampSignatureOnPdf } from '@/lib/sales/salesAgreementPdf';
+import { buildSalesAgreementPdf, stampSignatureOnPdf } from '@/lib/services/sales/salesAgreementPdf';
 import { env } from '@/lib/env';
 
 // Public — completes the self-service "e-sign or attach" step. Two ways

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
-import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/workshop/jobCardStateMachine';
+import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/services/workshop/jobCardStateMachine';
 import { Card, Button, Modal, ModalActions } from '@/components/admin/ui';
 
 const DAY_START_HOUR = 8;

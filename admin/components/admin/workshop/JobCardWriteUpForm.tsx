@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
-import { JOB_CARD_STATUS_LABELS } from '@/lib/workshop/jobCardStateMachine';
+import { JOB_CARD_STATUS_LABELS } from '@/lib/services/workshop/jobCardStateMachine';
 
 interface Technician { id: string; name: string }
 interface Bay { id: string; name: string; bayType: string }

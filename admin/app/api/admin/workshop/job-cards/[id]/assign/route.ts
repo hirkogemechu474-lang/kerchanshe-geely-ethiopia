@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { findBayConflict } from '@/lib/workshop/bayConflict';
+import { findBayConflict } from '@/lib/services/workshop/bayConflict';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();

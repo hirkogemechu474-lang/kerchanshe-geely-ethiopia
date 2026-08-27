@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { buildHandoverPdf } from '@/lib/sales/handoverPdf';
+import { buildHandoverPdf } from '@/lib/services/sales/handoverPdf';
 
 // Public — same access-token pattern as the agreement PDF route. Always
 // renders the unsigned base handover confirmation live from current order

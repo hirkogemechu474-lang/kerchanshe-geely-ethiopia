@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { getWorkshopSummary } from '@/lib/workshop/dashboardSummary';
+import { getWorkshopSummary } from '@/lib/services/workshop/dashboardSummary';
 
 // Payment, agreement, and handover progress across every SalesOrder —
 // requested as "all report for payment and also on agreement and also on

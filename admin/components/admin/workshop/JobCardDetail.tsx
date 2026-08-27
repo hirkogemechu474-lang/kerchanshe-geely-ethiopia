@@ -7,11 +7,11 @@ import {
   getAllowedTransitions,
   JOB_CARD_STATUS_COLORS,
   JOB_CARD_STATUS_LABELS,
-} from '@/lib/workshop/jobCardStateMachine';
+} from '@/lib/services/workshop/jobCardStateMachine';
 import {
   WARRANTY_CLAIM_STATUS_COLORS,
   WARRANTY_CLAIM_STATUS_LABELS,
-} from '@/lib/workshop/warrantyClaimStateMachine';
+} from '@/lib/services/workshop/warrantyClaimStateMachine';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { Card, Button, LinkButton } from '@/components/admin/ui';
 

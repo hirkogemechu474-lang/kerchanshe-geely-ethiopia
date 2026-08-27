@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { issueJobCardPart, backorderJobCardPart, cancelJobCardPart, PartsIssueError } from '@/lib/workshop/partsIssue';
+import { issueJobCardPart, backorderJobCardPart, cancelJobCardPart, PartsIssueError } from '@/lib/services/workshop/partsIssue';
 
 // FR-401 (UC-07): issue (barcode scan), backorder, or cancel a requested
 // part line. Gated on canManagePartsIssue — a distinct, parts-counter action

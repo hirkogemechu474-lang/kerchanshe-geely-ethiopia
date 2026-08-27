@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { buildSalesAgreementPdf } from '@/lib/sales/salesAgreementPdf';
+import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
 

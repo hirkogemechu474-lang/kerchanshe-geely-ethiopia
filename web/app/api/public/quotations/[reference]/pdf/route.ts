@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { buildSalesQuotationPdf } from '@/lib/sales/salesQuotationPdf';
+import { buildSalesQuotationPdf } from '@/lib/services/sales/salesQuotationPdf';
 
 // Public "display by link" view of a formal sales quotation — looked up by
 // the customer-facing reference (GY-SQ-...), not the raw row id, matching

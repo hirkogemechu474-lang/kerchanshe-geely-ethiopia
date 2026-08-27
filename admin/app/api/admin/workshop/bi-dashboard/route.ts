@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { getWorkshopBiSummary, resolveMonthPeriod, type WorkshopBiSummary } from '@/lib/workshop/biSummary';
+import { getWorkshopBiSummary, resolveMonthPeriod, type WorkshopBiSummary } from '@/lib/services/workshop/biSummary';
 
 // Management BI Dashboard (BRD Screen 8 / FR-702–704). JSON by default;
 // ?format=csv streams a one-click export (FR-704), gated separately on

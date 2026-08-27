@@ -3,7 +3,7 @@ import { writeFile, readFile } from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { resolveUploadUrl } from '@/lib/upload-utils';
-import { stampHandoverAgentSignatureText, stampHandoverAgentSignatureImage } from '@/lib/sales/handoverPdf';
+import { stampHandoverAgentSignatureText, stampHandoverAgentSignatureImage } from '@/lib/services/sales/handoverPdf';
 import { isPdfUrl } from '@/lib/fileType';
 
 // Called server-to-server by

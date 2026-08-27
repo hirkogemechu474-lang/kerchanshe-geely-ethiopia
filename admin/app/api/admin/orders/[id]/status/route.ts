@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { assertOrderTransitionAllowed, OrderTransitionError } from '@/lib/sales/orderStateMachine';
+import { assertOrderTransitionAllowed, OrderTransitionError } from '@/lib/services/sales/orderStateMachine';
 import type { OrderStatus } from '@prisma/client';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

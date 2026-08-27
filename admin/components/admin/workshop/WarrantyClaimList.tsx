@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { WARRANTY_CLAIM_STATUS_COLORS, WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/workshop/warrantyClaimStateMachine';
+import { WARRANTY_CLAIM_STATUS_COLORS, WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
 import { Card, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow } from '@/components/admin/ui';
 
 interface WarrantyClaimRow {

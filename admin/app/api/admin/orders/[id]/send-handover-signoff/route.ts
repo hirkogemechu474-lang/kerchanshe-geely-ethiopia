@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { buildHandoverPdf } from '@/lib/sales/handoverPdf';
+import { buildHandoverPdf } from '@/lib/services/sales/handoverPdf';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
 

@@ -4,7 +4,7 @@ import { rateLimit, rateLimitConfigs } from "@/lib/rate-limit";
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
-import { PDI_CHECKLIST_TEMPLATE } from "@/lib/sales/pdiChecklistTemplate";
+import { PDI_CHECKLIST_TEMPLATE } from "@/lib/services/sales/pdiChecklistTemplate";
 import { generateReference, REFERENCE_CATEGORY } from "@/lib/reference";
 
 // Most mail clients (Gmail included) won't fetch an <img src> pointing at

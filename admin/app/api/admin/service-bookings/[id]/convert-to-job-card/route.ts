@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextJobCardNo } from '@/lib/workshop/jobCardNumber';
+import { nextJobCardNo } from '@/lib/services/workshop/jobCardNumber';
 
 // Converts an existing web-submitted ServiceBooking lead into a workshop
 // JobCard, preserving the original booking record and linking the two.

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
 import { OverviewTile, RankedBarChart, StatusBarChart } from '@/components/admin/analytics/AnalyticsCharts';
-import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/workshop/warrantyClaimStateMachine';
+import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
 
 const WARRANTY_STATUS_FILL: Record<string, string> = {
   DRAFTED: 'bg-gray-400 dark:bg-gray-500',

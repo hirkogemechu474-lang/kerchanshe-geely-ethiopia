@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/workshop/jobCardStateMachine';
+import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/services/workshop/jobCardStateMachine';
 import { Card, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow } from '@/components/admin/ui';
 
 interface JobCardRow {

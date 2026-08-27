@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { buildSalesAgreementPdf } from '@/lib/sales/salesAgreementPdf';
+import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
 
 /**
  * GET /api/admin/orders/[id]/agreement

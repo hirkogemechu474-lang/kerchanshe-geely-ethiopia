@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Gauge, ClipboardList, Timer, Hourglass, PackageSearch } from 'lucide-react';
-import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/workshop/jobCardStateMachine';
+import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/services/workshop/jobCardStateMachine';
 import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile } from '@/components/admin/ui';
 
 const REFRESH_MS = 30_000;

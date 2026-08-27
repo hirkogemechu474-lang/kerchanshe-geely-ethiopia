@@ -23,7 +23,7 @@ export interface CsiSurveyDispatchResult {
 }
 
 function resolveWebBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_WEB_URL || process.env.WEB_URL || 'http://localhost:3002').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_WEB_URL || process.env.WEB_URL || 'http://localhost:7501').replace(/\/$/, '');
 }
 
 export async function sendCsiSurveyInvite(jobCard: CsiSurveyJobCard): Promise<CsiSurveyDispatchResult> {

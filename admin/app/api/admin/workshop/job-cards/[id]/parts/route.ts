@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { requestJobCardPart, PartsIssueError } from '@/lib/workshop/partsIssue';
+import { requestJobCardPart, PartsIssueError } from '@/lib/services/workshop/partsIssue';
 
 // FR-401/402 (UC-07): request a part against a job card. Reserves stock
 // (SparePart.reservedQty) but does not touch on-hand stock — that happens at

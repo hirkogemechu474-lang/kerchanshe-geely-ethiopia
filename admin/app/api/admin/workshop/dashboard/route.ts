@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { getWorkshopSummary } from '@/lib/workshop/dashboardSummary';
+import { getWorkshopSummary } from '@/lib/services/workshop/dashboardSummary';
 
 // Workshop Live Dashboard (BRD Screen 1 / FR-701): bays busy/total, jobs
 // today, average turnaround, pending-approval count, bay tiles, today's job

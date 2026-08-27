@@ -10,7 +10,7 @@ import {
   WarrantyClaimTransitionError,
   WARRANTY_CLAIM_STATUS_COLORS,
   WARRANTY_CLAIM_STATUS_LABELS,
-} from '@/lib/workshop/warrantyClaimStateMachine';
+} from '@/lib/services/workshop/warrantyClaimStateMachine';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { Card, Button } from '@/components/admin/ui';
 

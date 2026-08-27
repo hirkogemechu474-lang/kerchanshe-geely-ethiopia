@@ -5,7 +5,7 @@ import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { UPLOADS_ROOT } from '@/lib/upload-utils';
-import { buildSalesQuotationPdf, stampSignatureOnQuotationPdf } from '@/lib/sales/salesQuotationPdf';
+import { buildSalesQuotationPdf, stampSignatureOnQuotationPdf } from '@/lib/services/sales/salesQuotationPdf';
 
 // Public — customer e-signs (or attaches a photo of a signed printout of)
 // the Sales Quotation PDF, mirroring web/app/api/agreement/[orderId]/sign/route.ts's

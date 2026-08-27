@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { buildSalesAgreementPdf } from '@/lib/sales/salesAgreementPdf';
+import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
 
 // Public — same access-token pattern as the summary route. Always renders
 // the unsigned base agreement live from current order data (matches

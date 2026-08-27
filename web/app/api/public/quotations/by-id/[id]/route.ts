@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { computeQuotationTotals } from '@/lib/sales/salesQuotationPdf';
+import { computeQuotationTotals } from '@/lib/services/sales/salesQuotationPdf';
 
 // Public quotation price summary, looked up by the raw row id (the `quote`
 // query param used by /financing/apply and the two places that generate

@@ -3,7 +3,7 @@ import { writeFile, readFile } from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
 import { resolveUploadUrl } from '@/lib/upload-utils';
-import { stampAgentSignatureText, stampAgentSignatureImage } from '@/lib/sales/salesAgreementPdf';
+import { stampAgentSignatureText, stampAgentSignatureImage } from '@/lib/services/sales/salesAgreementPdf';
 import { isPdfUrl } from '@/lib/fileType';
 
 // Called server-to-server by admin/app/api/admin/orders/[id]/countersign

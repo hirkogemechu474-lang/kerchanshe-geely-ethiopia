@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextInvoiceNo } from '@/lib/sales/orderNumber';
-import { buildSalesInvoicePdf } from '@/lib/sales/salesInvoicePdf';
+import { nextInvoiceNo } from '@/lib/services/sales/orderNumber';
+import { buildSalesInvoicePdf } from '@/lib/services/sales/salesInvoicePdf';
 import { sendStatusEmail } from '@/lib/status-email';
 
 /**
