@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { testDriveRepository } from '@/repositories/testDriveRepository';
 
 // GET - Fetch all test drives
 export async function GET(request: NextRequest) {
@@ -8,9 +8,7 @@ export async function GET(request: NextRequest) {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const testDrives = await prisma.testDrive.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const testDrives = await testDriveRepository.findAll();
 
     return NextResponse.json({ testDrives });
   } catch (error) {
@@ -53,20 +51,18 @@ export async function POST(request: NextRequest) {
       alternativeDateTime = new Date(`${alternativeDate}T${convertTo24Hour(alternativeTime)}`);
     }
 
-    const testDrive = await prisma.testDrive.create({
-      data: {
-        customerName,
-        customerEmail,
-        customerPhone,
-        vehicleId,
-        preferredDate: preferredDateTime,
-        preferredTime,
-        alternativeDate: alternativeDateTime,
-        location,
-        salesRepId: assignedTo || null,
-        specialRequests,
-        status: status || 'pending',
-      },
+    const testDrive = await testDriveRepository.create({
+      customerName,
+      customerEmail,
+      customerPhone,
+      vehicle: { connect: { id: vehicleId } },
+      preferredDate: preferredDateTime,
+      preferredTime,
+      alternativeDate: alternativeDateTime,
+      location,
+      salesRepId: assignedTo || null,
+      specialRequests,
+      status: status || 'pending',
     });
 
     return NextResponse.json({ testDrive }, { status: 201 });
@@ -80,12 +76,12 @@ export async function POST(request: NextRequest) {
 function convertTo24Hour(time: string): string {
   const [timePart, period] = time.split(' ');
   let [hours, minutes] = timePart.split(':').map(Number);
-  
+
   if (period === 'PM' && hours !== 12) {
     hours += 12;
   } else if (period === 'AM' && hours === 12) {
     hours = 0;
   }
-  
+
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 }

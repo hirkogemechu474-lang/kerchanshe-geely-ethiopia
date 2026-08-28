@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextJobCardNo } from '@/lib/services/workshop/jobCardNumber';
+import { convertBookingToJobCard } from '@/lib/services/serviceBookings/convertToJobCardService';
 
 // Converts an existing web-submitted ServiceBooking lead into a workshop
 // JobCard, preserving the original booking record and linking the two.
@@ -15,39 +14,11 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
 
-  const booking = await prisma.serviceBooking.findUnique({
-    where: { id },
-    include: { jobCard: true },
-  });
+  const result = await convertBookingToJobCard(id, session!.user.id);
 
-  if (!booking) {
-    return NextResponse.json({ error: 'Service booking not found' }, { status: 404 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  if (booking.jobCard) {
-    return NextResponse.json(
-      { error: `Already converted to job card ${booking.jobCard.jobCardNo}` },
-      { status: 409 }
-    );
-  }
-
-  const jobCardNo = await nextJobCardNo();
-
-  const jobCard = await prisma.jobCard.create({
-    data: {
-      jobCardNo,
-      plateNo: booking.vehicleInfo,
-      customerName: booking.customerName,
-      customerPhone: booking.customerPhone,
-      customerEmail: booking.customerEmail,
-      complaintText: booking.notes || booking.serviceType,
-      status: 'DRAFT_CHECKIN',
-      serviceBookingId: booking.id,
-      statusHistory: {
-        create: { fromStatus: null, toStatus: 'DRAFT_CHECKIN', changedById: session!.user.id },
-      },
-    },
-  });
-
-  return NextResponse.json({ jobCard }, { status: 201 });
+  return NextResponse.json({ jobCard: result.jobCard }, { status: 201 });
 }

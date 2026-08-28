@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { showroomVisitRepository } from '@/repositories/showroomVisitRepository';
 
 // GET - Paginated showroom QR walk-in visits, optionally filtered by
 // status. Status counts are computed across the whole table (not just the
@@ -16,16 +16,7 @@ export async function GET(request: NextRequest) {
   const pageSize = 25;
   const where = status ? { status } : undefined;
 
-  const [visits, total, statusCounts] = await Promise.all([
-    prisma.showroomVisit.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.showroomVisit.count({ where }),
-    prisma.showroomVisit.groupBy({ by: ['status'], _count: true }),
-  ]);
+  const [visits, total, statusCounts] = await showroomVisitRepository.findPage(where, (page - 1) * pageSize, pageSize);
 
   const countFor = (s: string) => statusCounts.find((c) => c.status === s)?._count ?? 0;
 
