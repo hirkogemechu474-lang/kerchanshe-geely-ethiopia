@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { requestJobCardPart, PartsIssueError } from '@/lib/services/workshop/partsIssue';
+import { requestPart } from '@/lib/services/workshop/jobCardPartsService';
 
 // FR-401/402 (UC-07): request a part against a job card. Reserves stock
 // (SparePart.reservedQty) but does not touch on-hand stock — that happens at
@@ -22,31 +21,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     isWarranty?: boolean;
   };
 
-  if (!sparePartId || !quantity) {
-    return NextResponse.json({ error: 'sparePartId and quantity are required' }, { status: 400 });
+  const result = await requestPart(jobCardId, { sparePartId, quantity, isWarranty }, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  const jobCard = await prisma.jobCard.findUnique({ where: { id: jobCardId } });
-  if (!jobCard) {
-    return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
-  }
-
-  try {
-    const line = await prisma.$transaction((tx) =>
-      requestJobCardPart(tx, {
-        jobCardId,
-        sparePartId,
-        quantity: Number(quantity),
-        isWarranty: Boolean(isWarranty),
-        requestedById: session!.user.id,
-      })
-    );
-    return NextResponse.json({ jobCardPart: line }, { status: 201 });
-  } catch (error) {
-    if (error instanceof PartsIssueError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    console.error('Error requesting job card part:', error);
-    return NextResponse.json({ error: 'Failed to request part' }, { status: 500 });
-  }
+  return NextResponse.json({ jobCardPart: result.line }, { status: 201 });
 }

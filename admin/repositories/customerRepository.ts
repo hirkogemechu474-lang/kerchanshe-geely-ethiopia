@@ -64,4 +64,37 @@ export const customerRepository = {
   async updateVehicle(id: string, data: Prisma.CustomerVehicleUpdateInput) {
     return prisma.customerVehicle.update({ where: { id }, data });
   },
+
+  async findVehicleById(id: string) {
+    return prisma.customerVehicle.findUnique({ where: { id } });
+  },
+
+  // UC-04 / FR-201: look up a vehicle by plate or VIN, with its recent
+  // service history, for the workshop check-in flow.
+  async findVehicleByVinOrPlateWithHistory(vin: string | undefined, plate: string | undefined) {
+    return prisma.customerVehicle.findFirst({
+      where: vin ? { vin: { equals: vin, mode: 'insensitive' } } : { plateNo: { equals: plate!, mode: 'insensitive' } },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        customer: { select: { id: true, fullName: true, phone: true, email: true } },
+        jobCards: {
+          orderBy: { openTs: 'desc' },
+          take: 10,
+          select: { id: true, jobCardNo: true, status: true, complaintText: true, openTs: true, closeTs: true },
+        },
+      },
+    });
+  },
+
+  async findByPhone(phone: string) {
+    return prisma.customer.findFirst({ where: { phone } });
+  },
+
+  async create(data: Prisma.CustomerCreateInput) {
+    return prisma.customer.create({ data });
+  },
+
+  async createVehicle(data: Prisma.CustomerVehicleCreateInput) {
+    return prisma.customerVehicle.create({ data });
+  },
 };

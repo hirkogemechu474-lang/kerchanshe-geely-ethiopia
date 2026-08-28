@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { updateTechnician, deactivateTechnician } from '@/lib/services/workshop/technicianService';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -13,18 +13,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, phone, skillLevel, certificationLevel, isActive } = body;
 
-    const technician = await prisma.technician.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(phone !== undefined && { phone }),
-        ...(skillLevel !== undefined && { skillLevel }),
-        ...(certificationLevel !== undefined && { certificationLevel }),
-        ...(isActive !== undefined && { isActive }),
-      },
-    });
+    const technician = await updateTechnician(id, body);
 
     return NextResponse.json({ technician });
   } catch (error) {
@@ -45,10 +35,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const { id } = await params;
     // Soft-deactivate rather than hard-delete: a technician with historical
     // job cards must remain resolvable in JobCard.technician relations.
-    const technician = await prisma.technician.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    const technician = await deactivateTechnician(id);
 
     return NextResponse.json({ technician });
   } catch (error) {

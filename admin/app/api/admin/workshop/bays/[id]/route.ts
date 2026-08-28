@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { updateBay, deactivateBay } from '@/lib/services/workshop/bayService';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -13,17 +13,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, bayType, status, isActive } = body;
 
-    const bay = await prisma.serviceBay.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(bayType !== undefined && { bayType }),
-        ...(status !== undefined && { status }),
-        ...(isActive !== undefined && { isActive }),
-      },
-    });
+    const bay = await updateBay(id, body);
 
     return NextResponse.json({ bay });
   } catch (error) {
@@ -42,10 +33,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   try {
     const { id } = await params;
-    const bay = await prisma.serviceBay.update({
-      where: { id },
-      data: { isActive: false, status: 'OUT_OF_SERVICE' },
-    });
+    const bay = await deactivateBay(id);
 
     return NextResponse.json({ bay });
   } catch (error) {

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { listTechnicians, createTechnician } from '@/lib/services/workshop/technicianService';
 
 export async function GET() {
   const { response } = await requireAdminApiSession();
   if (response) return response;
 
-  const technicians = await prisma.technician.findMany({
-    orderBy: { name: 'asc' },
-    include: { _count: { select: { jobCards: true } } },
-  });
+  const technicians = await listTechnicians();
 
   return NextResponse.json({ technicians });
 }
@@ -24,22 +21,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, phone, skillLevel, certificationLevel } = body;
-
-    if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    const result = await createTechnician(body);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
 
-    const technician = await prisma.technician.create({
-      data: {
-        name,
-        phone: phone || null,
-        skillLevel: skillLevel || 'JUNIOR',
-        certificationLevel: certificationLevel || null,
-      },
-    });
-
-    return NextResponse.json({ technician }, { status: 201 });
+    return NextResponse.json({ technician: result.technician }, { status: 201 });
   } catch (error) {
     console.error('Error creating technician:', error);
     return NextResponse.json({ error: 'Failed to create technician' }, { status: 500 });

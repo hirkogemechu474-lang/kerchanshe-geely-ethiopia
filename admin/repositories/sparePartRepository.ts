@@ -41,4 +41,11 @@ export const sparePartRepository = {
       select: { stock: true, reorderPoint: true },
     });
   },
+
+  // FR-403: full rows for the workshop reorder-alerts panel — filtered and
+  // sorted by urgency in application code for the same column-vs-column
+  // reason as findActiveStockLevels above.
+  async findAllActive() {
+    return prisma.sparePart.findMany({ where: { isActive: true } });
+  },
 };

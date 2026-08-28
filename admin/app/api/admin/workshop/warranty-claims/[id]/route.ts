@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { getClaimDetail, updateClaimFields } from '@/lib/services/workshop/warrantyClaimService';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { response } = await requireAdminApiSession();
   if (response) return response;
 
   const { id } = await params;
-  const claim = await prisma.warrantyClaim.findUnique({
-    where: { id },
-    include: {
-      jobCard: true,
-      statusHistory: { orderBy: { changedAt: 'asc' } },
-    },
-  });
+  const claim = await getClaimDetail(id);
 
   if (!claim) {
     return NextResponse.json({ error: 'Warranty claim not found' }, { status: 404 });
@@ -34,36 +28,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const claim = await prisma.warrantyClaim.findUnique({ where: { id } });
-  if (!claim) {
-    return NextResponse.json({ error: 'Warranty claim not found' }, { status: 404 });
+  const body = await request.json();
+
+  const result = await updateClaimFields(id, body);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  if (claim.status !== 'DRAFTED' && claim.status !== 'REJECTED') {
-    return NextResponse.json(
-      { error: `Cannot edit a claim in status ${claim.status}.` },
-      { status: 409 }
-    );
-  }
-
-  try {
-    const body = await request.json();
-    const { defectCode, component, diagnosticCodes, description, photoUrls } = body;
-
-    const updated = await prisma.warrantyClaim.update({
-      where: { id },
-      data: {
-        ...(defectCode !== undefined && { defectCode }),
-        ...(component !== undefined && { component }),
-        ...(diagnosticCodes !== undefined && { diagnosticCodes }),
-        ...(description !== undefined && { description }),
-        ...(photoUrls !== undefined && { photoUrls }),
-      },
-    });
-
-    return NextResponse.json({ claim: updated });
-  } catch (error) {
-    console.error('Error updating warranty claim:', error);
-    return NextResponse.json({ error: 'Failed to update warranty claim' }, { status: 500 });
-  }
+  return NextResponse.json({ claim: result.claim });
 }
