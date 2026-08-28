@@ -1,4 +1,5 @@
 import { salesOrderRepository } from '@/repositories/salesOrderRepository';
+import { userRepository } from '@/repositories/userRepository';
 import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
 import { sendStatusEmail } from '@/lib/status-email';
 import { env } from '@/lib/env';
@@ -136,4 +137,49 @@ export async function countersignAgreement(id: string, actingUserId: string): Pr
   }
 
   return { ok: true, order: updated, notificationSent };
+}
+
+// "Return for Correction" alternative to countersignAgreement — same
+// precondition (customer must have signed first), but returns the signed
+// copy to the sales agent instead of approving it. Cleared implicitly the
+// next time a signed copy is attached (see .../[id]/route.ts's
+// signedDocumentUrl PATCH).
+export async function rejectAgreement(id: string, actingUserId: string, reason: string): Promise<OrderActionResult<{ order: any }>> {
+  const order = await salesOrderRepository.findById(id);
+  if (!order) return { ok: false, httpStatus: 404, error: 'Order not found' };
+  if (!order.signedDocumentUrl) {
+    return { ok: false, httpStatus: 409, error: 'The customer has not signed the agreement yet.' };
+  }
+  if (order.countersignedAt) {
+    return { ok: false, httpStatus: 409, error: 'This agreement has already been countersigned.' };
+  }
+
+  const updated = await salesOrderRepository.update(id, {
+    rejectedAt: new Date(),
+    rejectedById: actingUserId,
+    rejectionReason: reason,
+  });
+
+  if (updated.salesAgentId) {
+    try {
+      const rep = await userRepository.findActiveSalesRepByName(updated.salesAgentId);
+      if (rep?.email) {
+        const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL;
+        await sendStatusEmail({
+          to: rep.email,
+          name: rep.name,
+          entityType: 'sales agreement',
+          status: 'returned for correction',
+          reference: updated.orderNo,
+          details: `Reason: ${reason}`,
+          actionUrl: adminUrl ? `${adminUrl.replace(/\/$/, '')}/admin/orders/${updated.id}` : undefined,
+          actionLabel: 'Review Order',
+        });
+      }
+    } catch (error) {
+      console.error('[orders:reject-agreement:notify]', error);
+    }
+  }
+
+  return { ok: true, order: updated };
 }

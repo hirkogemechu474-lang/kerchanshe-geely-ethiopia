@@ -69,12 +69,13 @@ export async function nextSalesRep(
   return { id: counts[0].rep.id, name: counts[0].rep.name };
 }
 
-// All active sales-role users, for a manager's manual reassignment dropdown.
-export async function listSalesReps(): Promise<{ id: string; name: string }[]> {
+// All active sales-role users, for a manager's manual reassignment dropdown
+// and for broadcast notifications (email included for the latter).
+export async function listSalesReps(): Promise<{ id: string; name: string; email: string }[]> {
   return prisma.user.findMany({
     where: { role: { in: ASSIGNABLE_ROLES }, isActive: true },
     orderBy: { name: 'asc' },
-    select: { id: true, name: true },
+    select: { id: true, name: true, email: true },
   });
 }
 

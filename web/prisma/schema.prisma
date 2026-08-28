@@ -265,6 +265,16 @@ model Quotation {
   paymentTerms         String?
   deliveryTerms        String?
   quotationGeneratedAt DateTime?
+  // Manager sign-off gate: a generated quotation cannot be sent to the
+  // customer (see .../[id]/send-quotation/route.ts) until a manager
+  // approves it here. Rejecting resets to PENDING once the agent
+  // regenerates a corrected quotation (see .../[id]/quotation-pdf/route.ts).
+  managerApprovalStatus  QuotationApprovalStatus @default(PENDING)
+  managerApprovedById    String?
+  managerApprovedAt      DateTime?
+  managerRejectedById    String?
+  managerRejectedAt      DateTime?
+  managerRejectionReason String?                 @db.Text
   // Customer e-sign/attach on the quotation PDF itself (distinct from the
   // later SalesOrder agreement signature) — same drawn-signature-stamped-
   // onto-PDF or uploaded-photo convention as SalesOrder.signedDocumentUrl.
@@ -288,6 +298,14 @@ model Quotation {
 // financingStatus is a recorded flag only, per the BRD's own out-of-scope
 // note: "the system records financing status; it does not underwrite
 // financing."
+// Manager sign-off gate on Quotation.managerApprovalStatus — a quotation
+// must be APPROVED before it can be sent to the customer.
+enum QuotationApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum OrderStatus {
   QUOTED
   BOOKED
@@ -383,6 +401,12 @@ model SalesOrder {
   // have reviewed the customer's signed copy.
   countersignedAt   DateTime?
   countersignedById String?
+  // Manager rejects the customer's signed agreement instead of
+  // countersigning it — "Return for Correction" (see .../[id]/reject-agreement).
+  // Cleared implicitly when a new signedDocumentUrl is attached.
+  rejectedAt        DateTime?
+  rejectedById      String?
+  rejectionReason   String?   @db.Text
   // Payment tracking — see PaymentStatus. paymentProofUrl is the customer's
   // uploaded bank-transfer receipt (reuses the /api/upload/document
   // convention); paymentConfirmedById is null for the online mock-pay path

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/middleware';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import QuotationPdfPanel from '@/components/admin/sales/QuotationPdfPanel';
+import QuotationApprovalPanel from '@/components/admin/sales/QuotationApprovalPanel';
 import AssignedToPanel from '@/components/admin/sales/AssignedToPanel';
 import { env } from '@/lib/env';
 import { listSalesReps } from '@/lib/assignSalesRep';
@@ -125,11 +126,33 @@ export default async function QuotationDetailPage({
           deliveryTerms: quotation.deliveryTerms,
           signedDocumentUrl: quotation.signedDocumentUrl,
           signedAt: quotation.signedAt?.toISOString() || null,
+          managerApprovalStatus: quotation.managerApprovalStatus,
+          managerRejectionReason: quotation.managerRejectionReason,
         }}
         canManage={session.user.permissions.canManageQuotations}
         publicPdfUrl={publicPdfUrl}
         publicSignUrl={publicSignUrl}
         webAppUrl={webAppUrl}
+      />
+
+      <QuotationApprovalPanel
+        quotation={{
+          id: quotation.id,
+          quotationNo: quotation.quotationNo,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          unitPrice: quotation.unitPrice,
+          quantity: quotation.quantity,
+          discountAmount: quotation.discountAmount,
+          vatAmount: quotation.vatAmount,
+          paymentTerms: quotation.paymentTerms,
+          deliveryTerms: quotation.deliveryTerms,
+          managerApprovalStatus: quotation.managerApprovalStatus,
+          managerApprovedAt: quotation.managerApprovedAt?.toISOString() || null,
+          managerRejectedAt: quotation.managerRejectedAt?.toISOString() || null,
+          managerRejectionReason: quotation.managerRejectionReason,
+        }}
+        canApprove={session.user.permissions.canCountersignAgreements}
       />
 
       {priorInquiries.length > 0 && (

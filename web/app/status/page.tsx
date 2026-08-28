@@ -26,6 +26,10 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Completed',
   closed: 'Closed',
   cancelled: 'Cancelled',
+  booked: 'Booked',
+  financing_pending: 'Financing Pending',
+  ready_for_delivery: 'Ready for Delivery',
+  delivered: 'Delivered',
 };
 
 function formatStatus(status: string): string {

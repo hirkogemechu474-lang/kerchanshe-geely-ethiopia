@@ -3,9 +3,10 @@ import { serviceBookingRepository } from '@/repositories/serviceBookingRepositor
 import { testDriveRepository } from '@/repositories/testDriveRepository';
 import { partRequestRepository } from '@/repositories/partRequestRepository';
 import { messageRepository } from '@/repositories/messageRepository';
+import { salesOrderRepository } from '@/repositories/salesOrderRepository';
 
 export type StatusResult = {
-  type: 'quotation' | 'service' | 'test-drive' | 'parts' | 'purchase' | 'financing' | 'enquiry';
+  type: 'quotation' | 'service' | 'test-drive' | 'parts' | 'purchase' | 'financing' | 'enquiry' | 'order';
   label: string;
   reference: string;
   status: string;
@@ -17,12 +18,13 @@ export type StatusResult = {
 // so a single "check your status" page can serve quotes, purchases,
 // service bookings, financing applications, parts requests, and test drives.
 export async function lookupStatus(ref: string): Promise<StatusResult | null> {
-  const [quotation, serviceBooking, testDrive, partRequest, message] = await Promise.all([
+  const [quotation, serviceBooking, testDrive, partRequest, message, order] = await Promise.all([
     quotationRepository.findByReferenceForStatus(ref),
     serviceBookingRepository.findByReferenceForStatus(ref),
     testDriveRepository.findByReferenceForStatus(ref),
     partRequestRepository.findByReferenceForStatus(ref),
     messageRepository.findByReferenceForStatus(ref),
+    salesOrderRepository.findByOrderNoForStatus(ref),
   ]);
 
   if (quotation) {
@@ -69,6 +71,17 @@ export async function lookupStatus(ref: string): Promise<StatusResult | null> {
       reference: ref,
       status: message.status,
       createdAt: message.createdAt.toISOString(),
+    };
+  }
+  if (order) {
+    return {
+      type: 'order',
+      label: `Vehicle order — ${order.vehicleModel}`,
+      reference: ref,
+      // OrderStatus is a Prisma enum stored uppercase; lowercased here to
+      // match the convention every other status value in this union uses.
+      status: order.status.toLowerCase(),
+      createdAt: order.createdAt.toISOString(),
     };
   }
 

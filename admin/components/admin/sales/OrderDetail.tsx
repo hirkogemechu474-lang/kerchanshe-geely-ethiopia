@@ -62,6 +62,8 @@ interface OrderData {
   signedDocumentUrl: string | null;
   signedAt: string | null;
   countersignedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
   paymentStatus: string;
   paymentProofUrl: string | null;
   paymentSubmittedAt: string | null;
@@ -315,7 +317,7 @@ export default function OrderDetail({
       </Card>
 
       <OrderApprovalPanel
-        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt }}
+        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt, rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason }}
         canManage={permissions.canManageQuotations}
         canCountersign={canCountersign}
         webAppUrl={webAppUrl}

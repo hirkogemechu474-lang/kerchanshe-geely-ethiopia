@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { quotationRepository } from '@/repositories/quotationRepository';
 import { buildSalesQuotationPdf } from '@/lib/services/sales/salesQuotationPdf';
-import { generateAndSendQuotationPdf } from '@/lib/services/quotations/quotationPdfService';
+import { generateQuotationPdf } from '@/lib/services/quotations/quotationPdfService';
 
 /**
  * GET /api/admin/quotations/[id]/quotation-pdf — the quotation PDF. 409 until generated.
  * POST /api/admin/quotations/[id]/quotation-pdf — saves pricing/vehicle
- * details, generates the quotation number on first use (kept stable across
- * later re-sends), and emails the PDF to the customer. Unlike the sales
- * invoice, this is NOT a one-way lock — a quotation can be revised and
- * resent before the deal is finalized.
+ * details and generates the quotation number on first use (kept stable
+ * across later re-sends). Does NOT email the customer — see
+ * .../send-quotation, gated on manager approval via .../approve-quotation.
+ * Unlike the sales invoice, this is NOT a one-way lock — a quotation can be
+ * revised and regenerated before the deal is finalized.
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -51,11 +52,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
 
-  const result = await generateAndSendQuotationPdf(id, body);
+  const result = await generateQuotationPdf(id, body);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  return NextResponse.json({ quotation: result.quotation, notificationSent: result.notificationSent });
+  return NextResponse.json({ quotation: result.quotation });
 }

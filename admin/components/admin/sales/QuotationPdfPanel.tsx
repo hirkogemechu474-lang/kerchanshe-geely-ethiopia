@@ -21,6 +21,8 @@ interface QuotationPdfData {
   deliveryTerms: string | null;
   signedDocumentUrl: string | null;
   signedAt: string | null;
+  managerApprovalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  managerRejectionReason: string | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -81,7 +83,24 @@ export default function QuotationPdfPanel({
       });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to generate quotation');
-      setNotice(data.notificationSent ? 'Quotation emailed to the customer.' : 'Quotation generated, but the email could not be sent — check SMTP settings.');
+      setNotice('Quotation generated. It now needs manager approval before it can be sent to the customer.');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendToCustomer = async () => {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch(`/api/admin/quotations/${quotation.id}/send-quotation`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Failed to send quotation');
+      setNotice(data.notificationSent ? 'Quotation emailed to the customer.' : 'Quotation sent, but the email could not be delivered — check SMTP settings.');
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -112,6 +131,17 @@ export default function QuotationPdfPanel({
       {error && <p className="text-sm text-red-600">{error}</p>}
       {notice && <p className="text-sm text-blue-700">{notice}</p>}
 
+      {quotation.quotationNo && quotation.managerApprovalStatus === 'PENDING' && (
+        <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+          Awaiting manager approval before this can be sent to the customer.
+        </p>
+      )}
+      {quotation.managerApprovalStatus === 'REJECTED' && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          Returned for correction{quotation.managerRejectionReason ? `: ${quotation.managerRejectionReason}` : '.'} Update the details below and regenerate.
+        </p>
+      )}
+
       {quotation.quotationNo && (
         <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700 space-y-2">
           <p>
@@ -141,6 +171,12 @@ export default function QuotationPdfPanel({
               </button>
             )}
           </div>
+
+          {canManage && quotation.managerApprovalStatus === 'APPROVED' && !quotation.signedDocumentUrl && (
+            <Button onClick={sendToCustomer} disabled={busy}>
+              {busy ? 'Sending…' : 'Send Quotation to Customer'}
+            </Button>
+          )}
 
           <div className="pt-2 border-t border-gray-100">
             {quotation.signedDocumentUrl ? (
@@ -213,7 +249,7 @@ export default function QuotationPdfPanel({
           </div>
           <p className="text-xs text-gray-500">VAT is calculated automatically at 15% of the vehicle price minus discount.</p>
           <Button onClick={generate} disabled={busy || !unitPrice}>
-            {quotation.quotationNo ? 'Regenerate & Send Quotation PDF' : 'Generate & Send Quotation PDF'}
+            {quotation.quotationNo ? 'Regenerate Quotation' : 'Generate Quotation'}
           </Button>
         </div>
       )}

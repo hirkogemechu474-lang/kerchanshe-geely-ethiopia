@@ -1,7 +1,7 @@
 import type { Quotation } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { sendStatusEmail } from '@/lib/status-email';
-import { resolveManagersForLead } from '@/lib/assignSalesRep';
+import { resolveManagersForLead, listSalesReps } from '@/lib/assignSalesRep';
 
 // Self-referencing link back into this app's own quotation detail page.
 function adminQuotationUrl(quotationId: string): string | undefined {
@@ -52,6 +52,46 @@ export async function notifyManagersOfNewLead(
     );
   } catch (error) {
     console.error('[quotations:notify-managers]', error);
+  }
+}
+
+// Notifies every active sales-role user (agents, reps, and managers alike)
+// once an approved quotation has actually been emailed to the customer —
+// distinct from notifyManagersOfNewLead (fires at lead-creation, managers
+// only). Best-effort, same semantics as its siblings here.
+export async function notifyStaffOfQuotationSent(quotation: Quotation, sentByName: string | null): Promise<void> {
+  try {
+    const staff = await listSalesReps();
+    if (staff.length === 0) return;
+
+    const totalPrice =
+      quotation.unitPrice != null
+        ? quotation.unitPrice * (quotation.quantity ?? 1) - (quotation.discountAmount ?? 0) + (quotation.vatAmount ?? 0)
+        : null;
+
+    const details = [
+      quotationDetails(quotation),
+      quotation.quotationNo ? `Quotation number: ${quotation.quotationNo}` : '',
+      totalPrice != null ? `Total price: ETB ${totalPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '',
+      `Sent by: ${sentByName || 'Unknown'}`,
+    ].filter(Boolean).join('\n');
+
+    await Promise.allSettled(
+      staff.map((member) =>
+        sendStatusEmail({
+          to: member.email,
+          name: member.name,
+          entityType: 'quotation sent for signature',
+          status: 'sent',
+          reference: quotation.reference || quotation.quotationNo || quotation.id,
+          details,
+          actionUrl: adminQuotationUrl(quotation.id),
+          actionLabel: 'View Quotation in Admin',
+        })
+      )
+    );
+  } catch (error) {
+    console.error('[quotations:notify-staff-sent]', error);
   }
 }
 

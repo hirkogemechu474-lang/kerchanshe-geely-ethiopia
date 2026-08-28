@@ -21,6 +21,8 @@ interface OrderApprovalData {
   signedDocumentUrl: string | null;
   signedAt: string | null;
   countersignedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
 }
 
 export default function OrderApprovalPanel({
@@ -44,6 +46,8 @@ export default function OrderApprovalPanel({
   const [approveNotice, setApproveNotice] = useState('');
   const [sendNotice, setSendNotice] = useState('');
   const [countersignNotice, setCountersignNotice] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const approve = async () => {
     setBusy(true);
@@ -99,6 +103,32 @@ export default function OrderApprovalPanel({
             : 'Countersigned, but the payment-link email could not be sent — check SMTP settings.'
           : 'Countersigned. No customer email is on file, so the payment link was not emailed.'
       );
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rejectAgreement = async () => {
+    if (!rejectReason.trim()) {
+      setError('A rejection reason is required.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/reject-agreement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Rejection failed');
+      setShowRejectForm(false);
+      setRejectReason('');
       onUpdated();
       router.refresh();
     } catch (err: any) {
@@ -242,14 +272,47 @@ export default function OrderApprovalPanel({
                 <p className="text-xs text-green-600 font-medium">
                   Countersigned {new Date(order.countersignedAt).toLocaleString()}
                 </p>
+              ) : order.rejectedAt ? (
+                <p className="text-xs text-red-700">
+                  Returned for correction {new Date(order.rejectedAt).toLocaleString()}
+                  {order.rejectionReason ? ` — ${order.rejectionReason}` : ''}. Attach a corrected signed copy above.
+                </p>
               ) : canCountersign ? (
-                <div>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Countersigning emails the customer a payment link.
-                  </p>
-                  <Button onClick={countersign} disabled={busy}>
-                    {busy ? 'Countersigning…' : 'Countersign & Approve'}
-                  </Button>
+                <div className="space-y-2">
+                  {!showRejectForm ? (
+                    <>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Countersigning emails the customer a payment link.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button onClick={countersign} disabled={busy}>
+                          {busy ? 'Countersigning…' : 'Countersign & Approve'}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowRejectForm(true)} disabled={busy}>
+                          Reject / Return for Correction
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600">Reason for return</label>
+                      <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="What needs to change before this can be countersigned?"
+                      />
+                      <div className="flex gap-3">
+                        <Button variant="secondary" onClick={rejectAgreement} disabled={busy}>
+                          {busy ? 'Submitting…' : 'Confirm Return for Correction'}
+                        </Button>
+                        <Button variant="secondary" onClick={() => { setShowRejectForm(false); setRejectReason(''); }} disabled={busy}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs text-orange-600">

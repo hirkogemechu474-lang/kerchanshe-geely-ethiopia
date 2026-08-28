@@ -55,4 +55,11 @@ export const salesOrderRepository = {
   async updateHandoverSignature(id: string, data: { handoverSignedDocumentUrl: string; handoverSignedAt: Date }) {
     return prisma.salesOrder.update({ where: { id }, data });
   },
+
+  async findByOrderNoForStatus(orderNo: string) {
+    return prisma.salesOrder.findUnique({
+      where: { orderNo },
+      select: { status: true, createdAt: true, vehicleModel: true },
+    });
+  },
 };

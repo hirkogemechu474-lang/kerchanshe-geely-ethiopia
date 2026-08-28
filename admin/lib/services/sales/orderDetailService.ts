@@ -47,6 +47,9 @@ export async function updateOrderFields(
     ...(signedDocumentUrl !== undefined && {
       signedDocumentUrl,
       signedAt: signedDocumentUrl ? new Date() : null,
+      // A freshly-attached signed copy implicitly resolves a prior
+      // "Return for Correction" — back to the manager for a fresh look.
+      ...(signedDocumentUrl && { rejectedAt: null, rejectedById: null, rejectionReason: null }),
     }),
     // Vehicle registration — a plain field edit (unlike approval/signing,
     // a mistyped plate number is just a correction, not a business event

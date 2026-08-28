@@ -2,6 +2,7 @@ import { quotationRepository } from '@/repositories/quotationRepository';
 import { salesOrderRepository } from '@/repositories/salesOrderRepository';
 import { nextOrderNo } from '@/lib/services/sales/orderNumber';
 import { PDI_CHECKLIST_TEMPLATE } from '@/lib/services/sales/pdiChecklistTemplate';
+import { computeQuotationTotals } from '@/lib/services/sales/salesQuotationPdf';
 
 export type ConvertQuotationResult =
   | { ok: true; order: any }
@@ -20,6 +21,10 @@ export async function convertQuotationToOrder(id: string, actingUserId: string):
     return { ok: false, httpStatus: 409, error: 'This quotation already has an order', orderId: quotation.salesOrder.id };
   }
 
+  if (quotation.managerApprovalStatus !== 'APPROVED') {
+    return { ok: false, httpStatus: 409, error: 'This quotation needs manager approval before it can become an order.' };
+  }
+
   const orderNo = await nextOrderNo();
 
   const order = await salesOrderRepository.create({
@@ -30,6 +35,12 @@ export async function convertQuotationToOrder(id: string, actingUserId: string):
     customerEmail: quotation.email || null,
     vehicleModel: quotation.vehicleModel || 'General enquiry',
     configurationJson: quotation.configurationJson ?? undefined,
+    // Inherited from the quotation's own agreed price — same VAT/discount
+    // math already shown to and signed by the customer — so the agreement/
+    // handover PDFs don't show "To be confirmed" when a real price exists.
+    totalPrice: quotation.unitPrice != null
+      ? computeQuotationTotals(quotation.unitPrice, quotation.quantity ?? 1, quotation.discountAmount ?? 0).totalPayable
+      : null,
     financingStatus: quotation.financingInterest ? 'PENDING' : 'NOT_APPLICABLE',
     // Inherit the rep already working this lead (see web/lib/assignSalesRep.ts)
     // instead of starting the order unassigned.

@@ -111,7 +111,7 @@ export const userRepository = {
   async findActiveSalesRepByName(name: string) {
     return prisma.user.findFirst({
       where: { name, role: { in: ['sales', 'sales_representative', 'sales_manager'] }, isActive: true },
-      select: { id: true },
+      select: { id: true, name: true, email: true },
     });
   },
 };
