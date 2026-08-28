@@ -47,4 +47,26 @@ export const userRepository = {
       },
     });
   },
+
+  // Public registration (app/api/auth/register) — no select clause,
+  // matching the pre-existing inline call this replaced: intentionally NOT
+  // routed through create() above, whose select includes a `department`
+  // field that doesn't exist on this schema (pre-existing drift — see
+  // findManyActive) and would break this otherwise-working flow.
+  async createCustomer(data: Prisma.UserCreateInput) {
+    return prisma.user.create({ data });
+  },
+
+  async updateLastLogin(id: string) {
+    return prisma.user.update({ where: { id }, data: { lastLogin: new Date() } });
+  },
+
+  // ── Password reset (app/api/auth/forgot-password, reset-password) ──────
+  async findByEmailAndOtp(email: string, otp: string) {
+    return prisma.user.findFirst({ where: { email, otpCode: otp } });
+  },
+
+  async update(id: string, data: Prisma.UserUpdateInput) {
+    return prisma.user.update({ where: { id }, data });
+  },
 };

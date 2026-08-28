@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+import { resetPassword } from '@/lib/services/auth/passwordResetService';
 
 // Rate limiting storage (in-memory - use Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -69,50 +68,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user with matching email and OTP
-    const user = await prisma.user.findFirst({
-      where: {
-        email: email.toLowerCase(),
-        otpCode: otp,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid OTP or email' },
-        { status: 400 }
-      );
+    const result = await resetPassword(email, otp, newPassword);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
-
-    // Check if OTP is expired
-    if (!user.otpExpiry || user.otpExpiry < new Date()) {
-      // Clear expired OTP
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          otpCode: null,
-          otpExpiry: null,
-        },
-      });
-
-      return NextResponse.json(
-        { error: 'OTP has expired. Please request a new one.' },
-        { status: 400 }
-      );
-    }
-
-    // Hash new password
-    const passwordHash = await bcrypt.hash(newPassword, 12);
-
-    // Update password and clear OTP
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        otpCode: null,
-        otpExpiry: null,
-      },
-    });
 
     return NextResponse.json(
       {

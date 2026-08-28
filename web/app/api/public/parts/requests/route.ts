@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit';
-import { sendFormEmail } from '@/lib/form-email';
-import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
+import { submitPartRequest } from '@/lib/services/parts/partRequestService';
 
 /**
  * POST /api/public/parts/requests
@@ -16,66 +14,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-
-    const { name, company, phone, email, address, notes, items } = body;
-
-    if (!name || !phone || !email) {
-      return NextResponse.json(
-        { success: false, error: 'Name, phone and email are required' },
-        { status: 400 }
-      );
+    const result = await submitPartRequest(body);
+    if (!result.ok) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }
 
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'At least one part is required' },
-        { status: 400 }
-      );
-    }
-
-    // Normalize items
-    const normalizedItems = items.map((item: any) => ({
-      partId: item.partId || null,
-      partName: item.partName || 'Unknown part',
-      partSku: item.partSku || null,
-      unitPrice: Number(item.unitPrice) || 0,
-      quantity: Math.max(1, Number(item.quantity) || 1),
-    }));
-
-    const reference = await generateReference(REFERENCE_CATEGORY.PARTS_REQUEST);
-    const partRequest = await prisma.partRequest.create({
-      data: {
-        name,
-        company: company || null,
-        phone,
-        email,
-        address: address || null,
-        notes: notes || null,
-        status: 'new',
-        reference,
-        items: {
-          create: normalizedItems,
-        },
-      },
-      include: { items: true },
-    });
-
-    let notificationSent = false;
-    try {
-      notificationSent = await sendFormEmail({
-        type: 'parts request',
-        name,
-        email,
-        phone,
-        subject: `New parts request${company ? ` — ${company}` : ''}`,
-        reference,
-        details: JSON.stringify({ address, notes, items: normalizedItems }, null, 2),
-      });
-    } catch (emailError) {
-      console.error('[parts-request:email]', emailError);
-    }
-
-    return NextResponse.json({ success: true, request: partRequest, reference, notificationSent }, { status: 201 });
+    return NextResponse.json({ success: true, request: result.request, reference: result.reference, notificationSent: result.notificationSent }, { status: 201 });
   } catch (error) {
     console.error('Error creating part request:', error);
     return NextResponse.json(

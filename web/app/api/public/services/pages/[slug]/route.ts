@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-
-interface Params {
-  slug: string;
-}
+import { getPublishedPage } from '@/lib/services/services/serviceCmsService';
 
 // GET - Fetch single published service page by slug
 export async function GET(
@@ -12,12 +8,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const page = await prisma.servicePage.findFirst({
-      where: {
-        slug,
-        isPublished: true,
-      },
-    });
+    const page = await getPublishedPage(slug);
 
     if (!page) {
       return NextResponse.json(
@@ -33,5 +24,5 @@ export async function GET(
       { success: false, error: 'Failed to fetch page' },
       { status: 500 }
     );
-  } 
+  }
 }

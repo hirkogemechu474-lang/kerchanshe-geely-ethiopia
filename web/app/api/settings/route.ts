@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
-import { prisma } from '@/lib/prisma';
+import { getSetting, listSettings, saveSetting, updateSetting, deleteSetting } from '@/lib/services/settings/settingService';
 
 // GET all settings or specific setting by key
 export async function GET(request: NextRequest) {
@@ -11,28 +11,14 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
 
     if (key) {
-      // Get specific setting by key
-      const setting = await prisma.setting.findUnique({
-        where: { key }
-      });
-
-      if (!setting) {
-        return NextResponse.json(
-          { error: 'Setting not found' },
-          { status: 404 }
-        );
+      const result = await getSetting(key);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.httpStatus });
       }
-
-      return NextResponse.json(setting);
+      return NextResponse.json(result.setting);
     }
 
-    // Get all settings or filter by type
-    const where = type ? { type } : {};
-    const settings = await prisma.setting.findMany({
-      where,
-      orderBy: { key: 'asc' }
-    });
-
+    const settings = await listSettings(type);
     return NextResponse.json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -52,23 +38,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { key, value, type } = body;
-
-    if (!key || !value || !type) {
-      return NextResponse.json(
-        { error: 'Key, value, and type are required' },
-        { status: 400 }
-      );
+    const result = await saveSetting(body);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
 
-    // Upsert (create or update)
-    const setting = await prisma.setting.upsert({
-      where: { key },
-      update: { value, type, updatedAt: new Date() },
-      create: { key, value, type }
-    });
-
-    return NextResponse.json(setting);
+    return NextResponse.json(result.setting);
   } catch (error) {
     console.error('Error saving setting:', error);
     return NextResponse.json(
@@ -87,21 +62,12 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { key, value, type } = body;
-
-    if (!key) {
-      return NextResponse.json(
-        { error: 'Key is required' },
-        { status: 400 }
-      );
+    const result = await updateSetting(body);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
 
-    const setting = await prisma.setting.update({
-      where: { key },
-      data: { value, type, updatedAt: new Date() }
-    });
-
-    return NextResponse.json(setting);
+    return NextResponse.json(result.setting);
   } catch (error) {
     console.error('Error updating setting:', error);
     return NextResponse.json(
@@ -122,16 +88,10 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
 
-    if (!key) {
-      return NextResponse.json(
-        { error: 'Key is required' },
-        { status: 400 }
-      );
+    const result = await deleteSetting(key);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
-
-    await prisma.setting.delete({
-      where: { key }
-    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
