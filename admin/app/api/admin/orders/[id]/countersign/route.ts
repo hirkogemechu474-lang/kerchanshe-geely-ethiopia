@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { sendStatusEmail } from '@/lib/status-email';
-import { env } from '@/lib/env';
+import { countersignAgreement } from '@/lib/services/sales/orderAgreementService';
 
 // Manager countersign step — a second, staff-side sign-off after the
 // customer has e-signed the agreement (see .../[id]/route.ts's
@@ -22,56 +20,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.signedDocumentUrl) {
-    return NextResponse.json({ error: 'The customer has not signed the agreement yet.' }, { status: 409 });
-  }
-  if (order.countersignedAt) {
-    return NextResponse.json({ error: 'This agreement has already been countersigned.' }, { status: 409 });
+  const result = await countersignAgreement(id, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  let notificationSent = false;
-  if (order.customerEmail) {
-    try {
-      const siteUrl = env.app.url.replace(/\/$/, '');
-      notificationSent = await sendStatusEmail({
-        to: order.customerEmail,
-        name: order.customerName,
-        entityType: 'sales order',
-        status: 'countersigned',
-        reference: order.orderNo,
-        details: 'Your signed agreement has been countersigned by our sales manager. Please complete payment to proceed with your order.',
-        actionUrl: `${siteUrl}/payment/order/${order.id}`,
-        actionLabel: 'Pay Now',
-      });
-    } catch (emailError) {
-      console.error('[orders:countersign:email]', emailError);
-    }
-  }
-
-  const updated = await prisma.salesOrder.update({
-    where: { id },
-    data: { countersignedAt: new Date(), countersignedById: session!.user.id },
-  });
-
-  // Stamps the manager's own on-file signature (or their typed name, if
-  // they haven't set one up yet — see /admin/signatures) onto the "Sales
-  // Agent Signature & Date" line of the already-saved signed PDF, which
-  // lives on web's disk — best-effort, never blocks the countersign
-  // itself on a network hiccup.
-  try {
-    const siteUrl = env.app.url.replace(/\/$/, '');
-    await fetch(`${siteUrl}/api/agreement/${id}/countersign-stamp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: session!.user.id }),
-    });
-  } catch (stampError) {
-    console.error('[orders:countersign:stamp]', stampError);
-  }
-
-  return NextResponse.json({ order: updated, notificationSent });
+  return NextResponse.json({ order: result.order, notificationSent: result.notificationSent });
 }

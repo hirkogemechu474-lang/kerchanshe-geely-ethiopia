@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { buildHandoverPdf } from '@/lib/services/sales/handoverPdf';
-import { sendStatusEmail } from '@/lib/status-email';
-import { env } from '@/lib/env';
+import { sendHandoverSignoff } from '@/lib/services/sales/orderHandoverService';
 
 /**
  * POST /api/admin/orders/[id]/send-handover-signoff
@@ -26,40 +23,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.deliveredAt) {
-    return NextResponse.json({ error: 'Mark this order Delivered before sending the handover sign-off link.' }, { status: 409 });
-  }
-  if (order.handoverSignedDocumentUrl) {
-    return NextResponse.json({ error: 'This handover has already been signed and cannot be resent.' }, { status: 409 });
+  const result = await sendHandoverSignoff(id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  let notificationSent = false;
-  if (order.customerEmail) {
-    try {
-      const siteUrl = env.app.url.replace(/\/$/, '');
-      const signingUrl = `${siteUrl}/handover/${order.id}`;
-      const pdfBytes = await buildHandoverPdf(order);
-      notificationSent = await sendStatusEmail({
-        to: order.customerEmail,
-        name: order.customerName,
-        entityType: 'vehicle handover',
-        status: 'delivered',
-        reference: order.orderNo,
-        details: 'Please confirm receipt of your vehicle — sign the handover confirmation online (draw a signature or upload a photo of a signed printout).',
-        actionUrl: signingUrl,
-        actionLabel: 'Confirm Handover',
-        attachments: [
-          { filename: `${order.orderNo}-handover.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' },
-        ],
-      });
-    } catch (emailError) {
-      console.error('[orders:send-handover-signoff:email]', emailError);
-    }
-  }
-
-  return NextResponse.json({ notificationSent });
+  return NextResponse.json({ notificationSent: result.notificationSent });
 }

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextInvoiceNo } from '@/lib/services/sales/orderNumber';
-import { buildSalesInvoicePdf } from '@/lib/services/sales/salesInvoicePdf';
-import { sendStatusEmail } from '@/lib/status-email';
+import { getInvoicePdf, generateInvoice } from '@/lib/services/sales/orderInvoiceService';
 
 /**
  * GET /api/admin/orders/[id]/invoice — the invoice PDF. 409 until generated.
@@ -21,21 +18,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.invoicedAt) {
-    return NextResponse.json({ error: 'This order has not been invoiced yet.' }, { status: 409 });
+  const result = await getInvoicePdf(id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  const pdfBytes = await buildSalesInvoicePdf(order);
-
-  return new NextResponse(Buffer.from(pdfBytes), {
+  return new NextResponse(Buffer.from(result.pdfBytes), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${order.invoiceNo}.pdf"`,
+      'Content-Disposition': `inline; filename="${result.invoiceNo}.pdf"`,
     },
   });
 }
@@ -49,48 +41,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (order.invoicedAt) {
-    return NextResponse.json({ error: 'This order has already been invoiced' }, { status: 409 });
+  const result = await generateInvoice(id, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  // System-generated, not staff-editable: always the order's own agreed
-  // price, so the invoice can never drift from what was actually approved.
-  const invoiceAmount = order.totalPrice;
-
-  let updated;
-  try {
-    const invoiceNo = await nextInvoiceNo();
-    updated = await prisma.salesOrder.update({
-      where: { id },
-      data: { invoiceNo, invoiceAmount, invoicedAt: new Date(), invoicedById: session!.user.id },
-    });
-  } catch (dbError) {
-    console.error('[orders:invoice:generate]', dbError);
-    return NextResponse.json({ error: 'Failed to generate invoice. Please try again.' }, { status: 500 });
-  }
-
-  let notificationSent = false;
-  if (updated.customerEmail) {
-    try {
-      const pdfBytes = await buildSalesInvoicePdf(updated);
-      notificationSent = await sendStatusEmail({
-        to: updated.customerEmail,
-        name: updated.customerName,
-        entityType: 'sales order',
-        status: 'invoiced',
-        reference: updated.orderNo,
-        details: `Your invoice ${updated.invoiceNo} is attached.`,
-        attachments: [{ filename: `${updated.invoiceNo}.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' }],
-      });
-    } catch (emailError) {
-      console.error('[orders:invoice:email]', emailError);
-    }
-  }
-
-  return NextResponse.json({ order: updated, notificationSent });
+  return NextResponse.json({ order: result.order, notificationSent: result.notificationSent });
 }

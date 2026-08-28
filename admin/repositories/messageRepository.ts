@@ -9,4 +9,8 @@ export const messageRepository = {
   async update(id: string, data: Prisma.MessageUpdateInput) {
     return prisma.message.update({ where: { id }, data });
   },
+
+  async findManyByCategory(category: string) {
+    return prisma.message.findMany({ where: { category }, orderBy: { createdAt: 'desc' } });
+  },
 };

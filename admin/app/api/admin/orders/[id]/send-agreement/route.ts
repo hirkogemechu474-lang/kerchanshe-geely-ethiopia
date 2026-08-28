@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { buildSalesAgreementPdf } from '@/lib/services/sales/salesAgreementPdf';
-import { sendStatusEmail } from '@/lib/status-email';
-import { env } from '@/lib/env';
+import { sendAgreement } from '@/lib/services/sales/orderAgreementService';
 
 /**
  * POST /api/admin/orders/[id]/send-agreement — the second, explicit step of
@@ -22,45 +19,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.approvedAt) {
-    return NextResponse.json({ error: 'Approve this order before sending the agreement.' }, { status: 409 });
-  }
-  if (order.signedDocumentUrl) {
-    return NextResponse.json({ error: 'This agreement has already been signed and cannot be resent.' }, { status: 409 });
+  const result = await sendAgreement(id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  let notificationSent = false;
-  if (order.customerEmail) {
-    try {
-      const siteUrl = env.app.url.replace(/\/$/, '');
-      const signingUrl = `${siteUrl}/agreement/${order.id}`;
-      const pdfBytes = await buildSalesAgreementPdf(order);
-      notificationSent = await sendStatusEmail({
-        to: order.customerEmail,
-        name: order.customerName,
-        entityType: 'sales order',
-        status: 'approved',
-        reference: order.orderNo,
-        details: 'Your order has been approved! Your sales agreement is attached as a PDF — sign it online (draw a signature or upload a photo of a signed printout) to continue to payment.',
-        actionUrl: signingUrl,
-        actionLabel: 'Continue',
-        attachments: [
-          { filename: `${order.orderNo}-agreement.pdf`, content: Buffer.from(pdfBytes), contentType: 'application/pdf' },
-        ],
-      });
-    } catch (emailError) {
-      console.error('[orders:send-agreement:email]', emailError);
-    }
-  }
-
-  const updated = await prisma.salesOrder.update({
-    where: { id },
-    data: { agreementSentAt: new Date() },
-  });
-
-  return NextResponse.json({ order: updated, notificationSent });
+  return NextResponse.json({ order: result.order, notificationSent: result.notificationSent });
 }

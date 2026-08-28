@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { env } from '@/lib/env';
+import { countersignHandover } from '@/lib/services/sales/orderHandoverService';
 
 // Manager countersign step for the vehicle handover — the same authority
 // (canCountersignAgreements) and identity+timestamp-only shape as
@@ -16,36 +15,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-  if (!order.handoverSignedDocumentUrl) {
-    return NextResponse.json({ error: 'The customer has not signed the handover confirmation yet.' }, { status: 409 });
-  }
-  if (order.handoverCountersignedAt) {
-    return NextResponse.json({ error: 'This handover has already been countersigned.' }, { status: 409 });
+  const result = await countersignHandover(id, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  const updated = await prisma.salesOrder.update({
-    where: { id },
-    data: { handoverCountersignedAt: new Date(), handoverCountersignedById: session!.user.id },
-  });
-
-  // Stamps the manager's own on-file signature (or their typed name, if
-  // they haven't set one up yet — see /admin/signatures) onto the "Geely
-  // Ethiopia Representative & Date" line — best-effort, never blocks the
-  // countersign itself on a network hiccup.
-  try {
-    const siteUrl = env.app.url.replace(/\/$/, '');
-    await fetch(`${siteUrl}/api/handover/${id}/countersign-stamp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: session!.user.id }),
-    });
-  } catch (stampError) {
-    console.error('[orders:handover-countersign:stamp]', stampError);
-  }
-
-  return NextResponse.json({ order: updated });
+  return NextResponse.json({ order: result.order });
 }

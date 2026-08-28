@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { messageRepository } from '@/repositories/messageRepository';
 
 export async function GET() {
   const { response } = await requireAdminApiSession();
   if (response) return response;
 
-  const purchases = await prisma.message.findMany({
-    where: { category: 'Vehicle Purchase' },
-    orderBy: { createdAt: 'desc' },
-  });
+  const purchases = await messageRepository.findManyByCategory('Vehicle Purchase');
   return NextResponse.json({ purchases });
 }

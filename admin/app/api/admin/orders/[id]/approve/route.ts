@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { approveOrder } from '@/lib/services/sales/orderAgreementService';
 
 // Sales-agent approval step: "Sales Quotation -> Approval by sales agent ->
 // Generate Agreement -> e-sign/attach" (see docs/SWMS-INTEGRATION-BACKLOG.md
@@ -21,19 +21,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const order = await prisma.salesOrder.findUnique({ where: { id } });
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+  const result = await approveOrder(id, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  if (order.approvedAt) {
-    return NextResponse.json({ error: 'This order is already approved' }, { status: 409 });
-  }
-
-  const updated = await prisma.salesOrder.update({
-    where: { id },
-    data: { approvedAt: new Date(), approvedById: session!.user.id },
-  });
-
-  return NextResponse.json({ order: updated });
+  return NextResponse.json({ order: result.order });
 }

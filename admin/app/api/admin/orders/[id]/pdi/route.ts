@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { togglePdiItem } from '@/lib/services/sales/orderOpsService';
 
 // Toggle a single PDI checklist item (BRD API design: PATCH /api/orders/{id}/pdi).
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,17 +18,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'itemId and isChecked are required' }, { status: 400 });
   }
 
-  const item = await prisma.pdiChecklistItem.findFirst({ where: { id: itemId, orderId: id } });
-  if (!item) {
-    return NextResponse.json({ error: 'Checklist item not found on this order' }, { status: 404 });
+  const result = await togglePdiItem(id, itemId, isChecked, session!.user.id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.httpStatus });
   }
 
-  const updated = await prisma.pdiChecklistItem.update({
-    where: { id: itemId },
-    data: isChecked
-      ? { isChecked: true, checkedById: session!.user.id, checkedAt: new Date() }
-      : { isChecked: false, checkedById: null, checkedAt: null },
-  });
-
-  return NextResponse.json({ item: updated });
+  return NextResponse.json({ item: result.item });
 }

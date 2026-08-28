@@ -247,4 +247,11 @@ export const vehicleRepository = {
   async findIdByName(name: string) {
     return prisma.vehicle.findFirst({ where: { name }, select: { id: true } });
   },
+
+  /** Best-effort name match against the published catalog — a SalesOrder's
+   *  vehicleModel is a plain string, not an FK. Used to link an agent-sent
+   *  test-drive invite to a real Vehicle row. */
+  async findPublishedIdByName(name: string) {
+    return prisma.vehicle.findFirst({ where: { name, isActive: true, status: 'published' }, select: { id: true } });
+  },
 };
