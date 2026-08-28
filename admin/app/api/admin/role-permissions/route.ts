@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { ADMIN_ROLES, type AdminPermissions } from '@/lib/auth/types';
 import { PERMISSION_GROUPS } from '@/lib/auth/permissionGroups';
 import { getEffectivePermissionsForAdminRoles, invalidateRolePermissionsCache, LOCKED_ROLE } from '@/lib/auth/rolePermissions';
+import { rolePermissionRepository } from '@/repositories/rolePermissionRepository';
 
 const EDITABLE_KEYS = new Set(PERMISSION_GROUPS.flatMap((g) => g.keys.map((k) => k.key)));
 
@@ -52,11 +52,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unknown or non-editable permission key' }, { status: 400 });
   }
 
-  await prisma.rolePermissionOverride.upsert({
-    where: { role_permissionKey: { role, permissionKey } },
-    create: { role, permissionKey, value, updatedById: session!.user.id },
-    update: { value, updatedById: session!.user.id },
-  });
+  await rolePermissionRepository.upsertOverride(role, permissionKey, value, session!.user.id);
   invalidateRolePermissionsCache();
 
   const { effective } = await getEffectivePermissionsForAdminRoles();
@@ -81,9 +77,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   if (permissionKey) {
-    await prisma.rolePermissionOverride.deleteMany({ where: { role, permissionKey } });
+    await rolePermissionRepository.deleteOverride(role, permissionKey);
   } else {
-    await prisma.rolePermissionOverride.deleteMany({ where: { role } });
+    await rolePermissionRepository.deleteAllOverridesForRole(role);
   }
   invalidateRolePermissionsCache();
 

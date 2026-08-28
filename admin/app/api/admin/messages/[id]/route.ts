@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { messageRepository } from '@/repositories/messageRepository';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requireAdminApiSession();
@@ -8,6 +8,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!session!.user.permissions.canViewMessages) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
   const body = await request.json();
-  const message = await prisma.message.update({ where: { id }, data: { status: body.status, priority: body.priority, response: body.response } });
+  const message = await messageRepository.update(id, { status: body.status, priority: body.priority, response: body.response });
   return NextResponse.json({ message });
 }

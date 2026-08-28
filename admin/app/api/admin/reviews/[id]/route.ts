@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { sendStatusEmail } from '@/lib/status-email';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { reviewRepository } from '@/repositories/reviewRepository';
+import { updateReview } from '@/lib/services/reviews/reviewService';
 
 type Params = Promise<{ id: string }>;
 
@@ -15,9 +15,7 @@ export async function GET(
     if (response) return response;
 
     const { id } = await params;
-    const review = await prisma.review.findUnique({
-      where: { id },
-    });
+    const review = await reviewRepository.findById(id);
 
     if (!review) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
@@ -27,7 +25,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching review:', error);
     return NextResponse.json({ error: 'Failed to fetch review' }, { status: 500 });
-  } 
+  }
 }
 
 // PUT - Update review
@@ -41,45 +39,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const {
-      status,
-      isFeatured,
-      isActive,
-      reviewTitle,
-      reviewMessage,
-    } = body;
 
-    const review = await prisma.review.update({
-      where: { id },
-      data: {
-        ...(status && { status }),
-        ...(isFeatured !== undefined && { isFeatured }),
-        ...(isActive !== undefined && { isActive }),
-        ...(reviewTitle && { reviewTitle }),
-        ...(reviewMessage && { reviewMessage }),
-      },
-    });
-
-    if (status && ['approved', 'rejected'].includes(status) && review.email) {
-      try {
-        await sendStatusEmail({
-          to: review.email,
-          name: review.fullName,
-          entityType: 'Review',
-          status,
-          reference: review.id,
-          details: review.reviewTitle,
-        });
-      } catch (error) {
-        console.error('[status-email] review', error);
-      }
-    }
+    const review = await updateReview(id, body);
 
     return NextResponse.json({ review });
   } catch (error) {
     console.error('Error updating review:', error);
     return NextResponse.json({ error: 'Failed to update review' }, { status: 500 });
-  } 
+  }
 }
 
 // DELETE - Delete review
@@ -92,13 +59,11 @@ export async function DELETE(
     if (response) return response;
 
     const { id } = await params;
-    await prisma.review.delete({
-      where: { id },
-    });
+    await reviewRepository.delete(id);
 
     return NextResponse.json({ message: 'Review deleted successfully' });
   } catch (error) {
     console.error('Error deleting review:', error);
     return NextResponse.json({ error: 'Failed to delete review' }, { status: 500 });
-  } 
+  }
 }
