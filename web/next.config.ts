@@ -88,17 +88,15 @@ const nextConfig: NextConfig = {
   // Compression
   compress: true,
 
-  // Serve files that exist in this app's public/uploads first. Missing files
-  // fall through to the admin app, which owns the catalog/CMS uploads.
+  // /uploads/* is now handled by app/uploads/[...path]/route.ts (reads
+  // straight from disk, with its own fallback to the admin app for files
+  // that only live there) — a real route always wins over an afterFiles
+  // rewrite for the same path, so a rewrite entry here would never fire.
   async rewrites() {
     const adminUrl =
       process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:7500";
 
     return { afterFiles: [
-      {
-        source: "/uploads/:path*",
-        destination: `${adminUrl}/uploads/:path*`,
-      },
       // Same-origin proxy for the two admin-only endpoints adminApiClient.ts
       // calls from the browser — keeps NEXT_PUBLIC_ADMIN_API_URL (which points
       // at this server's own localhost) out of client-bundled code, since a
