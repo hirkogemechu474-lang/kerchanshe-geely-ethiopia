@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPublicVehicleBySlug } from '@/lib/services/vehicles/publicVehicleService';
 
 /**
  * GET /api/public/vehicles/[slug]
@@ -12,16 +12,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const vehicle = await prisma.vehicle.findFirst({
-      where: {
-        slug,
-        isActive: true,
-      },
-      include: {
-        vehicleCategory: true,
-        brand: true,
-      },
-    });
+    const vehicle = await getPublicVehicleBySlug(slug);
 
     if (!vehicle) {
       return NextResponse.json(

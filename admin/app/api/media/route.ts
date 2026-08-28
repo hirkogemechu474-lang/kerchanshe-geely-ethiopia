@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { listMedia } from '@/lib/services/media/mediaService';
 
 /**
  * GET /api/media
@@ -15,22 +15,7 @@ export async function GET(request: Request) {
     const fileType = searchParams.get('fileType');
     const category = searchParams.get('category');
 
-    const where: any = {};
-    
-    if (fileType) {
-      where.fileType = fileType;
-    }
-    
-    if (category) {
-      where.category = category;
-    }
-
-    const mediaAssets = await prisma.mediaAsset.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const mediaAssets = await listMedia({ fileType, category });
 
     return NextResponse.json(mediaAssets);
   } catch (error) {

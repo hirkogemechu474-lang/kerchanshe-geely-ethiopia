@@ -14,6 +14,10 @@ export const settingRepository = {
     return prisma.setting.findMany({ where: { type } });
   },
 
+  async findManyByKeys(keys: string[]) {
+    return prisma.setting.findMany({ where: { key: { in: keys } } });
+  },
+
   async upsert(key: string, value: string, type: string) {
     return prisma.setting.upsert({
       where: { key },

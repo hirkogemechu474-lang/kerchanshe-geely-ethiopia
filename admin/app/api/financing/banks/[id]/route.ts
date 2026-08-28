@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 80) || Math.random().toString(36).slice(2, 10);
-}
+import { getBank, updateBank, deleteBank } from '@/lib/services/financing/financingService';
 
 type Params = Promise<{ id: string }>;
 
@@ -19,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
 
   try {
     const { id } = await params;
-    const bank = await prisma.financingBank.findUnique({ where: { id } });
+    const bank = await getBank(id);
     if (!bank) return NextResponse.json({ error: 'Bank not found' }, { status: 404 });
     return NextResponse.json(bank);
   } catch (error) {
@@ -32,33 +24,20 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
 
 // PUT/PATCH — Update bank
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
-  return updateBank(request, params, false);
+  return updateBankRoute(request, params);
 }
 export async function PATCH(request: NextRequest, { params }: { params: Params }) {
-  return updateBank(request, params, false);
+  return updateBankRoute(request, params);
 }
 
-async function updateBank(request: NextRequest, params: Params, _partial: boolean) {
+async function updateBankRoute(request: NextRequest, params: Params) {
   const { response } = await requireAdminApiSession();
   if (response) return response;
 
   try {
     const { id } = await params;
     const body = await request.json();
-    const fields: string[] = [
-      'name', 'slug', 'logoUrl', 'websiteUrl', 'phoneNumber',
-      'email', 'branchAddress', 'shortDescription', 'isActive', 'displayOrder',
-    ];
-    const data: Record<string, unknown> = {};
-    fields.forEach(f => {
-      if (body[f] !== undefined) data[f] = body[f];
-    });
-    if (typeof data.name === 'string') data.name = data.name.trim();
-    if (typeof data.slug === 'string') data.slug = slugify(data.slug.trim() || data.name as string);
-    if (data.isActive !== undefined) data.isActive = !!data.isActive;
-    if (data.displayOrder !== undefined) data.displayOrder = Number(data.displayOrder) || 0;
-
-    const updated = await prisma.financingBank.update({ where: { id }, data });
+    const updated = await updateBank(id, body);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('[financing-banks:update]', error);
@@ -76,7 +55,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Params }) 
 
   try {
     const { id } = await params;
-    await prisma.financingBank.delete({ where: { id } });
+    await deleteBank(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[financing-banks:delete]', error);

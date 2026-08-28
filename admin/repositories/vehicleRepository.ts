@@ -2,6 +2,7 @@
  * Admin vehicle repository — server-only Prisma queries with full access.
  */
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 export const vehicleRepository = {
   async findAll(params?: {
@@ -253,5 +254,22 @@ export const vehicleRepository = {
    *  test-drive invite to a real Vehicle row. */
   async findPublishedIdByName(name: string) {
     return prisma.vehicle.findFirst({ where: { name, isActive: true, status: 'published' }, select: { id: true } });
+  },
+
+  // ── Public API for web frontend (app/api/public/vehicles) ──────────────
+  async findManyPublic(where: Prisma.VehicleWhereInput, limit: number | undefined) {
+    return prisma.vehicle.findMany({
+      where,
+      take: limit,
+      include: { vehicleCategory: true, brand: true },
+      orderBy: [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }],
+    });
+  },
+
+  async findPublicBySlug(slug: string) {
+    return prisma.vehicle.findFirst({
+      where: { slug, isActive: true },
+      include: { vehicleCategory: true, brand: true },
+    });
   },
 };

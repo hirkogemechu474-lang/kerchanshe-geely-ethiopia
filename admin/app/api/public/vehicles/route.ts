@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { listPublicVehicles } from '@/lib/services/vehicles/publicVehicleService';
 
 /**
  * GET /api/public/vehicles
@@ -12,31 +12,7 @@ export async function GET(request: Request) {
     const brand = searchParams.get('brand');
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    const where: any = {
-      isActive: true,
-    };
-
-    if (category) {
-      where.vehicleCategory = { slug: category };
-    }
-
-    if (brand) {
-      where.brand = { slug: brand };
-    }
-
-    const vehicles = await prisma.vehicle.findMany({
-      where,
-      take: limit,
-      include: {
-        vehicleCategory: true,
-        brand: true,
-      },
-      orderBy: [
-        { isFeatured: 'desc' },
-        { displayOrder: 'asc' },
-        { createdAt: 'desc' },
-      ],
-    });
+    const vehicles = await listPublicVehicles({ category, brand, limit });
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { getItem, updateItem, deleteItem } from '@/lib/services/services/servicesCmsService';
 
 // GET - Get single item
 export async function GET(
@@ -9,13 +9,9 @@ export async function GET(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
-    const item = await prisma.serviceItem.findUnique({
-      where: { id: id },
-      include: {
-        section: true,
-      },
-    });
+    const { id } = await params;
+    try {
+    const item = await getItem(id);
 
     if (!item) {
       return NextResponse.json(
@@ -44,23 +40,10 @@ export async function PUT(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
+    const { id } = await params;
+    try {
     const body = await request.json();
-
-    const item = await prisma.serviceItem.update({
-      where: { id: id },
-      data: {
-        sectionId: body.sectionId,
-        title: body.title,
-        description: body.description || null,
-        icon: body.icon || null,
-        image: body.image || null,
-        url: body.url || null,
-        isActive: body.isActive !== false,
-        isFeatured: body.isFeatured === true,
-        displayOrder: body.displayOrder || 0,
-      },
-    });
+    const item = await updateItem(id, body);
 
     return NextResponse.json({
       success: true,
@@ -82,10 +65,9 @@ export async function DELETE(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
-    await prisma.serviceItem.delete({
-      where: { id: id },
-    });
+    const { id } = await params;
+    try {
+    await deleteItem(id);
 
     return NextResponse.json({
       success: true,

@@ -106,6 +106,11 @@ export const userRepository = {
     });
   },
 
+  // ── Password reset (app/api/auth/forgot-password, reset-password) ──────
+  async findByEmailAndOtp(email: string, otp: string) {
+    return prisma.user.findFirst({ where: { email, otpCode: otp } });
+  },
+
   /** Defensive fallback rep lookup by display name — name isn't unique, so
    *  this is best-effort, not a primary lookup path. */
   async findActiveSalesRepByName(name: string) {

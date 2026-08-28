@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { listPublicDealers } from '@/lib/services/dealers/publicDealerService';
 
 /**
  * GET /api/public/dealers
@@ -11,25 +11,7 @@ export async function GET(request: Request) {
     const city = searchParams.get('city');
     const region = searchParams.get('region');
 
-    const where: any = {
-      active: true,
-    };
-
-    if (city) {
-      where.city = { contains: city, mode: 'insensitive' };
-    }
-
-    if (region) {
-      where.region = { contains: region, mode: 'insensitive' };
-    }
-
-    const dealers = await prisma.dealer.findMany({
-      where,
-      orderBy: [
-        { featured: 'desc' },
-        { name: 'asc' },
-      ],
-    });
+    const dealers = await listPublicDealers({ city, region });
 
     return NextResponse.json({
       success: true,

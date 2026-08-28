@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { listPages, createPage } from '@/lib/services/services/servicesCmsService';
 
 // GET - List all service pages
 export async function GET() {
@@ -8,9 +8,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const pages = await prisma.servicePage.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
+    const pages = await listPages();
 
     return NextResponse.json({
       success: true,
@@ -32,20 +30,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-
-    const page = await prisma.servicePage.create({
-      data: {
-        title: body.title,
-        slug: body.slug,
-        excerpt: body.excerpt || null,
-        content: body.content || null,
-        heroImage: body.heroImage || null,
-        heroVideo: body.heroVideo || null,
-        metaTitle: body.metaTitle || null,
-        metaDescription: body.metaDescription || null,
-        isPublished: body.isPublished === true,
-      },
-    });
+    const page = await createPage(body);
 
     return NextResponse.json({
       success: true,

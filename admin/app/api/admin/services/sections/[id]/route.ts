@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { getSection, updateSection, deleteSection } from '@/lib/services/services/servicesCmsService';
 
 // GET - Get single section
 export async function GET(
@@ -9,15 +9,9 @@ export async function GET(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
-    const section = await prisma.serviceSection.findUnique({
-      where: { id: id },
-      include: {
-        items: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-    });
+    const { id } = await params;
+    try {
+    const section = await getSection(id);
 
     if (!section) {
       return NextResponse.json(
@@ -46,20 +40,10 @@ export async function PUT(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
+    const { id } = await params;
+    try {
     const body = await request.json();
-
-    const section = await prisma.serviceSection.update({
-      where: { id: id },
-      data: {
-        title: body.title,
-        slug: body.slug,
-        description: body.description || null,
-        iconUrl: body.iconUrl || null,
-        isActive: body.isActive !== false,
-        displayOrder: body.displayOrder || 0,
-      },
-    });
+    const section = await updateSection(id, body);
 
     return NextResponse.json({
       success: true,
@@ -81,10 +65,9 @@ export async function DELETE(
     const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const { id } = await params;try {
-    await prisma.serviceSection.delete({
-      where: { id: id },
-    });
+    const { id } = await params;
+    try {
+    await deleteSection(id);
 
     return NextResponse.json({
       success: true,

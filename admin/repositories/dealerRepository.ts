@@ -36,4 +36,13 @@ export const dealerRepository = {
   async delete(id: string) {
     return prisma.dealer.delete({ where: { id } });
   },
+
+  // ── Public API for web frontend (app/api/public/dealers) ───────────────
+  async findManyPublic(city: string | null | undefined, region: string | null | undefined) {
+    const where: Prisma.DealerWhereInput = { active: true };
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+    if (region) where.region = { contains: region, mode: 'insensitive' };
+
+    return prisma.dealer.findMany({ where, orderBy: [{ featured: 'desc' }, { name: 'asc' }] });
+  },
 };

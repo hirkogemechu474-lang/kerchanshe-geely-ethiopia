@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { listItems, createItem } from '@/lib/services/services/servicesCmsService';
 
 // GET - List all service items
 export async function GET(request: NextRequest) {
@@ -11,15 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sectionId = searchParams.get('sectionId');
 
-    const where = sectionId ? { sectionId } : {};
-
-    const items = await prisma.serviceItem.findMany({
-      where,
-      include: {
-        section: true,
-      },
-      orderBy: { displayOrder: 'asc' },
-    });
+    const items = await listItems(sectionId);
 
     return NextResponse.json({
       success: true,
@@ -41,20 +33,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-
-    const item = await prisma.serviceItem.create({
-      data: {
-        sectionId: body.sectionId,
-        title: body.title,
-        description: body.description || null,
-        icon: body.icon || null,
-        image: body.image || null,
-        url: body.url || null,
-        isActive: body.isActive !== false,
-        isFeatured: body.isFeatured === true,
-        displayOrder: body.displayOrder || 0,
-      },
-    });
+    const item = await createItem(body);
 
     return NextResponse.json({
       success: true,
