@@ -14,8 +14,9 @@ import { ModelPageTabs } from "@/components/ModelPageTabs";
 import { VehicleOptionsShowcase } from "@/components/VehicleOptionsShowcase";
 import { QuickRequestCallback } from "@/components/QuickRequestCallback";
 import { withBasePath } from "@/lib/publicPath";
+import { env } from "@/lib/env";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://geelyethiopia.com";
+const BASE_URL = env.app.url;
 const SETTING_KEY = "vehicle_settings";
 
 function publicBrochureUrl(url: string | undefined, fallback: string) {

@@ -1,10 +1,11 @@
 /**
  * Static site-wide configuration values.
  */
+import { env } from '@/lib/env';
 
 export const SITE_CONFIG = {
   name: 'Geely Ethiopia',
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://geelyethiopia.com',
+  url: env.app.url,
   description:
     'Official distributor of Geely vehicles in Ethiopia. Browse SUVs, sedans, and EVs.',
   defaultLocale: 'en',

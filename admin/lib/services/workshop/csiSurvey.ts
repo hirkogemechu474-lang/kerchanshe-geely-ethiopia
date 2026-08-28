@@ -1,4 +1,5 @@
 import { sendStatusEmail } from '@/lib/status-email';
+import { env } from '@/lib/env';
 
 // Post-visit satisfaction survey invite (BRD FR-602, UC-16). Triggered
 // automatically when a job card reaches INVOICED_CLOSED — never manually by
@@ -23,7 +24,7 @@ export interface CsiSurveyDispatchResult {
 }
 
 function resolveWebBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_WEB_URL || process.env.WEB_URL || 'http://localhost:7501').replace(/\/$/, '');
+  return env.app.url.replace(/\/$/, '');
 }
 
 export async function sendCsiSurveyInvite(jobCard: CsiSurveyJobCard): Promise<CsiSurveyDispatchResult> {

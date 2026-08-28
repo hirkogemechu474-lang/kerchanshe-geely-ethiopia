@@ -1,9 +1,22 @@
 // Environment configuration utility for Geely Ethiopia Platform
 
+// No hardcoded domain fallback here on purpose: this value feeds customer-
+// facing links (e.g. the quotation sign link), and a hardcoded default
+// silently pointing at the wrong environment is exactly the bug this guards
+// against. Every environment (.env, .env.production, and the real
+// deployment's own .env) must set NEXT_PUBLIC_SITE_URL explicitly.
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 export const env = {
   // Application Settings
   app: {
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com',
+    url: requireEnv('NEXT_PUBLIC_SITE_URL'),
     env: process.env.NEXT_PUBLIC_APP_ENV || 'development',
     isDev: process.env.NODE_ENV === 'development',
     isProd: process.env.NODE_ENV === 'production',

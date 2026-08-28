@@ -46,7 +46,7 @@ async function sendMailWithRetry(
   }
 }
 
-const BASE_URL = env.app.url.replace(/\/$/, '') || 'https://geelyethiopia.com';
+const BASE_URL = env.app.url.replace(/\/$/, '');
 
 // Shared HTML shell for customer confirmation emails: logo, heading, body,
 // and (when a reference exists) a "Check Your Status" link back to

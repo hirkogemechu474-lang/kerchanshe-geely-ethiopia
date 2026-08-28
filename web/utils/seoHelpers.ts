@@ -2,6 +2,7 @@
  * SEO Meta Helpers
  * Generate OpenGraph, Twitter Cards, JSON-LD structured data
  */
+import { env } from '@/lib/env';
 
 interface SEOMetaProps {
   title: string;
@@ -16,7 +17,7 @@ interface SEOMetaProps {
 }
 
 export function generateSEOMeta(props: SEOMetaProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com';
+  const baseUrl = env.app.url;
   const fullUrl = props.url ? `${baseUrl}${props.url}` : baseUrl;
   const ogImage = props.image || `${baseUrl}/images/og-default.jpg`;
 
@@ -70,7 +71,7 @@ export function generateArticleSchema(article: {
       name: 'Geely Ethiopia',
       logo: {
         '@type': 'ImageObject',
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com'}/images/logo.png`,
+        url: `${env.app.url}/images/logo.png`,
       },
     },
     mainEntityOfPage: {

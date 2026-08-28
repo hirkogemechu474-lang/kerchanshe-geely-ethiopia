@@ -8,6 +8,7 @@ import { SiteChrome } from "@/components/SiteChrome";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import Script from "next/script";
 import { inter, manrope, notoSansEthiopic } from "@/lib/fonts";
+import { env } from "@/lib/env";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -16,7 +17,7 @@ export const viewport: Viewport = {
   ],
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://geelyethiopia.com";
+const BASE_URL = env.app.url;
 const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/+$/, "");
 
 export const metadata: Metadata = {

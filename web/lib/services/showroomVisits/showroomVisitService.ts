@@ -1,6 +1,7 @@
 import { showroomVisitRepository } from '@/repositories/showroomVisitRepository';
 import { sendFormEmail } from '@/lib/form-email';
 import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
+import { env } from '@/lib/env';
 
 export const ALLOWED_VISIT_ACTIONS = ['sales', 'test-drive', 'purchase', 'quote'];
 
@@ -32,7 +33,7 @@ export async function registerVisit(id: string, input: { fullName: string; phone
   });
 
   if (isFirstRegistration && input.email) {
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+    const siteUrl = env.app.url.replace(/\/$/, '');
     const continueUrl = `${siteUrl}/models?visitId=${encodeURIComponent(visit.id)}`;
     try {
       // Human-friendly reference matching every other confirmation email

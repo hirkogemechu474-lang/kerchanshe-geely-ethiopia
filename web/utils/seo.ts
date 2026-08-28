@@ -6,8 +6,9 @@
 
 import type { Vehicle } from '@/types/vehicle';
 import type { Dealer } from '@/types/dealer';
+import { env } from '@/lib/env';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+const SITE_URL = env.app.url.replace(/\/$/, '');
 
 // ─── Organization ─────────────────────────────────────────────────────────────
 

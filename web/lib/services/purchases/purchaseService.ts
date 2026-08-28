@@ -10,6 +10,7 @@ import { financingRepository } from '@/repositories/financingRepository';
 import { PDI_CHECKLIST_TEMPLATE } from '@/lib/services/sales/pdiChecklistTemplate';
 import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { value } from '@/lib/services/payments/legacyPaymentService';
+import { env } from '@/lib/env';
 
 // Most mail clients (Gmail included) won't fetch an <img src> pointing at
 // http://localhost, and many block remote images by default even when the
@@ -279,7 +280,7 @@ async function sendPurchaseEmail(details: { fullName: string; email: string; veh
     // The customer's only way back to this purchase (short of the later
     // approval email) — the confirmation screen otherwise only lives in
     // that page's local state and is lost the moment the tab closes.
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com').replace(/\/$/, '');
+    const siteUrl = env.app.url.replace(/\/$/, '');
     const continueUrl = `${siteUrl}/financing/apply?purchaseId=${encodeURIComponent(details.purchaseReference)}`;
     const statusUrl = `${siteUrl}/status?ref=${encodeURIComponent(details.purchaseReference)}`;
     const logoHtml = `<div style="text-align:center;padding:24px 0;"><img src="cid:geely-logo" alt="Geely" style="height:56px;" /></div>`;

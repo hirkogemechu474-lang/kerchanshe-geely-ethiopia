@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { env } from '@/lib/env';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com';
+  const baseUrl = env.app.url;
 
   return {
     rules: [
