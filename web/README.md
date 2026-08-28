@@ -2,7 +2,8 @@
 
 **Port:** 7501 (dev) / 7502 (local prod build)  
 **Type:** Next.js 15 (App Router)  
-**Database:** None (API client only)
+**Database:** Own Prisma client against the shared PostgreSQL database, **plus**
+an HTTP client for Admin's read-only catalog/marketing API — see below.
 
 ---
 
@@ -11,27 +12,32 @@
 ```
                     ┌──────────────────┐
                     │     DATABASE     │
-                    │ PostgreSQL/MySQL │
-                    └────────▲─────────┘
-                             │
-                             │ Prisma
-                             │
-                    ┌────────┴────────┐
-                    │      ADMIN      │
-                    │    :7500        │
-                    │ Prisma + API    │
-                    └────────▲────────┘
-                             │
-                             │ HTTP/API
-                             │
-                    ┌────────┴────────┐
-                    │       WEB       │  ← YOU ARE HERE
-                    │     :7501       │
-                    │   Next.js       │
-                    └─────────────────┘
+                    │    PostgreSQL    │
+                    └────▲────────▲────┘
+                         │        │
+                  Prisma │        │ Prisma
+                         │        │
+              ┌──────────┴──┐  ┌──┴──────────────┐
+              │    ADMIN    │  │       WEB        │  ← YOU ARE HERE
+              │    :7500    │  │      :7501       │
+              │ Prisma+API  │◄─┤ Prisma + Next.js │
+              │ (owns DB,   │  │ (own transactional│
+              │  CMS authr) │  │  backend + admin  │
+              └─────────────┘  │  API client)      │
+                    ▲          └──────────────────┘
+                    │ HTTP GET /api/public/*
+                    └── (catalog/marketing content Web doesn't own)
 ```
 
-**Web is completely independent** — it connects to Admin's HTTP API, never touches the database directly.
+**Web is not database-free.** It runs its own Prisma client (`lib/prisma.ts`, same
+database as Admin) for self-service flows it owns end-to-end and that need
+web-hosted uploads/tokens — sales-agreement e-sign, vehicle handover sign-off,
+quotation e-sign, test-drive confirm, staff-signature upload, payments, customer
+accounts, and more (~30 route domains, see `repositories/` below). Web *also*
+calls Admin's public API (`services/adminApiClient.ts`) for read-only catalog and
+marketing content that Admin's CMS authors — vehicles, dealers, news. Both are
+intentional: the two apps stay independently deployable (ADR-002), each owning
+the domains it's the system of record for.
 
 ---
 
@@ -85,53 +91,59 @@ npm start
 
 ## Folder Structure
 
+Same three-tier pattern as `admin/`: **frontend** (pages + `services/` API-client
+wrappers), **backend** (`app/api/**/route.ts` handlers + `lib/services/` business
+logic), **database** (`repositories/` — the only place `prisma.*` calls are
+allowed — plus `lib/prisma.ts` and `prisma/`).
+
 ```
 web/
-├── app/                    # Next.js 15 App Router
-│   ├── page.tsx            # Homepage
-│   ├── models/             # Vehicle browsing
-│   ├── dealers/            # Dealer locator
-│   ├── test-drive/         # Test drive booking
-│   └── ...
-├── components/             # Shared UI components
-│   ├── Header.tsx          # Main navigation
-│   ├── Footer.tsx
-│   ├── ErrorBoundary.tsx   # Error handling
-│   ├── LoadingSkeleton.tsx # Loading states
-│   └── Toast.tsx           # Notifications
-├── features/               # Domain-specific modules
-│   ├── vehicles/
-│   ├── dealers/
-│   ├── electric/
-│   ├── test-drive/
-│   ├── quote/
-│   └── ...
-├── services/               # API clients
-│   └── adminApiClient.ts   # Admin backend API
-├── hooks/                  # React hooks
-│   ├── useVehicles.ts
-│   ├── useToast.ts
-│   └── ...
-├── types/                  # TypeScript types
-│   ├── vehicle.ts
-│   ├── dealer.ts
-│   └── ...
-├── utils/                  # Utilities
-│   ├── formatting.ts
-│   ├── seoHelpers.ts
-│   └── ...
-├── config/                 # Configuration
-│   ├── env.ts
-│   ├── fonts.ts
-│   └── site.ts
-├── constants/              # Magic-string-free constants
-│   ├── routes.ts
-│   ├── vehicles.ts
-│   └── ...
-├── providers/              # React context providers
-│   ├── ThemeProvider.tsx   # Dark mode
-│   └── ...
-└── middleware.ts           # Edge middleware
+├── app/                         # FRONTEND — pages/layouts
+│   ├── page.tsx                 # Homepage
+│   ├── models/, dealers/, test-drive/, quote/, parts/, service/, ...
+│   └── api/
+│       ├── public/              # BACKEND — public self-service + read APIs
+│       ├── auth/                # BACKEND — customer login/register/reset
+│       ├── agreement/, handover/  # BACKEND — e-sign + countersign-stamp
+│       │                        # (the countersign-stamp endpoints Admin
+│       │                        # calls server-to-server are frozen — see
+│       │                        # docs/adr/ADR-001-hardening.md)
+│       ├── settings/, content/  # BACKEND — CMS content this app owns
+│       └── ...
+├── components/                  # FRONTEND — shared UI (Header, Footer,
+│                                 # ErrorBoundary, LoadingSkeleton, Toast, ...)
+├── features/                    # FRONTEND — domain modules (vehicles,
+│                                 # dealers, electric, test-drive, quote,
+│                                 # account, faq, service, ...)
+├── services/                    # FRONTEND — typed API-client wrappers
+│   └── adminApiClient.ts        # → Admin's read-only public API (catalog only)
+├── hooks/ providers/ utils/ config/ constants/ types/
+│                                 # FRONTEND — supporting layers
+│
+├── repositories/                # DATABASE tier — every prisma.* call lives
+│   │                            # here, nowhere else (~28 files: vehicleRepository,
+│   │                            # quotationRepository, salesOrderRepository,
+│   │                            # testDriveRepository, staffSignatureRepository, ...)
+│   └── index.ts
+│
+├── lib/
+│   ├── prisma.ts                # DATABASE tier — Prisma client singleton
+│   ├── services/                # BACKEND tier — business logic, organized by
+│   │                            # domain (orders, quotations, agreements,
+│   │                            # handovers, purchases, payments, leads,
+│   │                            # csiSurvey, staffSignature, settings, ...)
+│   ├── auth/                    # customer session (config.ts, middleware.ts,
+│   │                            # customer.ts, types.ts)
+│   └── cors.ts, env.ts, rate-limit.ts, upload-utils.ts, form-email.ts,
+│       reference.ts, i18n.ts, fonts.ts, payments/, ...
+│                                 # cross-cutting infra, not business logic
+├── middleware.ts                 # Edge middleware
+│
+└── prisma/
+    ├── schema.prisma             # DATABASE tier — vendored copy of admin's
+    │                            # schema, kept in sync via
+    │                            # scripts/sync-web-prisma-schema.mjs
+    └── migrations/
 ```
 
 ---
@@ -187,27 +199,25 @@ export const metadata = generateSEOMeta({
 
 ## API Integration
 
-All data comes from **Admin backend** via `adminApiClient`:
+Two data paths, by design (see Architecture above):
+
+**Read-only catalog/marketing content Admin's CMS authors** goes through
+`adminApiClient`, an HTTP client hitting Admin's `/api/public/*`:
 
 ```tsx
 import { adminApi } from '@/services/adminApiClient';
 
-// Vehicles
 const { vehicles } = await adminApi.vehicles.list({ category: 'suv' });
 const vehicle = await adminApi.vehicles.getBySlug('coolray');
-
-// Dealers
 const dealers = await adminApi.dealers.list({ city: 'Addis Ababa' });
-
-// Test Drive Submission
-await adminApi.testDrive.submit({
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john@example.com',
-  vehicleInterest: 'coolray',
-  // ...
-});
 ```
+
+**Everything web owns end-to-end** — test-drive booking, quotations, sales
+agreements, handovers, parts requests, customer accounts, and more — is served
+by this app's own `app/api/**/route.ts` handlers, backed by its own
+`repositories/` + `lib/services/` (this app's own Prisma client, same
+database as Admin). Frontend code calls these the normal Next.js way (relative
+`fetch('/api/public/...')`), not through `adminApiClient`.
 
 ---
 

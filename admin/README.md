@@ -31,7 +31,12 @@
                     └─────────────────┘
 ```
 
-**Admin owns the database** — provides HTTP API for Web and serves the admin dashboard.
+**Admin owns the database and provides a read-only HTTP API for Web's catalog/marketing
+content** (vehicles, dealers, news, etc. — see `app/api/public/*`). Web also runs its own
+Prisma client against the same database for self-service flows it owns end-to-end
+(quotation e-sign, sales-agreement/handover countersigning, test-drive confirm,
+customer accounts) — see `web/README.md`. Both apps stay independently deployable:
+neither has a build-time dependency on the other (ADR-002).
 
 ---
 
@@ -103,73 +108,63 @@ npm start
 
 ## Folder Structure
 
+Three tiers, each with a clear job: **frontend** (pages + the thin API-client
+`services/` layer consumed by `features/*` hooks), **backend**
+(`app/api/**/route.ts` handlers + the `lib/services/` business-logic layer
+they call), and **database** (`repositories/` — the only place `prisma.*`
+calls are allowed — plus `lib/prisma.ts` and `prisma/`).
+
 ```
 admin/
-├── app/
-│   ├── admin/                  # Admin dashboard routes
-│   │   ├── dashboard/
-│   │   ├── vehicles/
-│   │   ├── dealers/
-│   │   ├── users/
-│   │   └── ...
-│   ├── api/
-│   │   ├── admin/              # Admin-only API routes
-│   │   └── public/             # Public API (for Web)
-│   └── layout.tsx
-├── components/
-│   ├── admin/                  # Admin UI components
-│   │   ├── AdminLayout.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── ...
-│   ├── LoadingSpinner.tsx
-│   └── ErrorAlert.tsx
-├── features/                   # Domain modules
-│   ├── vehicles/
-│   ├── dealers/
-│   ├── users/
-│   ├── analytics/
-│   ├── content/
-│   ├── marketing/
-│   ├── customers/
-│   ├── parts/
-│   └── settings/
-├── services/                   # Service layer
-│   └── vehicleAdminService.ts
-├── repositories/               # Data access layer (Prisma)
-│   ├── vehicleRepository.ts
-│   ├── dealerRepository.ts
-│   └── userRepository.ts
-├── models/                     # Domain models
-│   └── VehicleAdminModel.ts
-├── schemas/                    # Validation schemas
-│   └── vehicleSchemas.ts
-├── types/                      # TypeScript types
-│   └── admin.ts
-├── hooks/                      # React hooks
-│   ├── useAdminAuth.ts
-│   ├── useToast.ts
-│   └── useConfirm.ts
-├── utils/                      # Utilities
-│   └── formatting.ts
-├── config/                     # Configuration
-│   ├── env.ts
-│   └── site.ts
-├── constants/                  # Constants
-│   ├── permissions.ts
-│   └── status.ts
-├── middleware/                 # Middleware helpers
-│   ├── auth.ts
-│   └── rateLimit.ts
-├── lib/                        # Infrastructure
-│   ├── auth/                   # NextAuth config
-│   ├── prisma.ts               # Prisma client
-│   └── db.ts                   # Database utilities
+├── app/                         # FRONTEND — pages/layouts
+│   ├── admin/                   # Admin dashboard routes (dashboard, vehicles,
+│   │                            # dealers, users, workshop, sales, parts, ...)
+│   └── api/
+│       ├── admin/               # BACKEND — admin-only API routes (thin handlers)
+│       ├── public/              # BACKEND — public API (consumed by Web)
+│       ├── auth/                # BACKEND — login, password reset
+│       ├── financing/, media/, content/   # BACKEND — a few routes that
+│       │                        # predate the app/api/{admin,public} split
+│       └── ...
+├── components/admin/            # FRONTEND — admin UI components
+├── features/                    # FRONTEND — domain modules (vehicles,
+│                                 # dealers, users, analytics, content,
+│                                 # marketing, customers, parts, settings, ...)
+├── services/                    # FRONTEND — typed API-client wrappers
+│                                 # consumed by features/*/use*.ts hooks
+├── hooks/ providers/ utils/ config/ constants/ models/ schemas/ types/
+│                                 # FRONTEND — supporting layers
+│
+├── repositories/                # DATABASE tier — every prisma.* call lives
+│   │                            # here, nowhere else (~28 files, one per
+│   │                            # domain/model cluster: vehicleRepository,
+│   │                            # salesOrderRepository, jobCardRepository,
+│   │                            # warrantyClaimRepository, ...)
+│   └── index.ts
+│
+├── lib/
+│   ├── prisma.ts                # DATABASE tier — Prisma client singleton
+│   ├── services/                # BACKEND tier — business logic/orchestration,
+│   │   ├── sales/                # organized by domain (orders, quotations,
+│   │   ├── workshop/             # job cards, warranty claims, PDI, ...)
+│   │   ├── financing/, content/, media/, dealers/, vehicles/,
+│   │   └── ...                   # services/, auth/, users/, reviews/, ...
+│   ├── auth/                    # NextAuth config + session/permission
+│   │   ├── config.ts             # helpers — requireAuth/requirePermission
+│   │   ├── middleware.ts         # (page-level), requireAdminApiSession
+│   │   ├── api.ts                # (API-route-level)
+│   │   ├── types.ts              # AdminRole/AdminPermissions/ROLE_PERMISSIONS
+│   │   └── permissionGroups.ts, rolePermissions.ts, roleDescriptions.ts
+│   └── cors.ts, env.ts, rate-limit.ts, upload-utils.ts, status-email.ts, ...
+│                                 # cross-cutting infra, not business logic
+├── middleware.ts                 # Next.js edge middleware (route protection)
+│
 ├── prisma/
-│   ├── schema.prisma           # Database schema
-│   ├── seed-*.ts               # Seed scripts
+│   ├── schema.prisma             # DATABASE tier — schema
+│   ├── seed-*.ts                 # Seed scripts
 │   └── migrations/
 └── scripts/
-    └── create-admin.ts         # CLI admin user creator
+    └── create-admin.ts           # CLI admin user creator
 ```
 
 ---
@@ -178,12 +173,22 @@ admin/
 
 ### 🔐 Authentication & Authorization
 ```tsx
-import { requireAuth, requirePermission } from '@/middleware/auth';
+// Page-level (Server Components)
+import { requireAuth, requirePermission } from '@/lib/auth/middleware';
 
 export default async function Page() {
   const session = await requireAuth();
   await requirePermission('canManageVehicles');
   // ...
+}
+
+// API-route-level
+import { requireAdminApiSession } from '@/lib/auth/api';
+
+export async function GET() {
+  const { session, response } = await requireAdminApiSession();
+  if (response) return response; // 401, already shaped
+  // session!.user.permissions.canManageVehicles, etc.
 }
 ```
 
@@ -251,20 +256,22 @@ PATCH  /api/admin/users/:id/role    # Update user role
 
 ## Database Schema
 
-Key models in `prisma/schema.prisma`:
+Key models in `prisma/schema.prisma` (vendored, kept in sync with `web/prisma/schema.prisma`
+via `scripts/sync-web-prisma-schema.mjs` — both apps share one PostgreSQL database):
 
 - **User** — Admin users with roles & permissions
-- **Vehicle** — Vehicle inventory
-- **VehicleBrand** — Brands (Geely, Geometry)
-- **VehicleCategory** — Categories (SUV, Sedan, EV)
+- **Vehicle**, **VehicleBrand**, **VehicleCategory** — Catalog (plus VehicleAccessory/Color/Interior/Package/Wheel)
 - **Dealer** — Dealer locations
-- **TestDriveRequest** — Test drive bookings
-- **QuotationRequest** — Quote requests
+- **TestDrive** — Test drive bookings
+- **Quotation**, **SalesOrder** — The sales/quoting pipeline (PdiChecklistItem, SalesOrderStatusHistory)
 - **ServiceBooking** — Service appointments
+- **JobCard**, **Technician**, **ServiceBay**, **WarrantyClaim** — Workshop/SWMS domain
 - **NewsArticle** — News & press releases
 - **Promotion** — Marketing promotions
-- **SparePart** — Parts inventory
+- **SparePart**, **PartRequest**, **PartCategory**, **PartBrand**, **PartBenefit** — Parts domain
 - **Review** — Customer reviews
+- **FinancingBank**, **FinancingProgram** — Financing partners/programs
+- **Setting** — Generic key/value store for CMS content, policies, social links, business/contact settings
 
 ---
 
