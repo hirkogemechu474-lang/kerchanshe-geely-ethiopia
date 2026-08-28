@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Trash2, Phone, Mail, Calendar, Loader2, ShoppingCart, FileText, Inbox, PhoneCall, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { Eye, Trash2, Phone, Mail, Calendar, Loader2, ShoppingCart, FileText, Inbox, PhoneCall, CheckCircle2, ShoppingBag, Search, X } from 'lucide-react';
 import { StatTile, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, Pagination, type Tone } from '@/components/admin/ui';
 
 const PAGE_SIZE = 25;
@@ -19,6 +19,8 @@ interface Quotation {
   status: string;
   source: string;
   createdAt: string;
+  quotationNo: string | null;
+  managerApprovalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 interface Stats {
@@ -67,10 +69,13 @@ export default function QuotationsList() {
   const [filter, setFilter] = useState<(typeof TABS)[number]['key']>('all');
   const [page, setPage] = useState(1);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
-  const load = useCallback(async (status: string, p: number) => {
+  const load = useCallback(async (status: string, p: number, q: string) => {
     const params = new URLSearchParams({ page: String(p) });
     if (status !== 'all') params.set('status', status);
+    if (q) params.set('search', q);
     const res = await fetch(`/api/admin/quotations?${params.toString()}`);
     if (res.ok) {
       const data = await res.json();
@@ -81,8 +86,17 @@ export default function QuotationsList() {
   }, []);
 
   useEffect(() => {
-    load(filter, page);
-  }, [filter, page, load]);
+    load(filter, page, search);
+  }, [filter, page, search, load]);
+
+  // Debounce the search box so every keystroke doesn't fire a request.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const changeFilter = (f: (typeof TABS)[number]['key']) => {
     setFilter(f);
@@ -92,7 +106,7 @@ export default function QuotationsList() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this quotation?')) return;
     const res = await fetch(`/api/admin/quotations/${id}`, { method: 'DELETE' });
-    if (res.ok) load(filter, page);
+    if (res.ok) load(filter, page, search);
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -101,7 +115,7 @@ export default function QuotationsList() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     });
-    if (res.ok) load(filter, page);
+    if (res.ok) load(filter, page, search);
   };
 
   const handleConvertToOrder = async (id: string) => {
@@ -136,6 +150,22 @@ export default function QuotationsList() {
         <StatTile label="Contacted" value={stats.contacted} icon={PhoneCall} />
         <StatTile label="Converted" value={stats.converted} icon={ShoppingBag} />
         <StatTile label="Closed" value={stats.closed} icon={CheckCircle2} />
+      </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search customer, phone, email, or vehicle…"
+          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 pl-9 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-geely-blue/40"
+        />
+        {searchInput && (
+          <button type="button" onClick={() => setSearchInput('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Clear search">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -199,7 +229,13 @@ export default function QuotationsList() {
                     <option key={s} value={s}>{s.replace('_', ' ')}</option>
                   ))}
                 </select>
-                <div className="mt-1"><Badge tone={STATUS_TONE[quotation.status] ?? 'gray'}>{quotation.status.replace('_', ' ')}</Badge></div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <Badge tone={STATUS_TONE[quotation.status] ?? 'gray'}>{quotation.status.replace('_', ' ')}</Badge>
+                  {quotation.quotationNo && quotation.managerApprovalStatus === 'PENDING' && (
+                    <Badge tone="orange">Awaiting approval</Badge>
+                  )}
+                  {quotation.managerApprovalStatus === 'REJECTED' && <Badge tone="red">Returned</Badge>}
+                </div>
               </Td>
               <Td className="text-gray-500">
                 <div className="flex items-center gap-1.5">
@@ -228,7 +264,9 @@ export default function QuotationsList() {
               </Td>
             </Tr>
           ))}
-          {quotations.length === 0 && <EmptyTableRow colSpan={7} message="No quotations found." />}
+          {quotations.length === 0 && (
+            <EmptyTableRow colSpan={7} message={search ? 'No quotations match your search.' : 'No quotations found.'} />
+          )}
         </TBody>
       </TableCard>
 

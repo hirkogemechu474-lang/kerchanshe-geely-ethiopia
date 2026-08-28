@@ -2,11 +2,12 @@ import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 import { adminApi } from '@/services/adminApiClient';
 import { env } from '@/lib/env';
+import { withBasePathUrl } from '@/lib/basePath';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour
 
-const BASE_URL = env.app.url;
+const BASE_URL = withBasePathUrl(env.app.url);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date().toISOString();

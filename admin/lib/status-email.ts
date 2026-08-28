@@ -73,7 +73,7 @@ export async function sendStatusEmail(opts: StatusEmailOptions): Promise<boolean
       <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:32px;">
         <h2 style="margin-top:0;">Hello ${opts.name || 'there'},</h2>
         <p>We'd like to update you on your ${opts.entityType.toLowerCase()}.</p>
-        <p style="font-size:15px;"><strong>Status:</strong> ${statusLabel}</p>
+        <p style="fwont-size:15px;"><strong>Status:</strong> ${statusLabel}</p>
         ${opts.reference ? `<p style="font-size:15px;"><strong>Reference:</strong> ${opts.reference}</p>` : ''}
         ${opts.details ? `<p style="white-space:pre-line;color:#3a4a6b;">${opts.details}</p>` : ''}
         ${

@@ -10,7 +10,7 @@ export const partRepository = {
     if (params?.category && params.category !== 'all') where.category = params.category;
     if (params?.search) {
       where.OR = [
-        { partNumber: { contains: params.search, mode: 'insensitive' } },
+        { sku: { contains: params.search, mode: 'insensitive' } },
         { name: { contains: params.search, mode: 'insensitive' } },
       ];
     }

@@ -8,6 +8,7 @@ import { UPLOADS_ROOT, resolveUploadUrl } from '@/lib/upload-utils';
 import { buildSalesAgreementPdf, stampSignatureOnPdf, stampAgentSignatureText, stampAgentSignatureImage } from '@/lib/services/sales/salesAgreementPdf';
 import { isPdfUrl } from '@/lib/fileType';
 import { env } from '@/lib/env';
+import { notifyManagersOfSignedAgreement } from '@/lib/services/agreements/agreementNotifications';
 
 export type SignAgreementResult =
   | { ok: true; signedDocumentUrl: string; signedAt: Date }
@@ -76,6 +77,8 @@ export async function signAgreement(
       console.error('[agreement:sign:email]', emailError);
     }
   }
+
+  await notifyManagersOfSignedAgreement(updated);
 
   return { ok: true, signedDocumentUrl: updated.signedDocumentUrl!, signedAt: updated.signedAt! };
 }

@@ -55,9 +55,8 @@ export async function POST(request: NextRequest) {
     const user = await userRepository.create({
       name: data.name,
       email: data.email,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
       role: data.role,
-      department: data.department,
       isActive: true,
     });
 

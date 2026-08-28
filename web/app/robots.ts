@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { env } from '@/lib/env';
+import { BASE_PATH, withBasePathUrl } from '@/lib/basePath';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = env.app.url;
+  const baseUrl = withBasePathUrl(env.app.url);
 
   return {
     rules: [
@@ -10,12 +11,12 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/api/',
-          '/admin/',
-          '/_next/',
-          '/private/',
+          `${BASE_PATH}/api/`,
+          `${BASE_PATH}/admin/`,
+          `${BASE_PATH}/_next/`,
+          `${BASE_PATH}/private/`,
           '*.json',
-          '/sw.js',
+          `${BASE_PATH}/sw.js`,
         ],
       },
       {

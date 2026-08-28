@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Save, User, Car, Calendar, Clock, MapPin, Phone, Mail, FileText, Bell } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 interface TestDriveFormProps {
   mode: 'create' | 'edit';
@@ -54,7 +55,7 @@ export default function TestDriveForm({ mode, initialData }: TestDriveFormProps)
 
       if (response.ok) {
         alert('Test drive scheduled successfully!');
-        window.location.href = '/admin/test-drives';
+      window.location.href = withBasePath('/admin/test-drives');
       } else {
         const error = await response.json();
         alert(`Error: ${error.error || 'Failed to schedule test drive'}`);

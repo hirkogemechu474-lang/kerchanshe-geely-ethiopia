@@ -8,8 +8,19 @@ const PAGE_SIZE = 25;
 // Status counts are computed across the WHOLE table (not just the current
 // filter/page) so the stat tiles stay accurate once the list itself is
 // paginated — otherwise "Booked: 3" would just mean "3 on this page".
-export async function listOrders(status: OrderStatus | null, page: number) {
-  const where = status ? { status } : undefined;
+export async function listOrders(status: OrderStatus | null, page: number, search?: string) {
+  const trimmedSearch = search?.trim();
+  const where = {
+    ...(status && { status }),
+    ...(trimmedSearch && {
+      OR: [
+        { orderNo: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { customerName: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { customerPhone: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { vehicleModel: { contains: trimmedSearch, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
   const [orders, total, statusCounts] = await salesOrderRepository.findPage(where, (page - 1) * PAGE_SIZE, PAGE_SIZE);
 
   const countFor = (s: OrderStatus) => statusCounts.find((c) => c.status === s)?._count ?? 0;

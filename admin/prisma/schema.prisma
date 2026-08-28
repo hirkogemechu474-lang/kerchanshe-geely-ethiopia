@@ -315,11 +315,23 @@ enum OrderStatus {
   CANCELLED
 }
 
+// Full bank-financing pipeline, not just a flat pending/approved/declined
+// flag — mirrors the real stages a financed sale actually goes through.
+// NOT_REQUESTED/REQUESTED were previously NOT_APPLICABLE/PENDING; REJECTED
+// was previously DECLINED (see migration 20260828_expand_financing_status).
 enum FinancingStatus {
-  NOT_APPLICABLE
-  PENDING
+  NOT_REQUESTED
+  REQUESTED
+  DOCUMENTS_PENDING
+  DOCUMENTS_SUBMITTED
+  UNDER_REVIEW
   APPROVED
-  DECLINED
+  CONDITIONALLY_APPROVED
+  REJECTED
+  CUSTOMER_DECLINED
+  DISBURSED
+  COMPLETED
+  CANCELLED
 }
 
 // Mirrors FinancingStatus's own enum convention for a SalesOrder lifecycle
@@ -358,7 +370,7 @@ model SalesOrder {
   // shape, same nullability.
   configurationJson Json?
   totalPrice      Float?
-  financingStatus FinancingStatus           @default(NOT_APPLICABLE)
+  financingStatus FinancingStatus           @default(NOT_REQUESTED)
   status          OrderStatus               @default(QUOTED)
   orderDate       DateTime                  @default(now())
   deliveredAt     DateTime?

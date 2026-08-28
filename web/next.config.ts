@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 // Set only in production (portal.kerchanshe.co/geely, behind Apache) — absent
 // in local dev so `next dev` keeps serving from the site root.
+// Empty means the domain root (development). Set e.g. /geely when Apache
+// mounts this app below a sub-path. The same build then works at either URL.
 const rawBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const basePath = rawBasePath ? rawBasePath.replace(/\/+$/, "") : undefined;
 
@@ -86,14 +88,13 @@ const nextConfig: NextConfig = {
   // Compression
   compress: true,
 
-  // Media uploads are stored by the admin app (http://localhost:7500, see
-  // NEXT_PUBLIC_ADMIN_API_URL). Serve them from the same origin so <Image "/uploads/...">
-  // URLs resolve without a hardcoded cross-origin dependency.
+  // Serve files that exist in this app's public/uploads first. Missing files
+  // fall through to the admin app, which owns the catalog/CMS uploads.
   async rewrites() {
     const adminUrl =
       process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:7500";
 
-    return [
+    return { afterFiles: [
       {
         source: "/uploads/:path*",
         destination: `${adminUrl}/uploads/:path*`,
@@ -110,7 +111,7 @@ const nextConfig: NextConfig = {
         source: "/api/public/test-drive",
         destination: `${adminUrl}/api/public/test-drive`,
       },
-    ];
+    ] };
   },
 
   // Headers for performance and security

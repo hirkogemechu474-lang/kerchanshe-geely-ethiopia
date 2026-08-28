@@ -19,7 +19,6 @@ export const userRepository = {
         name: true,
         email: true,
         role: true,
-        department: true,
         isActive: true,
         lastLogin: true,
         createdAt: true,
@@ -41,7 +40,6 @@ export const userRepository = {
         name: true,
         email: true,
         role: true,
-        department: true,
         isActive: true,
         createdAt: true,
       },
@@ -49,10 +47,7 @@ export const userRepository = {
   },
 
   // Public registration (app/api/auth/register) — no select clause,
-  // matching the pre-existing inline call this replaced: intentionally NOT
-  // routed through create() above, whose select includes a `department`
-  // field that doesn't exist on this schema (pre-existing drift — see
-  // findManyActive) and would break this otherwise-working flow.
+  // matching the pre-existing inline call this replaced.
   async createCustomer(data: Prisma.UserCreateInput) {
     return prisma.user.create({ data });
   },

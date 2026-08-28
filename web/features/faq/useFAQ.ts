@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface FAQ {
   id: string;
@@ -9,24 +9,22 @@ interface FAQ {
   category: string;
 }
 
-const mockFAQs: FAQ[] = [
-  {
-    id: '1',
-    question: 'What is the warranty period for Geely vehicles?',
-    answer: '5 years or 150,000 km, whichever comes first.',
-    category: 'warranty',
-  },
-  {
-    id: '2',
-    question: 'Do you offer financing options?',
-    answer: 'Yes, we partner with major Ethiopian banks for flexible financing.',
-    category: 'financing',
-  },
-];
-
 export function useFAQ() {
-  const [faqs] = useState(mockFAQs);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public/faq')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.faqs)) setFaqs(data.faqs);
+      })
+      .catch(() => {
+        if (active) setFaqs([]);
+      });
+    return () => { active = false; };
+  }, []);
 
   const toggle = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));

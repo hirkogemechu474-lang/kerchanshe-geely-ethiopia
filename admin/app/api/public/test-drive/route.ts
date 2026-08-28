@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { withCorsHandler, corsPreflight } from '@/lib/cors';
+import { submitPublicTestDrive } from '@/lib/services/testDrives/publicTestDriveService';
 
 export async function OPTIONS(request: Request) {
   return corsPreflight(request);
@@ -13,48 +13,16 @@ export async function OPTIONS(request: Request) {
 export const POST = withCorsHandler(async function POST(request: Request) {
   try {
     const body = await request.json();
+    const result = await submitPublicTestDrive(body);
 
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      vehicleInterest,
-      dealerPreference,
-      preferredDate,
-      preferredTime,
-      message,
-    } = body;
-
-    if (!firstName || !lastName || !email || !phone || !vehicleInterest) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (!result.ok) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }
-
-    const testDrive = await prisma.message.create({
-      data: {
-        from: `${firstName} ${lastName}`.trim(),
-        email,
-        subject: `Test drive request: ${vehicleInterest}`,
-        category: 'Test Drive',
-        priority: 'medium',
-        status: 'unread',
-        content: JSON.stringify({
-          phone,
-          vehicleInterest,
-          dealerPreference,
-          preferredDate,
-          preferredTime,
-          message,
-        }),
-      },
-    });
 
     return NextResponse.json({
       success: true,
-      data: testDrive,
+      data: result.testDrive,
+      notificationSent: result.notificationSent,
       message: 'Test drive request submitted successfully',
     });
   } catch (error) {

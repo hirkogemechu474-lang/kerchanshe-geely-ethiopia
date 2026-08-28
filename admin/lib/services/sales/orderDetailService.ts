@@ -8,14 +8,15 @@ export type UpdateOrderFieldsResult =
   | { ok: true; order: any }
   | { ok: false; httpStatus: 409; error: string };
 
-// Field-level edits only (financing status, total price, registration,
-// commission assignment). Status transitions go through /status; PDI
-// toggles go through /pdi; invoice generation and approval go through
-// their own dedicated one-way action routes (.../invoice, .../approve).
+// Field-level edits only (total price, registration, commission
+// assignment). Financing status goes through its own guided pipeline at
+// /financing-status (see orderStateMachine.ts); order status transitions go
+// through /status; PDI toggles go through /pdi; invoice generation and
+// approval go through their own dedicated one-way action routes
+// (.../invoice, .../approve).
 export async function updateOrderFields(
   id: string,
   input: {
-    financingStatus?: string;
     totalPrice?: number | null;
     signedDocumentUrl?: string | null;
     registrationNumber?: string | null;
@@ -24,7 +25,7 @@ export async function updateOrderFields(
   },
   actingUserId: string
 ): Promise<UpdateOrderFieldsResult> {
-  const { financingStatus, totalPrice, signedDocumentUrl, registrationNumber, salesAgentId, commissionRate } = input;
+  const { totalPrice, signedDocumentUrl, registrationNumber, salesAgentId, commissionRate } = input;
 
   // Fetched first so editing salesAgentId doesn't clobber a commission
   // that's already EARNED/PAID — that already happened as a consequence
@@ -39,7 +40,6 @@ export async function updateOrderFields(
   }
 
   const order = await salesOrderRepository.update(id, {
-    ...(financingStatus !== undefined && { financingStatus: financingStatus as any }),
     ...(totalPrice !== undefined && { totalPrice: totalPrice === null ? null : Number(totalPrice) }),
     // Staff-attached photo/scan of the physically-signed sales agreement
     // (BRD-adjacent "e-sign or attach" step) — reuses the same

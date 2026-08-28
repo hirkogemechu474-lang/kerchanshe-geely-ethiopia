@@ -5,6 +5,7 @@ import { MainLayout } from '@/components/MainLayout';
 import { formatVehiclePrice, type VehicleRecord } from '@/lib/vehicleData';
 import { Check, Share2, Download, Mail } from 'lucide-react';
 import Image from 'next/image';
+import { withBasePath } from '@/lib/basePath';
 
 interface TrimOption {
   id: string;
@@ -205,7 +206,7 @@ export default function ConfiguratorPage() {
       price: totalPrice
     };
     
-    window.location.href = `/quote?config=${encodeURIComponent(JSON.stringify(config))}`;
+    window.location.href = withBasePath(`/quote?config=${encodeURIComponent(JSON.stringify(config))}`);
   };
 
   const currentTrimOptions = apiOptions?.trims || [];

@@ -102,7 +102,7 @@ export const userRepository = {
     return prisma.user.findMany({
       where: { role: { in: roles }, isActive: true },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, email: true },
     });
   },
 

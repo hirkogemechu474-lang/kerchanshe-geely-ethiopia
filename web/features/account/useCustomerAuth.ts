@@ -1,32 +1,38 @@
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export function useCustomerAuth() {
-  const { data: session, status } = useSession();
   const router = useRouter();
-  const loading = status === 'loading';
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setUser(data?.user || null))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
-    if (result?.ok) router.push('/account');
-    return result;
+    const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const data = await response.json();
+    if (response.ok) { setUser(data.user); router.push('/account'); }
+    return { ok: response.ok, error: data.error };
   };
 
   const logout = async () => {
-    await signOut({ redirect: false });
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
     router.push('/');
   };
 
   return {
-    user: session?.user,
+    user,
     loading,
-    isAuthenticated: !!session,
+    isAuthenticated: !!user,
     login,
     logout,
   };

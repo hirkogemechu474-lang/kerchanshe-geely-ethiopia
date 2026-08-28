@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@prisma/client';
+import type { OrderStatus, FinancingStatus } from '@prisma/client';
 
 // Sales Order lifecycle (BRD §6.1 FR-105/106, UC-12 Book Order & PDI).
 // Mirrors the same pattern as lib/workshop/jobCardStateMachine.ts: a single
@@ -95,11 +95,53 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   CANCELLED: 'bg-red-100 text-red-700',
 };
 
-export const FINANCING_STATUS_LABELS: Record<string, string> = {
-  NOT_APPLICABLE: 'Not applicable',
-  PENDING: 'Pending',
+// Bank-financing pipeline (distinct from OrderStatus above) — staff record
+// each stage as the bank/finance team actually decides it; the system can't
+// determine loan approval itself, so this is a *guided* set of valid next
+// steps (not a free-form dropdown) rather than a fully automatic pipeline.
+const FORWARD_FINANCING_TRANSITIONS: Record<FinancingStatus, FinancingStatus[]> = {
+  NOT_REQUESTED: ['REQUESTED'],
+  REQUESTED: ['DOCUMENTS_PENDING', 'CUSTOMER_DECLINED', 'CANCELLED'],
+  DOCUMENTS_PENDING: ['DOCUMENTS_SUBMITTED', 'CUSTOMER_DECLINED', 'CANCELLED'],
+  DOCUMENTS_SUBMITTED: ['UNDER_REVIEW', 'DOCUMENTS_PENDING', 'CANCELLED'],
+  UNDER_REVIEW: ['APPROVED', 'CONDITIONALLY_APPROVED', 'REJECTED', 'CANCELLED'],
+  CONDITIONALLY_APPROVED: ['DOCUMENTS_PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'],
+  APPROVED: ['DISBURSED', 'CANCELLED'],
+  REJECTED: [],
+  CUSTOMER_DECLINED: [],
+  DISBURSED: ['COMPLETED'],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
+export class FinancingTransitionError extends Error {}
+
+export function getAllowedFinancingTransitions(status: FinancingStatus): FinancingStatus[] {
+  return FORWARD_FINANCING_TRANSITIONS[status] ?? [];
+}
+
+export function assertFinancingTransitionAllowed(from: FinancingStatus, to: FinancingStatus): void {
+  if (from === to) {
+    throw new FinancingTransitionError('Financing is already in this status.');
+  }
+  if (!FORWARD_FINANCING_TRANSITIONS[from]?.includes(to)) {
+    throw new FinancingTransitionError(`Cannot move financing from ${from} to ${to}.`);
+  }
+}
+
+export const FINANCING_STATUS_LABELS: Record<FinancingStatus, string> = {
+  NOT_REQUESTED: 'Not Requested',
+  REQUESTED: 'Requested',
+  DOCUMENTS_PENDING: 'Documents Pending',
+  DOCUMENTS_SUBMITTED: 'Documents Submitted',
+  UNDER_REVIEW: 'Under Review',
   APPROVED: 'Approved',
-  DECLINED: 'Declined',
+  CONDITIONALLY_APPROVED: 'Conditionally Approved',
+  REJECTED: 'Rejected',
+  CUSTOMER_DECLINED: 'Customer Declined',
+  DISBURSED: 'Disbursed',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 export const COMMISSION_STATUS_LABELS: Record<string, string> = {

@@ -53,7 +53,13 @@ export const quotationRepository = {
   async findByReferenceForStatus(reference: string) {
     return prisma.quotation.findUnique({
       where: { reference },
-      select: { status: true, createdAt: true, vehicleModel: true, quotationNo: true },
+      select: {
+        status: true,
+        createdAt: true,
+        vehicleModel: true,
+        quotationNo: true,
+        salesOrder: { select: { orderNo: true, status: true } },
+      },
     });
   },
 };

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Empty means the host root. Set NEXT_PUBLIC_BASE_PATH only when a reverse
+  // proxy mounts the admin app below a path.
+  ...(process.env.NEXT_PUBLIC_BASE_PATH ? {
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH.replace(/\/+$/, ""),
+  } : {}),
 
   // `next dev` and `next build`/`next start` default to the SAME .next
   // output directory. Running a dev server and a production instance of

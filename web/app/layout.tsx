@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import Script from "next/script";
 import { inter, manrope, notoSansEthiopic } from "@/lib/fonts";
 import { env } from "@/lib/env";
+import { BASE_PATH, withBasePath, withBasePathUrl } from "@/lib/basePath";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -17,14 +18,13 @@ export const viewport: Viewport = {
   ],
 };
 
-const BASE_URL = env.app.url;
-const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/+$/, "");
+const BASE_URL = withBasePathUrl(env.app.url);
 
 export const metadata: Metadata = {
   title: "Geely Ethiopia | Official Distributor by Kerchanshe Auto",
   description: "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads.",
   keywords: "Geely Ethiopia, Geely cars, SUV Ethiopia, Electric vehicles Ethiopia, Kerchanshe Auto, Coolray, Emgrand, Monjaro",
-  manifest: "/manifest.json",
+  manifest: withBasePath("/manifest.json"),
   metadataBase: new URL(BASE_URL),
   appleWebApp: {
     capable: true,
@@ -49,12 +49,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
+      { url: withBasePath('/icons/icon-512x512.png'), sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: withBasePath('/icons/icon-152x152.png'), sizes: '152x152', type: 'image/png' },
+      { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
     ],
   },
 };
@@ -114,9 +114,9 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href={withBasePath('/icons/icon-152x152.png')} />
+        <link rel="apple-touch-icon" sizes="180x180" href={withBasePath('/icons/icon-192x192.png')} />
+        <link rel="apple-touch-icon" sizes="192x192" href={withBasePath('/icons/icon-192x192.png')} />
 
         {/* Sets the dark/light class on <html> before hydration so the page
             never flashes the wrong theme — ThemeProvider re-derives the same
@@ -145,7 +145,7 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
+                  navigator.serviceWorker.register(${JSON.stringify(withBasePath('/sw.js'))}).then(
                     function(registration) {
                       console.log('Service Worker registered:', registration.scope);
                     },

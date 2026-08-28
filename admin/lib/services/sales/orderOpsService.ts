@@ -4,8 +4,8 @@ import { vehicleRepository } from '@/repositories/vehicleRepository';
 import { sendStatusEmail } from '@/lib/status-email';
 import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { env } from '@/lib/env';
-import { assertOrderTransitionAllowed, OrderTransitionError } from '@/lib/services/sales/orderStateMachine';
-import type { OrderStatus } from '@prisma/client';
+import { assertOrderTransitionAllowed, OrderTransitionError, assertFinancingTransitionAllowed, FinancingTransitionError } from '@/lib/services/sales/orderStateMachine';
+import type { OrderStatus, FinancingStatus } from '@prisma/client';
 
 export type OrderActionResult<T extends object = {}> =
   | ({ ok: true } & T)
@@ -171,5 +171,27 @@ export async function transitionOrderStatus(
     { fromStatus: order.status, toStatus, changedById: actingUserId, reasonCode: reasonCode || null }
   );
 
+  return { ok: true, order: updated };
+}
+
+// Moves financing through its own guided pipeline (see
+// orderStateMachine.ts's FORWARD_FINANCING_TRANSITIONS) instead of the
+// free-form dropdown this replaces — staff still record each stage
+// themselves (only a bank/finance team can actually decide loan approval),
+// but can only move to a valid next step, not jump arbitrarily.
+export async function transitionFinancingStatus(id: string, toStatus: FinancingStatus): Promise<OrderActionResult<{ order: any }>> {
+  const order = await salesOrderRepository.findById(id);
+  if (!order) return { ok: false, httpStatus: 404, error: 'Order not found' };
+
+  try {
+    assertFinancingTransitionAllowed(order.financingStatus, toStatus);
+  } catch (err) {
+    if (err instanceof FinancingTransitionError) {
+      return { ok: false, httpStatus: 409, error: err.message };
+    }
+    throw err;
+  }
+
+  const updated = await salesOrderRepository.update(id, { financingStatus: toStatus });
   return { ok: true, order: updated };
 }

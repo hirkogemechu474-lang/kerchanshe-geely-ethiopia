@@ -187,7 +187,7 @@ export const vehicleRepository = {
     ]);
   },
 
-  async create(data: Prisma.VehicleCreateInput) {
+  async create(data: Prisma.VehicleUncheckedCreateInput) {
     return prisma.vehicle.create({ data });
   },
 

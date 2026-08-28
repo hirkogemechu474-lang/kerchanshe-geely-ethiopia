@@ -32,7 +32,8 @@
     "seed:vehicle-colors": "tsx prisma/seed-vehicle-colors.ts",
     "seed:vehicle-wheels": "tsx prisma/seed-vehicle-wheels.ts",
     "create:admin": "tsx scripts/create-admin.ts",
-    "verify": "tsx scripts/verify-seed.ts"
+    "verify": "tsx scripts/verify-seed.ts",
+    "db:reset:transactional": "tsx scripts/reset-transactional-data.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

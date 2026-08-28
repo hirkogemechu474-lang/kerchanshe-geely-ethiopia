@@ -152,15 +152,13 @@ export async function authorizePayment(paymentId: string, action: string | undef
 
       // Surface the paid status on the linked SalesOrder itself — the
       // sales agent otherwise has no way to see payment completed short
-      // of digging through the raw Messages inbox. financingStatus is
-      // already used generically for a direct (non-loan) purchase's
-      // "money side is resolved" signal (see linkPurchaseToSalesPipeline,
-      // which seeds it as PENDING regardless of whether the order is
-      // actually financed), so APPROVED here means the same thing: the
-      // customer has paid and the order can proceed.
+      // of digging through the raw Messages inbox. Uses the order's own
+      // paymentStatus field (money received), distinct from
+      // financingStatus (loan-approval pipeline) — the two were previously
+      // conflated here.
       const linkedQuotation = await quotationRepository.findFirstByMessageContainsWithSalesOrder(`Purchase reference: ${purchaseId}`);
-      if (linkedQuotation?.salesOrder && linkedQuotation.salesOrder.financingStatus !== 'APPROVED') {
-        await salesOrderRepository.updateFinancingStatus(linkedQuotation.salesOrder.id, 'APPROVED');
+      if (linkedQuotation?.salesOrder && linkedQuotation.salesOrder.paymentStatus !== 'PAID') {
+        await salesOrderRepository.updatePaymentStatusPaid(linkedQuotation.salesOrder.id);
       }
     }
   }

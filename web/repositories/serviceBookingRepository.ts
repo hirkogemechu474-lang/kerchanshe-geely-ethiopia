@@ -16,7 +16,7 @@ export const serviceBookingRepository = {
 
     return prisma.serviceBooking.findMany({
       where,
-      orderBy: { scheduledDate: 'desc' },
+      orderBy: { date: 'desc' },
     });
   },
 

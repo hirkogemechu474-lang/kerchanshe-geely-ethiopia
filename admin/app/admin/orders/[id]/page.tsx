@@ -16,6 +16,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       statusHistory: { orderBy: { changedAt: 'asc' } },
       quotation: { select: { id: true } },
       testDrives: { orderBy: { createdAt: 'desc' } },
+      vehicleAllocation: { include: { vehicle: { select: { id: true, name: true, model: true, stock: true } } } },
     },
   });
 

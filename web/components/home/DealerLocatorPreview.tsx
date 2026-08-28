@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, Wrench, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { MapEmbedFacade } from "@/components/MapEmbedFacade";
+import { withBasePath } from "@/lib/basePath";
 
 const HIGHLIGHT_CARDS = [
   {
@@ -34,7 +35,7 @@ export default function DealerLocatorPreview() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    window.location.href = `/dealers?search=${encodeURIComponent(searchQuery)}`;
+    window.location.href = withBasePath(`/dealers?search=${encodeURIComponent(searchQuery)}`);
   };
 
   return (

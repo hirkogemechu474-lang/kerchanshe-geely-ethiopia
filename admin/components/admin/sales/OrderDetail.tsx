@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAllowedOrderTransitions,
+  getAllowedFinancingTransitions,
   ORDER_STATUS_COLORS,
   ORDER_STATUS_LABELS,
   FINANCING_STATUS_LABELS,
@@ -18,7 +19,7 @@ import OrderHandoverPanel from '@/components/admin/sales/OrderHandoverPanel';
 import OrderTestDrivePanel from '@/components/admin/sales/OrderTestDrivePanel';
 import OrderAllocationPanel from '@/components/admin/sales/OrderAllocationPanel';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
-import { FileText } from 'lucide-react';
+import { FileText, Car, User, Phone, Mail, Calendar } from 'lucide-react';
 
 interface PdiItem {
   id: string;
@@ -99,6 +100,21 @@ const PAYMENT_STATUS_TONE: Record<string, Tone> = {
   PAID: 'green',
 };
 
+const FINANCING_STATUS_TONE: Record<string, Tone> = {
+  NOT_REQUESTED: 'gray',
+  REQUESTED: 'blue',
+  DOCUMENTS_PENDING: 'orange',
+  DOCUMENTS_SUBMITTED: 'blue',
+  UNDER_REVIEW: 'orange',
+  APPROVED: 'green',
+  CONDITIONALLY_APPROVED: 'purple',
+  REJECTED: 'red',
+  CUSTOMER_DECLINED: 'red',
+  DISBURSED: 'green',
+  COMPLETED: 'green',
+  CANCELLED: 'gray',
+};
+
 export default function OrderDetail({
   order,
   permissions,
@@ -161,6 +177,25 @@ export default function OrderDetail({
     }
   };
 
+  const financingTransition = async (toStatus: string) => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/orders/${state.id}/financing-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Financing update failed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const togglePdi = async (itemId: string, isChecked: boolean) => {
     setBusy(true);
     setError('');
@@ -214,19 +249,28 @@ export default function OrderDetail({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex items-start justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{state.orderNo}</h1>
-            <p className="text-sm text-gray-500 mt-1">{state.vehicleModel}</p>
-            <p className="text-sm text-gray-500">
-              {state.customerName} · {state.customerPhone}
-              {state.customerEmail ? ` · ${state.customerEmail}` : ''}
-            </p>
+      <Card padding="none" className="overflow-hidden">
+        <div className="bg-gradient-to-r from-navy to-geely-blue px-6 py-5 flex items-start justify-between flex-wrap gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Car className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">{state.orderNo}</h1>
+              <p className="text-sm text-white/80 mt-0.5">{state.vehicleModel}</p>
+            </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${ORDER_STATUS_COLORS[state.status as keyof typeof ORDER_STATUS_COLORS]}`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${ORDER_STATUS_COLORS[state.status as keyof typeof ORDER_STATUS_COLORS]}`}>
             {ORDER_STATUS_LABELS[state.status as keyof typeof ORDER_STATUS_LABELS]}
           </span>
+        </div>
+        <div className="px-6 py-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+          <span className="inline-flex items-center gap-1.5"><User className="w-4 h-4 text-gray-400" /> {state.customerName}</span>
+          <span className="inline-flex items-center gap-1.5"><Phone className="w-4 h-4 text-gray-400" /> {state.customerPhone}</span>
+          {state.customerEmail && (
+            <span className="inline-flex items-center gap-1.5"><Mail className="w-4 h-4 text-gray-400" /> {state.customerEmail}</span>
+          )}
+          <span className="inline-flex items-center gap-1.5"><Calendar className="w-4 h-4 text-gray-400" /> {new Date(state.orderDate).toLocaleDateString()}</span>
         </div>
       </Card>
 
@@ -238,20 +282,24 @@ export default function OrderDetail({
 
       <Card className="space-y-4">
         <h2 className="font-semibold text-gray-900">Financing &amp; Price</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Financing status</label>
-            <select
-              value={state.financingStatus}
-              onChange={(e) => patchFields({ financingStatus: e.target.value })}
-              disabled={!permissions.canManageQuotations || busy}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              {Object.entries(FINANCING_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-medium text-gray-600">Financing status</label>
+            <Badge tone={FINANCING_STATUS_TONE[state.financingStatus] ?? 'gray'}>
+              {FINANCING_STATUS_LABELS[state.financingStatus as keyof typeof FINANCING_STATUS_LABELS] || state.financingStatus}
+            </Badge>
           </div>
+          {permissions.canManageQuotations && getAllowedFinancingTransitions(state.financingStatus as any).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {getAllowedFinancingTransitions(state.financingStatus as any).map((s) => (
+                <Button key={s} variant={s === 'CANCELLED' || s === 'REJECTED' || s === 'CUSTOMER_DECLINED' ? 'ghost' : 'secondary'} onClick={() => financingTransition(s)} disabled={busy}>
+                  {FINANCING_STATUS_LABELS[s as keyof typeof FINANCING_STATUS_LABELS]}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Total price</label>
             <div className="flex gap-2">

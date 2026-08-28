@@ -116,7 +116,7 @@ async function linkPurchaseToSalesPipeline(details: {
       vehicleModel: details.vehicleName,
       configurationJson: quotation.configurationJson ?? undefined,
       totalPrice: details.purchaseAmount,
-      financingStatus: 'PENDING',
+      financingStatus: 'REQUESTED',
       status: 'BOOKED',
       statusHistory: {
         create: { fromStatus: null, toStatus: 'BOOKED', changedById: 'qr-showroom-direct-purchase' },

@@ -2,6 +2,7 @@
 
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';
 import type { Session } from 'next-auth';
+import { BASE_PATH } from '@/lib/basePath';
 
 export default function SessionProvider({
   children,
@@ -14,7 +15,10 @@ export default function SessionProvider({
   // /api/auth/session fetch, which would cause a loading flash and trigger
   // the `if (!session) return null` guard in AdminLayout prematurely.
   return (
-    <NextAuthSessionProvider session={session}>
+    <NextAuthSessionProvider
+      session={session}
+      basePath={BASE_PATH ? `${BASE_PATH}/api/auth` : undefined}
+    >
       {children}
     </NextAuthSessionProvider>
   );

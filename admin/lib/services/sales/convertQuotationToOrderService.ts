@@ -41,7 +41,7 @@ export async function convertQuotationToOrder(id: string, actingUserId: string):
     totalPrice: quotation.unitPrice != null
       ? computeQuotationTotals(quotation.unitPrice, quotation.quantity ?? 1, quotation.discountAmount ?? 0).totalPayable
       : null,
-    financingStatus: quotation.financingInterest ? 'PENDING' : 'NOT_APPLICABLE',
+    financingStatus: quotation.financingInterest ? 'REQUESTED' : 'NOT_REQUESTED',
     // Inherit the rep already working this lead (see web/lib/assignSalesRep.ts)
     // instead of starting the order unassigned.
     salesAgentId: quotation.assignedTo ?? null,

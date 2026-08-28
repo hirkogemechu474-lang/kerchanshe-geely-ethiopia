@@ -45,16 +45,14 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     const part = await partRepository.create({
-      partNumber: data.partNumber,
+      sku: data.sku,
       name: data.name,
       category: data.category,
       description: data.description,
-      compatibleModels: data.compatibleModels,
       price: parseFloat(data.price),
       stock: parseInt(data.stock),
       reorderPoint: parseInt(data.reorderPoint || 5),
       supplier: data.supplier,
-      warrantyPeriod: data.warrantyPeriod,
       isActive: true,
     });
 

@@ -1,17 +1,5 @@
 import { NextResponse } from "next/server";
-
-type DirectPaymentRequest = {
-  amount?: number;
-  currency?: string;
-  customerEmail?: string;
-  vehicleId?: string;
-  vehicleName?: string;
-  programId?: string;
-  programName?: string;
-};
-
-const wait = (milliseconds: number) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
+import { getPaymentProvider, type PaymentRequest } from "@/lib/payments/provider";
 
 /**
  * Mock payment gateway for the direct financing flow.
@@ -20,7 +8,7 @@ const wait = (milliseconds: number) =>
  */
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as DirectPaymentRequest;
+    const body = (await request.json()) as Partial<PaymentRequest>;
     const amount = Number(body.amount);
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -37,31 +25,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Simulate the network and provider processing time of a real gateway.
-    await wait(900);
+    const result = await getPaymentProvider().createPayment({
+      amount,
+      currency: body.currency || "ETB",
+      customerEmail: body.customerEmail,
+      vehicleId: body.vehicleId,
+      vehicleName: body.vehicleName,
+      programId: body.programId,
+      programName: body.programName,
+    }, request.headers.get("x-mock-payment-result"));
 
-    // This makes the mock useful for testing failure handling without a live gateway.
-    // A caller can send x-mock-payment-result: declined to receive a declined response.
-    if (request.headers.get("x-mock-payment-result") === "declined") {
+    if (result.status === 'declined') {
       return NextResponse.json(
         {
           success: false,
-          status: "declined",
-          error: "The payment provider declined this transaction.",
-          transactionId: `txn_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`,
+          status: result.status,
+          error: result.error,
+          transactionId: result.transactionId,
         },
         { status: 402 }
       );
     }
 
-    const transactionId = `txn_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`;
-    const processedAt = new Date().toISOString();
-
     return NextResponse.json({
       success: true,
-      status: "succeeded",
+      status: result.status,
       message: "Payment processed successfully.",
-      transactionId,
+      transactionId: result.transactionId,
       payment: {
         amount: Math.round(amount * 100) / 100,
         currency: body.currency || "ETB",
@@ -69,7 +59,7 @@ export async function POST(request: Request) {
         vehicleName: body.vehicleName || null,
         programId: body.programId || null,
         programName: body.programName || null,
-        processedAt,
+        processedAt: result.processedAt,
       },
     });
   } catch (error) {

@@ -12,6 +12,7 @@ type StatusResult = {
   status: string;
   createdAt: string;
   quotationNo?: string | null;
+  orderNo?: string | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -23,13 +24,22 @@ const STATUS_LABELS: Record<string, string> = {
   in_progress: 'In Progress',
   quoted: 'Quoted',
   converted: 'Converted',
-  completed: 'Completed',
   closed: 'Closed',
   cancelled: 'Cancelled',
   booked: 'Booked',
   financing_pending: 'Financing Pending',
   ready_for_delivery: 'Ready for Delivery',
   delivered: 'Delivered',
+  not_requested: 'Not Requested',
+  requested: 'Financing Requested',
+  documents_pending: 'Documents Pending',
+  documents_submitted: 'Documents Submitted',
+  under_review: 'Under Review',
+  conditionally_approved: 'Conditionally Approved',
+  rejected: 'Rejected',
+  customer_declined: 'Customer Declined',
+  disbursed: 'Disbursed',
+  completed: 'Completed',
 };
 
 function formatStatus(status: string): string {
@@ -156,6 +166,11 @@ export default function StatusPage() {
                   <FileText size={16} />
                   Download Quotation PDF ({result.quotationNo})
                 </a>
+              )}
+              {result.orderNo && (
+                <p className="mt-3 text-xs text-steel dark:text-steel-light">
+                  Order number: <span className="font-semibold">{result.orderNo}</span>
+                </p>
               )}
             </div>
           )}

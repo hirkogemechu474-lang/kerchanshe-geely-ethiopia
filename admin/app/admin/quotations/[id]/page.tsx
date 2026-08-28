@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Mail, MessageSquare, Phone, User, CarFront } from 'lucide-react';
+import { ArrowLeft, Calendar, Mail, MessageSquare, Phone, User, CarFront, FileText } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/middleware';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
@@ -59,19 +59,29 @@ export default async function QuotationDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link href="/admin/quotations" className="rounded-lg p-2 hover:bg-gray-100" aria-label="Back to quotations">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Quotation Request</h1>
-            <p className="text-sm text-gray-500">Reference: {quotation.id}</p>
+      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+        <div className="bg-gradient-to-r from-navy to-geely-blue px-6 py-5 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Link href="/admin/quotations" className="rounded-lg p-2 mt-0.5 hover:bg-white/10 text-white" aria-label="Back to quotations">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">{quotation.quotationNo || 'Quotation Request'}</h1>
+                <p className="text-sm text-white/80 mt-0.5">{quotation.vehicleModel || 'General enquiry'}</p>
+              </div>
+            </div>
           </div>
+          <span className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ${statusClass(status)}`}>
+            {status.replace('_', ' ').toUpperCase()}
+          </span>
         </div>
-        <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusClass(status)}`}>
-          {status.replace('_', ' ').toUpperCase()}
-        </span>
+        <div className="bg-white px-6 py-3 text-sm text-gray-500">
+          Reference: {quotation.reference || quotation.id}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

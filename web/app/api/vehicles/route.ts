@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
 
     const vehicle = await vehicleRepository.create({
       name: data.name,
+      slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
       model: data.model,
       year: parseInt(data.year),
       category: data.category,

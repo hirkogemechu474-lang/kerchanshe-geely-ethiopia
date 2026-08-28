@@ -3,7 +3,7 @@ import { userRepository } from '@/repositories/userRepository';
 import { generateReference, REFERENCE_CATEGORY } from '@/lib/reference';
 import { buildSalesQuotationPdf, computeQuotationTotals } from '@/lib/services/sales/salesQuotationPdf';
 import { sendStatusEmail } from '@/lib/status-email';
-import { notifyStaffOfQuotationSent } from '@/lib/services/quotations/leadNotifications';
+import { notifyStaffOfQuotationSent, notifyApproversOfPendingQuotation } from '@/lib/services/quotations/leadNotifications';
 import { env } from '@/lib/env';
 
 export type GenerateQuotationPdfResult =
@@ -57,6 +57,11 @@ export async function generateQuotationPdf(id: string, body: any): Promise<Gener
         managerRejectionReason: null,
       }),
     });
+
+    if (updated.managerApprovalStatus === 'PENDING') {
+      await notifyApproversOfPendingQuotation(updated);
+    }
+
     return { ok: true, quotation: updated };
   } catch (dbError) {
     console.error('[quotations:quotation-pdf:generate]', dbError);

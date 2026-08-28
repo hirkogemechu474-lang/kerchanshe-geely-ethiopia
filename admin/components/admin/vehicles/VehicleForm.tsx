@@ -7,6 +7,7 @@ import ImageUpload from './ImageUpload';
 import SpecificationsEditor from './SpecificationsEditor';
 import PricingEditor from './PricingEditor';
 import InventoryManager from './InventoryManager';
+import { withBasePath } from '@/lib/basePath';
 
 interface VehicleFormProps {
   mode: 'create' | 'edit';
@@ -191,7 +192,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
       const savedVehicle = await response.json();
       
       // Redirect to vehicle detail page (not list)
-      window.location.href = `/admin/vehicles/${savedVehicle.id}`;
+      window.location.href = withBasePath(`/admin/vehicles/${savedVehicle.id}`);
     } catch (error) {
       console.error('Error saving vehicle:', error);
       alert('Failed to save vehicle. Please try again.');

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
 export const quotationRepository = {
-  async findPage(where: { status?: string } | undefined, skip: number, take: number) {
+  async findPage(where: Prisma.QuotationWhereInput | undefined, skip: number, take: number) {
     return Promise.all([
       prisma.quotation.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
       prisma.quotation.count({ where }),

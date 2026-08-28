@@ -24,6 +24,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     quotationNo: quotation.quotationNo,
     customerName: quotation.customerName,
     vehicleModel: quotation.vehicleModel,
+    unitPrice: quotation.unitPrice,
+    quantity: quotation.quantity,
+    discountAmount: quotation.discountAmount,
+    vatAmount: quotation.vatAmount,
+    status: quotation.status,
     signedDocumentUrl: quotation.signedDocumentUrl,
     signedAt: quotation.signedAt,
   });

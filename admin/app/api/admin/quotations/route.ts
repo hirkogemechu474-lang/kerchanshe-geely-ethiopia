@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const search = searchParams.get('search') || undefined;
 
-    const result = await listQuotations(status, page);
+    const result = await listQuotations(status, page, search);
 
     return NextResponse.json(result);
   } catch (error) {

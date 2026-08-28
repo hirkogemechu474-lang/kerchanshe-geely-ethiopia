@@ -35,19 +35,14 @@ export async function POST(request: NextRequest) {
 
     const article = await newsRepository.create({
       title: data.title,
-      slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
       excerpt: data.excerpt,
       content: data.content,
       category: data.category,
-      tags: data.tags,
-      featuredImage: data.featuredImage,
-      authorId: session.user.id,
-      authorName: session.user.name,
+      imageUrl: data.imageUrl,
+      author: session.user.name,
       publishDate: data.publishDate ? new Date(data.publishDate) : new Date(),
       status: data.status || 'draft',
       views: 0,
-      metaTitle: data.metaTitle,
-      metaDescription: data.metaDescription,
     });
 
     return NextResponse.json(article, { status: 201 });

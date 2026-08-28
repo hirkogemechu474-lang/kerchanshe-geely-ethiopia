@@ -35,16 +35,13 @@ export async function POST(request: NextRequest) {
     const promotion = await promotionRepository.create({
       title: data.title,
       description: data.description,
-      type: data.type,
-      discountValue: parseFloat(data.discountValue),
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
-      applicableModels: data.applicableModels,
-      termsConditions: data.termsConditions,
       bannerImage: data.bannerImage,
-      priority: parseInt(data.priority || 0),
-      maxRedemptions: data.maxRedemptions ? parseInt(data.maxRedemptions) : null,
-      currentRedemptions: 0,
+      ctaButtonText: data.ctaButtonText,
+      ctaButtonLink: data.ctaButtonLink,
+      displayOrder: parseInt(data.displayOrder || 0),
+      isFeatured: data.isFeatured || false,
       isActive: true,
     });
 

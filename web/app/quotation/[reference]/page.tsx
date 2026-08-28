@@ -5,12 +5,18 @@ import { useParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { isPdfUrl } from '@/lib/fileType';
+import { computeQuotationTotals } from '@/lib/services/sales/quotationTotals';
 
 interface QuotationSummary {
   reference: string;
   quotationNo: string;
   customerName: string;
   vehicleModel: string | null;
+  unitPrice: number | null;
+  quantity: number | null;
+  discountAmount: number | null;
+  vatAmount: number | null;
+  status: string;
   signedDocumentUrl: string | null;
   signedAt: string | null;
 }
@@ -26,6 +32,10 @@ export default function QuotationSigningPage() {
   const [hasSignature, setHasSignature] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signError, setSignError] = useState('');
+
+  const totalPayable = quotation?.unitPrice != null
+    ? computeQuotationTotals(quotation.unitPrice, quotation.quantity || 1, quotation.discountAmount || 0).totalPayable
+    : null;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
@@ -175,6 +185,13 @@ export default function QuotationSigningPage() {
               {quotation.customerName}
               {quotation.vehicleModel ? ` · ${quotation.vehicleModel}` : ''}
             </p>
+
+            {totalPayable != null && (
+              <div className="mb-6 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-steel">Total Price</div>
+                <div className="text-xl font-bold text-navy">ETB {totalPayable.toLocaleString('en-US')}</div>
+              </div>
+            )}
 
             <a
               href={`/api/public/quotations/${reference}/pdf`}

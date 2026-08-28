@@ -3,6 +3,7 @@ import path from 'path';
 import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
 import type { Quotation } from '@prisma/client';
 import { companyConfig, contactConfig } from '../../env';
+import { computeQuotationTotals } from './quotationTotals';
 
 // Formal dealer "Sales Quotation" PDF — mirrors salesAgreementPdf.ts's
 // pdf-lib layout conventions (no native/browser dependency). Keep this file
@@ -13,7 +14,6 @@ const PAGE_WIDTH = 595.28; // A4
 const PAGE_HEIGHT = 841.89;
 const MARGIN = 56;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
-const VAT_RATE = 0.15; // Ethiopia standard VAT rate
 
 const DEFAULT_PAYMENT_TERMS = '30% Advance / 70% Before Delivery';
 const DEFAULT_DELIVERY_TERMS = 'Within 10 Working Days';
@@ -29,13 +29,7 @@ export const CUSTOMER_SIGNATURE_AREA = {
   maxImageHeight: 50,
 };
 
-export function computeQuotationTotals(unitPrice: number, quantity: number, discountAmount: number) {
-  const vehiclePrice = unitPrice * quantity;
-  const taxableAmount = Math.max(0, vehiclePrice - discountAmount);
-  const vatAmount = taxableAmount * VAT_RATE;
-  const totalPayable = taxableAmount + vatAmount;
-  return { vehiclePrice, vatAmount, totalPayable };
-}
+export { computeQuotationTotals } from './quotationTotals';
 
 function formatETB(value: number): string {
   return `ETB ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;

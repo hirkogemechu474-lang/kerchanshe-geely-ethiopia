@@ -83,7 +83,7 @@ export default function QuotationPdfPanel({
       });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to generate quotation');
-      setNotice('Quotation generated. It now needs manager approval before it can be sent to the customer.');
+      setNotice('Quotation generated. A manager has been notified to review and approve it before it can be sent to the customer.');
       router.refresh();
     } catch (err: any) {
       setError(err.message);

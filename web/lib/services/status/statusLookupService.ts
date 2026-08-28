@@ -12,6 +12,7 @@ export type StatusResult = {
   status: string;
   createdAt: string;
   quotationNo?: string | null;
+  orderNo?: string | null;
 };
 
 // Looks up a customer-facing reference across every flow that issues one,
@@ -32,9 +33,12 @@ export async function lookupStatus(ref: string): Promise<StatusResult | null> {
       type: 'quotation',
       label: quotation.vehicleModel ? `Quote request — ${quotation.vehicleModel}` : 'Quote request',
       reference: ref,
-      status: quotation.status,
+      // Once a quotation becomes an order, the customer should see the live
+      // order lifecycle rather than the old quotation status.
+      status: quotation.salesOrder?.status.toLowerCase() || quotation.status,
       createdAt: quotation.createdAt.toISOString(),
       quotationNo: quotation.quotationNo,
+      orderNo: quotation.salesOrder?.orderNo || null,
     };
   }
   if (serviceBooking) {

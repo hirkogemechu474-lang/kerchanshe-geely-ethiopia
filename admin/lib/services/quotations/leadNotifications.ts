@@ -1,7 +1,9 @@
 import type { Quotation } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { userRepository } from '@/repositories/userRepository';
 import { sendStatusEmail } from '@/lib/status-email';
 import { resolveManagersForLead, listSalesReps } from '@/lib/assignSalesRep';
+import { getEffectivePermissionsForAdminRoles } from '@/lib/auth/rolePermissions';
 
 // Self-referencing link back into this app's own quotation detail page.
 function adminQuotationUrl(quotationId: string): string | undefined {
@@ -17,6 +19,48 @@ function quotationDetails(quotation: Quotation): string {
     `Vehicle: ${quotation.vehicleModel || 'General enquiry'}`,
     quotation.message ? `Message: ${quotation.message}` : '',
   ].filter(Boolean).join('\n');
+}
+
+// Notifies whoever currently holds the canCountersignAgreements permission
+// (accounting for Roles & Permissions overrides, not just the hardcoded
+// role defaults — see getEffectivePermissionsForAdminRoles) that a
+// quotation is generated and needs their review before it can be sent.
+// Fires every time a quotation lands in PENDING (fresh, or after a
+// post-rejection correction) — see generateQuotationPdf. Best-effort, same
+// semantics as its siblings here.
+export async function notifyApproversOfPendingQuotation(quotation: Quotation): Promise<void> {
+  try {
+    const { effective } = await getEffectivePermissionsForAdminRoles();
+    const approverRoles = Object.entries(effective)
+      .filter(([, perms]) => perms.canCountersignAgreements)
+      .map(([role]) => role);
+    if (approverRoles.length === 0) return;
+
+    const approvers = await userRepository.findManyByRoles(approverRoles);
+    if (approvers.length === 0) return;
+
+    const details = [
+      quotationDetails(quotation),
+      quotation.quotationNo ? `Quotation number: ${quotation.quotationNo}` : '',
+    ].filter(Boolean).join('\n');
+
+    await Promise.allSettled(
+      approvers.map((approver) =>
+        sendStatusEmail({
+          to: approver.email,
+          name: approver.name,
+          entityType: 'sales quotation',
+          status: 'awaiting approval',
+          reference: quotation.reference || quotation.quotationNo || quotation.id,
+          details,
+          actionUrl: adminQuotationUrl(quotation.id),
+          actionLabel: 'Review & Approve Quotation',
+        })
+      )
+    );
+  } catch (error) {
+    console.error('[quotations:notify-approvers]', error);
+  }
 }
 
 // Notifies sales managers (dealer-scoped when resolvable, else all active

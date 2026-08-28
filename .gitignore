@@ -48,5 +48,12 @@ next-env.d.ts
 /deploy/
 
 # uploaded files (keep directory, ignore contents except .gitkeep)
-/public/uploads/*
-!/public/uploads/.gitkeep
+# admin/ and web/ are each their own Next.js app with their own public/uploads/,
+# so this must match at any depth (** prefix), not just a repo-root public/uploads/
+# — a bare "public/uploads/*" only matches at repo root because it contains a
+# middle slash, which anchors it per gitignore's own rules.
+**/public/uploads/*
+!**/public/uploads/.gitkeep
+
+# Python tooling artifacts unrelated to either Next.js app
+/.pdf-tools/

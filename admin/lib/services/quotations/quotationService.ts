@@ -9,9 +9,20 @@ import { env } from '@/lib/env';
 // GET - Paginated quotations, optionally filtered by status. Status counts
 // are computed across the whole table (not just the current page/filter) so
 // the tab counts stay accurate once the list itself is paginated.
-export async function listQuotations(status: string, page: number) {
+export async function listQuotations(status: string, page: number, search?: string) {
   const pageSize = 25;
-  const where = status ? { status } : undefined;
+  const trimmedSearch = search?.trim();
+  const where = {
+    ...(status && { status }),
+    ...(trimmedSearch && {
+      OR: [
+        { customerName: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { phoneNumber: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { email: { contains: trimmedSearch, mode: 'insensitive' as const } },
+        { vehicleModel: { contains: trimmedSearch, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
 
   const [quotations, total, statusCounts] = await quotationRepository.findPage(where, (page - 1) * pageSize, pageSize);
 
