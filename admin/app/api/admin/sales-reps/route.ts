@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { userRepository } from '@/repositories/userRepository';
 
 // Narrow-purpose listing of active sales-role users, for the sales-agent
 // assignment dropdown in OrderCommissionPanel — gated by canManageQuotations
@@ -17,11 +17,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const reps = await prisma.user.findMany({
-    where: { role: { in: ASSIGNABLE_ROLES }, isActive: true },
-    orderBy: { name: 'asc' },
-    select: { id: true, name: true },
-  });
+  const reps = await userRepository.findManyByRoles(ASSIGNABLE_ROLES);
 
   return NextResponse.json({ reps });
 }

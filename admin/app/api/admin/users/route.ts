@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { userRepository } from '@/repositories/userRepository';
 
 // GET - Fetch all users
 export async function GET(request: NextRequest) {
@@ -13,22 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        dealerId: true,
-        lastLogin: true,
-        createdAt: true,
-        updatedAt: true,
-        signatureUrl: true,
-        signatureUpdatedAt: true,
-      },
-    });
+    const users = await userRepository.findAllWithSignature();
 
     return NextResponse.json({ users });
   } catch (error) {
@@ -56,9 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
@@ -68,24 +51,13 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role,
-        dealerId: dealerId || null,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        dealerId: true,
-        createdAt: true,
-      },
+    const user = await userRepository.create({
+      name,
+      email,
+      passwordHash,
+      role,
+      dealerId: dealerId || null,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     return NextResponse.json({ user }, { status: 201 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { customerRepository } from '@/repositories/customerRepository';
 
 // Vehicle-record edits from the Customers admin screen — e.g. fixing a
 // mistyped plate, or correcting warranty dates entered wrong at write-up
@@ -24,18 +24,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
-    const vehicle = await prisma.customerVehicle.update({
-      where: { id },
-      data: {
-        ...(plateNo !== undefined && { plateNo }),
-        ...(model !== undefined && { model: model || null }),
-        ...(trim !== undefined && { trim: trim || null }),
-        ...(color !== undefined && { color: color || null }),
-        ...(isNev !== undefined && { isNev: Boolean(isNev) }),
-        ...(warrantyStartDate !== undefined && { warrantyStartDate: warrantyStartDate ? new Date(warrantyStartDate) : null }),
-        ...(warrantyEndDate !== undefined && { warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate) : null }),
-        ...(mileageLastKnown !== undefined && { mileageLastKnown: mileageLastKnown === null ? null : Number(mileageLastKnown) }),
-      },
+    const vehicle = await customerRepository.updateVehicle(id, {
+      ...(plateNo !== undefined && { plateNo }),
+      ...(model !== undefined && { model: model || null }),
+      ...(trim !== undefined && { trim: trim || null }),
+      ...(color !== undefined && { color: color || null }),
+      ...(isNev !== undefined && { isNev: Boolean(isNev) }),
+      ...(warrantyStartDate !== undefined && { warrantyStartDate: warrantyStartDate ? new Date(warrantyStartDate) : null }),
+      ...(warrantyEndDate !== undefined && { warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate) : null }),
+      ...(mileageLastKnown !== undefined && { mileageLastKnown: mileageLastKnown === null ? null : Number(mileageLastKnown) }),
     });
     return NextResponse.json({ vehicle });
   } catch {

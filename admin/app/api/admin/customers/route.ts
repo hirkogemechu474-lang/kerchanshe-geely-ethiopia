@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { customerRepository } from '@/repositories/customerRepository';
 
 // Browse screen for the Customer/CustomerVehicle records introduced in
 // SWMS Phase 6 — until now the data only surfaced through the job-card
@@ -13,32 +13,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
 
-  const where = q
-    ? {
-        OR: [
-          { fullName: { contains: q, mode: 'insensitive' as const } },
-          { phone: { contains: q, mode: 'insensitive' as const } },
-          { email: { contains: q, mode: 'insensitive' as const } },
-          { vehicles: { some: { vin: { contains: q, mode: 'insensitive' as const } } } },
-          { vehicles: { some: { plateNo: { contains: q, mode: 'insensitive' as const } } } },
-        ],
-      }
-    : undefined;
-
   const [customers, totalCustomers, totalVehicles, underWarranty] = await Promise.all([
-    prisma.customer.findMany({
-      where,
-      orderBy: { updatedAt: 'desc' },
-      take: 200,
-      include: {
-        vehicles: {
-          select: { id: true, plateNo: true, vin: true, model: true, warrantyEndDate: true },
-        },
-      },
-    }),
-    prisma.customer.count(),
-    prisma.customerVehicle.count(),
-    prisma.customerVehicle.count({ where: { warrantyEndDate: { gte: new Date() } } }),
+    customerRepository.search(q),
+    customerRepository.countCustomers(),
+    customerRepository.countVehicles(),
+    customerRepository.countVehiclesUnderWarranty(),
   ]);
 
   return NextResponse.json({
