@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET /api/admin/vehicle-packages?vehicleId=xxx
 export async function GET(request: NextRequest) {
@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const packages = await prisma.vehiclePackage.findMany({
-      where: { vehicleId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
+    const packages = await vehicleRepository.findPackages(vehicleId);
     return NextResponse.json({ success: true, packages });
   } catch (error) {
     console.error('Error fetching vehicle packages:', error);
@@ -35,25 +32,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'vehicleId and name are required' }, { status: 400 });
     }
 
-    const pkg = await prisma.$transaction(async (tx) => {
-      if (body.isDefault) {
-        await tx.vehiclePackage.updateMany({
-          where: { vehicleId: body.vehicleId, isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-      return tx.vehiclePackage.create({
-        data: {
-          vehicleId: body.vehicleId,
-          name: body.name,
-          description: body.description || null,
-          features: Array.isArray(body.features) ? body.features : [],
-          price: Number(body.price) || 0,
-          imageUrl: body.imageUrl || null,
-          isDefault: Boolean(body.isDefault),
-          sortOrder: Number(body.sortOrder) || 0,
-        },
-      });
+    const pkg = await vehicleRepository.createPackage({
+      vehicleId: body.vehicleId,
+      name: body.name,
+      description: body.description || null,
+      features: Array.isArray(body.features) ? body.features : [],
+      price: Number(body.price) || 0,
+      imageUrl: body.imageUrl || null,
+      isDefault: Boolean(body.isDefault),
+      sortOrder: Number(body.sortOrder) || 0,
     });
 
     return NextResponse.json({ success: true, package: pkg });

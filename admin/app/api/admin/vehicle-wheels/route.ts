@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET /api/admin/vehicle-wheels?vehicleId=xxx
 // Returns wheels scoped to this vehicle PLUS global ones (vehicleId null),
@@ -15,10 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const wheels = await prisma.vehicleWheel.findMany({
-      where: { OR: [{ vehicleId }, { vehicleId: null }] },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
+    const wheels = await vehicleRepository.findWheels(vehicleId);
     return NextResponse.json({ success: true, wheels });
   } catch (error) {
     console.error('Error fetching vehicle wheels:', error);
@@ -37,25 +34,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'name and size are required' }, { status: 400 });
     }
 
-    const wheel = await prisma.$transaction(async (tx) => {
-      if (body.isDefault) {
-        await tx.vehicleWheel.updateMany({
-          where: { vehicleId: body.vehicleId || null, isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-      return tx.vehicleWheel.create({
-        data: {
-          vehicleId: body.vehicleId || null,
-          name: body.name,
-          size: body.size,
-          imageUrl: body.imageUrl || null,
-          price: Number(body.price) || 0,
-          isDefault: Boolean(body.isDefault),
-          inStock: body.inStock !== false,
-          sortOrder: Number(body.sortOrder) || 0,
-        },
-      });
+    const wheel = await vehicleRepository.createWheel({
+      vehicleId: body.vehicleId || null,
+      name: body.name,
+      size: body.size,
+      imageUrl: body.imageUrl || null,
+      price: Number(body.price) || 0,
+      isDefault: Boolean(body.isDefault),
+      inStock: body.inStock !== false,
+      sortOrder: Number(body.sortOrder) || 0,
     });
 
     return NextResponse.json({ success: true, wheel });

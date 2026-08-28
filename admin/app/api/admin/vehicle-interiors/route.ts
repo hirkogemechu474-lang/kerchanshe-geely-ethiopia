@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET /api/admin/vehicle-interiors?vehicleId=xxx
 export async function GET(request: NextRequest) {
@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const interiors = await prisma.vehicleInterior.findMany({
-      where: { vehicleId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
+    const interiors = await vehicleRepository.findInteriors(vehicleId);
     return NextResponse.json({ success: true, interiors });
   } catch (error) {
     console.error('Error fetching vehicle interiors:', error);
@@ -38,26 +35,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const interior = await prisma.$transaction(async (tx) => {
-      if (body.isDefault) {
-        await tx.vehicleInterior.updateMany({
-          where: { vehicleId: body.vehicleId, isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-      return tx.vehicleInterior.create({
-        data: {
-          vehicleId: body.vehicleId,
-          name: body.name,
-          description: body.description || null,
-          materialType: body.materialType,
-          imageUrl: body.imageUrl || null,
-          price: Number(body.price) || 0,
-          isDefault: Boolean(body.isDefault),
-          inStock: body.inStock !== false,
-          sortOrder: Number(body.sortOrder) || 0,
-        },
-      });
+    const interior = await vehicleRepository.createInterior({
+      vehicleId: body.vehicleId,
+      name: body.name,
+      description: body.description || null,
+      materialType: body.materialType,
+      imageUrl: body.imageUrl || null,
+      price: Number(body.price) || 0,
+      isDefault: Boolean(body.isDefault),
+      inStock: body.inStock !== false,
+      sortOrder: Number(body.sortOrder) || 0,
     });
 
     return NextResponse.json({ success: true, interior });

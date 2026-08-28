@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET - single color
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   try {
-    const color = await prisma.vehicleColor.findUnique({ where: { id } });
+    const color = await vehicleRepository.findColorById(id);
     if (!color) return NextResponse.json({ success: false, error: 'Color not found' }, { status: 404 });
     return NextResponse.json({ success: true, color });
   } catch (error) {
@@ -27,29 +27,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const body = await request.json();
 
-    const color = await prisma.$transaction(async (tx) => {
-      const existing = await tx.vehicleColor.findUnique({ where: { id } });
-      if (!existing) throw new Error('NOT_FOUND');
-
-      if (body.isDefault) {
-        await tx.vehicleColor.updateMany({
-          where: { vehicleId: existing.vehicleId, isDefault: true, id: { not: id } },
-          data: { isDefault: false },
-        });
-      }
-
-      return tx.vehicleColor.update({
-        where: { id },
-        data: {
-          ...(body.name !== undefined && { name: body.name }),
-          ...(body.colorCode !== undefined && { colorCode: body.colorCode }),
-          ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl || null }),
-          ...(body.price !== undefined && { price: Number(body.price) || 0 }),
-          ...(body.inStock !== undefined && { inStock: Boolean(body.inStock) }),
-          ...(body.isDefault !== undefined && { isDefault: Boolean(body.isDefault) }),
-          ...(body.sortOrder !== undefined && { sortOrder: Number(body.sortOrder) || 0 }),
-        },
-      });
+    const color = await vehicleRepository.updateColor(id, {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.colorCode !== undefined && { colorCode: body.colorCode }),
+      ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl || null }),
+      ...(body.price !== undefined && { price: Number(body.price) || 0 }),
+      ...(body.inStock !== undefined && { inStock: Boolean(body.inStock) }),
+      ...(body.isDefault !== undefined && { isDefault: Boolean(body.isDefault) }),
+      ...(body.sortOrder !== undefined && { sortOrder: Number(body.sortOrder) || 0 }),
     });
 
     return NextResponse.json({ success: true, color });
@@ -69,7 +54,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   const { id } = await params;
   try {
-    await prisma.vehicleColor.delete({ where: { id } });
+    await vehicleRepository.deleteColor(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting vehicle color:', error);

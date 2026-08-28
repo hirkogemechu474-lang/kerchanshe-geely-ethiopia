@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET /api/admin/vehicle-accessories?vehicleId=xxx
 // Returns accessories scoped to this vehicle PLUS global ones (vehicleId null),
@@ -15,10 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const accessories = await prisma.vehicleAccessory.findMany({
-      where: { OR: [{ vehicleId }, { vehicleId: null }] },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
+    const accessories = await vehicleRepository.findAccessories(vehicleId);
     return NextResponse.json({ success: true, accessories });
   } catch (error) {
     console.error('Error fetching vehicle accessories:', error);
@@ -40,17 +37,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accessory = await prisma.vehicleAccessory.create({
-      data: {
-        vehicleId: body.vehicleId || null,
-        name: body.name,
-        description: body.description || null,
-        category: body.category,
-        price: Number(body.price) || 0,
-        imageUrl: body.imageUrl || null,
-        inStock: body.inStock !== false,
-        sortOrder: Number(body.sortOrder) || 0,
-      },
+    const accessory = await vehicleRepository.createAccessory({
+      vehicleId: body.vehicleId || null,
+      name: body.name,
+      description: body.description || null,
+      category: body.category,
+      price: Number(body.price) || 0,
+      imageUrl: body.imageUrl || null,
+      inStock: body.inStock !== false,
+      sortOrder: Number(body.sortOrder) || 0,
     });
 
     return NextResponse.json({ success: true, accessory });

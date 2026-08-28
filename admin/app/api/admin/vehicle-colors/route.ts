@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { vehicleRepository } from '@/repositories/vehicleRepository';
 
 // GET /api/admin/vehicle-colors?vehicleId=xxx
 export async function GET(request: NextRequest) {
@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const colors = await prisma.vehicleColor.findMany({
-      where: { vehicleId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
+    const colors = await vehicleRepository.findColors(vehicleId);
     return NextResponse.json({ success: true, colors });
   } catch (error) {
     console.error('Error fetching vehicle colors:', error);
@@ -38,25 +35,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const color = await prisma.$transaction(async (tx) => {
-      if (body.isDefault) {
-        await tx.vehicleColor.updateMany({
-          where: { vehicleId: body.vehicleId, isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-      return tx.vehicleColor.create({
-        data: {
-          vehicleId: body.vehicleId,
-          name: body.name,
-          colorCode: body.colorCode,
-          imageUrl: body.imageUrl || null,
-          price: Number(body.price) || 0,
-          inStock: body.inStock !== false,
-          isDefault: Boolean(body.isDefault),
-          sortOrder: Number(body.sortOrder) || 0,
-        },
-      });
+    const color = await vehicleRepository.createColor({
+      vehicleId: body.vehicleId,
+      name: body.name,
+      colorCode: body.colorCode,
+      imageUrl: body.imageUrl || null,
+      price: Number(body.price) || 0,
+      inStock: body.inStock !== false,
+      isDefault: Boolean(body.isDefault),
+      sortOrder: Number(body.sortOrder) || 0,
     });
 
     return NextResponse.json({ success: true, color });
