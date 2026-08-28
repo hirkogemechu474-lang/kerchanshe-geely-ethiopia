@@ -241,4 +241,10 @@ export const vehicleRepository = {
   async deleteWheel(id: string) {
     return prisma.vehicleWheel.delete({ where: { id } });
   },
+
+  /** Best-effort name match — a quotation's vehicleModel is a plain string,
+   *  not an FK, so this is used only to build an optional deep-link. */
+  async findIdByName(name: string) {
+    return prisma.vehicle.findFirst({ where: { name }, select: { id: true } });
+  },
 };

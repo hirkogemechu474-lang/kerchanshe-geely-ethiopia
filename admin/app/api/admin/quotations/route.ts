@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { nextSalesRep } from '@/lib/assignSalesRep';
-import { notifyManagersOfNewLead, notifyAssignedRep } from '@/lib/services/quotations/leadNotifications';
+import { listQuotations, submitWalkInLead } from '@/lib/services/quotations/quotationService';
 
 // GET - Paginated quotations, optionally filtered by status. Status counts
 // are computed across the whole table (not just the current page/filter) so
@@ -15,37 +13,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
-    const pageSize = 25;
-    const where = status ? { status } : undefined;
 
-    const [quotations, total, statusCounts] = await Promise.all([
-      prisma.quotation.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      prisma.quotation.count({ where }),
-      prisma.quotation.groupBy({ by: ['status'], _count: true }),
-    ]);
+    const result = await listQuotations(status, page);
 
-    const countFor = (s: string) => statusCounts.find((c) => c.status === s)?._count ?? 0;
-
-    return NextResponse.json({
-      quotations,
-      total,
-      page,
-      pageSize,
-      stats: {
-        total: statusCounts.reduce((sum, c) => sum + c._count, 0),
-        new: countFor('new'),
-        contacted: countFor('contacted'),
-        approved: countFor('approved'),
-        accepted: countFor('accepted'),
-        converted: countFor('converted'),
-        closed: countFor('closed'),
-      },
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching quotations:', error);
     return NextResponse.json({ error: 'Failed to fetch quotations' }, { status: 500 });
@@ -72,38 +43,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'customerName and phoneNumber are required' }, { status: 400 });
   }
 
-  // UC-01 dedupe rule: "if the phone number matches an existing customer
-  // record, the system links the new lead to that customer instead of
-  // creating a duplicate." No Customer model exists for sales leads, so the
-  // practical equivalent is: reuse an already-open (not converted/closed)
-  // quotation for the same phone number rather than creating a second one.
-  const existing = await prisma.quotation.findFirst({
-    where: { phoneNumber, status: { notIn: ['converted', 'closed'] } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const { quotation, deduped } = await submitWalkInLead({ customerName, phoneNumber, email, vehicleModel, source, message });
 
-  if (existing) {
-    return NextResponse.json({ quotation: existing, deduped: true });
-  }
-
-  const assignedRep = await nextSalesRep();
-  const quotation = await prisma.quotation.create({
-    data: {
-      customerName,
-      phoneNumber,
-      email: email || null,
-      vehicleModel: vehicleModel || null,
-      source: source || 'walk-in',
-      message: message || null,
-      status: 'new',
-      assignedTo: assignedRep?.name ?? null,
-    },
-  });
-
-  await Promise.all([
-    notifyManagersOfNewLead(quotation, assignedRep?.name ?? null),
-    notifyAssignedRep(quotation, assignedRep?.id ?? null),
-  ]);
-
-  return NextResponse.json({ quotation, deduped: false }, { status: 201 });
+  return NextResponse.json({ quotation, deduped }, { status: deduped ? 200 : 201 });
 }

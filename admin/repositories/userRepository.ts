@@ -105,4 +105,13 @@ export const userRepository = {
       select: { id: true, name: true },
     });
   },
+
+  /** Defensive fallback rep lookup by display name — name isn't unique, so
+   *  this is best-effort, not a primary lookup path. */
+  async findActiveSalesRepByName(name: string) {
+    return prisma.user.findFirst({
+      where: { name, role: { in: ['sales', 'sales_representative', 'sales_manager'] }, isActive: true },
+      select: { id: true },
+    });
+  },
 };
