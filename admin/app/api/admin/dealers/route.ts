@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
-
-function parseJson(v: any, fallback: any) {
-  if (v == null) return fallback;
-  if (typeof v === 'string') {
-    try { return JSON.parse(v); } catch { return fallback; }
-  }
-  return v;
-}
+import { dealerRepository } from '@/repositories/dealerRepository';
+import { createDealer } from '@/lib/services/dealers/dealerService';
 
 // GET - List all dealers (supports search + filter)
 export async function GET(request: NextRequest) {
@@ -22,22 +15,7 @@ export async function GET(request: NextRequest) {
     const region = searchParams.get('region') || '';
     const type = searchParams.get('type') || '';
 
-    const where: any = {};
-    if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { city: { contains: q, mode: 'insensitive' } },
-        { region: { contains: q, mode: 'insensitive' } },
-      ];
-    }
-    if (city) where.city = city;
-    if (region) where.region = region;
-    if (type) where.type = type;
-
-    const dealers = await prisma.dealer.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
+    const dealers = await dealerRepository.findMany({ q, city, region, type });
 
     return NextResponse.json({ success: true, dealers });
   } catch (error) {
@@ -57,31 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Name, city and region are required' }, { status: 400 });
     }
 
-    const dealer = await prisma.dealer.create({
-      data: {
-        name: body.name,
-        type: body.type || 'both',
-        description: body.description || null,
-        city: body.city,
-        region: body.region,
-        country: body.country || 'Ethiopia',
-        address: parseJson(body.address, {}),
-        latitude: parseFloat(body.latitude) || 0,
-        longitude: parseFloat(body.longitude) || 0,
-        contact: parseJson(body.contact, {}),
-        website: body.website || null,
-        services: parseJson(body.services, []),
-        workingHours: parseJson(body.workingHours, {}),
-        facilities: parseJson(body.facilities, {}),
-        logo: body.logo || null,
-        gallery: parseJson(body.gallery, []),
-        active: body.active !== false,
-        featured: body.featured === true,
-        salesCount: parseInt(body.salesCount) || 0,
-        staffCount: parseInt(body.staffCount) || 0,
-        rating: parseFloat(body.rating) || 0,
-      },
-    });
+    const dealer = await createDealer(body);
 
     return NextResponse.json({ success: true, dealer });
   } catch (error) {
