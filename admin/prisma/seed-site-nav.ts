@@ -2,17 +2,21 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Trimmed to match the nav pattern used on Geely's regional distributor
-// sites (e.g. geely.com.eg): Models, Company, After-Sales Services, Dealers,
-// Contact — rather than every section the site happens to have a page for.
+// Matches the global Geely OEM site's top-nav pattern: Models, About Geely,
+// Shopping Tools, Owners, Media Center, Test Drive. 'Shopping Tools' and
+// 'Owners' are category labels, not pages of their own — their hrefs are
+// non-navigable sentinels that only ever trigger the static link-group
+// dropdown defined alongside LINK_GROUPS in web/components/Header.tsx (kept
+// in sync there and in web/components/MobileDrawer.tsx's navigationItems).
 // Mirrors web/components/Header.tsx's DEFAULT_NAV_ITEMS fallback, so the
 // pre-fetch fallback and the seeded CMS data stay in sync.
 const topNav = [
   { label: 'Models', href: '/models', displayOrder: 1 },
-  { label: 'Company', href: '/about', displayOrder: 2 },
-  { label: 'After-Sales Services', href: '/service', displayOrder: 3 },
-  { label: 'Dealers', href: '/dealers', displayOrder: 4 },
-  { label: 'Contact Us', href: '/contact', displayOrder: 5 },
+  { label: 'About Geely', href: '/about', displayOrder: 2 },
+  { label: 'Shopping Tools', href: '/shopping-tools', displayOrder: 3 },
+  { label: 'Owners', href: '/owners', displayOrder: 4 },
+  { label: 'Media Center', href: '/news', displayOrder: 5 },
+  { label: 'Test Drive', href: '/test-drive', displayOrder: 6 },
 ];
 
 const quickActions = [

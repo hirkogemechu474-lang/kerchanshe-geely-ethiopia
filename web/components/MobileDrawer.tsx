@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, ChevronDown, Car, Wrench, Phone, Info, MapPin, Search, Globe, Sun, Moon } from 'lucide-react';
+import { X, ChevronDown, Car, Info, ShoppingBag, Users, Newspaper, CalendarCheck, Search, Globe, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage, useTranslation } from '@/lib/i18n';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -21,10 +21,10 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
   const isEnglish = language === 'en';
   const { resolvedTheme, setTheme } = useTheme();
 
-  // Mirrors Header.tsx's trimmed top nav (Models, Company, After-Sales
-  // Services, Dealers, Contact Us) so desktop and mobile agree — the
+  // Mirrors Header.tsx's top nav (Models, About Geely, Shopping Tools,
+  // Owners, Media Center, Test Drive) so desktop and mobile agree — the
   // deeper submenus stay, since mobile still benefits from that nesting
-  // even where the desktop bar itself is flat.
+  // even where the desktop bar itself uses a compact dropdown.
   const navigationItems = [
     {
       title: t('common.models'),
@@ -40,21 +40,31 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
         { name: 'Okavango', href: '/models/okavango' },
       ]
     },
-    { title: 'Company', icon: <Info size={20} />, href: '/about' },
+    { title: 'About Geely', icon: <Info size={20} />, href: '/about' },
     {
-      title: 'After-Sales Services',
-      icon: <Wrench size={20} />,
-      href: '/service',
+      title: 'Shopping Tools',
+      icon: <ShoppingBag size={20} />,
+      href: '/shopping-tools',
       hasSubmenu: true,
       submenu: [
-        { name: 'Test Drive', href: '/test-drive' },
-        { name: 'Service Booking', href: '/service' },
-        { name: 'Spare Parts', href: '/parts' },
-        { name: 'Purchase', href: '/financing' }
+        { name: 'Configurator', href: '/configure' },
+        { name: 'Download Brochure', href: '/models' },
+        { name: 'Find a Dealer', href: '/dealers' },
+        { name: 'Request a Quote', href: '/quote' },
       ]
     },
-    { title: t('common.dealers'), icon: <MapPin size={20} />, href: '/dealers' },
-    { title: 'Contact Us', icon: <Phone size={20} />, href: '/contact' },
+    {
+      title: 'Owners',
+      icon: <Users size={20} />,
+      href: '/owners',
+      hasSubmenu: true,
+      submenu: [
+        { name: 'Manuals & Warranties', href: '/warranty' },
+        { name: 'After-Sales Services', href: '/service' },
+      ]
+    },
+    { title: 'Media Center', icon: <Newspaper size={20} />, href: '/news' },
+    { title: 'Test Drive', icon: <CalendarCheck size={20} />, href: '/test-drive' },
   ];
 
   const toggleSection = (title: string) => {

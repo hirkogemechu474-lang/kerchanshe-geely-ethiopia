@@ -14,26 +14,56 @@ interface HeaderProps {
   onMobileMenuToggle?: () => void;
 }
 
-// href -> special mega-menu/dropdown behavior. Kept as a fixed convention
-// rather than admin-editable data — an admin can add/reorder/hide/relabel any
-// nav item via /admin/site-navigation, but only these three hrefs ever get a
-// dropdown attached, matching what the site actually has content systems for.
-const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; category?: 'models' | 'services' }> = {
-  '/models': { hasDropdown: true, category: 'models' },
-  '/service': { hasSubmenu: true, category: 'services' },
+// A simple, static list of links shown in a compact dropdown card — for nav
+// items that are a category label rather than a page of their own (unlike
+// Models/After-Sales Services, which have real mega-menus backed by CMS
+// data). Href is a non-navigable sentinel (see SPECIAL_NAV_HREFS below).
+interface LinkGroup {
+  title: string;
+  links: { label: string; href: string }[];
+}
+
+const LINK_GROUPS: Record<string, LinkGroup> = {
+  'shopping-tools': {
+    title: 'Shopping Tools',
+    links: [
+      { label: 'Configurator', href: '/configure' },
+      { label: 'Download Brochure', href: '/models' },
+      { label: 'Find a Dealer', href: '/dealers' },
+      { label: 'Request a Quote', href: '/quote' },
+    ],
+  },
+  owners: {
+    title: 'Owners',
+    links: [
+      { label: 'Manuals & Warranties', href: '/warranty' },
+      { label: 'After-Sales Services', href: '/service' },
+    ],
+  },
 };
 
-// Trimmed to match the nav pattern used on Geely's regional distributor
-// sites (e.g. geely.com.eg): Models, Company, After-Sales Services, Dealers,
-// Contact — rather than every section the site happens to have a page for.
+// href -> special mega-menu/dropdown behavior. Kept as a fixed convention
+// rather than admin-editable data — an admin can add/reorder/hide/relabel any
+// nav item via /admin/site-navigation, but only these hrefs ever get a
+// dropdown attached, matching what the site actually has content systems for.
+// '/shopping-tools' and '/owners' are sentinel hrefs (not real pages) that
+// only ever trigger the static LINK_GROUPS panel above — see hasLinkGroup.
+const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; hasLinkGroup?: keyof typeof LINK_GROUPS; category?: 'models' | 'services' }> = {
+  '/models': { hasDropdown: true, category: 'models' },
+  '/service': { hasSubmenu: true, category: 'services' },
+  '/shopping-tools': { hasLinkGroup: 'shopping-tools' },
+  '/owners': { hasLinkGroup: 'owners' },
+};
+
 // Matches the seed data in admin/prisma/seed-site-nav.ts — used only as the
 // pre-fetch fallback so the header never renders empty before the first load.
 const DEFAULT_NAV_ITEMS: SiteNavItem[] = [
   { id: 'models', label: 'Models', href: '/models', icon: null, openInNewTab: false, displayOrder: 1 },
-  { id: 'company', label: 'Company', href: '/about', icon: null, openInNewTab: false, displayOrder: 2 },
-  { id: 'services', label: 'After-Sales Services', href: '/service', icon: null, openInNewTab: false, displayOrder: 3 },
-  { id: 'dealers', label: 'Dealers', href: '/dealers', icon: null, openInNewTab: false, displayOrder: 4 },
-  { id: 'contact', label: 'Contact Us', href: '/contact', icon: null, openInNewTab: false, displayOrder: 5 },
+  { id: 'about', label: 'About Geely', href: '/about', icon: null, openInNewTab: false, displayOrder: 2 },
+  { id: 'shopping-tools', label: 'Shopping Tools', href: '/shopping-tools', icon: null, openInNewTab: false, displayOrder: 3 },
+  { id: 'owners', label: 'Owners', href: '/owners', icon: null, openInNewTab: false, displayOrder: 4 },
+  { id: 'media', label: 'Media Center', href: '/news', icon: null, openInNewTab: false, displayOrder: 5 },
+  { id: 'test-drive', label: 'Test Drive', href: '/test-drive', icon: null, openInNewTab: false, displayOrder: 6 },
 ];
 
 // ─── Pre-fetch helper ─────────────────────────────────────────────────────────
@@ -55,6 +85,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const { t } = useTranslation();
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
+  const [linkGroupOpen, setLinkGroupOpen]   = useState<keyof typeof LINK_GROUPS | null>(null);
 
   // Pre-loaded menu data — fetched once, reused on every hover
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
@@ -100,6 +131,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
           openInNewTab: item.openInNewTab,
           hasDropdown: special?.hasDropdown,
           hasSubmenu: special?.hasSubmenu,
+          hasLinkGroup: special?.hasLinkGroup,
           category: special?.category,
           icon: IconComponent ? <IconComponent size={16} className="shrink-0" /> : null,
         };
@@ -110,6 +142,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const closeAllMenus = () => {
     setMegaMenuOpen(null);
     setModelsDropdownOpen(false);
+    setLinkGroupOpen(null);
   };
 
   // Keep dropdown open while mouse moves between nav item and panel
@@ -149,10 +182,16 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     loadMenuData();
                     setModelsDropdownOpen(true);
                     setMegaMenuOpen(null);
+                    setLinkGroupOpen(null);
                   } else if (item.hasSubmenu) {
                     loadMenuData();
                     setMegaMenuOpen(item.category!);
                     setModelsDropdownOpen(false);
+                    setLinkGroupOpen(null);
+                  } else if (item.hasLinkGroup) {
+                    setLinkGroupOpen(item.hasLinkGroup);
+                    setModelsDropdownOpen(false);
+                    setMegaMenuOpen(null);
                   } else {
                     closeAllMenus();
                   }
@@ -166,6 +205,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
                       setMegaMenuOpen(null);
+                      setLinkGroupOpen(null);
                     }}
                   >
                     <Car size={15} />
@@ -173,6 +213,21 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     <ChevronDown
                       size={15}
                       className={`transform transition-transform ${modelsDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                ) : item.hasLinkGroup ? (
+                  <button
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-semibold text-[13px] uppercase tracking-[0.06em] px-3 py-2 transition-colors whitespace-nowrap"
+                    onClick={() => {
+                      setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
+                      setModelsDropdownOpen(false);
+                      setMegaMenuOpen(null);
+                    }}
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={15}
+                      className={`transform transition-transform ${linkGroupOpen === item.hasLinkGroup ? 'rotate-180' : ''}`}
                     />
                   </button>
                 ) : (
@@ -186,6 +241,26 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     {item.icon}
                     {item.label}
                   </Link>
+                )}
+
+                {/* Compact static link-group dropdown (Shopping Tools / Owners) */}
+                {item.hasLinkGroup && linkGroupOpen === item.hasLinkGroup && (
+                  <div
+                    className="absolute left-0 top-full mt-0 min-w-[220px] bg-white dark:bg-midnight-surface shadow-lg border border-line dark:border-midnight-line rounded-lg py-2 z-40"
+                    onMouseEnter={cancelClose}
+                    onMouseLeave={scheduleClose}
+                  >
+                    {LINK_GROUPS[item.hasLinkGroup].links.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="block px-4 py-2.5 text-sm font-medium text-ink dark:text-ice hover:bg-cloud dark:hover:bg-midnight hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
+                        onClick={closeAllMenus}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
