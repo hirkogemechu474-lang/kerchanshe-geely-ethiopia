@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { getContent, updateContent } from '@/lib/services/parts/partsContentService';
 
 // GET - Fetch parts page content (the single record)
 export async function GET() {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    let content = await prisma.partsPageContent.findFirst();
-    if (!content) {
-      content = await prisma.partsPageContent.create({ data: {} });
-    }
+    const content = await getContent();
 
     return NextResponse.json({ content });
   } catch (error) {
@@ -23,20 +20,11 @@ export async function GET() {
 // PUT - Update parts page content
 export async function PUT(request: NextRequest) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const body = await request.json();
-
-    let content = await prisma.partsPageContent.findFirst();
-    if (!content) {
-      content = await prisma.partsPageContent.create({ data: body });
-    } else {
-      content = await prisma.partsPageContent.update({
-        where: { id: content.id },
-        data: body,
-      });
-    }
+    const content = await updateContent(body);
 
     return NextResponse.json({ content });
   } catch (error) {

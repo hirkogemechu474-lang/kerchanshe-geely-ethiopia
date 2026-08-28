@@ -31,4 +31,14 @@ export const sparePartRepository = {
   async delete(id: string) {
     return prisma.sparePart.delete({ where: { id } });
   },
+
+  // Powers the "Spare Parts" sidebar low-stock badge. stock/reorderPoint
+  // are compared in application code — Prisma can't filter on a
+  // column-vs-column comparison in a `where` clause.
+  async findActiveStockLevels() {
+    return prisma.sparePart.findMany({
+      where: { isActive: true },
+      select: { stock: true, reorderPoint: true },
+    });
+  },
 };

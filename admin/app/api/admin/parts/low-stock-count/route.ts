@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { countLowStockParts } from '@/lib/services/parts/sparePartStockService';
 
 // Powers the "Spare Parts" sidebar badge (AdminLayout) — parts.stock is only
 // ever checked when someone happens to open the Parts page (see the
@@ -14,11 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const parts = await prisma.sparePart.findMany({
-    where: { isActive: true },
-    select: { stock: true, reorderPoint: true },
-  });
-  const count = parts.filter((p) => p.stock < p.reorderPoint).length;
+  const count = await countLowStockParts();
 
   return NextResponse.json({ count });
 }

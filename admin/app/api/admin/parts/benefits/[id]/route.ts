@@ -1,28 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { updateBenefit, deleteBenefit } from '@/lib/services/parts/partsContentService';
 
 type Params = Promise<{ id: string }>;
 
 // PUT – Update a benefit
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const { id } = await params;
     const body = await request.json();
 
-    const benefit = await prisma.partBenefit.update({
-      where: { id },
-      data: {
-        ...(body.title !== undefined && { title: body.title }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.icon !== undefined && { icon: body.icon }),
-        ...(body.displayOrder !== undefined && { displayOrder: parseInt(body.displayOrder) }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
+    const benefit = await updateBenefit(id, body);
 
     return NextResponse.json({ benefit });
   } catch (error) {
@@ -34,11 +25,11 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE – Delete a benefit
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const { id } = await params;
-    await prisma.partBenefit.delete({ where: { id } });
+    await deleteBenefit(id);
 
     return NextResponse.json({ message: 'Benefit deleted' });
   } catch (error) {

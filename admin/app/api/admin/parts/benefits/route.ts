@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { listBenefits, createBenefit } from '@/lib/services/parts/partsContentService';
 
 // GET – Fetch all part benefits
 export async function GET() {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
-    const benefits = await prisma.partBenefit.findMany({
-      orderBy: { displayOrder: 'asc' },
-    });
+    const benefits = await listBenefits();
 
     return NextResponse.json({ benefits });
   } catch (error) {
@@ -22,27 +20,16 @@ export async function GET() {
 // POST – Create a benefit
 export async function POST(request: NextRequest) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const body = await request.json();
-    const { title, description, icon, displayOrder, isActive } = body;
-
-    if (!title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    const result = await createBenefit(body);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const benefit = await prisma.partBenefit.create({
-      data: {
-        title,
-        description: description || null,
-        icon: icon || null,
-        displayOrder: parseInt(displayOrder) || 0,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-    });
-
-    return NextResponse.json({ benefit }, { status: 201 });
+    return NextResponse.json({ benefit: result.benefit }, { status: 201 });
   } catch (error) {
     console.error('Error creating benefit:', error);
     return NextResponse.json({ error: 'Failed to create benefit' }, { status: 500 });

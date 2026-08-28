@@ -1,34 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { updateCategory, deleteCategory } from '@/lib/services/parts/partsContentService';
 
 type Params = Promise<{ id: string }>;
 
 // PUT – Update a category
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const { id } = await params;
     const body = await request.json();
 
-    const data: any = {
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.description !== undefined && { description: body.description }),
-      ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
-      ...(body.displayOrder !== undefined && { displayOrder: parseInt(body.displayOrder) }),
-      ...(body.isActive !== undefined && { isActive: body.isActive }),
-    };
-
-    if (body.slug) {
-      data.slug = body.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    }
-
-    const category = await prisma.partCategory.update({
-      where: { id },
-      data,
-    });
+    const category = await updateCategory(id, body);
 
     return NextResponse.json({ category });
   } catch (error) {
@@ -40,11 +25,11 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE – Delete a category
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   try {
-    const { session, response } = await requireAdminApiSession();
+    const { response } = await requireAdminApiSession();
     if (response) return response;
 
     const { id } = await params;
-    await prisma.partCategory.delete({ where: { id } });
+    await deleteCategory(id);
 
     return NextResponse.json({ message: 'Category deleted' });
   } catch (error) {
