@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { settingRepository } from '@/repositories/settingRepository';
 
 // GET social media links
 export async function GET() {
@@ -8,9 +8,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const socialMedia = await prisma.setting.findUnique({
-      where: { key: 'social_media_links' }
-    });
+    const socialMedia = await settingRepository.findByKey('social_media_links');
 
     if (!socialMedia) {
       // Return default structure
@@ -57,19 +55,7 @@ export async function POST(request: NextRequest) {
       tiktok: tiktok || ''
     };
 
-    await prisma.setting.upsert({
-      where: { key: 'social_media_links' },
-      update: { 
-        value: JSON.stringify(socialMediaLinks), 
-        type: 'social',
-        updatedAt: new Date()
-      },
-      create: { 
-        key: 'social_media_links', 
-        value: JSON.stringify(socialMediaLinks), 
-        type: 'social' 
-      }
-    });
+    await settingRepository.upsert('social_media_links', JSON.stringify(socialMediaLinks), 'social');
 
     return NextResponse.json({ success: true, data: socialMediaLinks });
   } catch (error) {

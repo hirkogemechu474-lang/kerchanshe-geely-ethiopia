@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { promotionRepository } from '@/repositories/promotionRepository';
 
 type Params = Promise<{ id: string }>;
 
@@ -14,9 +14,7 @@ export async function GET(
     if (response) return response;
 
     const { id } = await params;
-    const promotion = await prisma.promotion.findUnique({
-      where: { id },
-    });
+    const promotion = await promotionRepository.findById(id);
 
     if (!promotion) {
       return NextResponse.json({ error: 'Promotion not found' }, { status: 404 });
@@ -26,7 +24,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching promotion:', error);
     return NextResponse.json({ error: 'Failed to fetch promotion' }, { status: 500 });
-  } 
+  }
 }
 
 // PUT - Update promotion
@@ -51,27 +49,24 @@ export async function PUT(
       return NextResponse.json({ error: 'Please provide a valid promotion date range' }, { status: 400 });
     }
 
-    const promotion = await prisma.promotion.update({
-      where: { id },
-      data: {
-        title: body.title,
-        description: body.description,
-        startDate,
-        endDate,
-        ...(body.bannerImage !== undefined && { bannerImage: body.bannerImage }),
-        ...(body.ctaButtonText !== undefined && { ctaButtonText: body.ctaButtonText }),
-        ...(body.ctaButtonLink !== undefined && { ctaButtonLink: body.ctaButtonLink }),
-        ...(body.isFeatured !== undefined && { isFeatured: body.isFeatured }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-        ...(body.displayOrder !== undefined && { displayOrder: body.displayOrder }),
-      },
+    const promotion = await promotionRepository.update(id, {
+      title: body.title,
+      description: body.description,
+      startDate,
+      endDate,
+      ...(body.bannerImage !== undefined && { bannerImage: body.bannerImage }),
+      ...(body.ctaButtonText !== undefined && { ctaButtonText: body.ctaButtonText }),
+      ...(body.ctaButtonLink !== undefined && { ctaButtonLink: body.ctaButtonLink }),
+      ...(body.isFeatured !== undefined && { isFeatured: body.isFeatured }),
+      ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.displayOrder !== undefined && { displayOrder: body.displayOrder }),
     });
 
     return NextResponse.json({ promotion });
   } catch (error) {
     console.error('Error updating promotion:', error);
     return NextResponse.json({ error: 'Failed to update promotion' }, { status: 500 });
-  } 
+  }
 }
 
 // DELETE - Delete promotion
@@ -84,13 +79,11 @@ export async function DELETE(
     if (response) return response;
 
     const { id } = await params;
-    await prisma.promotion.delete({
-      where: { id },
-    });
+    await promotionRepository.delete(id);
 
     return NextResponse.json({ message: 'Promotion deleted successfully' });
   } catch (error) {
     console.error('Error deleting promotion:', error);
     return NextResponse.json({ error: 'Failed to delete promotion' }, { status: 500 });
-  } 
+  }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { settingRepository } from '@/repositories/settingRepository';
 
 /**
  * GET /api/admin/settings/cookie-banner
@@ -18,9 +18,7 @@ export async function GET() {
       );
     }
 
-    const setting = await prisma.setting.findUnique({
-      where: { key: 'cookie_banner' }
-    });
+    const setting = await settingRepository.findByKey('cookie_banner');
 
     if (!setting) {
       // Return default values
@@ -83,17 +81,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Upsert the setting
-    const setting = await prisma.setting.upsert({
-      where: { key: 'cookie_banner' },
-      create: {
-        key: 'cookie_banner',
-        value: JSON.stringify(config),
-        type: 'general'
-      },
-      update: {
-        value: JSON.stringify(config)
-      }
-    });
+    const setting = await settingRepository.upsert('cookie_banner', JSON.stringify(config), 'general');
 
     return NextResponse.json({
       message: 'Cookie banner settings updated successfully',

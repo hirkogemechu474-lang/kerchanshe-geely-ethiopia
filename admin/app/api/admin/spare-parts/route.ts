@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/auth/api';
-import { prisma } from '@/lib/prisma';
+import { sparePartRepository } from '@/repositories/sparePartRepository';
 
 // GET - Fetch all spare parts
 export async function GET(request: NextRequest) {
@@ -8,10 +8,7 @@ export async function GET(request: NextRequest) {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const spareParts = await prisma.sparePart.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { partCategory: true },
-    });
+    const spareParts = await sparePartRepository.findAll();
 
     return NextResponse.json({ spareParts });
   } catch (error) {
@@ -35,33 +32,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if SKU already exists
-    const existingSku = await prisma.sparePart.findUnique({
-      where: { sku },
-    });
+    const existingSku = await sparePartRepository.findBySku(sku);
 
     if (existingSku) {
       return NextResponse.json({ error: 'SKU already exists' }, { status: 400 });
     }
 
     // Create spare part
-    const sparePart = await prisma.sparePart.create({
-      data: {
-        name,
-        sku,
-        category,
-        partCategoryId: partCategoryId || null,
-        description: description || null,
-        imageUrl: imageUrl || null,
-        brand: brand || null,
-        stock: parseInt(stock) || 0,
-        reorderPoint: parseInt(reorderPoint) || 10,
-        price: parseFloat(price),
-        supplier,
-        isFeatured: isFeatured !== undefined ? isFeatured : false,
-        displayOrder: parseInt(displayOrder) || 0,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-      include: { partCategory: true },
+    const sparePart = await sparePartRepository.create({
+      name,
+      sku,
+      category,
+      partCategory: partCategoryId ? { connect: { id: partCategoryId } } : undefined,
+      description: description || null,
+      imageUrl: imageUrl || null,
+      brand: brand || null,
+      stock: parseInt(stock) || 0,
+      reorderPoint: parseInt(reorderPoint) || 10,
+      price: parseFloat(price),
+      supplier,
+      isFeatured: isFeatured !== undefined ? isFeatured : false,
+      displayOrder: parseInt(displayOrder) || 0,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     return NextResponse.json({ sparePart }, { status: 201 });
@@ -86,37 +78,28 @@ export async function PUT(request: NextRequest) {
 
     // If SKU is being updated, check it's not already taken
     if (sku) {
-      const existingSku = await prisma.sparePart.findFirst({
-        where: {
-          sku,
-          NOT: { id },
-        },
-      });
+      const existingSku = await sparePartRepository.findBySkuExcludingId(sku, id);
 
       if (existingSku) {
         return NextResponse.json({ error: 'SKU already exists' }, { status: 400 });
       }
     }
 
-    const sparePart = await prisma.sparePart.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(sku && { sku }),
-        ...(category && { category }),
-        ...(partCategoryId !== undefined && { partCategoryId }),
-        ...(description !== undefined && { description }),
-        ...(imageUrl !== undefined && { imageUrl }),
-        ...(brand !== undefined && { brand }),
-        ...(stock !== undefined && { stock: parseInt(stock) }),
-        ...(reorderPoint !== undefined && { reorderPoint: parseInt(reorderPoint) }),
-        ...(price !== undefined && { price: parseFloat(price) }),
-        ...(supplier && { supplier }),
-        ...(isFeatured !== undefined && { isFeatured }),
-        ...(displayOrder !== undefined && { displayOrder: parseInt(displayOrder) }),
-        ...(isActive !== undefined && { isActive }),
-      },
-      include: { partCategory: true },
+    const sparePart = await sparePartRepository.update(id, {
+      ...(name && { name }),
+      ...(sku && { sku }),
+      ...(category && { category }),
+      ...(partCategoryId !== undefined && { partCategory: partCategoryId ? { connect: { id: partCategoryId } } : { disconnect: true } }),
+      ...(description !== undefined && { description }),
+      ...(imageUrl !== undefined && { imageUrl }),
+      ...(brand !== undefined && { brand }),
+      ...(stock !== undefined && { stock: parseInt(stock) }),
+      ...(reorderPoint !== undefined && { reorderPoint: parseInt(reorderPoint) }),
+      ...(price !== undefined && { price: parseFloat(price) }),
+      ...(supplier && { supplier }),
+      ...(isFeatured !== undefined && { isFeatured }),
+      ...(displayOrder !== undefined && { displayOrder: parseInt(displayOrder) }),
+      ...(isActive !== undefined && { isActive }),
     });
 
     return NextResponse.json({ sparePart });
@@ -139,9 +122,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Spare part ID required' }, { status: 400 });
     }
 
-    await prisma.sparePart.delete({
-      where: { id },
-    });
+    await sparePartRepository.delete(id);
 
     return NextResponse.json({ message: 'Spare part deleted successfully' });
   } catch (error) {

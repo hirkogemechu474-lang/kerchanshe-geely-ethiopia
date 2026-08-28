@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { promotionRepository } from '@/repositories/promotionRepository';
 
 // GET - Fetch all promotions
 export async function GET(request: NextRequest) {
@@ -8,19 +8,13 @@ export async function GET(request: NextRequest) {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const promotions = await prisma.promotion.findMany({
-      orderBy: [
-        { isFeatured: 'desc' },
-        { displayOrder: 'asc' },
-        { startDate: 'desc' },
-      ],
-    });
+    const promotions = await promotionRepository.findAll();
 
     return NextResponse.json({ promotions });
   } catch (error) {
     console.error('Error fetching promotions:', error);
     return NextResponse.json({ error: 'Failed to fetch promotions' }, { status: 500 });
-  } 
+  }
 }
 
 // POST - Create promotion
@@ -50,19 +44,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const promotion = await prisma.promotion.create({
-      data: {
-        title,
-        description,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        bannerImage: bannerImage || null,
-        ctaButtonText: ctaButtonText || null,
-        ctaButtonLink: ctaButtonLink || null,
-        isFeatured: isFeatured ?? false,
-        isActive: isActive ?? true,
-        displayOrder: displayOrder ?? 0,
-      },
+    const promotion = await promotionRepository.create({
+      title,
+      description,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      bannerImage: bannerImage || null,
+      ctaButtonText: ctaButtonText || null,
+      ctaButtonLink: ctaButtonLink || null,
+      isFeatured: isFeatured ?? false,
+      isActive: isActive ?? true,
+      displayOrder: displayOrder ?? 0,
     });
 
     return NextResponse.json({ promotion }, { status: 201 });
@@ -72,5 +64,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create promotion' },
       { status: 500 }
     );
-  } 
+  }
 }

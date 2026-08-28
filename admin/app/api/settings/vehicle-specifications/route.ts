@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { settingRepository } from '@/repositories/settingRepository';
 import type { VehicleSpecificationLists } from '@/lib/vehicle-settings-types';
 
 const SETTING_KEY = 'vehicle_specifications';
@@ -40,7 +40,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const setting = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
+    const setting = await settingRepository.findByKey(SETTING_KEY);
     if (setting) {
       const parsed = JSON.parse(setting.value);
       return NextResponse.json({ ...DEFAULT_VEHICLE_SPECIFICATIONS, ...parsed });
@@ -48,7 +48,7 @@ export async function GET() {
 
     // One-time fallback: the old combined `vehicle_settings` blob used to carry
     // this data under its own `specifications` key before this split.
-    const legacy = await prisma.setting.findUnique({ where: { key: LEGACY_SETTING_KEY } });
+    const legacy = await settingRepository.findByKey(LEGACY_SETTING_KEY);
     if (legacy) {
       const raw = JSON.parse(legacy.value);
       if (raw.specifications) {
@@ -75,11 +75,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const value = typeof body === 'string' ? body : JSON.stringify(body);
 
-    await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
-      update: { value, type: SETTING_TYPE, updatedAt: new Date() },
-      create: { key: SETTING_KEY, value, type: SETTING_TYPE },
-    });
+    await settingRepository.upsert(SETTING_KEY, value, SETTING_TYPE);
 
     return NextResponse.json({ success: true, data: JSON.parse(value) });
   } catch (error) {

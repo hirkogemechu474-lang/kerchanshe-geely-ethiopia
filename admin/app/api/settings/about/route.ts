@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'about_content';
 const SETTING_TYPE = 'cms';
@@ -221,7 +221,7 @@ const DEFAULT_ABOUT: AboutContent = {
 
 async function getStoredOrDefault(): Promise<AboutContent> {
   try {
-    const row = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
+    const row = await settingRepository.findByKey(SETTING_KEY);
     if (!row) return DEFAULT_ABOUT;
     const parsed = JSON.parse(row.value);
     return { ...DEFAULT_ABOUT, ...parsed };
@@ -254,11 +254,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const value = typeof body === 'string' ? body : JSON.stringify(body);
 
-    await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
-      update: { value, type: SETTING_TYPE, updatedAt: new Date() },
-      create: { key: SETTING_KEY, value, type: SETTING_TYPE },
-    });
+    await settingRepository.upsert(SETTING_KEY, value, SETTING_TYPE);
 
     return NextResponse.json({ success: true, data: JSON.parse(value) });
   } catch (error) {

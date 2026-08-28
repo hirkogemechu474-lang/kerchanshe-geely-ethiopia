@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { newsRepository } from '@/repositories/newsRepository';
 
 // GET - Fetch single news article
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const article = await prisma.newsArticle.findUnique({
-      where: { id: id },
-    });
+    const article = await newsRepository.findById(id);
 
     if (!article) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 });
@@ -28,8 +28,10 @@ export async function GET(
 // PUT - Update news article
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
@@ -42,27 +44,22 @@ export async function PUT(
     }
 
     // Check if article exists
-    const existingArticle = await prisma.newsArticle.findUnique({
-      where: { id: id },
-    });
+    const existingArticle = await newsRepository.findById(id);
 
     if (!existingArticle) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
 
     // Update article
-    const article = await prisma.newsArticle.update({
-      where: { id: id },
-      data: {
-        title,
-        category,
-        author,
-        content,
-        imageUrl: imageUrl || null,
-        excerpt: excerpt || content.substring(0, 150),
-        status: status || 'draft',
-        publishDate: publishDate ? new Date(publishDate) : (status === 'published' ? new Date() : null),
-      },
+    const article = await newsRepository.update(id, {
+      title,
+      category,
+      author,
+      content,
+      imageUrl: imageUrl || null,
+      excerpt: excerpt || content.substring(0, 150),
+      status: status || 'draft',
+      publishDate: publishDate ? new Date(publishDate) : (status === 'published' ? new Date() : null),
     });
 
     return NextResponse.json({ article });
@@ -75,24 +72,22 @@ export async function PUT(
 // DELETE - Delete news article
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;try {
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
     // Check if article exists
-    const existingArticle = await prisma.newsArticle.findUnique({
-      where: { id: id },
-    });
+    const existingArticle = await newsRepository.findById(id);
 
     if (!existingArticle) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
 
     // Delete article
-    await prisma.newsArticle.delete({
-      where: { id: id },
-    });
+    await newsRepository.delete(id);
 
     return NextResponse.json({ message: 'News article deleted successfully' });
   } catch (error) {

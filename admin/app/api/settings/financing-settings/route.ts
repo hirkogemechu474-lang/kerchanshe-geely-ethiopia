@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { settingRepository } from '@/repositories/settingRepository';
 
 const SETTING_KEY = 'financing_settings';
 const SETTING_TYPE = 'cms';
@@ -126,9 +126,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const setting = await settingRepository.findByKey(SETTING_KEY);
 
     if (!setting) {
       return NextResponse.json(DEFAULT_FINANCING_SETTINGS);
@@ -155,19 +153,7 @@ export async function POST(request: NextRequest) {
 
     const value = typeof body === 'string' ? body : JSON.stringify(body);
 
-    await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
-      update: {
-        value,
-        type: SETTING_TYPE,
-        updatedAt: new Date(),
-      },
-      create: {
-        key: SETTING_KEY,
-        value,
-        type: SETTING_TYPE,
-      },
-    });
+    await settingRepository.upsert(SETTING_KEY, value, SETTING_TYPE);
 
     const saved = JSON.parse(value);
     return NextResponse.json({ success: true, data: saved });

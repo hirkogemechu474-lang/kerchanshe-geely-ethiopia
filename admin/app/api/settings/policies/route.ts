@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { settingRepository } from '@/repositories/settingRepository';
 
 // GET all policies
 export async function GET() {
@@ -8,9 +8,7 @@ export async function GET() {
   if (response) return response;
 
   try {
-    const policies = await prisma.setting.findMany({
-      where: { type: 'policy' }
-    });
+    const policies = await settingRepository.findManyByType('policy');
 
     // Convert to object format
     const policiesObject: Record<string, any> = {};
@@ -48,33 +46,15 @@ export async function POST(request: NextRequest) {
     const updates = [];
 
     if (privacy !== undefined) {
-      updates.push(
-        prisma.setting.upsert({
-          where: { key: 'privacy_policy' },
-          update: { value: privacy, type: 'policy' },
-          create: { key: 'privacy_policy', value: privacy, type: 'policy' }
-        })
-      );
+      updates.push(settingRepository.upsert('privacy_policy', privacy, 'policy'));
     }
 
     if (terms !== undefined) {
-      updates.push(
-        prisma.setting.upsert({
-          where: { key: 'terms_of_service' },
-          update: { value: terms, type: 'policy' },
-          create: { key: 'terms_of_service', value: terms, type: 'policy' }
-        })
-      );
+      updates.push(settingRepository.upsert('terms_of_service', terms, 'policy'));
     }
 
     if (cookies !== undefined) {
-      updates.push(
-        prisma.setting.upsert({
-          where: { key: 'cookie_policy' },
-          update: { value: cookies, type: 'policy' },
-          create: { key: 'cookie_policy', value: cookies, type: 'policy' }
-        })
-      );
+      updates.push(settingRepository.upsert('cookie_policy', cookies, 'policy'));
     }
 
     await Promise.all(updates);

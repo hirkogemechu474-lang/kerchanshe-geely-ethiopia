@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
 import { sanitizeCategory, UPLOADS_ROOT } from '@/lib/upload-utils';
+import { mediaAssetRepository } from '@/repositories/mediaAssetRepository';
 
 /**
  * POST /api/upload
@@ -69,22 +69,20 @@ export async function POST(request: Request) {
 
     const url = `/uploads/${category}/${fileName}`;
 
-    const mediaAsset = await prisma.mediaAsset.create({
-      data: {
-        fileName,
-        originalName: file.name,
-        fileType,
-        mimeType: file.type || (fileType === 'image' ? 'image/jpeg' : 'video/mp4'),
-        fileSize: file.size,
-        url,
-        thumbnailUrl: null,
-        width: null,
-        height: null,
-        duration: null,
-        altText: altText || file.name,
-        category,
-        isPublic: true,
-      },
+    const mediaAsset = await mediaAssetRepository.create({
+      fileName,
+      originalName: file.name,
+      fileType,
+      mimeType: file.type || (fileType === 'image' ? 'image/jpeg' : 'video/mp4'),
+      fileSize: file.size,
+      url,
+      thumbnailUrl: null,
+      width: null,
+      height: null,
+      duration: null,
+      altText: altText || file.name,
+      category,
+      isPublic: true,
     });
 
     return NextResponse.json({ success: true, file: mediaAsset });

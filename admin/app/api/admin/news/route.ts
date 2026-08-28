@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdminApiSession } from '@/lib/auth/api';
+import { newsRepository } from '@/repositories/newsRepository';
 
 // GET - Fetch all news articles
 export async function GET(request: NextRequest) {
@@ -8,9 +8,7 @@ export async function GET(request: NextRequest) {
     const { session, response } = await requireAdminApiSession();
     if (response) return response;
 
-    const articles = await prisma.newsArticle.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const articles = await newsRepository.findAll();
 
     return NextResponse.json({ articles });
   } catch (error) {
@@ -37,18 +35,16 @@ export async function POST(request: NextRequest) {
     const articleSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // Create article
-    const article = await prisma.newsArticle.create({
-      data: {
-        title,
-        category,
-        author,
-        content,
-        imageUrl: image || null,  // Save the uploaded image URL
-        excerpt: excerpt || content.substring(0, 150), // Auto-generate excerpt if not provided
-        status: status || 'draft',
-        publishDate: publishDate ? new Date(publishDate) : (status === 'published' ? new Date() : null),
-        views: 0,
-      },
+    const article = await newsRepository.create({
+      title,
+      category,
+      author,
+      content,
+      imageUrl: image || null,  // Save the uploaded image URL
+      excerpt: excerpt || content.substring(0, 150), // Auto-generate excerpt if not provided
+      status: status || 'draft',
+      publishDate: publishDate ? new Date(publishDate) : (status === 'published' ? new Date() : null),
+      views: 0,
     });
 
     return NextResponse.json({ article }, { status: 201 });
@@ -71,19 +67,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Article ID required' }, { status: 400 });
     }
 
-    const article = await prisma.newsArticle.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(category && { category }),
-        ...(content && { content }),
-        ...(author && { author }),
-        ...(image !== undefined && { imageUrl: image || null }),
-        ...(status && { status }),
-        ...(publishDate !== undefined && {
-          publishDate: publishDate ? new Date(publishDate) : null
-        }),
-      },
+    const article = await newsRepository.update(id, {
+      ...(title && { title }),
+      ...(category && { category }),
+      ...(content && { content }),
+      ...(author && { author }),
+      ...(image !== undefined && { imageUrl: image || null }),
+      ...(status && { status }),
+      ...(publishDate !== undefined && {
+        publishDate: publishDate ? new Date(publishDate) : null
+      }),
     });
 
     return NextResponse.json({ article });
@@ -106,9 +99,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Article ID required' }, { status: 400 });
     }
 
-    await prisma.newsArticle.delete({
-      where: { id },
-    });
+    await newsRepository.delete(id);
 
     return NextResponse.json({ message: 'News article deleted successfully' });
   } catch (error) {
