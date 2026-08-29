@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
-import { CheckCircle, FileText, DollarSign, AlertCircle } from "lucide-react";
+import { CheckCircle, FileText, DollarSign, AlertCircle, Clock, ShieldCheck, RotateCcw, Calculator, Search } from "lucide-react";
 
 const TIMEFRAME_LABELS: Record<string, string> = {
   '1-month': 'Within 1 month',
@@ -46,7 +45,6 @@ export default function QuotePage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [emailNotificationSent, setEmailNotificationSent] = useState<boolean | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [quoteId, setQuoteId] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState<string | null>(null);
   const [quotedVehicleId, setQuotedVehicleId] = useState<string | null>(null);
 
@@ -218,7 +216,6 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
       const quotationResult = await quotationRequest;
       setEmailNotificationSent(quotationResult.notificationSent ?? false);
-      setQuoteId(quotationResult.quotation?.id || null);
       setQuoteReference(quotationResult.reference || null);
       setQuotedVehicleId(data.vehicleId);
 
@@ -240,64 +237,96 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
   };
 
   if (isSubmitted) {
+    const infoItems = [
+      { icon: DollarSign, label: "Complete vehicle pricing breakdown" },
+      { icon: Calculator, label: "Available financing options" },
+      { icon: RotateCcw, label: "Trade-in valuation (if applicable)" },
+      { icon: ShieldCheck, label: "Current promotions and offers" },
+      { icon: FileText, label: "Warranty and service packages" },
+    ];
+
     return (
       <MainLayout>
-        <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="text-green-600" size={40} />
-            </div>
-            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
-              Quote Request Received!
-            </h1>
-            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
-              Thank you for your interest in Geely Ethiopia. Our sales team will review your requirements and send you a detailed quotation within 24-48 hours.
-            </p>
-            {emailNotificationSent === false && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">Your quote was saved, but the confirmation email could not be sent. Please check the web server SMTP settings or contact Geely Ethiopia directly.</p>}
-            {quoteId && <Link
-              href={`/financing/apply?quote=${encodeURIComponent(quoteId)}${quotedVehicleId ? `&vehicle=${encodeURIComponent(quotedVehicleId)}` : ''}${visitId ? `&visitId=${encodeURIComponent(visitId)}` : ''}`}
-              className="mb-8 inline-flex items-center justify-center rounded-lg bg-gold px-8 py-4 text-sm font-bold text-[#2c2308] hover:bg-opacity-90 transition-all"
-            >
-              Continue after quote to direct payment
-            </Link>}
-            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel dark:text-steel-light mb-2">
-                <strong className="text-navy dark:text-ice">What's included in your quote?</strong>
+        <div className="min-h-[70vh] py-16 lg:py-20">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10">
+            {/* Success header */}
+            <div className="text-center mb-10">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="text-green-600 dark:text-green-400" size={40} />
+              </div>
+              <h1 className="disp text-3xl sm:text-4xl font-bold text-navy dark:text-ice mb-3">
+                Quote Request Received!
+              </h1>
+              <p className="text-base sm:text-lg text-steel dark:text-steel-light leading-relaxed max-w-xl mx-auto">
+                Thank you for your interest in Geely Ethiopia. Our sales team will review your
+                requirements and send you a detailed quotation within 24–48 hours.
               </p>
-              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
-                <li>✓ Complete vehicle pricing breakdown</li>
-                <li>✓ Available financing options</li>
-                <li>✓ Trade-in valuation (if applicable)</li>
-                <li>✓ Current promotions and offers</li>
-                <li>✓ Warranty and service packages</li>
+            </div>
+
+            {emailNotificationSent === false && (
+              <div className="mb-8 rounded-xl border border-yellow-200 bg-yellow-50 dark:border-yellow-900/40 dark:bg-yellow-900/10 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-200">
+                Your quote was saved, but the confirmation email could not be sent. Please check
+                the web server SMTP settings or contact Geely Ethiopia directly.
+              </div>
+            )}
+
+            {/* Not paid-for yet — a sales agent has to review and approve first */}
+            <div className="mb-8 flex gap-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/10 px-5 py-4">
+              <Clock size={20} className="text-geely-blue dark:text-blue-bright shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-navy dark:text-ice text-sm mb-1">What happens next?</p>
+                <p className="text-sm text-steel dark:text-steel-light leading-relaxed">
+                  A sales consultant will review your request and confirm final pricing before
+                  anything is payable. Once your quote is approved, we&apos;ll send you a secure
+                  payment link by email — there&apos;s no need to pay anything right now.
+                </p>
+              </div>
+            </div>
+
+            {/* What's included */}
+            <div className="bg-ice dark:bg-midnight rounded-xl p-6 mb-8">
+              <p className="text-sm font-bold text-navy dark:text-ice uppercase tracking-wide mb-4 text-center sm:text-left">
+                What&apos;s included in your quote
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto sm:mx-0">
+                {infoItems.map(({ icon: Icon, label }) => (
+                  <li key={label} className="flex items-center gap-2.5 text-sm text-steel dark:text-steel-light">
+                    <Icon size={16} className="text-geely-blue dark:text-blue-bright shrink-0" />
+                    {label}
+                  </li>
+                ))}
               </ul>
             </div>
-            <div className="flex gap-4 justify-center flex-wrap">
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-center flex-wrap">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue dark:bg-blue-bright text-white dark:text-midnight font-bold text-sm px-6 py-3.5 rounded-lg hover:bg-opacity-90 transition-all"
               >
                 Request Another Quote
               </button>
               <a
                 href="/financing"
-                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-all"
+                className="flex items-center gap-2 border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-6 py-3.5 rounded-lg hover:bg-ice dark:hover:bg-midnight transition-all"
               >
-                Calculate Financing
+                <Calculator size={16} /> Calculate Financing
               </a>
               <a
                 href={quoteReference ? `/status?ref=${encodeURIComponent(quoteReference)}` : '/status'}
-                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight transition-all"
+                className="flex items-center gap-2 border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-6 py-3.5 rounded-lg hover:bg-ice dark:hover:bg-midnight transition-all"
               >
-                Check Your Status
+                <Search size={16} /> Check Your Status
               </a>
             </div>
+
             {quoteReference && (
-              <p className="text-xs text-steel dark:text-steel-light mt-4">
-                Your reference number is <strong className="text-navy">{quoteReference}</strong> — save it to check your status later.
+              <p className="text-xs text-steel dark:text-steel-light text-center mt-5">
+                Your reference number is <strong className="text-navy dark:text-ice">{quoteReference}</strong> — save it to check your status later.
               </p>
             )}
-            <div className="mt-8 text-left">
+
+            <div className="mt-10">
               <WhatsAppInlineCTA
                 title="Prefer to talk now?"
                 description="Chat with our sales team directly on WhatsApp about your quote request"
