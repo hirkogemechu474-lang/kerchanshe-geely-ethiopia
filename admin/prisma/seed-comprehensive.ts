@@ -185,7 +185,7 @@ async function main() {
         category: 'Company News',
         author: 'Communications Team',
         excerpt: 'Expanding our presence to serve customers in the Amhara region with world-class facilities and service.',
-        content: `Geely Ethiopia, in partnership with Kerchanshe Auto, is proud to announce the opening of our newest showroom in Bahir Dar. This state-of-the-art facility represents our commitment to bringing world-class automotive excellence to every corner of Ethiopia.
+        content: `Geely Ethiopia, in partnership with Kerchanshe Group Geely, is proud to announce the opening of our newest showroom in Bahir Dar. This state-of-the-art facility represents our commitment to bringing world-class automotive excellence to every corner of Ethiopia.
 
 The new showroom features:
 - Full range of Geely vehicles on display
@@ -724,6 +724,47 @@ Contact: info@geelyethiopia.com | +251 11 000 0000`,
       key: 'vehicle_settings',
       type: 'cms',
       value: JSON.stringify(vehicleSettings),
+    },
+  });
+
+  const warrantyPageSettings = {
+    hero: {
+      eyebrow: 'VEHICLE WARRANTY',
+      title: 'Comprehensive Warranty Coverage',
+      subtitle:
+        'Drive with confidence knowing your Geely is protected by our comprehensive warranty program. Quality, reliability, and peace of mind guaranteed.',
+    },
+    whatsCovered: [
+      { title: 'Powertrain Components', description: 'Engine, transmission, drive axle, and all internal parts' },
+      { title: 'Electrical Systems', description: 'All factory-installed electrical and electronic components' },
+      { title: 'Safety Systems', description: 'Airbags, ABS, stability control, and all safety features' },
+      { title: 'Climate Control', description: 'Air conditioning and heating systems' },
+      { title: 'Steering & Suspension', description: 'Steering mechanism and suspension components' },
+      { title: 'Body & Paint', description: '3-year coverage against manufacturing defects and corrosion perforation' },
+    ],
+    whatsNotCovered: [
+      { title: 'Normal Wear & Tear', description: 'Brake pads, wiper blades, tires, filters, and bulbs' },
+      { title: 'Misuse & Neglect', description: 'Damage from accidents, abuse, or lack of maintenance' },
+      { title: 'Unauthorized Modifications', description: 'Aftermarket parts or modifications not approved by Geely' },
+      { title: 'Environmental Damage', description: 'Damage from natural disasters, fire, or vandalism' },
+      { title: 'Commercial Use', description: 'Vehicles used for taxi, rental, or commercial purposes' },
+      { title: 'Cosmetic Issues', description: 'Minor scratches, dents, or stone chips not affecting function' },
+    ],
+    cta: {
+      title: 'Need to File a Warranty Claim?',
+      description:
+        "If you're experiencing issues with your Geely vehicle covered under warranty, submit a claim online or contact our service team.",
+    },
+    documents: [] as Array<{ id: string; title: string; description: string; url: string; fileName: string; fileSize: number | null; uploadedAt: string | null }>,
+  };
+
+  await prisma.setting.upsert({
+    where: { key: 'warranty_page' },
+    update: {},
+    create: {
+      key: 'warranty_page',
+      type: 'cms',
+      value: JSON.stringify(warrantyPageSettings),
     },
   });
 

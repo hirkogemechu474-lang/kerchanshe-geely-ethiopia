@@ -17,6 +17,8 @@ import {
   FileText,
   UserCircle2,
   QrCode,
+  Zap,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default async function SettingsPage() {
@@ -110,6 +112,28 @@ export default async function SettingsPage() {
       borderAccent: 'border-blue-200',
       href: '/admin/settings/showroom-qr',
       badge: 'Sales',
+    },
+    {
+      title: 'EV vs Fuel Savings Calculator',
+      description: 'Slider defaults and ranges (distance, fuel price, electricity cost, efficiency), CO₂ and savings assumptions, and copy for the /ev-vs-fuel calculator.',
+      icon: Zap,
+      color: 'from-emerald-500 to-teal-600',
+      accent: 'text-emerald-600',
+      bgAccent: 'bg-emerald-50',
+      borderAccent: 'border-emerald-200',
+      href: '/admin/settings/ev-savings-calculator',
+      badge: 'Content',
+    },
+    {
+      title: 'Warranty Page',
+      description: 'Hero copy, what\'s covered / not covered lists, claim CTA, and downloadable warranty PDFs for the /warranty page.',
+      icon: ShieldCheck,
+      color: 'from-emerald-500 to-teal-600',
+      accent: 'text-emerald-600',
+      bgAccent: 'bg-emerald-50',
+      borderAccent: 'border-emerald-200',
+      href: '/admin/settings/warranty-page',
+      badge: 'Content',
     },
   ];
 

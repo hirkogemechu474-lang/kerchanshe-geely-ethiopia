@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
-import { CheckCircle, Shield, Clock, Wrench, FileText, Phone, Mail, MapPin, Award, Car } from "lucide-react";
+import { CheckCircle, Shield, Clock, Wrench, FileText, Phone, Mail, MapPin, Award, Car, Download } from "lucide-react";
 
 interface WarrantySettings {
   warranty: { vehicle: string; battery: string; paintwork: string; corrosion: string };
@@ -22,6 +22,60 @@ const FALLBACK_WARRANTY: WarrantySettings = {
     standard: "Every 10,000 km or 6 months",
     electric: "Every 20,000 km or 12 months",
   },
+};
+
+interface CoverageItem {
+  title: string;
+  description: string;
+}
+
+interface WarrantyDocument {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  fileName: string;
+  fileSize: number | null;
+  uploadedAt: string | null;
+}
+
+interface WarrantyPageContent {
+  hero: { eyebrow: string; title: string; subtitle: string };
+  whatsCovered: CoverageItem[];
+  whatsNotCovered: CoverageItem[];
+  cta: { title: string; description: string };
+  documents: WarrantyDocument[];
+}
+
+const FALLBACK_PAGE_CONTENT: WarrantyPageContent = {
+  hero: {
+    eyebrow: "VEHICLE WARRANTY",
+    title: "Comprehensive Warranty Coverage",
+    subtitle:
+      "Drive with confidence knowing your Geely is protected by our comprehensive warranty program. Quality, reliability, and peace of mind guaranteed.",
+  },
+  whatsCovered: [
+    { title: "Powertrain Components", description: "Engine, transmission, drive axle, and all internal parts" },
+    { title: "Electrical Systems", description: "All factory-installed electrical and electronic components" },
+    { title: "Safety Systems", description: "Airbags, ABS, stability control, and all safety features" },
+    { title: "Climate Control", description: "Air conditioning and heating systems" },
+    { title: "Steering & Suspension", description: "Steering mechanism and suspension components" },
+    { title: "Body & Paint", description: "3-year coverage against manufacturing defects and corrosion perforation" },
+  ],
+  whatsNotCovered: [
+    { title: "Normal Wear & Tear", description: "Brake pads, wiper blades, tires, filters, and bulbs" },
+    { title: "Misuse & Neglect", description: "Damage from accidents, abuse, or lack of maintenance" },
+    { title: "Unauthorized Modifications", description: "Aftermarket parts or modifications not approved by Geely" },
+    { title: "Environmental Damage", description: "Damage from natural disasters, fire, or vandalism" },
+    { title: "Commercial Use", description: "Vehicles used for taxi, rental, or commercial purposes" },
+    { title: "Cosmetic Issues", description: "Minor scratches, dents, or stone chips not affecting function" },
+  ],
+  cta: {
+    title: "Need to File a Warranty Claim?",
+    description:
+      "If you're experiencing issues with your Geely vehicle covered under warranty, submit a claim online or contact our service team.",
+  },
+  documents: [],
 };
 
 const FALLBACK_CONTACT = {
@@ -64,11 +118,26 @@ export default function WarrantyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settings, setSettings] = useState<WarrantySettings>(FALLBACK_WARRANTY);
   const [contact, setContact] = useState(FALLBACK_CONTACT);
+  const [content, setContent] = useState<WarrantyPageContent>(FALLBACK_PAGE_CONTENT);
 
   useEffect(() => {
     fetch("/api/public/vehicle-settings")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.warranty && setSettings(d))
+      .catch(() => {});
+
+    fetch("/api/public/warranty-page")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setContent({
+          hero: { ...FALLBACK_PAGE_CONTENT.hero, ...(d.hero ?? {}) },
+          whatsCovered: Array.isArray(d.whatsCovered) && d.whatsCovered.length ? d.whatsCovered : FALLBACK_PAGE_CONTENT.whatsCovered,
+          whatsNotCovered: Array.isArray(d.whatsNotCovered) && d.whatsNotCovered.length ? d.whatsNotCovered : FALLBACK_PAGE_CONTENT.whatsNotCovered,
+          cta: { ...FALLBACK_PAGE_CONTENT.cta, ...(d.cta ?? {}) },
+          documents: Array.isArray(d.documents) ? d.documents.filter((doc: WarrantyDocument) => doc.url) : [],
+        });
+      })
       .catch(() => {});
 
     fetch("/api/public/contact-information")
@@ -163,13 +232,13 @@ export default function WarrantyPage() {
       <div className="bg-navy text-white py-16">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
-            VEHICLE WARRANTY
+            {content.hero.eyebrow}
           </div>
           <h1 className="disp text-5xl font-bold mb-4">
-            Comprehensive Warranty Coverage
+            {content.hero.title}
           </h1>
           <p className="text-[#d8e4f5] text-base max-w-2xl">
-            Drive with confidence knowing your Geely is protected by our comprehensive warranty program. Quality, reliability, and peace of mind guaranteed.
+            {content.hero.subtitle}
           </p>
         </div>
       </div>
@@ -222,48 +291,15 @@ export default function WarrantyPage() {
             <div>
               <h2 className="text-3xl font-bold text-navy dark:text-ice mb-6">What's Covered</h2>
               <div className="space-y-4">
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Powertrain Components</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Engine, transmission, drive axle, and all internal parts</p>
+                {content.whatsCovered.map((item, index) => (
+                  <div key={index} className="flex gap-3">
+                    <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
+                    <div>
+                      <h3 className="font-bold text-navy dark:text-ice mb-1">{item.title}</h3>
+                      <p className="text-sm text-steel dark:text-steel-light">{item.description}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Electrical Systems</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">All factory-installed electrical and electronic components</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Safety Systems</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Airbags, ABS, stability control, and all safety features</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Climate Control</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Air conditioning and heating systems</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Steering & Suspension</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Steering mechanism and suspension components</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Body & Paint</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">3-year coverage against manufacturing defects and corrosion perforation</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -271,48 +307,15 @@ export default function WarrantyPage() {
             <div>
               <h2 className="text-3xl font-bold text-navy dark:text-ice mb-6">What's Not Covered</h2>
               <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Normal Wear & Tear</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Brake pads, wiper blades, tires, filters, and bulbs</p>
+                {content.whatsNotCovered.map((item, index) => (
+                  <div key={index} className="flex gap-3">
+                    <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
+                    <div>
+                      <h3 className="font-bold text-navy dark:text-ice mb-1">{item.title}</h3>
+                      <p className="text-sm text-steel dark:text-steel-light">{item.description}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Misuse & Neglect</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Damage from accidents, abuse, or lack of maintenance</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Unauthorized Modifications</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Aftermarket parts or modifications not approved by Geely</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Environmental Damage</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Damage from natural disasters, fire, or vandalism</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Commercial Use</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Vehicles used for taxi, rental, or commercial purposes</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 border-2 border-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                  <div>
-                    <h3 className="font-bold text-navy dark:text-ice mb-1">Cosmetic Issues</h3>
-                    <p className="text-sm text-steel dark:text-steel-light">Minor scratches, dents, or stone chips not affecting function</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -371,13 +374,55 @@ export default function WarrantyPage() {
         </div>
       </section>
 
+      {/* Warranty Documents */}
+      {content.documents.length > 0 && (
+        <section className="py-16 bg-white dark:bg-midnight-surface">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+            <h2 className="text-3xl font-bold text-navy dark:text-ice text-center mb-2">Warranty Documents</h2>
+            <p className="text-center text-steel dark:text-steel-light text-sm mb-12">
+              Download the full terms, conditions, and claim guidance
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {content.documents.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col bg-ice dark:bg-midnight rounded-xl border border-line dark:border-midnight-line p-6 hover:border-geely-blue hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-opacity-20 transition-all">
+                      <FileText className="text-geely-blue" size={24} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-navy dark:text-ice leading-snug">{doc.title || "Warranty Document"}</h3>
+                      {doc.fileSize && (
+                        <p className="text-xs text-steel dark:text-steel-light mt-0.5">PDF · {(doc.fileSize / 1024 / 1024).toFixed(1)} MB</p>
+                      )}
+                    </div>
+                  </div>
+                  {doc.description && (
+                    <p className="text-sm text-steel dark:text-steel-light mb-4 flex-1">{doc.description}</p>
+                  )}
+                  <div className="inline-flex items-center gap-2 text-sm font-bold text-geely-blue">
+                    <Download size={16} />
+                    Download PDF
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA Section */}
       <section className="py-16">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="bg-gradient-to-r from-geely-blue to-blue-600 rounded-2xl p-12 text-white text-center">
-            <h2 className="text-3xl font-bold mb-4">Need to File a Warranty Claim?</h2>
+            <h2 className="text-3xl font-bold mb-4">{content.cta.title}</h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-              If you're experiencing issues with your Geely vehicle covered under warranty, submit a claim online or contact our service team.
+              {content.cta.description}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <button

@@ -18,7 +18,7 @@ Last Updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month:
 
 1. INTRODUCTION
 
-Welcome to Geely Ethiopia, operated by Kerchanshe Auto. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.
+Welcome to Geely Ethiopia, operated by Kerchanshe Group Geely. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.
 
 2. THE DATA WE COLLECT ABOUT YOU
 
@@ -73,7 +73,7 @@ Our website may include links to third-party websites, plug-ins, and application
 
 If you have any questions about this privacy policy or our privacy practices, please contact us:
 
-Geely Ethiopia - Kerchanshe Auto
+Geely Ethiopia - Kerchanshe Group Geely
 Email: info@geelyethiopia.com
 Phone: +251 11 000 0000
 Address: Sarbet, Addis Ababa, Ethiopia
@@ -192,7 +192,7 @@ Any disputes arising from these terms shall be resolved through:
 
 For questions about these Terms of Service:
 
-Geely Ethiopia - Kerchanshe Auto
+Geely Ethiopia - Kerchanshe Group Geely
 Email: info@geelyethiopia.com
 Phone: +251 11 000 0000
 Address: Sarbet, Addis Ababa, Ethiopia
@@ -369,7 +369,7 @@ For more information about cookies:
 
 If you have questions about our use of cookies:
 
-Geely Ethiopia - Kerchanshe Auto
+Geely Ethiopia - Kerchanshe Group Geely
 Email: info@geelyethiopia.com
 Phone: +251 11 000 0000
 Address: Sarbet, Addis Ababa, Ethiopia
@@ -566,6 +566,49 @@ You can withdraw your consent at any time by:
   });
   console.log('✅ Vehicle Settings created');
 
+  // Warranty Page Content Settings
+  const warrantyPageSettings = {
+    hero: {
+      eyebrow: 'VEHICLE WARRANTY',
+      title: 'Comprehensive Warranty Coverage',
+      subtitle:
+        'Drive with confidence knowing your Geely is protected by our comprehensive warranty program. Quality, reliability, and peace of mind guaranteed.',
+    },
+    whatsCovered: [
+      { title: 'Powertrain Components', description: 'Engine, transmission, drive axle, and all internal parts' },
+      { title: 'Electrical Systems', description: 'All factory-installed electrical and electronic components' },
+      { title: 'Safety Systems', description: 'Airbags, ABS, stability control, and all safety features' },
+      { title: 'Climate Control', description: 'Air conditioning and heating systems' },
+      { title: 'Steering & Suspension', description: 'Steering mechanism and suspension components' },
+      { title: 'Body & Paint', description: '3-year coverage against manufacturing defects and corrosion perforation' },
+    ],
+    whatsNotCovered: [
+      { title: 'Normal Wear & Tear', description: 'Brake pads, wiper blades, tires, filters, and bulbs' },
+      { title: 'Misuse & Neglect', description: 'Damage from accidents, abuse, or lack of maintenance' },
+      { title: 'Unauthorized Modifications', description: 'Aftermarket parts or modifications not approved by Geely' },
+      { title: 'Environmental Damage', description: 'Damage from natural disasters, fire, or vandalism' },
+      { title: 'Commercial Use', description: 'Vehicles used for taxi, rental, or commercial purposes' },
+      { title: 'Cosmetic Issues', description: 'Minor scratches, dents, or stone chips not affecting function' },
+    ],
+    cta: {
+      title: 'Need to File a Warranty Claim?',
+      description:
+        "If you're experiencing issues with your Geely vehicle covered under warranty, submit a claim online or contact our service team.",
+    },
+    documents: [] as Array<{ id: string; title: string; description: string; url: string; fileName: string; fileSize: number | null; uploadedAt: string | null }>,
+  };
+
+  await prisma.setting.upsert({
+    where: { key: 'warranty_page' },
+    update: {},
+    create: {
+      key: 'warranty_page',
+      type: 'cms',
+      value: JSON.stringify(warrantyPageSettings),
+    },
+  });
+  console.log('✅ Warranty Page Settings created');
+
   // Contact Information Settings
   const contactSettings = [
     { key: 'contact.phone.primary', value: '+251 11 000 0000' },
@@ -580,7 +623,7 @@ You can withdraw your consent at any time by:
     { key: 'contact.email.careers', value: 'careers@geelyethiopia.com' },
     { key: 'contact.whatsapp', value: '+251 911 000 000' },
     { key: 'contact.website', value: 'https://geelyethiopia.com' },
-    { key: 'contact.headquarters.name', value: 'Geely Ethiopia — Kerchanshe Auto HQ' },
+    { key: 'contact.headquarters.name', value: 'Geely Ethiopia — Kerchanshe Group Geely HQ' },
     { 
       key: 'contact.headquarters.address', 
       value: JSON.stringify({
