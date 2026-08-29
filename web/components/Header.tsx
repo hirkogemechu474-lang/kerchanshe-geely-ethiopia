@@ -269,21 +269,16 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
 
           {/* Right Actions */}
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Link
-              href="/test-drive"
-              className="hidden lg:flex items-center bg-geely-blue dark:bg-blue-bright text-white dark:text-midnight font-display font-bold text-[13px] px-4 py-2 rounded hover:bg-opacity-90 transition-all whitespace-nowrap"
-            >
-              {t('common.bookTestDrive')}
-            </Link>
-
-            {/* Dark mode and login are intentionally not in the persistent
+            {/* No separate "Book Test Drive" CTA here — "Test Drive" is
+                already a top-level nav item (see mainNavItems), and having
+                both linked to the same /test-drive page was a duplicate.
+                Dark mode and login are intentionally not in the persistent
                 header — neither appears on Geely's regional distributor
                 sites (geely.com.eg, geelyauto.co.za). Dark mode is still
                 reachable from the mobile drawer's quick actions; login only
-                via /login directly for now. Search, language, Get Quote,
-                and Book Test Drive live in the drawer behind this button
-                (see MobileDrawer) — kept off the persistent header bar at
-                every screen size. */}
+                via /login directly for now. Search, language, and Get Quote
+                live in the drawer behind this button (see MobileDrawer) —
+                kept off the persistent header bar at every screen size. */}
             <button onClick={onMobileMenuToggle} aria-label="Open menu" className="text-navy dark:text-ice p-2">
               <Menu size={24} />
             </button>

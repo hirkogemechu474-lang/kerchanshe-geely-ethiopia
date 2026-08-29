@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, ChevronDown, Car, Info, ShoppingBag, Users, Newspaper, CalendarCheck, Search, Globe, Sun, Moon } from 'lucide-react';
+import { X, ChevronDown, Car, Info, ShoppingBag, Users, Newspaper, CalendarCheck, Zap, Search, Globe, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage, useTranslation } from '@/lib/i18n';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -54,6 +54,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
         { name: 'Request a Quote', href: '/quote' },
       ]
     },
+    { title: 'Electric vs. Fuel', icon: <Zap size={20} />, href: '/ev-vs-fuel' },
     {
       title: 'Owners',
       icon: <Users size={20} />,
