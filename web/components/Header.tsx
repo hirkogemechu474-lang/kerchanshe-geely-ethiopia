@@ -29,6 +29,7 @@ const LINK_GROUPS: Record<string, LinkGroup> = {
     links: [
       { label: 'Configurator', href: '/configure' },
       { label: 'Download Brochure', href: '/models' },
+      { label: 'Electric vs. Fuel', href: '/ev-vs-fuel' },
       { label: 'Find a Dealer', href: '/dealers' },
       { label: 'Request a Quote', href: '/quote' },
     ],

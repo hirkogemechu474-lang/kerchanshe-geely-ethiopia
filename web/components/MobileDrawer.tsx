@@ -49,6 +49,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
       submenu: [
         { name: 'Configurator', href: '/configure' },
         { name: 'Download Brochure', href: '/models' },
+        { name: 'Electric vs. Fuel', href: '/ev-vs-fuel' },
         { name: 'Find a Dealer', href: '/dealers' },
         { name: 'Request a Quote', href: '/quote' },
       ]
