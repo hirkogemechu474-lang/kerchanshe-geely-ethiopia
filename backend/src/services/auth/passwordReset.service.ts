@@ -14,11 +14,11 @@ export const passwordResetService = {
       }
 
       const otpCode = crypto.randomInt(100000, 999999).toString();
-      const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
 
       await prisma.user.update({
         where: { id: user.id },
-        data: { otpCode, otpExpiresAt },
+        data: { otpCode, otpExpiry },
       });
 
       const html = `
@@ -49,7 +49,7 @@ export const passwordResetService = {
         where: {
           email,
           otpCode: otp,
-          otpExpiresAt: { gte: new Date() },
+          otpExpiry: { gte: new Date() },
         },
       });
 
@@ -62,9 +62,9 @@ export const passwordResetService = {
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           otpCode: null,
-          otpExpiresAt: null,
+          otpExpiry: null,
         },
       });
 
@@ -82,7 +82,7 @@ export const passwordResetService = {
         return { ok: false, error: 'User not found.' };
       }
 
-      const isValid = await bcrypt.compare(currentPassword, user.password);
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
       if (!isValid) {
         return { ok: false, error: 'Current password is incorrect.' };
       }
@@ -91,7 +91,7 @@ export const passwordResetService = {
 
       await prisma.user.update({
         where: { id: userId },
-        data: { password: hashedPassword },
+        data: { passwordHash: hashedPassword },
       });
 
       return { ok: true };

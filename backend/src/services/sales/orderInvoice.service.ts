@@ -7,6 +7,8 @@ export const orderInvoiceService = {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
 
+      const config = (order.configurationJson as Record<string, any> | null) || {};
+
       return {
         ok: true,
         data: {
@@ -15,9 +17,9 @@ export const orderInvoiceService = {
           customerPhone: order.customerPhone,
           customerEmail: order.customerEmail,
           vehicleModel: order.vehicleModel,
-          color: order.color,
+          color: config.color ?? null,
           totalPrice: order.totalPrice,
-          formattedTotal: formatCurrency(order.totalPrice),
+          formattedTotal: formatCurrency(order.totalPrice || 0),
           status: order.status,
           paymentStatus: order.paymentStatus,
           orderDate: order.orderDate,

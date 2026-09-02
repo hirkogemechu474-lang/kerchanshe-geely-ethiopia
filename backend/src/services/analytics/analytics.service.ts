@@ -28,8 +28,8 @@ export const analyticsService = {
           where: { paymentStatus: 'PAID', createdAt: { gte: startOfMonth } },
           _sum: { totalPrice: true },
         }),
-        prisma.lead.count(),
-        prisma.lead.count({ where: { createdAt: { gte: startOfMonth } } }),
+        prisma.quotation.count(),
+        prisma.quotation.count({ where: { createdAt: { gte: startOfMonth } } }),
       ]);
 
       return {

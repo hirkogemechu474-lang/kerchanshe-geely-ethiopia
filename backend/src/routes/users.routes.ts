@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
+import { staffSignatureService } from '../services/staffSignature/staffSignature.service';
+import { rolePermissionRepository } from '../repositories';
 
 const router = Router();
 
@@ -123,16 +125,14 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/users/:id/signature-link (send signature link)
+// User.signatureSetupToken/ExpiresAt hold this token (see schema.prisma) —
+// there is no separate SignatureToken model. staffSignatureService already
+// generates + stores the token and emails the setup link.
 router.post('/:id/signature-link', async (req: Request, res: Response) => {
   try {
-    const crypto = await import('crypto');
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.signatureToken.create({ data: { userId: req.params.id, token, expiresAt } });
-
-    // TODO: Send email with signature link
-    res.json({ success: true, token });
+    const result = await staffSignatureService.initiateSetup(req.params.id);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    res.json({ success: true });
   } catch (error) {
     console.error('Send signature link error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -140,9 +140,11 @@ router.post('/:id/signature-link', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/users/admin/role-permissions (get permissions)
+// Backed by RolePermissionOverride (one row per role+permissionKey), not a
+// single-row-per-role "rolePermission" model.
 router.get('/admin/role-permissions', async (req: Request, res: Response) => {
   try {
-    const permissions = await prisma.rolePermission.findMany();
+    const permissions = await rolePermissionRepository.findMany();
     res.json(permissions);
   } catch (error) {
     console.error('Get permissions error:', error);
@@ -153,12 +155,8 @@ router.get('/admin/role-permissions', async (req: Request, res: Response) => {
 // PATCH /api/admin/users/admin/role-permissions (update permissions)
 router.patch('/admin/role-permissions', async (req: Request, res: Response) => {
   try {
-    const { role, permissions } = req.body;
-    const updated = await prisma.rolePermission.upsert({
-      where: { role },
-      update: { permissions },
-      create: { role, permissions },
-    });
+    const { role, permissionKey, value } = req.body;
+    const updated = await rolePermissionRepository.upsert(role, permissionKey, value, req.adminSession!.user.id);
     res.json(updated);
   } catch (error) {
     console.error('Update permissions error:', error);

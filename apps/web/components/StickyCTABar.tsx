@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { Phone, MessageCircle, Calendar, FileText, Download, ChevronUp } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 interface StickyCTABarProps {
   vehicleSlug: string;
@@ -76,7 +76,7 @@ export function StickyCTABar({
             </div>
             <a
               href={telHref}
-              className="flex items-center gap-1.5 text-xs text-geely-blue font-semibold"
+              className="flex items-center gap-1.5 text-xs text-active-blue font-semibold"
             >
               <Phone size={14} />
               Call Us
@@ -85,20 +85,14 @@ export function StickyCTABar({
 
           {/* CTA buttons */}
           <div className="grid grid-cols-2 gap-2">
-            <Link
-              href={`/quote?model=${vehicleSlug}${visitParam}`}
-              className="flex items-center justify-center gap-2 bg-gold text-[#2c2308] font-bold text-sm py-3 rounded-lg hover:bg-opacity-90 transition-all"
-            >
+            <Button href={`/quote?model=${vehicleSlug}${visitParam}`} variant="solid" size="md">
               <FileText size={16} />
               Get a Quote
-            </Link>
-            <Link
-              href={`/test-drive?model=${vehicleSlug}${visitParam}`}
-              className="flex items-center justify-center gap-2 bg-navy text-white font-bold text-sm py-3 rounded-lg hover:bg-opacity-90 transition-all"
-            >
+            </Button>
+            <Button href={`/test-drive?model=${vehicleSlug}${visitParam}`} variant="outline" tone="light" size="md">
               <Calendar size={16} />
               Test Drive
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -114,24 +108,18 @@ export function StickyCTABar({
         <div className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-xl shadow-xl p-3 flex flex-col gap-2 min-w-[160px]">
           <div className="text-xs text-steel border-b border-line pb-2 mb-1">
             <div className="font-bold text-navy text-sm">{vehicleName}</div>
-            <div className="text-geely-blue font-semibold">{price}</div>
+            <div className="text-active-blue font-semibold">{price}</div>
           </div>
 
-          <Link
-            href={`/quote?model=${vehicleSlug}${visitParam}`}
-            className="flex items-center gap-2 bg-gold text-[#2c2308] font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-opacity-90 transition-all text-center justify-center"
-          >
+          <Button href={`/quote?model=${vehicleSlug}${visitParam}`} variant="solid" size="sm">
             <FileText size={14} />
             Get a Quote
-          </Link>
+          </Button>
 
-          <Link
-            href={`/test-drive?model=${vehicleSlug}${visitParam}`}
-            className="flex items-center gap-2 bg-navy text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-opacity-90 transition-all text-center justify-center"
-          >
+          <Button href={`/test-drive?model=${vehicleSlug}${visitParam}`} variant="outline" tone="light" size="sm">
             <Calendar size={14} />
             Book Test Drive
-          </Link>
+          </Button>
 
           <a
             href={telHref}

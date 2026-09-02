@@ -243,9 +243,9 @@ export function ModelSpotlight360({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80">
             <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gold border-t-transparent mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-active-blue border-t-transparent mb-4"></div>
               <div className="text-white font-semibold">Loading 360° View...</div>
-              <div className="text-blue-200 text-sm mt-2">
+              <div className="text-active-blue-80 text-sm mt-2">
                 {loadedImages.length} / {totalFrames} frames
               </div>
             </div>
@@ -274,7 +274,7 @@ export function ModelSpotlight360({
               </div>
               <div className="w-32 h-1 bg-white dark:bg-midnight-surface/20 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gold transition-all duration-100"
+                  className="h-full bg-active-blue transition-all duration-100"
                   style={{ width: `${((currentFrame + 1) / totalFrames) * 100}%` }}
                 />
               </div>
@@ -288,8 +288,8 @@ export function ModelSpotlight360({
         <button
           onClick={toggleAutoRotate}
           className={`p-3 rounded-lg backdrop-blur-sm transition-all ${
-            isAutoRotating 
-              ? 'bg-gold text-navy dark:text-ice' 
+            isAutoRotating
+              ? 'bg-active-blue text-white'
               : 'bg-black/50 text-white hover:bg-black/70'
           }`}
           title={isAutoRotating ? 'Stop Auto-Rotate' : 'Start Auto-Rotate'}

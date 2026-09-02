@@ -11,11 +11,10 @@ export const messageService = {
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const msg = await messageRepository.create({
-        name: data.name,
+        from: data.name,
         email: data.email,
-        phone: data.phone,
         subject: data.subject,
-        message: data.message,
+        content: data.message,
         category: data.category || 'general',
         status: 'unread',
       });

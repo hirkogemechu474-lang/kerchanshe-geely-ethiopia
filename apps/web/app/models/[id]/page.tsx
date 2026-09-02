@@ -14,6 +14,8 @@ import { VehicleOptionsShowcase } from "@/components/VehicleOptionsShowcase";
 import { QuickRequestCallback } from "@/components/QuickRequestCallback";
 import { withBasePath } from "@/lib/publicPath";
 import { env } from "@/lib/env";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
 const BASE_URL = env.app.url;
 
@@ -79,6 +81,8 @@ async function getContactPhone() {
     return FALLBACK_CONTACT_PHONE;
   }
 }
+
+export const revalidate = 60
 
 export async function generateStaticParams() {
   try {
@@ -287,12 +291,12 @@ export default async function VehicleDetailPage({
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-navy to-geely-blue" />
+            <div className="absolute inset-0 bg-mesh-blue" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
           <div className="absolute inset-x-0 bottom-0">
-            <div className="max-w-[1280px] mx-auto px-4 md:px-10 pb-10">
+            <div className="page-container pb-10">
               <div className="flex items-center gap-2 text-[11px] tracking-wider mb-3 text-white/70">
                 <Link href={`/models${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`} className="hover:text-white transition-colors">
                   Models
@@ -300,24 +304,18 @@ export default async function VehicleDetailPage({
                 <span>›</span>
                 <span className="text-white">{vehicle.name}</span>
               </div>
-              <div className="text-[11px] text-gold-bright font-bold tracking-wider mb-2 uppercase">
+              <div className="text-[11px] text-active-blue-80 font-bold tracking-wider mb-2 uppercase">
                 {vehicle.vehicleCategory?.name || vehicle.category}
               </div>
               <h1 className="disp text-4xl md:text-6xl font-extrabold mb-6 max-w-2xl">{vehicle.name}</h1>
 
               <div className="flex gap-3 flex-wrap">
-                <Link
-                  href={`/test-drive?model=${vehicle.slug}${visitParam}`}
-                  className="bg-white text-ink font-bold text-sm px-7 py-4 rounded hover:bg-opacity-90 transition-all"
-                >
+                <Button href={`/test-drive?model=${vehicle.slug}${visitParam}`} variant="solid" size="lg">
                   Schedule Test Drive
-                </Link>
-                <Link
-                  href="/compare"
-                  className="border border-white/50 text-white font-semibold text-sm px-7 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
-                >
+                </Button>
+                <Button href="/compare" variant="outline" tone="dark" size="lg">
                   Compare
-                </Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -326,7 +324,7 @@ export default async function VehicleDetailPage({
 
       {/* ── KEY FACTS STRIP — a few headline specs, not the full table ── */}
       <div className="bg-white border-b border-line">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-8">
+        <div className="page-container py-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
             {(() => {
               const fromSpecs: [string, string][] = [
@@ -358,26 +356,26 @@ export default async function VehicleDetailPage({
 
       {/* ── OVERVIEW COPY + SECONDARY ACTIONS ─────────────────────────── */}
       <div className="bg-white">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-10">
+        <div className="page-container py-10">
           <p className="text-steel text-base leading-relaxed max-w-3xl mb-6">
             {vehicle.description || "Vehicle details are managed from the admin panel."}
           </p>
           <div className="flex gap-5 flex-wrap items-center text-sm">
-            <a href={contactPhoneHref} className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors">
+            <a href={contactPhoneHref} className="flex items-center gap-2 font-semibold text-navy hover:text-active-blue transition-colors">
               <Phone size={16} /> Call Us
             </a>
             <a
               href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in the Geely ${vehicle.name}`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors"
+              className="flex items-center gap-2 font-semibold text-navy hover:text-active-blue transition-colors"
             >
               <MessageCircle size={16} /> WhatsApp
             </a>
-            <Link href={`/quote?model=${vehicle.slug}${visitParam}`} className="font-semibold text-navy hover:text-geely-blue transition-colors">
+            <Link href={`/quote?model=${vehicle.slug}${visitParam}`} className="font-semibold text-navy hover:text-active-blue transition-colors">
               Get a Quote
             </Link>
-            <a href={brochureUrl} download className="flex items-center gap-2 font-semibold text-navy hover:text-geely-blue transition-colors">
+            <a href={brochureUrl} download className="flex items-center gap-2 font-semibold text-navy hover:text-active-blue transition-colors">
               <Download size={15} /> Download Brochure
             </a>
             <QuickRequestCallback vehicleModel={vehicle.name} />
@@ -391,14 +389,14 @@ export default async function VehicleDetailPage({
 
       {/* ── GALLERY SECTION ───────────────────────────────────────────── */}
       <section id="section-gallery" className="py-12 bg-white scroll-mt-16">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+        <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-6">Gallery</h2>
           {galleries.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {galleries.map((img: string, index: number) => (
                 <div
                   key={`${img}-${index}`}
-                  className={`rounded-xl overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] ${
+                  className={`rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 ${
                     index === 0 ? "col-span-2 row-span-2 h-[400px]" : "h-[190px]"
                   }`}
                 >
@@ -451,7 +449,7 @@ export default async function VehicleDetailPage({
       {/* ── SPECIFICATIONS — plain tabular layout, light typography, no
            boxed cards, matching the reference's spec table treatment ── */}
       <section id="section-specs" className="py-16 bg-white scroll-mt-16">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+        <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-10">Technical Specifications</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
             {[
@@ -505,7 +503,7 @@ export default async function VehicleDetailPage({
               href={publicHeroVideoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-8 text-sm text-geely-blue font-semibold hover:underline"
+              className="inline-block mt-8 text-sm text-active-blue font-semibold hover:underline"
             >
               ▶ Watch Full Video →
             </a>
@@ -516,12 +514,12 @@ export default async function VehicleDetailPage({
       {/* ── FEATURES SECTION ──────────────────────────────────────────── */}
       {featuredFeatures.length > 0 && (
         <section className="py-16 bg-ice">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+          <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-8">Vehicle Features</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
               {featuredFeatures.map((feature, index) => (
                 <div key={index} className="flex items-start gap-3 py-1">
-                  <Check size={18} className="text-geely-blue flex-shrink-0 mt-0.5" />
+                  <Check size={18} className="text-active-blue flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-navy">{feature}</span>
                 </div>
               ))}
@@ -532,26 +530,23 @@ export default async function VehicleDetailPage({
 
       {/* ── DIRECT PURCHASE CTA ──────────────────────────────────────────── */}
       <section className="py-16 bg-white">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <div className="bg-gradient-to-br from-navy to-[#123a72] text-white rounded-2xl p-10 text-center">
-            <div className="text-gold text-xs font-bold tracking-wider mb-3 uppercase">Direct Vehicle Purchase</div>
+        <div className="page-container">
+          <div className="bg-mesh-blue text-white rounded-2xl p-10 text-center">
+            <div className="text-active-blue-80 text-xs font-bold tracking-wider mb-3 uppercase">Direct Vehicle Purchase</div>
             <h2 className="disp text-3xl font-bold mb-3">Own the {vehicle.name}</h2>
             <p className="text-[#d8e4f5] text-sm mb-6 max-w-xl mx-auto">
               Purchase directly through a supported Ethiopian bank and receive a purchase confirmation reference.
             </p>
-            <Link
-              href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`}
-              className="inline-block bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
-            >
+            <Button href={`/financing/apply?vehicle=${vehicle.id}${visitParam}`} variant="solid" size="lg">
               Purchase This Vehicle
-            </Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* ── BOTTOM CTA BANNER ─────────────────────────────────────────── */}
       <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10 text-center">
+        <div className="page-container text-center">
           <h3 className="disp text-3xl font-bold mb-4">
             Ready to experience the {vehicle.name}?
           </h3>
@@ -559,18 +554,12 @@ export default async function VehicleDetailPage({
             Book a test drive at your nearest showroom or request a personalized quote today.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link
-              href={`/test-drive?model=${vehicle.slug}${visitParam}`}
-              className="bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
-            >
+            <Button href={`/test-drive?model=${vehicle.slug}${visitParam}`} variant="outline" tone="dark" size="lg">
               Book a Test Drive
-            </Link>
-            <Link
-              href={`/quote?model=${vehicle.slug}${visitParam}`}
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded-lg hover:bg-white hover:bg-opacity-10 transition-all"
-            >
+            </Button>
+            <Button href={`/quote?model=${vehicle.slug}${visitParam}`} variant="outline" tone="dark" size="lg">
               Request a Quote
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -578,16 +567,12 @@ export default async function VehicleDetailPage({
       {/* ── RELATED VEHICLES ──────────────────────────────────────────── */}
       {relatedVehicles.length > 0 && (
         <section className="py-12 bg-ice">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+          <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-8">You might also like</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
               {relatedVehicles.map((rv: any) => (
-                <Link
-                  key={rv.id}
-                  href={detailsHrefFor(rv.slug)}
-                  className="bg-white border border-line rounded-xl overflow-hidden hover:border-geely-blue hover:shadow-lg transition-all group"
-                >
-                  <div className="h-[160px] bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec] flex items-center justify-center text-xs text-steel overflow-hidden">
+                <Card key={rv.id} href={detailsHrefFor(rv.slug)} variant="boxed" className="group">
+                  <div className="h-[160px] bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 flex items-center justify-center text-xs text-steel overflow-hidden">
                     {rv.heroImageUrl || (Array.isArray(rv.images) && rv.images[0]) ? (
                       <img
                         src={rv.heroImageUrl || (Array.isArray(rv.images) && typeof rv.images[0] === "string" ? rv.images[0] : "")}
@@ -600,15 +585,15 @@ export default async function VehicleDetailPage({
                     )}
                   </div>
                   <div className="p-5">
-                    <div className="text-[11px] text-gold font-bold tracking-wider mb-2">{rv.category}</div>
-                    <h3 className="text-lg text-navy font-bold mb-2 group-hover:text-geely-blue transition-colors">
+                    <div className="text-[11px] text-active-blue font-bold tracking-wider mb-2">{rv.category}</div>
+                    <h3 className="text-lg text-navy font-bold mb-2 group-hover:text-active-blue transition-colors">
                       {rv.name}
                     </h3>
                     <div className="text-sm text-steel">
                       Price on request
                     </div>
                   </div>
-                </Link>
+                </Card>
               ))}
             </div>
           </div>

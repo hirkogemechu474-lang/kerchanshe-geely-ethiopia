@@ -13,18 +13,22 @@ export const partRequestService = {
     try {
       const reference = await generateReference(REFERENCE_CATEGORY.PARTS_REQUEST);
 
+      // NOTE: PartRequest's real fields are name/email/phone/notes (not
+      // customerName/customerEmail/customerPhone/additionalNotes), status is
+      // a plain lowercase string per this model's convention ("new,
+      // contacted, in_progress, quoted, closed" — not "SUBMITTED"), and
+      // PartRequestItem has no per-line `notes` column.
       const request = await partRequestRepository.create({
         reference,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerPhone: data.customerPhone,
-        additionalNotes: data.additionalNotes,
-        status: 'SUBMITTED',
+        name: data.customerName,
+        email: data.customerEmail,
+        phone: data.customerPhone,
+        notes: data.additionalNotes,
+        status: 'new',
         items: {
           create: data.items.map((item) => ({
             partName: item.partName,
             quantity: item.quantity,
-            notes: item.notes,
           })),
         },
       });
@@ -90,10 +94,12 @@ export const partRequestService = {
 
   async updateStatus(id: string, status: string, reviewedById: string, notes?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
+      // NOTE: PartRequest has no `reviewedById`/`reviewNotes` columns (no
+      // reviewer-actor field exists on this model at all); the only
+      // matching real field is `notes`.
       const request = await partRequestRepository.update(id, {
         status,
-        reviewedById,
-        ...(notes && { reviewNotes: notes }),
+        ...(notes && { notes }),
       });
 
       return { ok: true, data: request };

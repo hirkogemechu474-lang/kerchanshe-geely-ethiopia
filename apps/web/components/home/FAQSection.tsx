@@ -45,9 +45,9 @@ export default function FAQSection() {
   if (loading) {
     return (
       <section className="py-16 bg-white dark:bg-midnight-surface transition-colors">
-        <div className="max-w-[1280px] mx-auto px-4">
+        <div className="page-container">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-active-blue" />
             <span className="ml-2 text-gray-600 dark:text-steel-light">Loading FAQs...</span>
           </div>
         </div>
@@ -73,10 +73,10 @@ export default function FAQSection() {
 
   return (
     <section className="py-16 bg-white">
-      <div className="max-w-[1280px] mx-auto px-4">
+      <div className="page-container">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-block bg-blue-600/10 text-blue-600 px-4 py-2 rounded-full text-sm font-bold mb-4">
+          <div className="inline-block bg-active-blue/10 text-active-blue px-4 py-2 rounded-full text-sm font-bold mb-4">
             FREQUENTLY ASKED QUESTIONS
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4">
@@ -95,7 +95,7 @@ export default function FAQSection() {
                 onClick={() => setSelectedCategory('all')}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                   selectedCategory === 'all'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-active-blue text-white'
                     : 'bg-gray-100 dark:bg-midnight text-gray-700 dark:text-steel-light hover:bg-gray-200 dark:hover:bg-midnight-surface'
                 }`}
               >
@@ -107,7 +107,7 @@ export default function FAQSection() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                     selectedCategory === category
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-active-blue text-white'
                       : 'bg-gray-100 dark:bg-midnight text-gray-700 dark:text-steel-light hover:bg-gray-200 dark:hover:bg-midnight-surface'
                   }`}
                 >
@@ -125,17 +125,17 @@ export default function FAQSection() {
               <div
                 key={faq.id}
                 className={`bg-white dark:bg-midnight border border-gray-200 dark:border-midnight-line rounded-lg overflow-hidden transition-all duration-300 ${
-                  openFAQ === faq.id ? 'shadow-lg border-blue-300 dark:border-blue-bright' : 'hover:shadow-md'
-                } ${faq.isFeatured ? 'ring-2 ring-yellow-400 ring-opacity-30' : ''}`}
+                  openFAQ === faq.id ? 'shadow-lg border-active-blue' : 'hover:shadow-md'
+                } ${faq.isFeatured ? 'ring-2 ring-accent-yellow ring-opacity-30' : ''}`}
               >
                 <button
                   onClick={() => toggleFAQ(faq.id)}
-                  className="w-full px-6 py-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  className="w-full px-6 py-4 text-left focus:outline-none focus:ring-2 focus:ring-active-blue focus:ring-inset"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-start gap-3 flex-1">
                       {faq.isFeatured && (
-                        <div className="flex-shrink-0 w-2 h-2 bg-yellow-400 rounded-full mt-3"></div>
+                        <div className="flex-shrink-0 w-2 h-2 bg-accent-yellow rounded-full mt-3"></div>
                       )}
                       <h3 className="font-semibold text-navy dark:text-ice text-lg pr-4">
                         {faq.question}
@@ -169,7 +169,7 @@ export default function FAQSection() {
           {sortedFAQs.some(faq => faq.isFeatured) && (
             <div className="mt-8 text-center">
               <div className="inline-flex items-center gap-2 text-sm text-gray-600">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-accent-yellow rounded-full"></div>
                 Featured questions
               </div>
             </div>

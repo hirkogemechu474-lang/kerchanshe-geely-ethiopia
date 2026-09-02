@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import imageLoader from "@/lib/imageLoader";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
 interface Category {
   id: string;
@@ -76,11 +78,11 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
 
   return (
     <section className="bg-white dark:bg-midnight-surface py-16 md:py-20 transition-colors">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="page-container">
         {/* Section header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-10">
           <div>
-            <div className="text-[12px] tracking-[0.2em] text-geely-blue font-bold mb-3 uppercase">
+            <div className="text-[12px] tracking-[0.2em] text-active-blue font-bold mb-3 uppercase">
               Models
             </div>
             <h2 className="disp text-[30px] md:text-[40px] text-navy dark:text-ice font-extrabold leading-tight">
@@ -93,7 +95,7 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
           </div>
           <Link
             href="/models"
-            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-geely-blue border-b border-geely-blue pb-0.5 hover:opacity-75 transition-opacity whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-active-blue border-b border-active-blue pb-0.5 hover:opacity-75 transition-opacity whitespace-nowrap"
           >
             Discover More
             <span aria-hidden>&rarr;</span>
@@ -112,7 +114,7 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
                 className={`px-5 md:px-6 py-2.5 rounded-full text-[13px] md:text-sm font-semibold border transition-all ${
                   isActive
                     ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                    : "bg-white dark:bg-midnight-surface text-navy dark:text-ice border-line dark:border-midnight-line hover:border-geely-blue hover:text-geely-blue"
+                    : "bg-white dark:bg-midnight-surface text-navy dark:text-ice border-line dark:border-midnight-line hover:border-active-blue hover:text-active-blue"
                 }`}
               >
                 {tab.name}
@@ -130,12 +132,9 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
         {visibleVehicles.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-steel dark:text-steel-light text-sm mb-4">No models available in this category yet.</p>
-            <Link
-              href="/models"
-              className="inline-block bg-geely-blue text-white text-sm font-bold px-7 py-3 rounded-lg hover:opacity-90 transition-opacity"
-            >
+            <Button href="/models" variant="solid" size="md">
               View All Models
-            </Link>
+            </Button>
           </div>
         ) : (
           <AnimatePresence mode="wait">
@@ -164,7 +163,7 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
                     transition={{ duration: 0.5, ease: "easeOut" }}
                   >
                     <Link href={`/models/${vehicle.slug}`} className="block">
-                      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#eef2f7]">
+                      <Card variant="media" className="relative aspect-[4/3] bg-[#eef2f7]">
                         {imageUrl ? (
                           <Image
                             src={imageUrl}
@@ -184,29 +183,23 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
                             Featured
                           </span>
                         )}
-                      </div>
+                      </Card>
                       <div className="pt-4">
                         <div className="text-[11px] uppercase tracking-[0.14em] text-steel dark:text-steel-light font-semibold">
                           {label}
                         </div>
-                        <h3 className="disp text-[18px] text-navy dark:text-ice font-bold mt-1 group-hover:text-geely-blue transition-colors">
+                        <h3 className="disp text-[18px] text-navy dark:text-ice font-bold mt-1 group-hover:text-active-blue transition-colors">
                           {vehicle.name}
                         </h3>
                       </div>
                     </Link>
                     <div className="flex items-center gap-2.5 mt-4">
-                      <Link
-                        href={`/models/${vehicle.slug}`}
-                        className="flex-1 text-center bg-navy text-white text-[12.5px] font-bold py-2.5 rounded-lg hover:bg-geely-blue transition-colors"
-                      >
+                      <Button href={`/models/${vehicle.slug}`} variant="solid" size="sm" className="flex-1">
                         Explore
-                      </Link>
-                      <Link
-                        href={`/compare?add=${vehicle.id}`}
-                        className="flex-1 text-center border border-line dark:border-midnight-line text-navy dark:text-ice text-[12.5px] font-bold py-2.5 rounded-lg hover:border-geely-blue hover:text-geely-blue transition-colors"
-                      >
+                      </Button>
+                      <Button href={`/compare?add=${vehicle.id}`} variant="outline" tone="light" size="sm" className="flex-1">
                         Compare
-                      </Link>
+                      </Button>
                     </div>
                   </motion.div>
                 );

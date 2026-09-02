@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import Link from 'next/link';
+import Button from '@/components/ui/Button';
 
 interface ColorOption {
   id: string;
@@ -94,7 +94,7 @@ export function VehicleOptionsShowcase({
     <section id="section-options" className="py-16 bg-white dark:bg-midnight-surface border-t border-b border-line dark:border-midnight-line scroll-mt-16">
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
         <div className="mb-10 text-center md:text-left">
-          <div className="inline-flex items-center gap-2 bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
             Explore Options
           </div>
           <h2 className="disp text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-2">
@@ -108,7 +108,7 @@ export function VehicleOptionsShowcase({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* ── Left: preview + colors ─────────────────────────────── */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="relative h-[300px] md:h-[360px] bg-gradient-to-br from-slate-900 via-navy to-slate-800 rounded-2xl overflow-hidden shadow-2xl border border-line">
+            <div className="relative h-[300px] md:h-[360px] bg-mesh-blue rounded-2xl overflow-hidden shadow-2xl border border-line">
               {previewImage ? (
                 <img
                   src={previewImage}
@@ -144,7 +144,7 @@ export function VehicleOptionsShowcase({
                       title={c.name}
                       className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center shadow-sm ${
                         selectedColor === idx
-                          ? 'border-geely-blue scale-110 ring-2 ring-geely-blue/20'
+                          ? 'border-active-blue scale-110 ring-2 ring-active-blue/20'
                           : 'border-gray-300 hover:scale-105'
                       }`}
                       style={{ backgroundColor: c.colorCode }}
@@ -203,7 +203,7 @@ export function VehicleOptionsShowcase({
                         <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-navy">
                           {p.features.map((feat) => (
                             <div key={feat} className="flex items-center gap-2">
-                              <Check size={13} className="text-geely-blue flex-shrink-0" />
+                              <Check size={13} className="text-active-blue flex-shrink-0" />
                               <span>{feat}</span>
                             </div>
                           ))}
@@ -242,7 +242,7 @@ export function VehicleOptionsShowcase({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {accessories.map((a) => (
                     <div key={a.id} className="p-4 rounded-xl border border-line bg-white">
-                      <div className="text-[10px] text-gold font-bold mb-1 uppercase tracking-wide">
+                      <div className="text-[10px] text-active-blue font-bold mb-1 uppercase tracking-wide">
                         {a.category}
                       </div>
                       <div className="font-bold text-navy text-sm">{a.name}</div>
@@ -256,18 +256,12 @@ export function VehicleOptionsShowcase({
             )}
 
             <div className="pt-2 flex gap-3 flex-wrap">
-              <Link
-                href={`/quote?model=${vehicleSlug}${visitParam}`}
-                className="bg-gold text-[#2c2308] font-bold text-sm px-6 py-3.5 rounded-xl hover:bg-opacity-90 transition-all"
-              >
+              <Button href={`/quote?model=${vehicleSlug}${visitParam}`} variant="solid" size="md">
                 Get a Quote for This Build
-              </Link>
-              <Link
-                href={`/test-drive?model=${vehicleSlug}${visitParam}`}
-                className="bg-navy text-white font-bold text-sm px-6 py-3.5 rounded-xl hover:bg-opacity-90 transition-all"
-              >
+              </Button>
+              <Button href={`/test-drive?model=${vehicleSlug}${visitParam}`} variant="outline" tone="light" size="md">
                 Book Test Drive
-              </Link>
+              </Button>
             </div>
           </div>
         </div>

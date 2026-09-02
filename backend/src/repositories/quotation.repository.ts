@@ -52,7 +52,6 @@ export const quotationRepository = {
   async findByIdWithQuotationMessage(id: string) {
     return prisma.quotation.findUnique({
       where: { id },
-      include: { quotationMessages: true },
     });
   },
 

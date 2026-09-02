@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage, useTranslation } from '@/lib/i18n';
 import { useTheme } from '@/providers/ThemeProvider';
 import { withBasePath } from '@/lib/publicPath';
+import Button from '@/components/ui/Button';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -101,7 +102,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                   <img
                     src={withBasePath('/assets/logos/geely-logo.png')}
                     alt="Geely Ethiopia"
-                    className="h-8 w-auto max-w-[110px] object-contain transition-opacity group-hover:opacity-70"
+                    className="h-9 w-auto max-w-[124px] object-contain transition-opacity group-hover:opacity-70 dark:brightness-0 dark:invert"
                   />
                   <span className="sr-only">Geely Ethiopia</span>
                 </Link>
@@ -150,7 +151,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                       {item.hasSubmenu ? (
                         <button
                           onClick={() => toggleSection(item.title)}
-                          className="flex items-center justify-between w-full py-3 text-left text-navy dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
+                          className="flex items-center justify-between w-full py-3 text-left text-navy dark:text-ice hover:text-active-blue transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             {item.icon}
@@ -167,7 +168,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                         <Link
                           href={item.href}
                           onClick={onClose}
-                          className="flex items-center gap-3 py-3 text-navy dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
+                          className="flex items-center gap-3 py-3 text-navy dark:text-ice hover:text-active-blue transition-colors"
                         >
                           {item.icon}
                           <span className="font-display font-semibold uppercase tracking-[0.04em] text-[15px]">{item.title}</span>
@@ -196,20 +197,12 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
 
               {/* Bottom Actions */}
               <div className="border-t border-line dark:border-midnight-line p-4 space-y-3">
-                <Link
-                  href="/test-drive"
-                  onClick={onClose}
-                  className="block w-full bg-gold text-navy text-center py-3 rounded font-bold hover:bg-opacity-90 transition-colors"
-                >
+                <Button href="/test-drive" onClick={onClose} variant="solid" size="lg" className="w-full">
                   {t('common.bookTestDrive')}
-                </Link>
-                <Link
-                  href="/quote"
-                  onClick={onClose}
-                  className="block w-full bg-navy text-white text-center py-3 rounded font-bold hover:bg-opacity-90 transition-colors"
-                >
+                </Button>
+                <Button href="/quote" onClick={onClose} variant="outline" tone="light" size="lg" className="w-full">
                   {t('common.getQuote')}
-                </Link>
+                </Button>
               </div>
             </div>
           </motion.div>

@@ -5,16 +5,20 @@ import { isImageFile, isVideoFile, getFileCategory } from '../../utils/fileType'
 export const mediaService = {
   async upload(file: Express.Multer.File): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
-      const category = getFileCategory(file.originalname);
+      // NOTE: MediaAsset's real fields are fileName/fileSize (not
+      // filename/size), it has no `uploadedAt` column (createdAt is
+      // auto-set), and `fileType` (required, e.g. "image"/"video") is what
+      // getFileCategory()'s result actually maps to — not the unrelated
+      // `category` field (that one groups assets as hero/vehicle/gallery/etc).
+      const fileType = getFileCategory(file.originalname);
 
       const mediaAsset = await mediaAssetRepository.create({
-        filename: file.filename,
+        fileName: file.filename,
         originalName: file.originalname,
+        fileType,
         mimeType: file.mimetype,
-        size: file.size,
+        fileSize: file.size,
         url: `/uploads/${file.filename}`,
-        category,
-        uploadedAt: new Date(),
       });
 
       return { ok: true, data: mediaAsset };

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Shield, Cpu, Star, DollarSign, CheckCircle, Zap, Award, Users } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 interface Feature {
   title: string;
@@ -64,7 +64,7 @@ export default function FeaturesSection() {
 
   return (
     <section className="py-16 bg-ice">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="page-container">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-navy mb-4">
@@ -95,13 +95,13 @@ export default function FeaturesSection() {
                     />
                   </div>
                 ) : (
-                  <div className="w-12 h-12 bg-geely-blue/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-geely-blue/20 transition-colors">
-                    <IconComponent className="w-6 h-6 text-geely-blue" />
+                  <div className="w-12 h-12 bg-active-blue/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-active-blue/20 transition-colors">
+                    <IconComponent className="w-6 h-6 text-active-blue" strokeWidth={1.75} />
                   </div>
                 )}
 
                 {/* Feature Content */}
-                <h3 className="text-lg font-bold text-navy mb-2 group-hover:text-geely-blue transition-colors">
+                <h3 className="text-lg font-bold text-navy mb-2 group-hover:text-active-blue transition-colors">
                   {feature.title}
                 </h3>
                 <p className="text-steel text-sm leading-relaxed">
@@ -118,18 +118,12 @@ export default function FeaturesSection() {
             Ready to experience Geely excellence?
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/models"
-              className="inline-flex items-center justify-center bg-geely-blue text-white font-bold px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
+            <Button href="/models" variant="solid" size="md">
               Explore Vehicles
-            </Link>
-            <a
-              href="/test-drive"
-              className="inline-flex items-center justify-center border border-geely-blue text-geely-blue font-bold px-8 py-3 rounded-lg hover:bg-geely-blue hover:text-white transition-colors"
-            >
+            </Button>
+            <Button href="/test-drive" variant="outline" tone="light" size="md">
               Book Test Drive
-            </a>
+            </Button>
           </div>
         </div>
       </div>

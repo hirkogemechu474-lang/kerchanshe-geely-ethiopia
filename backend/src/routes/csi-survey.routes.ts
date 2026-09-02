@@ -9,15 +9,18 @@ router.get('/:jobCardId', async (req: Request, res: Response) => {
   try {
     const jobCard = await prisma.jobCard.findUnique({
       where: { id: req.params.jobCardId },
-      include: { customer: true, vehicle: true },
     });
     if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
-    if (jobCard.status !== 'completed') { res.status(400).json({ error: 'Job card not completed yet' }); return; }
+    if (jobCard.status !== 'INVOICED_CLOSED') { res.status(400).json({ error: 'Job card not completed yet' }); return; }
 
-    const existingSurvey = await prisma.cSISurvey.findUnique({ where: { jobCardId: req.params.jobCardId } });
+    const existingSurvey = await prisma.cSISurveyResponse.findUnique({ where: { jobCardId: req.params.jobCardId } });
     if (existingSurvey) { res.status(400).json({ error: 'Survey already submitted' }); return; }
 
-    res.json({ eligible: true, customer: jobCard.customer, vehicle: jobCard.vehicle });
+    res.json({
+      eligible: true,
+      customer: { name: jobCard.customerName, phone: jobCard.customerPhone, email: jobCard.customerEmail },
+      vehicle: { model: jobCard.vehicleModel, year: jobCard.vehicleYear },
+    });
   } catch (error) {
     console.error('Check CSI eligibility error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -29,12 +32,12 @@ router.post('/:jobCardId', rateLimiters.contactForm, async (req: Request, res: R
   try {
     const jobCard = await prisma.jobCard.findUnique({ where: { id: req.params.jobCardId } });
     if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
-    if (jobCard.status !== 'completed') { res.status(400).json({ error: 'Job card not completed yet' }); return; }
+    if (jobCard.status !== 'INVOICED_CLOSED') { res.status(400).json({ error: 'Job card not completed yet' }); return; }
 
-    const existingSurvey = await prisma.cSISurvey.findUnique({ where: { jobCardId: req.params.jobCardId } });
+    const existingSurvey = await prisma.cSISurveyResponse.findUnique({ where: { jobCardId: req.params.jobCardId } });
     if (existingSurvey) { res.status(400).json({ error: 'Survey already submitted' }); return; }
 
-    const survey = await prisma.cSISurvey.create({
+    const survey = await prisma.cSISurveyResponse.create({
       data: { jobCardId: req.params.jobCardId, ...req.body },
     });
 

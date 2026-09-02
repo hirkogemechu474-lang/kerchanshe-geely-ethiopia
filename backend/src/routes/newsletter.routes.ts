@@ -10,10 +10,12 @@ router.post('/subscribe', rateLimiters.contactForm, async (req: Request, res: Re
     const { email } = req.body;
     if (!email) { res.status(400).json({ error: 'Email is required' }); return; }
 
+    // NOTE: NewsletterSubscriber has no `isActive` boolean — subscription
+    // state is tracked via the `status` string field (default "subscribed").
     const existing = await prisma.newsletterSubscriber.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
-      if (existing.isActive) { res.status(409).json({ error: 'Email already subscribed' }); return; }
-      await prisma.newsletterSubscriber.update({ where: { email: email.toLowerCase() }, data: { isActive: true } });
+      if (existing.status === 'subscribed') { res.status(409).json({ error: 'Email already subscribed' }); return; }
+      await prisma.newsletterSubscriber.update({ where: { email: email.toLowerCase() }, data: { status: 'subscribed' } });
       res.json({ success: true, message: 'Re-subscribed successfully' });
       return;
     }

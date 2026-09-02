@@ -13,22 +13,22 @@ router.get('/', async (req: Request, res: Response) => {
       prisma.vehicle.findMany({
         where: { isActive: true, OR: [{ name: { contains: q, mode: 'insensitive' } }, { model: { contains: q, mode: 'insensitive' } }] },
         take: 5,
-        select: { id: true, name: true, slug: true, model: true, featuredImage: true },
+        select: { id: true, name: true, slug: true, model: true, heroImageUrl: true },
       }),
       prisma.newsArticle.findMany({
         where: { status: 'published', OR: [{ title: { contains: q, mode: 'insensitive' } }, { excerpt: { contains: q, mode: 'insensitive' } }] },
         take: 5,
-        select: { id: true, title: true, slug: true, featuredImage: true },
+        select: { id: true, title: true, imageUrl: true },
       }),
       prisma.sparePart.findMany({
-        where: { isActive: true, OR: [{ name: { contains: q, mode: 'insensitive' } }, { partNumber: { contains: q, mode: 'insensitive' } }] },
+        where: { isActive: true, OR: [{ name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } }] },
         take: 5,
-        select: { id: true, name: true, partNumber: true, image: true },
+        select: { id: true, name: true, sku: true, imageUrl: true },
       }),
       prisma.promotion.findMany({
         where: { isActive: true, OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
         take: 5,
-        select: { id: true, title: true, slug: true, featuredImage: true },
+        select: { id: true, title: true, bannerImage: true },
       }),
     ]);
 

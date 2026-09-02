@@ -39,11 +39,10 @@ export const serviceBookingService = {
       const booking = await serviceBookingRepository.create({
         customerName: data.customerName,
         customerPhone: data.customerPhone,
-        customerEmail: data.customerEmail,
+        customerEmail: data.customerEmail || '',
         serviceType: data.serviceType,
         vehicleInfo: data.vehicleInfo,
         date: new Date(data.date),
-        timeSlot: data.timeSlot,
         notes: data.notes,
         reference,
         status: 'PENDING',

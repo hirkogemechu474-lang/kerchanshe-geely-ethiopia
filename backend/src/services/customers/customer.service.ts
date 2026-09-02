@@ -55,17 +55,15 @@ export const customerService = {
     vin?: string;
     plateNo?: string;
     model: string;
-    year?: number;
     color?: string;
     warrantyEndDate?: Date;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const vehicle = await customerRepository.createVehicle({
-        customerId,
+        customer: { connect: { id: customerId } },
         vin: data.vin,
-        plateNo: data.plateNo,
+        plateNo: data.plateNo || '',
         model: data.model,
-        year: data.year,
         color: data.color,
         warrantyEndDate: data.warrantyEndDate,
       });

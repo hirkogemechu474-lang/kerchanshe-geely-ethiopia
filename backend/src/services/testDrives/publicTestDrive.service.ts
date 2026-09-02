@@ -10,6 +10,7 @@ export const publicTestDriveService = {
     vehicleId: string;
     preferredDate: string;
     preferredTime: string;
+    location?: string;
     notes?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
@@ -22,10 +23,11 @@ export const publicTestDriveService = {
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         customerPhone: data.customerPhone,
-        vehicleId: data.vehicleId,
+        vehicle: { connect: { id: data.vehicleId } },
         preferredDate: new Date(data.preferredDate),
         preferredTime: data.preferredTime,
-        notes: data.notes,
+        location: data.location || '',
+        specialRequests: data.notes,
         reference,
         status: 'PENDING',
       });

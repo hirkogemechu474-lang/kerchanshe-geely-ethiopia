@@ -132,7 +132,7 @@ export function Model360Section({
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-6">
           <div>
-            <div className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-bold mb-4 tracking-wider">
+            <div className="inline-block bg-active-blue/10 text-active-blue px-4 py-2 rounded-full text-sm font-bold mb-4 tracking-wider">
               360° INTERACTIVE VIEW
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-3">
@@ -155,7 +155,7 @@ export function Model360Section({
                   <span
                     className={`w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedColorId === color.id
-                        ? 'border-geely-blue'
+                        ? 'border-active-blue'
                         : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
                     }`}
                   >

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { withBasePath } from '@/lib/publicPath';
 import { useTranslation } from '@/lib/i18n';
+import Button from '@/components/ui/Button';
 
 interface SocialMediaLinks {
   facebook?: string;
@@ -153,12 +154,12 @@ export function Footer() {
 
   return (
     <footer className="bg-black text-white">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <div className="page-container py-14">
         {/* Logo */}
         <img
           src={withBasePath('/assets/logos/geely-logo.png')}
           alt="Geely Ethiopia"
-          className="h-9 w-auto max-w-[124px] object-contain bg-white rounded p-1 mb-10"
+          className="h-10 md:h-11 w-auto max-w-[140px] object-contain brightness-0 invert mb-10"
         />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
@@ -269,15 +270,12 @@ export function Footer() {
                 value={emailDraft}
                 onChange={(e) => setEmailDraft(e.target.value)}
                 placeholder={t('footer.emailPlaceholder')}
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-bright/40 focus:border-blue-bright/50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-active-blue/40 focus:border-active-blue/50"
               />
             </div>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-bright text-black text-sm font-bold hover:bg-white transition-all whitespace-nowrap"
-            >
+            <Button type="submit" variant="outline" tone="dark" size="md" className="whitespace-nowrap">
               {subscribing ? 'Subscribing...' : subscribed ? '✓ Subscribed' : (<>{t('footer.subscribe')} <Send size={13} /></>)}
-            </button>
+            </Button>
           </form>
         </div>
         {subscribeError && (

@@ -16,7 +16,7 @@ export const loginService = {
         return { ok: false, error: 'Account is deactivated. Please contact administrator.' };
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
         return { ok: false, error: 'Invalid email or password' };
       }

@@ -11,6 +11,8 @@ export const orderHandoverService = {
         return { ok: false, error: 'Invalid or expired link.' };
       }
 
+      const config = (order.configurationJson as Record<string, any> | null) || {};
+
       return {
         ok: true,
         data: {
@@ -18,7 +20,7 @@ export const orderHandoverService = {
           customerName: order.customerName,
           customerPhone: order.customerPhone,
           vehicleModel: order.vehicleModel,
-          color: order.color,
+          color: config.color ?? null,
           totalPrice: order.totalPrice,
           handoverSignedDocumentUrl: order.handoverSignedDocumentUrl,
           handoverSignedAt: order.handoverSignedAt,

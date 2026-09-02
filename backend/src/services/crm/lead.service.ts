@@ -15,16 +15,16 @@ export const leadService = {
     try {
       const reference = await generateReference(REFERENCE_CATEGORY.CONTACT);
 
-      const lead = await prisma.lead.create({
+      const lead = await prisma.quotation.create({
         data: {
           reference,
-          name: data.name,
+          customerName: data.name,
           email: data.email,
-          phone: data.phone,
-          vehicleInterest: data.vehicleInterest,
+          phoneNumber: data.phone,
+          vehicleModel: data.vehicleInterest,
           message: data.message,
           source: data.source || 'website',
-          status: 'NEW',
+          status: 'new',
         },
       });
 
@@ -56,7 +56,7 @@ export const leadService = {
       const where: any = {};
       if (params?.status && params.status !== 'all') where.status = params.status;
 
-      const leads = await prisma.lead.findMany({
+      const leads = await prisma.quotation.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });
@@ -72,12 +72,11 @@ export const leadService = {
       const user = await userRepository.findById(assignedTo);
       if (!user) return { ok: false, error: 'User not found.' };
 
-      const lead = await prisma.lead.update({
+      const lead = await prisma.quotation.update({
         where: { id: leadId },
         data: {
           assignedTo,
-          status: 'ASSIGNED',
-          assignedAt: new Date(),
+          status: 'contacted',
         },
       });
 
@@ -90,7 +89,7 @@ export const leadService = {
 
   async updateStatus(leadId: string, status: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
-      const lead = await prisma.lead.update({
+      const lead = await prisma.quotation.update({
         where: { id: leadId },
         data: { status },
       });

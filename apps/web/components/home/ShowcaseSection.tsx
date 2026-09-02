@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ModelSpotlightSimple } from '@/components/ModelSpotlightSimple';
+import Button from '@/components/ui/Button';
 
 interface ShowcaseView {
   angle: string;
@@ -53,12 +54,12 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
         className="py-16 bg-white dark:bg-midnight-surface relative overflow-hidden transition-colors"
         style={{ opacity }}
       >
-        <div className="max-w-[1280px] mx-auto px-4 relative z-10">
+        <div className="page-container relative z-10">
           <motion.div
             className="text-center mb-12"
             style={{ scale }}
           >
-            <div className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-bold mb-4">
+            <div className="inline-block bg-active-blue/10 text-active-blue px-4 py-2 rounded-full text-sm font-bold mb-4">
               INTERACTIVE EXPERIENCE
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-navy dark:text-ice mb-4">
@@ -70,7 +71,7 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
           </motion.div>
 
           <Link href="/models" className="block group">
-            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
+            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-mesh-blue shadow-2xl">
               <Image
                 src="/images/vehicles/ex5/ex5-hero.jpg"
                 alt="Geely vehicle showcase"
@@ -81,7 +82,7 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
               <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-transparent to-transparent"></div>
               <div className="absolute bottom-4 left-4">
                 <div className="bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-lg">
-                  <div className="text-xs text-blue-200 mb-1">360° Showcase</div>
+                  <div className="text-xs text-active-blue-80 mb-1">360° Showcase</div>
                   <div className="font-bold">Geely Flagship Models</div>
                 </div>
               </div>
@@ -89,13 +90,10 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
           </Link>
 
           <div className="mt-8 text-center">
-            <Link
-              href="/models"
-              className="group inline-flex items-center gap-2 bg-navy text-white px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-            >
+            <Button href="/models" variant="solid" size="lg" className="group transform hover:scale-105 hover:shadow-xl">
               Explore Models
               <span className="transform group-hover:translate-x-2 transition-transform">&rarr;</span>
-            </Link>
+            </Button>
           </div>
         </div>
       </motion.section>
@@ -116,21 +114,21 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
     >
       {/* Parallax Background Elements */}
       <motion.div
-        className="absolute top-20 right-10 w-64 h-64 bg-gold/5 rounded-full blur-3xl"
+        className="absolute top-20 right-10 w-64 h-64 bg-active-blue/5 rounded-full blur-3xl"
         style={{ y }}
       />
       <motion.div
-        className="absolute bottom-20 left-10 w-96 h-96 bg-geely-blue/5 rounded-full blur-3xl"
+        className="absolute bottom-20 left-10 w-96 h-96 bg-accent-lightblue/5 rounded-full blur-3xl"
         style={{ y: goldBlobY }}
       />
 
-      <div className="max-w-[1280px] mx-auto px-4 relative z-10">
+      <div className="page-container relative z-10">
         <motion.div 
           className="text-center mb-12"
           style={{ scale }}
         >
           <motion.div 
-            className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-bold mb-4"
+            className="inline-block bg-active-blue/10 text-active-blue px-4 py-2 rounded-full text-sm font-bold mb-4"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -179,13 +177,15 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Link
+            <Button
               href={showcase.ctaLink || `/models/${showcase.vehicleId}`}
-              className="group inline-flex items-center gap-2 bg-navy text-white px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+              variant="solid"
+              size="lg"
+              className="group transform hover:scale-105 hover:shadow-xl"
             >
               {showcase.ctaText || `Explore ${showcase.vehicleName}`}
               <span className="transform group-hover:translate-x-2 transition-transform">&rarr;</span>
-            </Link>
+            </Button>
           </motion.div>
         )}
       </div>

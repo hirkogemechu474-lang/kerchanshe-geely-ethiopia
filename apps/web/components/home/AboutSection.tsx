@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Button from '@/components/ui/Button';
 
 interface AboutContent {
   title: string;
@@ -58,9 +58,9 @@ export default function AboutSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/40" />
       </div>
 
-      <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-20 md:py-28">
+      <div className="relative page-container py-20 md:py-28">
         <div className="max-w-xl">
-          <div className="text-[12px] tracking-[0.2em] text-gold font-bold mb-4 uppercase">
+          <div className="text-[12px] tracking-[0.2em] text-active-blue font-bold mb-4 uppercase">
             Discover Geely
           </div>
           <h2 className="disp text-[30px] md:text-[42px] font-extrabold leading-[1.1] mb-6">
@@ -73,24 +73,21 @@ export default function AboutSection() {
           <ul className="space-y-3 mb-9">
             {keyPoints.map((point, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-active-blue shrink-0" />
                 <span className="text-white text-sm font-medium leading-relaxed">{point}</span>
               </li>
             ))}
           </ul>
 
-          <Link
-            href="/about"
-            className="inline-flex items-center gap-2 bg-white text-navy text-[13px] font-bold px-7 py-3.5 rounded-lg hover:bg-gold transition-colors"
-          >
+          <Button href="/about" variant="outline" tone="dark" size="md">
             Know More
             <span aria-hidden>&rarr;</span>
-          </Link>
+          </Button>
         </div>
 
         {/* Credential badge */}
         <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur rounded-2xl px-5 py-4 ring-1 ring-white/15 mt-14">
-          <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center text-lg font-extrabold shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-active-blue/20 text-active-blue flex items-center justify-center text-lg font-extrabold shrink-0">
             G
           </div>
           <div>

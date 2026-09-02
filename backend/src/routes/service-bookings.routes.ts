@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { convertToJobCardService } from '../services/serviceBookings/convertToJobCard.service';
 
 const router = Router();
 
@@ -83,24 +84,21 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // POST /api/service-bookings/:id/convert-to-job-card (convert to job card)
+// Delegates to convertToJobCardService, which builds the JobCard from the
+// ServiceBooking's actual fields (customerName/Phone/Email, vehicleInfo ->
+// vehicleModel, etc.) — ServiceBooking has no customerId/vehicleId, and
+// JobCard has no reverse jobCardId scalar to set on the booking (the FK
+// lives on JobCard.serviceBookingId; the service links it via serviceBookingId
+// on create, inside a transaction with the booking's status update).
 router.post('/:id/convert-to-job-card', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const booking = await prisma.serviceBooking.findUnique({ where: { id: req.params.id } });
-    if (!booking) { res.status(404).json({ error: 'Service booking not found' }); return; }
-
-    const jobCard = await prisma.jobCard.create({
-      data: {
-        customerId: booking.customerId,
-        vehicleId: booking.vehicleId,
-        serviceBookingId: booking.id,
-        description: booking.notes || '',
-        createdById: req.adminSession!.user.id,
-      },
-    });
-
-    await prisma.serviceBooking.update({ where: { id: req.params.id }, data: { status: 'converted', jobCardId: jobCard.id } });
-
-    res.status(201).json(jobCard);
+    const result = await convertToJobCardService.convert(req.params.id, req.adminSession!.user.id, req.body);
+    if (!result.ok) {
+      const status = result.error === 'Service booking not found.' ? 404 : 400;
+      res.status(status).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result.data);
   } catch (error) {
     console.error('Convert to job card error:', error);
     res.status(500).json({ error: 'Internal server error' });

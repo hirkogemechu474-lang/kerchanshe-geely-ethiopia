@@ -3,6 +3,7 @@
  * Generate OpenGraph, Twitter Cards, JSON-LD structured data
  */
 import { env } from '@/lib/env';
+import { withBasePath } from '@/lib/publicPath';
 
 interface SEOMetaProps {
   title: string;
@@ -71,7 +72,7 @@ export function generateArticleSchema(article: {
       name: 'Geely Ethiopia',
       logo: {
         '@type': 'ImageObject',
-        url: `${env.app.url}/images/logo.png`,
+        url: `${env.app.url}${withBasePath('/assets/logos/geely-logo.png')}`,
       },
     },
     mainEntityOfPage: {

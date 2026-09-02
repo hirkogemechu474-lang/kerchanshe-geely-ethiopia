@@ -2,6 +2,11 @@ import { prisma } from '../../config/database';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { sendEmail } from '../email/smtp';
 
+// No dedicated FinancingApplication table exists in schema.prisma.
+// Message.reference's own doc comment calls out "financing applications"
+// as one of the customer-facing flows Message rows back, so this service
+// stores applications as Message rows (category: 'financing') and folds
+// the structured application fields into `content`.
 export const financingApplicationService = {
   async submit(data: {
     customerName: string;
@@ -21,23 +26,30 @@ export const financingApplicationService = {
     try {
       const reference = await generateReference(REFERENCE_CATEGORY.FINANCING);
 
-      const application = await prisma.financingApplication.create({
+      const content = [
+        `Phone: ${data.customerPhone}`,
+        `Vehicle: ${data.vehicleModel}${data.vehicleId ? ` (${data.vehicleId})` : ''}`,
+        data.programId ? `Program: ${data.programId}` : null,
+        data.bankId ? `Bank: ${data.bankId}` : null,
+        data.monthlyIncome != null ? `Monthly income: ${data.monthlyIncome}` : null,
+        data.employmentStatus ? `Employment status: ${data.employmentStatus}` : null,
+        data.employerName ? `Employer: ${data.employerName}` : null,
+        data.downPayment != null ? `Down payment: ${data.downPayment}` : null,
+        data.loanTerm != null ? `Loan term: ${data.loanTerm} months` : null,
+        data.notes ? `Notes: ${data.notes}` : null,
+      ]
+        .filter((line): line is string => Boolean(line))
+        .join('\n');
+
+      const application = await prisma.message.create({
         data: {
           reference,
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          customerPhone: data.customerPhone,
-          vehicleModel: data.vehicleModel,
-          vehicleId: data.vehicleId,
-          programId: data.programId,
-          bankId: data.bankId,
-          monthlyIncome: data.monthlyIncome,
-          employmentStatus: data.employmentStatus,
-          employerName: data.employerName,
-          downPayment: data.downPayment,
-          loanTerm: data.loanTerm,
-          notes: data.notes,
-          status: 'SUBMITTED',
+          from: data.customerName,
+          email: data.customerEmail,
+          subject: `Financing Application - ${data.vehicleModel}`,
+          category: 'financing',
+          status: 'unread',
+          content,
         },
       });
 
@@ -67,10 +79,10 @@ export const financingApplicationService = {
 
   async list(params?: { status?: string }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
-      const where: any = {};
+      const where: any = { category: 'financing' };
       if (params?.status && params.status !== 'all') where.status = params.status;
 
-      const applications = await prisma.financingApplication.findMany({
+      const applications = await prisma.message.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });
@@ -83,13 +95,14 @@ export const financingApplicationService = {
 
   async updateStatus(id: string, status: string, reviewedById: string, notes?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
-      const application = await prisma.financingApplication.update({
+      const application = await prisma.message.update({
         where: { id },
         data: {
           status,
-          reviewedById,
-          reviewedAt: new Date(),
-          ...(notes && { reviewNotes: notes }),
+          // Message has no reviewedById/reviewedAt columns; fold the
+          // reviewer + notes into `response`, this model's one free-text
+          // reply field.
+          ...(notes && { response: `[Reviewed by ${reviewedById}] ${notes}` }),
         },
       });
 

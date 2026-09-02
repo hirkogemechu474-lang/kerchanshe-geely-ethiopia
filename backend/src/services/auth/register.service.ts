@@ -21,7 +21,7 @@ export const registerService = {
       const user = await userRepository.create({
         name: data.name,
         email: data.email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'customer',
         isActive: true,
       });
@@ -68,7 +68,7 @@ export const registerService = {
       const user = await userRepository.create({
         name: data.name,
         email: data.email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: data.role,
         isActive: true,
         ...(data.dealerId && { dealerId: data.dealerId }),

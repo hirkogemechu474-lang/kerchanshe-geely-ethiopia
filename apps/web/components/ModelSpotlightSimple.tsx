@@ -59,7 +59,7 @@ export function ModelSpotlightSimple({
   };
 
   return (
-    <div ref={containerRef} className={`relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`relative bg-mesh-blue rounded-xl overflow-hidden ${className}`}>
       {/* Main Image */}
       <div className="relative aspect-[16/9]">
         <img
@@ -89,9 +89,9 @@ export function ModelSpotlightSimple({
         {/* View Label */}
         <div className="absolute bottom-4 left-4">
           <div className="bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-lg">
-            <div className="text-xs text-blue-200 mb-1">360° Showcase</div>
+            <div className="text-xs text-active-blue-80 mb-1">360° Showcase</div>
             <div className="font-bold">{modelName}</div>
-            <div className="text-sm text-blue-100 mt-1">{views[currentView].label}</div>
+            <div className="text-sm text-active-blue-60 mt-1">{views[currentView].label}</div>
           </div>
         </div>
 
@@ -100,8 +100,8 @@ export function ModelSpotlightSimple({
           <button
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
             className={`p-3 rounded-lg backdrop-blur-sm transition-all ${
-              isAutoPlaying 
-                ? 'bg-gold text-navy dark:text-ice' 
+              isAutoPlaying
+                ? 'bg-active-blue text-white'
                 : 'bg-black/50 text-white hover:bg-black/70'
             }`}
             title={isAutoPlaying ? 'Pause' : 'Auto-Play'}
@@ -128,7 +128,7 @@ export function ModelSpotlightSimple({
               onClick={() => setCurrentView(index)}
               className={`relative flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                 currentView === index
-                  ? 'border-gold scale-105'
+                  ? 'border-active-blue scale-105'
                   : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
@@ -156,7 +156,7 @@ export function ModelSpotlightSimple({
             onClick={() => setCurrentView(index)}
             className={`w-2 h-2 rounded-full transition-all ${
               currentView === index
-                ? 'bg-gold w-8'
+                ? 'bg-active-blue w-8'
                 : 'bg-white dark:bg-midnight-surface/30 hover:bg-white/60'
             }`}
           />

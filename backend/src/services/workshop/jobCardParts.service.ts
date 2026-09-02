@@ -1,11 +1,10 @@
 import { prisma } from '../../config/database';
-import { sparePartRepository } from '../../repositories';
 
 export const jobCardPartsService = {
   async requestParts(jobCardId: string, items: Array<{
     sparePartId: string;
     quantity: number;
-    unitCost: number;
+    unitPrice: number;
     requestedById: string;
   }>): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
@@ -16,7 +15,7 @@ export const jobCardPartsService = {
               jobCardId,
               sparePartId: item.sparePartId,
               quantity: item.quantity,
-              unitCost: item.unitCost,
+              unitPrice: item.unitPrice,
               requestedById: item.requestedById,
               requestedAt: new Date(),
               status: 'REQUESTED',
@@ -45,13 +44,18 @@ export const jobCardPartsService = {
         return { ok: false, error: 'Insufficient stock.' };
       }
 
+      // Use prisma.sparePart.update directly (not sparePartRepository.update) so
+      // this returns a PrismaPromise that $transaction can run atomically —
+      // an awaited repository call would resolve outside the transaction and
+      // let the stock decrement happen even if the part-status update fails.
       const [updatedPart] = await prisma.$transaction([
         prisma.jobCardPart.update({
           where: { id: partId },
           data: { status: 'ISSUED', issuedById, issuedAt: new Date() },
         }),
-        sparePartRepository.update(part.sparePartId, {
-          stock: { decrement: part.quantity },
+        prisma.sparePart.update({
+          where: { id: part.sparePartId },
+          data: { stock: { decrement: part.quantity } },
         }),
       ]);
 

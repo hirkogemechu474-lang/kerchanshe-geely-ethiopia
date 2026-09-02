@@ -63,7 +63,7 @@ export function ModelPageTabs() {
                   flex items-center gap-2 px-5 py-4 text-sm font-semibold whitespace-nowrap
                   border-b-2 transition-all duration-200
                   ${isActive
-                    ? 'border-geely-blue text-geely-blue'
+                    ? 'border-active-blue text-active-blue'
                     : 'border-transparent text-steel hover:text-navy hover:border-line'
                   }
                 `}

@@ -7,6 +7,7 @@
 import type { Vehicle } from '@/types/vehicle';
 import type { Dealer } from '@/types/dealer';
 import { env } from '@/lib/env';
+import { withBasePath } from '@/lib/publicPath';
 
 const SITE_URL = env.app.url.replace(/\/$/, '');
 
@@ -21,7 +22,7 @@ export function getOrganizationSchema() {
     alternateName: 'Geely Auto Ethiopia',
     legalName: 'Geely Ethiopia by Kerchanshe Group Geely',
     url: SITE_URL,
-    logo: `${SITE_URL}/images/geely-logo.png`,
+    logo: `${SITE_URL}${withBasePath('/assets/logos/geely-logo.png')}`,
     description:
       'Official distributor of Geely vehicles in Ethiopia. Explore SUVs, sedans, and electric vehicles with nationwide dealer support.',
     foundingDate: '2024',

@@ -550,6 +550,42 @@ model SalesOrderStatusHistory {
   @@index([orderId])
 }
 
+model QuotationAssignmentHistory {
+  id              String   @id @default(uuid())
+  quotationId     String
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  assignedTo      String
+  assignedById    String
+  assignmentReason String? // e.g., "auto-assign", "manual", "escalation"
+  assignedAt      DateTime @default(now())
+
+  @@index([quotationId])
+}
+
+model QuotationEscalationHistory {
+  id              String   @id @default(uuid())
+  quotationId     String
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  escalatedById   String
+  escalatedAt     DateTime @default(now())
+  escalationReason String?
+  previousAssignee String?
+
+  @@index([quotationId])
+}
+
+model NotificationHistory {
+  id              String   @id @default(uuid())
+  recipientEmail  String
+  notificationType String // 'lead_assignment', 'quotation_approved', 'quotation_accepted', 'agreement_created', 'agreement_signed', 'payment_received', 'delivery_confirmed', 'handover_complete'
+  subject         String
+  data              Json? // Additional context data
+  sentAt          DateTime @default(now())
+  sentStatus      String @default('sent')
+
+  @@index([sentAt])
+}
+
 // Dealers
 model Dealer {
   id           String   @id @default(uuid())

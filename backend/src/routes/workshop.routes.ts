@@ -12,14 +12,14 @@ router.get('/dashboard', async (req: Request, res: Response) => {
   try {
     const [totalJobCards, activeJobCards, completedJobCards, pendingParts] = await Promise.all([
       prisma.jobCard.count(),
-      prisma.jobCard.count({ where: { status: { in: ['pending', 'in_progress', 'waiting_parts'] } } }),
-      prisma.jobCard.count({ where: { status: 'completed' } }),
-      prisma.jobCardPart.count({ where: { status: 'backordered' } }),
+      prisma.jobCard.count({ where: { status: { notIn: ['INVOICED_CLOSED', 'CANCELLED'] } } }),
+      prisma.jobCard.count({ where: { status: 'INVOICED_CLOSED' } }),
+      prisma.jobCardPart.count({ where: { status: 'BACKORDERED' } }),
     ]);
 
-    const revenue = await prisma.jobCard.aggregate({ _sum: { totalAmount: true }, where: { status: 'completed' } });
+    const revenue = await prisma.jobCard.aggregate({ _sum: { invoiceAmount: true }, where: { status: 'INVOICED_CLOSED' } });
 
-    res.json({ totalJobCards, activeJobCards, completedJobCards, pendingParts, totalRevenue: revenue._sum.totalAmount || 0 });
+    res.json({ totalJobCards, activeJobCards, completedJobCards, pendingParts, totalRevenue: revenue._sum?.invoiceAmount ?? 0 });
   } catch (error) {
     console.error('Workshop dashboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -29,7 +29,15 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 // GET /api/admin/workshop/board (bay scheduling board)
 router.get('/board', async (req: Request, res: Response) => {
   try {
-    const bays = await prisma.workshopBay.findMany({ where: { isActive: true }, include: { jobCards: { where: { status: { in: ['pending', 'in_progress', 'waiting_parts'] } }, include: { technician: true, vehicle: true } } } });
+    const bays = await prisma.serviceBay.findMany({
+      where: { isActive: true },
+      include: {
+        jobCards: {
+          where: { status: { notIn: ['INVOICED_CLOSED', 'CANCELLED'] } },
+          include: { technician: true, customerVehicle: true },
+        },
+      },
+    });
     res.json(bays);
   } catch (error) {
     console.error('Workshop board error:', error);
@@ -136,10 +144,10 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
 // PATCH /api/admin/workshop/job-cards/:id/assign (assign tech/bay/schedule)
 router.patch('/job-cards/:id/assign', async (req: Request, res: Response) => {
   try {
-    const { technicianId, bayId, scheduledAt } = req.body;
+    const { technicianId, bayId, scheduledStart, scheduledEnd } = req.body;
     const jobCard = await prisma.jobCard.update({
       where: { id: req.params.id },
-      data: { technicianId, bayId, scheduledAt },
+      data: { technicianId, bayId, scheduledStart, scheduledEnd },
     });
     res.json(jobCard);
   } catch (error) {
@@ -338,11 +346,22 @@ router.patch('/warranty-claims/:id/status', async (req: Request, res: Response) 
 router.get('/vehicle-lookup', async (req: Request, res: Response) => {
   try {
     const { vin, plate } = req.query;
-    const where: any = {};
-    if (vin) where.vin = vin;
-    if (plate) where.licensePlate = plate;
+    if (!vin && !plate) {
+      res.status(400).json({ error: 'vin or plate query parameter is required' });
+      return;
+    }
 
-    const vehicle = await prisma.vehicleInventory.findFirst({ where });
+    const where: any = {};
+    if (vin) where.vin = { equals: vin as string, mode: 'insensitive' };
+    if (plate) where.plateNo = { equals: plate as string, mode: 'insensitive' };
+
+    const vehicle = await prisma.customerVehicle.findFirst({
+      where,
+      include: {
+        customer: { select: { fullName: true, phone: true, email: true } },
+        jobCards: { select: { id: true, jobCardNo: true, status: true, openTs: true }, orderBy: { openTs: 'desc' } },
+      },
+    });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
     res.json(vehicle);
   } catch (error) {
@@ -354,8 +373,12 @@ router.get('/vehicle-lookup', async (req: Request, res: Response) => {
 // GET /api/admin/workshop/parts/reorder-alerts (low stock alerts)
 router.get('/parts/reorder-alerts', async (req: Request, res: Response) => {
   try {
-    const parts = await prisma.sparePart.findMany({ where: { stockQuantity: { lte: prisma.sparePart.fields.reorderLevel } } });
-    res.json(parts);
+    // Prisma can't compare two columns of the same row in a `where` filter,
+    // so fetch active parts and filter stock <= reorderPoint in JS (same
+    // pattern as vehicles.routes.ts's /stats route).
+    const parts = await prisma.sparePart.findMany({ where: { isActive: true } });
+    const lowStock = parts.filter((part) => part.stock <= part.reorderPoint);
+    res.json(lowStock);
   } catch (error) {
     console.error('Parts reorder alerts error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -365,11 +388,27 @@ router.get('/parts/reorder-alerts', async (req: Request, res: Response) => {
 // GET /api/admin/workshop/bi-dashboard (BI dashboard)
 router.get('/bi-dashboard', async (req: Request, res: Response) => {
   try {
-    const totalRevenue = await prisma.jobCard.aggregate({ _sum: { totalAmount: true }, where: { status: 'completed' } });
+    const totalRevenue = await prisma.jobCard.aggregate({ _sum: { invoiceAmount: true }, where: { status: 'INVOICED_CLOSED' } });
     const totalJobCards = await prisma.jobCard.count();
-    const avgCompletionTime = await prisma.jobCard.aggregate({ _avg: { estimatedHours: true }, where: { status: 'completed' } });
+    // JobCard has no stored duration field — completion time is derived from
+    // closeTs - openTs on closed job cards (same approach as biSummary.service.ts).
+    const closedJobCards = await prisma.jobCard.findMany({
+      where: { status: 'INVOICED_CLOSED', closeTs: { not: null } },
+      select: { openTs: true, closeTs: true },
+      take: 200,
+      orderBy: { closeTs: 'desc' },
+    });
 
-    res.json({ totalRevenue: totalRevenue._sum.totalAmount || 0, totalJobCards, avgCompletionTime: avgCompletionTime._avg.estimatedHours || 0 });
+    let avgCompletionTime = 0;
+    if (closedJobCards.length > 0) {
+      const totalHours = closedJobCards.reduce(
+        (sum, jc) => sum + (jc.closeTs!.getTime() - jc.openTs.getTime()) / (1000 * 60 * 60),
+        0
+      );
+      avgCompletionTime = Math.round((totalHours / closedJobCards.length) * 10) / 10;
+    }
+
+    res.json({ totalRevenue: totalRevenue._sum?.invoiceAmount ?? 0, totalJobCards, avgCompletionTime });
   } catch (error) {
     console.error('BI dashboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -385,7 +424,7 @@ router.get('/bi-dashboard/trend', async (req: Request, res: Response) => {
 
     const jobCards = await prisma.jobCard.findMany({
       where: { createdAt: { gte: startDate } },
-      select: { createdAt: true, totalAmount: true, status: true },
+      select: { createdAt: true, invoiceAmount: true, status: true },
       orderBy: { createdAt: 'asc' },
     });
 

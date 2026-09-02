@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 interface Promotion {
   id: string;
@@ -56,8 +56,8 @@ export default function PromotionsBanner({ initialPromotions = [] }: PromotionsB
   };
 
   return (
-    <section className="py-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+    <section className="py-8 bg-gradient-to-r from-accent-purple to-active-blue text-white">
+      <div className="page-container">
         <div className="flex items-center gap-6">
           {/* Slider */}
           <div className="flex-1 relative">
@@ -80,12 +80,9 @@ export default function PromotionsBanner({ initialPromotions = [] }: PromotionsB
                   {currentPromo.description}
                 </p>
                 {currentPromo.ctaButtonText && currentPromo.ctaButtonLink && (
-                  <Link
-                    href={currentPromo.ctaButtonLink}
-                    className="inline-block bg-white text-purple-600 font-bold text-sm px-4 py-2 rounded hover:bg-opacity-90 transition-all w-fit"
-                  >
+                  <Button href={currentPromo.ctaButtonLink} variant="solid" size="sm" className="w-fit">
                     {currentPromo.ctaButtonText}
-                  </Link>
+                  </Button>
                 )}
               </div>
             </div>

@@ -14,21 +14,21 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     const where: any = {};
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
+        { fullName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const [items, total] = await Promise.all([
-      prisma.user.findMany({
-        where: { ...where, role: 'customer' },
-        select: { id: true, name: true, email: true, phone: true, createdAt: true, customerVehicles: true },
+      prisma.customer.findMany({
+        where,
+        select: { id: true, fullName: true, email: true, phone: true, createdAt: true, vehicles: true },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.user.count({ where: { ...where, role: 'customer' } }),
+      prisma.customer.count({ where }),
     ]);
 
     res.json({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
@@ -67,12 +67,12 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 // PATCH /api/customers/:id (admin update)
 router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { name, email, phone } = req.body;
-    const customer = await prisma.user.update({
+    const { fullName, email, phone, address } = req.body;
+    const customer = await prisma.customer.update({
       where: { id: req.params.id },
-      data: { name, email, phone },
+      data: { fullName, email, phone, address },
     });
-    res.json({ id: customer.id, name: customer.name, email: customer.email, phone: customer.phone });
+    res.json({ id: customer.id, fullName: customer.fullName, email: customer.email, phone: customer.phone });
   } catch (error) {
     console.error('Update customer error:', error);
     res.status(500).json({ error: 'Internal server error' });

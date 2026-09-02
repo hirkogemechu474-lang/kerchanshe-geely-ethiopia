@@ -27,7 +27,7 @@ export const jobCardService = {
     customerPhone: string;
     customerEmail?: string;
     vehicleModel: string;
-    plateNo?: string;
+    plateNo: string;
     vin?: string;
     complaintText: string;
     technicianId?: string;
@@ -49,6 +49,8 @@ export const jobCardService = {
         }
       }
 
+      // Note: JobCard has no createdById column (who opened the card isn't
+      // tracked on the model itself), so data.createdById isn't persisted here.
       const jobCard = await jobCardRepository.create({
         jobCardNo,
         customerName: data.customerName,
@@ -60,11 +62,10 @@ export const jobCardService = {
         complaintText: data.complaintText,
         status: 'DRAFT_CHECKIN',
         openTs: new Date(),
-        createdById: data.createdById,
-        ...(data.technicianId && { technicianId: data.technicianId }),
-        ...(data.bayId && { bayId: data.bayId }),
+        ...(data.technicianId && { technician: { connect: { id: data.technicianId } } }),
+        ...(data.bayId && { bay: { connect: { id: data.bayId } } }),
         ...(data.scheduledStart && { scheduledStart: data.scheduledStart }),
-        ...(customerVehicleId && { customerVehicleId }),
+        ...(customerVehicleId && { customerVehicle: { connect: { id: customerVehicleId } } }),
       });
 
       return { ok: true, data: jobCard };
@@ -156,8 +157,8 @@ export const jobCardService = {
       const result = await jobCardRepository.assignTechnicianBay(
         id,
         {
-          ...(technicianId !== undefined && { technicianId }),
-          ...(bayId !== undefined && { bayId }),
+          ...(technicianId !== undefined && { technician: { connect: { id: technicianId } } }),
+          ...(bayId !== undefined && { bay: { connect: { id: bayId } } }),
         },
         previousBayId,
         bayId || null

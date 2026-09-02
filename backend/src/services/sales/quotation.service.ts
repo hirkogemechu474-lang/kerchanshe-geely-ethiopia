@@ -1,16 +1,20 @@
-import { quotationRepository, vehicleRepository } from '../../repositories';
+import { quotationRepository, vehicleRepository, userRepository } from '../../repositories';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
+import { assignSalesRep, type AssignmentFactors } from './assignSalesRep';
+import { prisma } from '../../config/database';
+import { dispatchNotification } from '../email/notifications.dispatch';
 
 export const quotationService = {
   async create(data: {
     customerName: string;
     phoneNumber: string;
     email?: string;
-    vehicleModel: string;
-    vehicleId?: string;
+    vehicleModel?: string;
     message?: string;
     assignedTo?: string;
-  }): Promise<{ ok: boolean; data?: any; error?: string }> {
+    autoAssign?: boolean;
+    assignmentFactors?: AssignmentFactors;
+  }): Promise<{ ok: boolean; data?: any; error?: string; assignedRep?: any }> {
     try {
       const existingOpen = await quotationRepository.findOpenByPhone(data.phoneNumber);
       if (existingOpen) {
@@ -19,22 +23,113 @@ export const quotationService = {
 
       const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
 
-      const quotation = await quotationRepository.create({
+      const quotationCreateData: any = {
         customerName: data.customerName,
         phoneNumber: data.phoneNumber,
         email: data.email,
         vehicleModel: data.vehicleModel,
-        vehicleId: data.vehicleId,
         message: data.message,
         reference,
         status: 'new',
-        ...(data.assignedTo && { assignedTo: data.assignedTo }),
-      });
+        managerApprovalStatus: 'PENDING',
+      };
 
-      return { ok: true, data: quotation };
+      // Auto-assign sales representative if requested
+      let assignedRep: any = null;
+
+      if (data.autoAssign) {
+        const assignResult = await assignSalesRep({
+          targetType: 'quotation',
+          targetId: '', // will be set after creation
+          autoAssign: true,
+          factors: data.assignmentFactors,
+        });
+        if (assignResult.ok && assignResult.data) {
+          assignedRep = assignResult.data;
+          quotationCreateData.assignedTo = assignResult.data.userId;
+        }
+      } else if (data.assignedTo) {
+        quotationCreateData.assignedTo = data.assignedTo;
+      }
+
+      const quotation = await quotationRepository.create(quotationCreateData);
+
+      // Send lead assignment notification if auto-assigned
+      if (assignedRep && assignedRep.userId) {
+        const assignedUser = await userRepository.findById(assignedRep.userId);
+        if (assignedUser?.email) {
+          await dispatchNotification({
+            type: 'lead_assignment',
+            to: [assignedUser.email, 'manager@geelyethiopia.com'],
+            subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
+            data: {
+              quotationId: quotation.id,
+              quotationNo: quotation.reference,
+              customerName: quotation.customerName,
+              phoneNumber: quotation.phoneNumber,
+              vehicleModel: quotation.vehicleModel,
+              assignedTo: assignedUser.name,
+            },
+          });
+        }
+      }
+
+      return { ok: true, data: quotation, assignedRep };
     } catch (error: any) {
       console.error('[QUOTATION CREATE ERROR]', error.message);
       return { ok: false, error: 'Failed to create quotation.' };
+    }
+  },
+
+  // Quotation has no per-lead `escalationTimeoutAt` column (create() no
+  // longer pretends to write one — it never actually reached the database
+  // under the old wiring, since Prisma would reject an unrecognized field).
+  // The only real timestamp available to gauge "overdue" is createdAt, so
+  // this uses a flat timeout window instead of a per-quotation deadline.
+  async checkOverdueEscalations(timeoutMinutes = 60): Promise<{ ok: boolean; escalatedCount: number }> {
+    try {
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - timeoutMinutes * 60 * 1000);
+      // Find quotations that have sat unanswered past the timeout window and haven't been escalated yet
+      const overdue = await prisma.quotation.findMany({
+        where: {
+          createdAt: { lte: cutoff },
+          status: 'new',
+          assignedTo: { not: null },
+          escalatedAt: null,
+        },
+      });
+
+      let escalatedCount = 0;
+
+      for (const quotation of overdue) {
+        // Find the next available sales rep
+        const assignResult = await assignSalesRep({
+          targetType: 'quotation',
+          targetId: quotation.id,
+          autoAssign: true,
+        });
+
+        if (assignResult.ok && assignResult.data) {
+          // Escalate to the new rep
+          await prisma.quotation.update({
+            where: { id: quotation.id },
+            data: {
+              assignedTo: assignResult.data.userId,
+              status: 'escalated',
+              escalatedAt: now,
+              escalatedFrom: quotation.assignedTo,
+              escalationReason: `Auto-escalation after ${timeoutMinutes} minutes without a response.`,
+            },
+          });
+          escalatedCount++;
+        }
+      }
+
+      return { ok: true, escalatedCount };
+    } catch (error: any) {
+      console.error('[CHECK OVERDUE ESCALATIONS ERROR]', error.message);
+      return { ok: false, escalatedCount: 0 };
     }
   },
 

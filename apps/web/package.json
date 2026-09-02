@@ -15,14 +15,12 @@
   },
   "dependencies": {
     "@geely/types": "workspace:*",
-    "@prisma/client": "^5.22.0",
     "axios": "^1.7.0",
     "bcryptjs": "^2.4.3",
     "framer-motion": "11.15.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "0.468.0",
     "next": "15.5.23",
-    "next-auth": "4.24.15",
     "nodemailer": "^9.0.5",
     "pdf-lib": "^1.17.1",
     "react": "19.0.0",
@@ -41,7 +39,6 @@
     "eslint": "9.17.0",
     "eslint-config-next": "15.1.6",
     "postcss": "8.5.1",
-    "prisma": "^5.22.0",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.2"
   }

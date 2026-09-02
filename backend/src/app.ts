@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -13,7 +13,14 @@ const app = express();
 // ── Security & Parsing ─────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors(corsOptions));
-app.use(compression());
+// The pnpm workspace hoists two conflicting @types/express-serve-static-core
+// versions (v4 for this package's own dependency, v5 pulled in by
+// @types/compression's "@types/express": "*" range elsewhere in the
+// monorepo), so compression()'s inferred RequestHandler type structurally
+// disagrees with this Express 4 app's — a duplicate-types artifact, not a
+// real runtime incompatibility (compression's actual export is a plain
+// Express middleware function). Assert the correct type to work around it.
+app.use(compression() as unknown as RequestHandler);
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -4,12 +4,21 @@ import { requireAdminApiSession } from '../middleware/auth';
 
 const router = Router();
 
+// NOTE: these routes used a `Payment` model that doesn't exist anywhere in
+// schema.prisma. There's no separate payment ledger table — a payment is
+// tracked directly on its `SalesOrder` (paymentStatus/paymentProofUrl/
+// paymentSubmittedAt/paymentConfirmedAt/paymentConfirmedById, per that
+// model's own doc comment) — same convention already used in
+// public.routes.ts and legacyPayment.service.ts. There's no `amount`/
+// `method`/`transactionId` column to persist those request fields against.
+
 // POST /api/payments/initiate (initiate payment)
 router.post('/initiate', async (req: Request, res: Response) => {
   try {
-    const { orderId, amount, method } = req.body;
-    const payment = await prisma.payment.create({
-      data: { orderId, amount, method, status: 'pending' },
+    const { orderId } = req.body;
+    const payment = await prisma.salesOrder.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'PENDING_REVIEW', paymentSubmittedAt: new Date() },
     });
     res.status(201).json(payment);
   } catch (error) {
@@ -21,7 +30,7 @@ router.post('/initiate', async (req: Request, res: Response) => {
 // GET /api/payments/:paymentId (get payment)
 router.get('/:paymentId', async (req: Request, res: Response) => {
   try {
-    const payment = await prisma.payment.findUnique({ where: { id: req.params.paymentId }, include: { order: true } });
+    const payment = await prisma.salesOrder.findUnique({ where: { id: req.params.paymentId } });
     if (!payment) { res.status(404).json({ error: 'Payment not found' }); return; }
     res.json(payment);
   } catch (error) {
@@ -33,9 +42,9 @@ router.get('/:paymentId', async (req: Request, res: Response) => {
 // POST /api/payments/:paymentId/authorize (authorize payment)
 router.post('/:paymentId/authorize', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const payment = await prisma.payment.update({
+    const payment = await prisma.salesOrder.update({
       where: { id: req.params.paymentId },
-      data: { status: 'authorized', authorizedById: req.adminSession!.user.id, authorizedAt: new Date() },
+      data: { paymentStatus: 'PAID', paymentConfirmedById: req.adminSession!.user.id, paymentConfirmedAt: new Date() },
     });
     res.json(payment);
   } catch (error) {

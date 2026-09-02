@@ -258,7 +258,7 @@ router.delete('/admin/parts/benefits/:id', requireAdminApiSession, async (req: R
 // GET /api/parts/admin/parts/low-stock-count
 router.get('/admin/parts/low-stock-count', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const count = await prisma.sparePart.count({ where: { stockQuantity: { lte: 10 } } });
+    const count = await prisma.sparePart.count({ where: { stock: { lte: 10 } } });
     res.json({ count });
   } catch (error) {
     console.error('Low stock count error:', error);

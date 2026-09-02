@@ -22,7 +22,7 @@ export default function StatisticsSection({ initialStats }: StatisticsSectionPro
         <div className="absolute top-1/2 left-1/4 w-24 h-24 border border-white rounded-full"></div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 relative">
+      <div className="page-container relative">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -41,7 +41,7 @@ export default function StatisticsSection({ initialStats }: StatisticsSectionPro
               className="text-center group"
             >
               <div className="bg-white/10 rounded-lg p-6 backdrop-blur-sm group-hover:bg-white/20 transition-colors">
-                <div className="text-3xl md:text-4xl font-bold text-gold mb-2">
+                <div className="text-3xl md:text-4xl font-bold text-accent-turquoise mb-2">
                   {stat.value}
                 </div>
                 <div className="text-lg text-blue-100 font-medium">
@@ -60,22 +60,22 @@ export default function StatisticsSection({ initialStats }: StatisticsSectionPro
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex items-center justify-center gap-3">
-              <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center">
-                <span className="text-navy font-bold">✓</span>
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                <span className="text-black font-bold">✓</span>
               </div>
               <span className="text-blue-100">Authorized Distributor</span>
             </div>
             
             <div className="flex items-center justify-center gap-3">
-              <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center">
-                <span className="text-navy font-bold">✓</span>
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                <span className="text-black font-bold">✓</span>
               </div>
               <span className="text-blue-100">Comprehensive Warranty</span>
             </div>
             
             <div className="flex items-center justify-center gap-3">
-              <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center">
-                <span className="text-navy font-bold">✓</span>
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                <span className="text-black font-bold">✓</span>
               </div>
               <span className="text-blue-100">Nationwide Support</span>
             </div>

@@ -1,4 +1,5 @@
 import { serviceBayRepository } from '../../repositories';
+import type { BayType } from '@prisma/client';
 
 export const bayService = {
   async list(): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -20,7 +21,7 @@ export const bayService = {
     }
   },
 
-  async create(data: { name: string; bayType: string; capacity?: number }): Promise<{ ok: boolean; data?: any; error?: string }> {
+  async create(data: { name: string; bayType: BayType; capacity?: number }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const bay = await serviceBayRepository.create({
         name: data.name,

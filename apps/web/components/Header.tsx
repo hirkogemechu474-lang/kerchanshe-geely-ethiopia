@@ -159,14 +159,14 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
 
   return (
     <header className="bg-white/95 dark:bg-midnight-surface/95 backdrop-blur-sm border-b border-black/[0.06] dark:border-midnight-line sticky top-0 z-50 transition-colors">
-      <div className="max-w-[1280px] mx-auto px-4">
+      <div className="page-container">
         <div className="flex items-center justify-between gap-3 py-2.5">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group" onClick={closeAllMenus}>
             <img
               src={withBasePath('/assets/logos/geely-logo.png')}
               alt="Geely Ethiopia"
-              className="h-8 w-auto max-w-[116px] object-contain transition-opacity group-hover:opacity-70"
+              className="h-9 md:h-10 w-auto max-w-[132px] object-contain transition-opacity group-hover:opacity-70 dark:brightness-0 dark:invert"
             />
             <span className="sr-only">Geely Ethiopia</span>
           </Link>
@@ -201,7 +201,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               >
                 {item.hasDropdown ? (
                   <button
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
                     onClick={() => {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
@@ -218,7 +218,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                   </button>
                 ) : item.hasLinkGroup ? (
                   <button
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
                     onClick={() => {
                       setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
                       setModelsDropdownOpen(false);
@@ -236,7 +236,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     href={item.href}
                     target={item.openInNewTab ? '_blank' : undefined}
                     rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-geely-blue dark:hover:text-blue-bright font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
                     {item.icon}
@@ -255,7 +255,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="block px-4 py-2.5 text-sm font-medium text-ink dark:text-ice hover:bg-cloud dark:hover:bg-midnight hover:text-geely-blue dark:hover:text-blue-bright transition-colors"
+                        className="block px-4 py-2.5 text-sm font-medium text-ink dark:text-ice hover:bg-cloud dark:hover:bg-midnight hover:text-active-blue transition-colors"
                         onClick={closeAllMenus}
                       >
                         {link.label}

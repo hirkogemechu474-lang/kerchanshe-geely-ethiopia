@@ -1,4 +1,4 @@
-import { warrantyClaimRepository } from '../../repositories';
+import { warrantyClaimRepository, counterRepository } from '../../repositories';
 
 export const warrantyClaimService = {
   async list(status?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -24,19 +24,29 @@ export const warrantyClaimService = {
 
   async create(data: {
     jobCardId: string;
-    description: string;
-    partsCost?: number;
-    laborCost?: number;
+    defectCode: string;
+    description?: string;
+    component?: string;
+    diagnosticCodes?: string;
     createdById: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
+      // claimNo has no default in the schema (like jobCardNo, it's generated
+      // from a shared counter). WarrantyClaim also has no createdById/
+      // partsCost/laborCost columns (who filed the claim and any cost
+      // breakdown aren't tracked on the model itself), so data.createdById
+      // isn't persisted here.
+      const counter = await counterRepository.upsert('warrantyClaim', 1001);
+      const claimNo = `WC-${counter.value}`;
+
       const claim = await warrantyClaimRepository.create({
+        claimNo,
         jobCard: { connect: { id: data.jobCardId } },
-        description: data.description,
-        status: 'DRAFT',
-        createdById: data.createdById,
-        ...(data.partsCost !== undefined && { partsCost: data.partsCost }),
-        ...(data.laborCost !== undefined && { laborCost: data.laborCost }),
+        defectCode: data.defectCode,
+        status: 'DRAFTED',
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.component !== undefined && { component: data.component }),
+        ...(data.diagnosticCodes !== undefined && { diagnosticCodes: data.diagnosticCodes }),
       });
 
       return { ok: true, data: claim };
@@ -51,14 +61,16 @@ export const warrantyClaimService = {
       const claim = await warrantyClaimRepository.findById(id);
       if (!claim) return { ok: false, error: 'Warranty claim not found.' };
 
+      // Keys/values must match the real WarrantyClaimStatus enum
+      // (DRAFTED/SUBMITTED/UNDER_REVIEW/APPROVED/REJECTED/REIMBURSED) —
+      // there is no CANCELLED or PAID status on this model.
       const transitions: Record<string, string[]> = {
-        DRAFT: ['SUBMITTED', 'CANCELLED'],
-        SUBMITTED: ['UNDER_REVIEW', 'CANCELLED'],
+        DRAFTED: ['SUBMITTED'],
+        SUBMITTED: ['UNDER_REVIEW'],
         UNDER_REVIEW: ['APPROVED', 'REJECTED'],
-        APPROVED: ['PAID'],
+        APPROVED: ['REIMBURSED'],
         REJECTED: [],
-        PAID: [],
-        CANCELLED: [],
+        REIMBURSED: [],
       };
 
       if (!transitions[claim.status]?.includes(toStatus)) {

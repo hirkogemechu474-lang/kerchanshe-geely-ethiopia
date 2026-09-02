@@ -29,9 +29,12 @@ export const partRequestRepository = {
   },
 
   async findMany(params?: { status?: string; category?: string }) {
+    // NOTE: PartRequest has no `category` field (only PartRequestItem has
+    // per-line-item data, and even that has no category column) — the
+    // `category` param is accepted for interface parity with other list
+    // endpoints but has nothing real to filter on here.
     const where: Prisma.PartRequestWhereInput = {};
     if (params?.status && params.status !== 'all') where.status = params.status;
-    if (params?.category && params.category !== 'all') where.category = params.category;
 
     return prisma.partRequest.findMany({
       where,

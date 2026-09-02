@@ -15,7 +15,7 @@ export const legacyPaymentService = {
 
       const provider = getPaymentProvider();
       const result = await provider.createPayment({
-        amount: order.totalPrice,
+        amount: order.totalPrice ?? 0,
         currency: 'ETB',
         orderId: order.orderNo,
         customerEmail: order.customerEmail || '',

@@ -6,6 +6,7 @@ export const convertToJobCardService = {
     technicianId?: string;
     bayId?: string;
     complaintText?: string;
+    plateNo?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const booking = await serviceBookingRepository.findByIdWithJobCard(bookingId);
@@ -21,6 +22,10 @@ export const convertToJobCardService = {
         const jc = await tx.jobCard.create({
           data: {
             jobCardNo,
+            // ServiceBooking has no plate/VIN field (it only captures free-text
+            // vehicleInfo), but JobCard.plateNo is required — let the advisor
+            // supply it when converting; fall back to empty string otherwise.
+            plateNo: data?.plateNo || '',
             customerName: booking.customerName,
             customerPhone: booking.customerPhone,
             customerEmail: booking.customerEmail,
@@ -28,7 +33,6 @@ export const convertToJobCardService = {
             complaintText: data?.complaintText || `Service booking: ${booking.serviceType}`,
             status: 'DRAFT_CHECKIN',
             openTs: new Date(),
-            createdById,
             serviceBookingId: bookingId,
             ...(data?.technicianId && { technicianId: data.technicianId }),
             ...(data?.bayId && { bayId: data.bayId }),

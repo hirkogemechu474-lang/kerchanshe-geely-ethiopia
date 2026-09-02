@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Star } from 'lucide-react';
-import Link from 'next/link';
 import Image from 'next/image';
+import Button from '@/components/ui/Button';
 
 interface Review {
   id: string;
@@ -38,7 +38,7 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
 
   return (
     <section className="py-16 bg-ice dark:bg-midnight transition-colors">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="page-container">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -51,7 +51,7 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
                     size={20}
                     className={
                       i < Math.round(data.average_rating)
-                        ? 'fill-yellow-400 text-yellow-400'
+                        ? 'fill-accent-yellow text-accent-yellow'
                         : 'text-gray-300'
                     }
                   />
@@ -84,7 +84,7 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
                       size={16}
                       className={
                         i < review.rating
-                          ? 'fill-yellow-400 text-yellow-400'
+                          ? 'fill-accent-yellow text-accent-yellow'
                           : 'text-gray-300'
                       }
                     />
@@ -113,7 +113,7 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
                     }
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-active-blue to-accent-purple flex items-center justify-center text-white font-bold">
                     {review.fullName.charAt(0)}
                   </div>
                 )}
@@ -130,12 +130,9 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
 
         {/* CTA */}
         <div className="text-center">
-          <Link
-            href="/reviews/submit"
-            className="inline-block bg-navy text-white font-bold text-sm px-8 py-3 rounded hover:bg-opacity-90 transition-all"
-          >
+          <Button href="/reviews/submit" variant="solid" size="md">
             Share Your Review
-          </Link>
+          </Button>
         </div>
       </div>
     </section>

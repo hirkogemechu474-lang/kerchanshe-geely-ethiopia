@@ -27,7 +27,7 @@ export default function NewsSection({ initialArticles }: NewsSectionProps) {
 
   return (
     <section className="py-[70px] pt-0">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="page-container">
         {/* Section Header */}
         <div className="flex justify-between items-end mb-9">
           <div>
@@ -40,7 +40,7 @@ export default function NewsSection({ initialArticles }: NewsSectionProps) {
           </div>
           <Link
             href="/news"
-            className="text-[13px] font-bold text-geely-blue border-b border-geely-blue pb-1 hover:opacity-80 transition-opacity"
+            className="text-[13px] font-bold text-active-blue border-b border-active-blue pb-1 hover:opacity-80 transition-opacity"
           >
             View all →
           </Link>
@@ -81,11 +81,11 @@ export default function NewsSection({ initialArticles }: NewsSectionProps) {
                   )}
                 </div>
                 {/* Content */}
-                <div className="border border-t-0 border-line dark:border-midnight-line rounded-b-lg p-5 group-hover:border-geely-blue transition-colors">
-                  <div className="text-[11px] text-gold font-bold tracking-wider mb-2">
+                <div className="border border-t-0 border-line dark:border-midnight-line rounded-b-lg p-5 group-hover:border-active-blue transition-colors">
+                  <div className="text-[11px] text-active-blue font-bold tracking-wider mb-2">
                     {formattedDate}
                   </div>
-                  <h3 className="text-[15px] text-navy dark:text-ice font-semibold leading-snug group-hover:text-geely-blue transition-colors">
+                  <h3 className="text-[15px] text-navy dark:text-ice font-semibold leading-snug group-hover:text-active-blue transition-colors">
                     {article.title}
                   </h3>
                 </div>

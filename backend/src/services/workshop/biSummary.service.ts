@@ -25,13 +25,12 @@ export const biSummaryService = {
         }),
         prisma.jobCard.aggregate({
           where: { status: 'INVOICED_CLOSED' },
-          _sum: { totalAmount: true },
+          _sum: { invoiceAmount: true },
         }),
         prisma.jobCard.findMany({
           where: {
             status: 'INVOICED_CLOSED',
             closeTs: { not: null },
-            openTs: { not: null },
           },
           select: { openTs: true, closeTs: true },
           take: 100,
@@ -54,7 +53,7 @@ export const biSummaryService = {
           totalJobCards,
           openJobCards,
           completedThisMonth,
-          totalRevenue: totalRevenue._sum.totalAmount || 0,
+          totalRevenue: totalRevenue._sum?.invoiceAmount ?? 0,
           avgCompletionDays: Math.round(avgDays * 10) / 10,
         },
       };

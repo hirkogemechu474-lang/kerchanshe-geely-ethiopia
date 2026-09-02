@@ -76,7 +76,7 @@ export function QuickRequestCallback({ vehicleModel, className = '', dark = fals
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
         required
-        className="flex-1 px-4 py-3 border border-line dark:border-midnight-line rounded-lg text-sm focus:outline-none focus:border-geely-blue"
+        className="flex-1 px-4 py-3 border border-line dark:border-midnight-line rounded-lg text-sm focus:outline-none focus:border-active-blue"
       />
       <input
         type="tel"
@@ -84,12 +84,12 @@ export function QuickRequestCallback({ vehicleModel, className = '', dark = fals
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone number"
         required
-        className="flex-1 px-4 py-3 border border-line dark:border-midnight-line rounded-lg text-sm focus:outline-none focus:border-geely-blue"
+        className="flex-1 px-4 py-3 border border-line dark:border-midnight-line rounded-lg text-sm focus:outline-none focus:border-active-blue"
       />
       <button
         type="submit"
         disabled={submitting}
-        className={`inline-flex items-center justify-center gap-2 bg-geely-blue text-white font-bold text-sm px-6 py-3 rounded transition-all ${
+        className={`inline-flex items-center justify-center gap-2 bg-black hover:bg-active-blue text-white font-bold text-sm px-6 py-3 rounded transition-all ${
           submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-90'
         }`}
       >

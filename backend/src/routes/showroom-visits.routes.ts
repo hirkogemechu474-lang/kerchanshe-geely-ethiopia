@@ -7,12 +7,11 @@ const router = Router();
 // POST /api/visit/start (start visit)
 router.post('/start', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { qrCodeId, dealershipId } = req.body;
+    // The showroom QR is a static poster/screen — it never carries a
+    // per-scan token or dealer id (see schema.prisma's ShowroomVisit
+    // comment), so there is nothing to persist from the request body here.
     const visit = await prisma.showroomVisit.create({
       data: {
-        qrCodeId,
-        dealershipId,
-        startedAt: new Date(),
         userAgent: req.headers['user-agent'] || '',
       },
     });
@@ -49,15 +48,10 @@ router.patch('/:id', async (req: Request, res: Response) => {
 // POST /api/visit/:id/register (register with details)
 router.post('/:id/register', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { name, email, phone, interest } = req.body;
+    const { fullName, email, phone } = req.body;
     const visit = await prisma.showroomVisit.update({
       where: { id: req.params.id },
-      data: { name, email, phone, interest, registeredAt: new Date() },
-    });
-
-    // Also create a lead in CRM
-    await prisma.cRMLead.create({
-      data: { source: 'showroom_qr', name, email, phone, notes: interest, showroomVisitId: visit.id },
+      data: { fullName, email, phone, status: 'registered', registeredAt: new Date() },
     });
 
     res.json(visit);

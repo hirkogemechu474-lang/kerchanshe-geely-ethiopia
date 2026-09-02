@@ -1,5 +1,4 @@
 import { quotationRepository, salesOrderRepository } from '../../repositories';
-import { orderStateMachine } from './order.service';
 
 export const convertQuotationToOrderService = {
   async convert(quotationId: string, assignedTo?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -15,7 +14,22 @@ export const convertQuotationToOrderService = {
         return { ok: false, error: 'Cannot convert a closed quotation.' };
       }
 
+      // vehicleModel is optional on Quotation (UC-01: a general enquiry with
+      // no vehicle chosen yet) but required on SalesOrder — nothing else to
+      // convert into an order without one.
+      if (!quotation.vehicleModel) {
+        return { ok: false, error: 'This is a general enquiry with no vehicle selected — nothing to convert into an order.' };
+      }
+
+      // Quotation has no `totalPrice`/`totalAmount` column — the structured
+      // price lives across unitPrice/quantity/discountAmount/vatAmount (see
+      // QuotationPdfPanel.tsx, which computes the same total client-side).
+      const totalPrice = quotation.unitPrice != null
+        ? quotation.unitPrice * (quotation.quantity ?? 1) - (quotation.discountAmount ?? 0) + (quotation.vatAmount ?? 0)
+        : null;
+
       const orderNo = await salesOrderRepository.nextOrderNo();
+      const salesAgentId = assignedTo || quotation.assignedTo;
 
       const order = await salesOrderRepository.create({
         orderNo,
@@ -23,13 +37,20 @@ export const convertQuotationToOrderService = {
         customerPhone: quotation.phoneNumber,
         customerEmail: quotation.email,
         vehicleModel: quotation.vehicleModel,
-        vehicleId: quotation.vehicleId,
-        totalPrice: quotation.totalPrice || 0,
+        // Carried over from Quotation.configurationJson at conversion time —
+        // same shape, same nullability (see SalesOrder.configurationJson's
+        // doc comment in schema.prisma).
+        configurationJson: quotation.configurationJson ?? undefined,
+        totalPrice,
         status: 'BOOKED',
         paymentStatus: 'UNPAID',
-        financingStatus: 'NOT_APPLICABLE',
+        financingStatus: quotation.financingInterest ? 'REQUESTED' : 'NOT_REQUESTED',
         orderDate: new Date(),
-        assignedTo: assignedTo || quotation.assignedTo,
+        // SalesOrder's equivalent of Quotation.assignedTo is salesAgentId
+        // (same free-text-actor-reference convention — see its doc comment).
+        // commissionStatus per its own doc comment: "PENDING once a
+        // salesAgentId is set".
+        ...(salesAgentId && { salesAgentId, commissionStatus: 'PENDING' }),
         quotation: { connect: { id: quotationId } },
       });
 

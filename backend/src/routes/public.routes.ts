@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
+import { salesOrderRepository } from '../repositories';
 
 const router = Router();
 
@@ -59,7 +60,10 @@ router.get('/dealers/:id', async (req: Request, res: Response) => {
 
 router.get('/brands', async (req: Request, res: Response) => {
   try {
-    const brands = await prisma.brand.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
+    // NOTE: was `prisma.brand`, a model that doesn't exist in schema.prisma —
+    // the real vehicle-brand model (used elsewhere in this file via
+    // `include: { brand: true }` on Vehicle) is `VehicleBrand`.
+    const brands = await prisma.vehicleBrand.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } });
     res.json(brands);
   } catch (error) {
     console.error('List brands error:', error);
@@ -337,7 +341,8 @@ router.get('/parts', async (req: Request, res: Response) => {
 
 router.post('/parts/requests', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const request = await prisma.partsRequest.create({ data: req.body });
+    // NOTE: was `prisma.partsRequest` (typo) — the real model is `PartRequest`.
+    const request = await prisma.partRequest.create({ data: req.body });
     res.status(201).json({ success: true, id: request.id });
   } catch (error) {
     console.error('Submit parts request error:', error);
@@ -347,7 +352,11 @@ router.post('/parts/requests', rateLimiters.contactForm, async (req: Request, re
 
 router.post('/trade-in', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const tradeIn = await prisma.tradeIn.create({ data: req.body });
+    // NOTE: was `prisma.tradeIn` — no such model exists in schema.prisma.
+    // Trade-in is one of the interest flags on the `Quotation` lead model
+    // (tradeInInterest: Boolean), same as every other lead-capture flow in
+    // this file (see leadService/quotation.service.ts) — not a separate table.
+    const tradeIn = await prisma.quotation.create({ data: { ...req.body, tradeInInterest: true } });
     res.status(201).json({ success: true, id: tradeIn.id });
   } catch (error) {
     console.error('Submit trade-in error:', error);
@@ -357,7 +366,12 @@ router.post('/trade-in', rateLimiters.contactForm, async (req: Request, res: Res
 
 router.post('/quick-request', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const request = await prisma.quickRequest.create({ data: req.body });
+    // NOTE: was `prisma.quickRequest` — no such model exists in schema.prisma.
+    // A "quick request" is a minimal-info lead (UC-01 alt flow: "If no
+    // vehicle model is selected, the lead is still saved as a general
+    // enquiry"), so it's the same `Quotation` model as every other lead,
+    // tagged via the real `source` field so it's distinguishable in the pipeline.
+    const request = await prisma.quotation.create({ data: { ...req.body, source: req.body?.source || 'quick-request' } });
     res.status(201).json({ success: true, id: request.id });
   } catch (error) {
     console.error('Submit quick request error:', error);
@@ -377,7 +391,10 @@ router.post('/quotations', rateLimiters.contactForm, async (req: Request, res: R
 
 router.get('/quotations/:reference', async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference }, include: { vehicle: true, salesAgent: true } });
+    // NOTE: `include: { vehicle: true, salesAgent: true }` referenced
+    // relations that don't exist on Quotation — it stores `vehicleModel`
+    // and `assignedTo` as plain strings, not FK relations. Dropped.
+    const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
     res.json(quotation);
   } catch (error) {
@@ -388,10 +405,14 @@ router.get('/quotations/:reference', async (req: Request, res: Response) => {
 
 router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { signatureData, signerName } = req.body;
+    const { signatureData } = req.body;
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    const updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { status: 'signed', signedAt: new Date(), signatureData, signerName } });
+    // NOTE: `signatureData`/`signerName` -> Quotation has no such fields.
+    // The real field for a customer's e-sign/attach is `signedDocumentUrl`
+    // (schema comment: "Setting this also flips status to 'accepted'").
+    // `signerName` has no equivalent column on this model — dropped.
+    const updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { status: 'accepted', signedAt: new Date(), signedDocumentUrl: signatureData } });
     res.json(updated);
   } catch (error) {
     console.error('Sign quotation error:', error);
@@ -401,9 +422,12 @@ router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req:
 
 router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference }, include: { vehicle: true, salesAgent: true } });
+    const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    res.json({ quotation, pdfUrl: quotation.pdfUrl });
+    // NOTE: Quotation has no stored `pdfUrl` — the quotation PDF is
+    // generated on demand (see quotationPdf.service.ts), and the only
+    // stored document link is `signedDocumentUrl` once the customer signs.
+    res.json({ quotation, pdfUrl: quotation.signedDocumentUrl });
   } catch (error) {
     console.error('Get quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -412,7 +436,7 @@ router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => 
 
 router.get('/quotations/by-id/:id', async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id }, include: { vehicle: true, salesAgent: true } });
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
     res.json(quotation);
   } catch (error) {
@@ -423,7 +447,21 @@ router.get('/quotations/by-id/:id', async (req: Request, res: Response) => {
 
 router.post('/financing-applications', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const application = await prisma.financingApplication.create({ data: req.body });
+    // NOTE: was `prisma.financingApplication` — no such model exists in
+    // schema.prisma. The Message model's own doc comment says it backs
+    // exactly this flow ("Message rows that back a customer-facing flow
+    // (financing applications, contact-derived leads)"), so submissions
+    // are recorded there.
+    const { customerName, customerEmail, customerPhone, vehicleModel, ...rest } = req.body || {};
+    const application = await prisma.message.create({
+      data: {
+        from: customerName || 'Unknown',
+        email: customerEmail || '',
+        subject: vehicleModel ? `Financing Application - ${vehicleModel}` : 'Financing Application',
+        category: 'financing',
+        content: JSON.stringify({ customerPhone, vehicleModel, ...rest }),
+      },
+    });
     res.status(201).json({ success: true, id: application.id });
   } catch (error) {
     console.error('Submit financing application error:', error);
@@ -489,7 +527,10 @@ router.get('/services/pages/:slug', async (req: Request, res: Response) => {
 
 router.get('/financing-programs', async (req: Request, res: Response) => {
   try {
-    const programs = await prisma.financingProgram.findMany({ where: { isActive: true } });
+    // NOTE: FinancingProgram has no `isActive` — "active" is expressed via
+    // the `status` enum (DRAFT/PUBLISHED/ARCHIVED); a publicly-listable
+    // program is one with status PUBLISHED.
+    const programs = await prisma.financingProgram.findMany({ where: { status: 'PUBLISHED' } });
     res.json(programs);
   } catch (error) {
     console.error('List financing programs error:', error);
@@ -499,7 +540,8 @@ router.get('/financing-programs', async (req: Request, res: Response) => {
 
 router.get('/financing-banks', async (req: Request, res: Response) => {
   try {
-    const banks = await prisma.bank.findMany({ where: { isActive: true } });
+    // NOTE: was `prisma.bank` — the real model is `FinancingBank`.
+    const banks = await prisma.financingBank.findMany({ where: { isActive: true } });
     res.json(banks);
   } catch (error) {
     console.error('List financing banks error:', error);
@@ -507,9 +549,16 @@ router.get('/financing-banks', async (req: Request, res: Response) => {
   }
 });
 
+// NOTE: the four routes below used a `Purchase`/`Payment` model that doesn't
+// exist anywhere in schema.prisma. There's no separate payment ledger table —
+// a "purchase" is a `SalesOrder`, and payment state lives directly on it
+// (paymentStatus/paymentProofUrl/paymentSubmittedAt/paymentConfirmedAt, per
+// that model's own doc comment), exactly mirroring the real, already-correct
+// salesOrderRepository helpers used by legacyPayment.service.ts.
 router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const purchase = await prisma.purchase.create({ data: req.body });
+    const orderNo = await salesOrderRepository.nextOrderNo();
+    const purchase = await prisma.salesOrder.create({ data: { ...req.body, orderNo } });
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (error) {
     console.error('Submit purchase error:', error);
@@ -519,7 +568,7 @@ router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Re
 
 router.get('/purchases/:purchaseId', async (req: Request, res: Response) => {
   try {
-    const purchase = await prisma.purchase.findUnique({ where: { id: req.params.purchaseId } });
+    const purchase = await prisma.salesOrder.findUnique({ where: { id: req.params.purchaseId } });
     if (!purchase) { res.status(404).json({ error: 'Purchase not found' }); return; }
     res.json(purchase);
   } catch (error) {
@@ -530,8 +579,16 @@ router.get('/purchases/:purchaseId', async (req: Request, res: Response) => {
 
 router.post('/purchases/:purchaseId/payment/callback', async (req: Request, res: Response) => {
   try {
-    const { status, transactionId } = req.body;
-    const purchase = await prisma.purchase.update({ where: { id: req.params.purchaseId }, data: { paymentStatus: status, transactionId } });
+    const { status } = req.body;
+    // PaymentStatus enum is UNPAID | PENDING_REVIEW | PAID — normalize
+    // whatever the caller sends into a valid member instead of passing an
+    // arbitrary string straight through (there's also no `transactionId`
+    // column on SalesOrder to persist that against).
+    const paymentStatus: 'PAID' | 'PENDING_REVIEW' | 'UNPAID' = status === 'PAID' ? 'PAID' : status === 'PENDING_REVIEW' ? 'PENDING_REVIEW' : 'UNPAID';
+    const purchase = await prisma.salesOrder.update({
+      where: { id: req.params.purchaseId },
+      data: { paymentStatus, ...(paymentStatus === 'PAID' && { paymentConfirmedAt: new Date() }) },
+    });
     res.json(purchase);
   } catch (error) {
     console.error('Payment callback error:', error);
@@ -541,8 +598,12 @@ router.post('/purchases/:purchaseId/payment/callback', async (req: Request, res:
 
 router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
   try {
-    const payments = await prisma.payment.findMany({ where: { orderId: req.params.orderId } });
-    res.json(payments);
+    const payment = await prisma.salesOrder.findUnique({
+      where: { id: req.params.orderId },
+      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true },
+    });
+    if (!payment) { res.status(404).json({ error: 'Order not found' }); return; }
+    res.json(payment);
   } catch (error) {
     console.error('Get order payments error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -551,8 +612,8 @@ router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
 
 router.post('/orders/:orderId/payment/proof', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { amount, method, reference, proofUrl } = req.body;
-    const payment = await prisma.payment.create({ data: { orderId: req.params.orderId, amount, method, reference, proofUrl, status: 'pending' } });
+    const { proofUrl } = req.body;
+    const payment = await salesOrderRepository.updatePaymentProof(req.params.orderId, proofUrl);
     res.status(201).json({ success: true, id: payment.id });
   } catch (error) {
     console.error('Submit payment proof error:', error);
@@ -562,8 +623,9 @@ router.post('/orders/:orderId/payment/proof', rateLimiters.contactForm, async (r
 
 router.post('/orders/:orderId/payment/mock-pay', async (req: Request, res: Response) => {
   try {
-    const { amount, method } = req.body;
-    const payment = await prisma.payment.create({ data: { orderId: req.params.orderId, amount, method, status: 'confirmed', reference: 'MOCK-' + Date.now() } });
+    // Schema comment: "the online 'pay now' mock path skips straight to
+    // PAID" with no staff reviewer — exactly what this helper does.
+    const payment = await salesOrderRepository.updatePaymentStatusPaid(req.params.orderId);
     res.json({ success: true, payment });
   } catch (error) {
     console.error('Mock payment error:', error);
@@ -573,7 +635,8 @@ router.post('/orders/:orderId/payment/mock-pay', async (req: Request, res: Respo
 
 router.post('/payments/direct', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const payment = await prisma.payment.create({ data: { ...req.body, status: 'pending' } });
+    const { orderId } = req.body;
+    const payment = await salesOrderRepository.updatePaymentStatusPaid(orderId);
     res.status(201).json({ success: true, id: payment.id });
   } catch (error) {
     console.error('Direct payment error:', error);

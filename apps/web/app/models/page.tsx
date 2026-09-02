@@ -12,6 +12,8 @@ import {
   type VehicleRecord,
 } from "@/lib/vehicleData";
 import { withBasePath } from "@/lib/publicPath";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
 function publicMediaUrl(url: string | null | undefined) {
   return withBasePath(url);
@@ -134,8 +136,8 @@ export default function ModelsPage() {
       <div className="bg-navy text-white relative overflow-hidden">
         <div className="pointer-events-none absolute right-[-80px] top-[-80px] w-72 h-72 rounded-full border border-white/10" />
         <div className="pointer-events-none absolute right-[40px] bottom-[-120px] w-80 h-80 rounded-full border border-white/10" />
-        <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-16 md:py-20">
-          <div className="text-[13px] tracking-[0.2em] text-gold font-bold mb-4 uppercase">
+        <div className="relative page-container py-16 md:py-20">
+          <div className="text-[13px] tracking-[0.2em] text-active-blue font-bold mb-4 uppercase">
             Explore Our Range
           </div>
           <h1 className="disp text-4xl sm:text-5xl md:text-[52px] font-extrabold leading-tight mb-4 max-w-3xl">
@@ -150,7 +152,7 @@ export default function ModelsPage() {
 
       {/* Filter bar */}
       <div className="border-b border-line dark:border-midnight-line bg-white dark:bg-midnight-surface sticky top-[65px] z-30 transition-colors">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 py-5">
+        <div className="page-container py-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Brand filter */}
             <div className="flex items-center gap-3 flex-wrap">
@@ -160,7 +162,7 @@ export default function ModelsPage() {
               <select
                 value={selectedBrand}
                 onChange={(event) => setSelectedBrand(event.target.value)}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-active-blue focus:ring-2 focus:ring-active-blue/20"
               >
                 <option value="all">All Brands</option>
                 {brands.map((brand) => (
@@ -180,7 +182,7 @@ export default function ModelsPage() {
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-geely-blue focus:ring-2 focus:ring-geely-blue/20"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white dark:bg-midnight text-navy dark:text-ice border border-line dark:border-midnight-line focus:outline-none focus:border-active-blue focus:ring-2 focus:ring-active-blue/20"
               >
                 <option value="featured">Featured First</option>
                 <option value="name">Name: A to Z</option>
@@ -195,7 +197,7 @@ export default function ModelsPage() {
               className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
                 selectedCategory === "all"
                   ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                  : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-geely-blue hover:text-geely-blue"
+                  : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-active-blue hover:text-active-blue"
               }`}
             >
               All Models
@@ -210,7 +212,7 @@ export default function ModelsPage() {
                 className={`px-5 py-2.5 rounded-full text-[13px] font-semibold border transition-all ${
                   selectedCategory === category.slug
                     ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                    : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-geely-blue hover:text-geely-blue"
+                    : "bg-white dark:bg-midnight text-navy dark:text-ice border-line dark:border-midnight-line hover:border-active-blue hover:text-active-blue"
                 }`}
               >
                 {category.name}
@@ -225,7 +227,7 @@ export default function ModelsPage() {
 
       {/* Vehicle grid */}
       <section className="py-14 md:py-16">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="page-container">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -235,15 +237,16 @@ export default function ModelsPage() {
           ) : sortedVehicles.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-steel dark:text-steel-light text-lg mb-6">No models available in this category yet.</p>
-              <button
+              <Button
                 onClick={() => {
                   setSelectedBrand("all");
                   setSelectedCategory("all");
                 }}
-                className="inline-block bg-geely-blue text-white text-sm font-bold px-7 py-3 rounded-lg hover:opacity-90 transition-opacity"
+                variant="solid"
+                size="md"
               >
                 View All Models
-              </button>
+              </Button>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -266,10 +269,7 @@ export default function ModelsPage() {
                   const detailsHref = `/models/${vehicle.slug}${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`;
 
                   return (
-                    <div
-                      key={vehicle.id}
-                      className="group flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line hover:border-geely-blue hover:shadow-[0_16px_40px_rgba(11,37,69,0.10)] transition-all"
-                    >
+                    <Card key={vehicle.id} variant="boxed" className="group flex flex-col">
                       <Link
                         href={detailsHref}
                         aria-label={`${vehicle.name} details`}
@@ -298,7 +298,7 @@ export default function ModelsPage() {
                         <div className="text-[11px] uppercase tracking-[0.14em] text-steel dark:text-steel-light font-semibold">
                           {label}
                         </div>
-                        <h3 className="disp text-[19px] text-navy dark:text-ice font-bold mt-1.5 group-hover:text-geely-blue transition-colors">
+                        <h3 className="disp text-[19px] text-navy dark:text-ice font-bold mt-1.5 group-hover:text-active-blue transition-colors">
                           {vehicle.name}
                         </h3>
 
@@ -325,31 +325,36 @@ export default function ModelsPage() {
                         <div className="mt-4 pt-4 border-t border-line dark:border-midnight-line">
                           <Link
                             href={`/quote?model=${vehicle.slug}${visitParam}`}
-                            className="text-[13px] font-bold text-geely-blue hover:underline"
+                            className="text-[13px] font-bold text-active-blue hover:underline"
                           >
                             Price on request
                           </Link>
                         </div>
 
                         <div className="flex gap-3 mt-auto pt-5 border-t border-line dark:border-midnight-line">
-                          <Link
+                          <Button
                             href={`/quote?model=${vehicle.slug}${visitParam}`}
                             aria-label={`Get a quote for ${vehicle.name}`}
-                            className="flex-1 text-center text-[12px] font-bold py-[10px] rounded-lg bg-navy text-white hover:bg-geely-blue transition-colors"
+                            variant="solid"
+                            size="sm"
+                            className="flex-1"
                           >
                             Get a Quote
-                          </Link>
-                          <Link
+                          </Button>
+                          <Button
                             href={detailsHref}
                             aria-label={`View details for ${vehicle.name}`}
-                            className="flex-1 inline-flex items-center justify-center gap-1 text-center text-[12px] font-bold py-[10px] rounded-lg border border-line dark:border-midnight-line text-navy dark:text-ice hover:border-geely-blue hover:text-geely-blue transition-colors"
+                            variant="outline"
+                            tone="light"
+                            size="sm"
+                            className="flex-1"
                           >
                             Details
                             <ArrowUpRight size={14} />
-                          </Link>
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </motion.div>
@@ -359,19 +364,16 @@ export default function ModelsPage() {
       </section>
 
       {/* Compare CTA */}
-      <div className="bg-[#0d1b3a] text-white py-14">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 text-center">
+      <div className="bg-mesh-blue text-white py-14">
+        <div className="page-container text-center">
           <h3 className="disp text-2xl md:text-3xl font-extrabold mb-3">Can't decide?</h3>
           <p className="text-[#c3d2ea] text-sm md:text-[15px] mb-7 max-w-xl mx-auto">
             Compare up to 3 vehicles side-by-side to find the perfect match for your needs.
           </p>
-          <Link
-            href="/compare"
-            className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold text-sm px-8 py-4 rounded-lg hover:opacity-90 transition-opacity"
-          >
+          <Button href="/compare" variant="solid" size="lg">
             Compare Models
             <span aria-hidden>&rarr;</span>
-          </Link>
+          </Button>
         </div>
       </div>
     </MainLayout>
