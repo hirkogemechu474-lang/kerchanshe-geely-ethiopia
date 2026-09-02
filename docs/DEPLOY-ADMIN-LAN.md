@@ -8,7 +8,17 @@ both the admin app and the public web app.
 ## Prerequisites
 
 - Windows Server reachable at `192.168.1.20`, Node.js 18+ installed.
-- PostgreSQL installed and running on this machine.
+- PostgreSQL installed and running on this machine. Confirm `idle_session_timeout`
+  is disabled (Prisma's connection pool holds connections open between requests
+  and does not proactively recycle them, so a nonzero value here causes
+  intermittent `FATAL: terminating connection due to idle-session timeout`
+  errors once the app has been idle a while):
+  ```sql
+  SHOW idle_session_timeout;  -- should be 0
+  -- if not:
+  ALTER SYSTEM SET idle_session_timeout = 0;
+  SELECT pg_reload_conf();
+  ```
 - A process manager so the app survives reboots/crashes. PM2 is the simplest
   Node-native option:
   ```bash
@@ -84,6 +94,11 @@ pm2 save
 
 **Database connection failed** — check `DATABASE_URL`, confirm Postgres is
 running and accepting connections, verify credentials.
+
+**Recurring `prisma:error ... terminating connection due to idle-session timeout`
+(SqlState E57P05)** — `idle_session_timeout` is set on the Postgres server and
+is killing pooled connections during quiet periods; see the Prerequisites
+section above to disable it.
 
 **Web app gets CORS errors loading `/uploads`** — the web app's origin isn't
 in this app's `CORS_ORIGINS`; add it and restart (`pm2 restart geely-admin`).

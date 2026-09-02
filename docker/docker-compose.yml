@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: geely_ethiopia
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geely_ethiopia
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      CORS_ORIGIN_WEB: http://localhost:7501
+      CORS_ORIGIN_ADMIN: http://localhost:7500
+      SMTP_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+      - uploads_data:/app/uploads
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: ../../docker/Dockerfile.web
+    ports:
+      - "7501:7501"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://backend:4000
+      NEXT_PUBLIC_SITE_URL: http://localhost:7501
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+    depends_on:
+      - backend
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+      - /app/.next
+
+  admin:
+    build:
+      context: ../apps/admin
+      dockerfile: ../../docker/Dockerfile.admin
+    ports:
+      - "7500:7500"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://backend:4000
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      ADMIN_URL: http://localhost:7500
+    depends_on:
+      - backend
+    volumes:
+      - ../apps/admin:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
+  uploads_data:

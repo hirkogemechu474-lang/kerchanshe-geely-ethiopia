@@ -1,0 +1,1551 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin Users
+model User {
+  id                           String    @id @default(uuid())
+  email                        String    @unique
+  name                         String
+  passwordHash                 String
+  role                         String
+  isActive                     Boolean   @default(true)
+  dealerId                     String?
+  otpCode                      String?
+  otpExpiry                    DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  lastLogin                    DateTime?
+  // On-file signature image — drawn/uploaded once via the link an admin
+  // sends (see .../users/[id]/signature-link), then reused automatically
+  // every time this person countersigns an agreement or handover, instead
+  // of only stamping their typed name. signatureSetupToken/ExpiresAt are
+  // that link's one-time, time-limited access token (same shape as
+  // otpCode/otpExpiry above, just link- rather than code-based); cleared
+  // once used. The signature file itself lives on web's disk (uploaded via
+  // web/app/staff-signature/[token], matching every other "email link, no
+  // admin auth required" upload in this codebase — agreement/handover/
+  // quotation signing), so signatureUrl is a web-hosted /uploads/... path.
+  signatureUrl                 String?
+  signatureUpdatedAt           DateTime?
+  signatureSetupToken          String?   @unique
+  signatureSetupTokenExpiresAt DateTime?
+
+  // Lead-assignment factors, consumed by nextSalesRep() (admin/lib/assignSalesRep.ts,
+  // web/lib/assignSalesRep.ts) when the matching toggle in the 'assignment_rules'
+  // Setting is on. Off by default (isAvailableForLeads: true, hours: null) so a rep
+  // is never excluded until an admin opts into that factor.
+  isAvailableForLeads  Boolean            @default(true)
+  leadHoursStart       Int? // local hour-of-day, 0-23; null = no restriction
+  leadHoursEnd         Int? // local hour-of-day, 0-23; null = no restriction
+  brandSpecializations UserVehicleBrand[]
+}
+
+// A rep's vehicle-brand specialization, used by nextSalesRep() when the
+// 'specialization' factor in 'assignment_rules' is enabled — a lead whose
+// vehicle interest resolves to one of these brands is preferred for this rep.
+model UserVehicleBrand {
+  id      String       @id @default(uuid())
+  userId  String
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brandId String
+  brand   VehicleBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, brandId])
+}
+
+// Per-role permission overrides on top of the hardcoded defaults in
+// admin/lib/auth/types.ts's ROLE_PERMISSIONS. One row per (role,
+// permissionKey) that an admin has explicitly toggled away from the
+// default — absence of a row means "use the default". Read fresh on every
+// session check (admin/lib/auth/config.ts), so a change takes effect for
+// already-logged-in users on their next request, no re-login required.
+// `super_admin` is deliberately never overridable (enforced in the API
+// route, not here) so there's always one role that can undo a mistake.
+model RolePermissionOverride {
+  id            String   @id @default(uuid())
+  role          String
+  permissionKey String
+  value         Boolean
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+
+  @@unique([role, permissionKey])
+}
+
+// Vehicles
+model VehicleBrand {
+  id                 String             @id @default(uuid())
+  name               String             @unique
+  slug               String             @unique
+  description        String?
+  logoUrl            String?
+  isActive           Boolean            @default(true)
+  displayOrder       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  vehicles           Vehicle[]
+  categories         VehicleCategory[]
+  repSpecializations UserVehicleBrand[]
+}
+
+model VehicleCategory {
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  description      String?
+  imageUrl         String? // Category image
+  iconUrl          String? // Category icon
+  heroImageUrl     String? // Hero banner image
+  heroVideoUrl     String? // Hero banner video
+  metaTitle        String? // SEO meta title
+  metaDescription  String? // SEO meta description
+  brandId          String?
+  brand            VehicleBrand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  isActive         Boolean            @default(true)
+  displayOrder     Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  vehicles         Vehicle[]
+  FinancingProgram FinancingProgram[]
+}
+
+model Vehicle {
+  id               String              @id @default(uuid())
+  name             String
+  slug             String              @unique
+  model            String
+  year             Int
+  category         String
+  brandId          String?
+  brand            VehicleBrand?       @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  categoryId       String?
+  vehicleCategory  VehicleCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description      String?
+  images           Json // Array of image URLs
+  specifications   Json // Complete specs object (engine, dimensions, features, safety, warranty)
+  basePrice        Float
+  discountAmount   Float?
+  discountType     String?
+  badge            String?
+  taxRate          Float               @default(15)
+  finalPrice       Float?
+  hidePrice        Boolean             @default(false)
+  stock            Int                 @default(0)
+  sku              String?             @unique
+  reorderPoint     Int?
+  warehouse        String?
+  location         String?
+  isFeatured       Boolean             @default(false)
+  isActive         Boolean             @default(true)
+  status           String              @default("draft") // draft, published, archived
+  displayOrder     Int                 @default(0)
+  heroImageUrl     String? // Link to hero image from media library
+  heroVideoUrl     String? // Link to hero video from media library
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  testDrives       TestDrive[]
+  FinancingProgram FinancingProgram[]
+  colors           VehicleColor[]
+  accessories      VehicleAccessory[]
+  packages         VehiclePackage[]
+  interiors        VehicleInterior[]
+  wheels           VehicleWheel[]
+  allocations      VehicleAllocation[]
+}
+
+// Test Drives
+model TestDrive {
+  id               String      @id @default(uuid())
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+  vehicleId        String
+  vehicle          Vehicle     @relation(fields: [vehicleId], references: [id])
+  preferredDate    DateTime
+  preferredTime    String
+  alternativeDate  DateTime?
+  alternativeTime  String?
+  location         String
+  salesRepId       String?
+  status           String      @default("pending")
+  specialRequests  String?
+  internalNotes    String?
+  emailConfirm     Boolean     @default(true)
+  smsReminder      Boolean     @default(true)
+  // Set when a sales agent sends a test-drive invite from a specific
+  // SalesOrder (post-quote, e.g. "before you pay, take it for a spin") —
+  // present iff this test drive was agent-initiated rather than a
+  // standalone booking from the public /test-drive page.
+  salesOrderId     String?
+  salesOrder       SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  // Digital ID capture (BRD FR-104: "book a test drive with digital ID
+  // capture, so that test drives are tracked and accountable"). Captured by
+  // the Sales Executive when the customer arrives for the drive — see
+  // admin/app/api/admin/test-drives/[id]/route.ts, which blocks the
+  // "completed" status until idPhotoUrl is set.
+  idDocumentType   String?
+  idDocumentNumber String?
+  idPhotoUrl       String?
+  idVerifiedAt     DateTime?
+  idVerifiedById   String?
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference        String?     @unique
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+// Showroom QR walk-in flow: a static QR poster/screen encodes the stable
+// URL /visit/start. Each scan lands there, which mints a fresh
+// ShowroomVisit row server-side (the QR itself never changes or carries a
+// token). The visitor fills a lightweight name/phone/email form, then
+// picks one of three next actions; the row's id flows through as a
+// `visitId` query param so they never re-type their info.
+model ShowroomVisit {
+  id             String    @id @default(uuid())
+  // Plain string status, matching Quotation.status / TestDrive.status
+  // convention rather than a Postgres enum.
+  // 'started' -> created on scan, before the visitor submits the form
+  // 'registered' -> name/phone/email captured
+  // 'sales' | 'test-drive' | 'purchase' -> visitor picked that action
+  status         String    @default("started")
+  fullName       String?
+  phone          String?
+  email          String?
+  selectedAction String?
+  // Loose links (no FK, matching this model's existing decoupled convention)
+  // to whichever CRM records the visit produced — set once a /quote or
+  // direct-purchase submission carries this visit's id back to the server.
+  quotationId    String?
+  salesOrderId   String?
+  testDriveId    String?
+  ipAddress      String?
+  userAgent      String?
+  registeredAt   DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Quotations
+model Quotation {
+  id                     String                  @id @default(uuid())
+  customerName           String
+  phoneNumber            String
+  // Optional: digital ("website") leads always have one (enforced in
+  // web/app/api/quotations/route.ts), but a walk-in lead logged by a Sales
+  // Executive at the counter may only have name + phone at capture time
+  // (BRD FR-101: "at minimum" name and phone).
+  email                  String?
+  // Optional: UC-01 alt flow — "If no vehicle model is selected, the lead
+  // is still saved as a general enquiry."
+  vehicleModel           String?
+  preferredDealer        String?
+  financingInterest      Boolean                 @default(false)
+  tradeInInterest        Boolean                 @default(false)
+  message                String?                 @db.Text
+  // FR-101 lead source tagging: 'website' | 'walk-in' | 'referral' | 'phone' | 'other'.
+  // Plain string, matching the existing `status` field's convention rather
+  // than a Prisma enum.
+  source                 String                  @default("website")
+  // Structured configurator selection (FR-102/103): { vehicle, trim, color,
+  // wheels, interior, accessories: string[], price }, set by
+  // web/app/quote/page.tsx when the customer arrived via the configurator's
+  // "Send Configuration" handoff. Null for quotations submitted without a
+  // configurator session (e.g. a plain "request a quote" form fill).
+  configurationJson      Json?
+  status                 String                  @default("new") // new, contacted, in_progress, converted, closed
+  internalNotes          String?                 @db.Text
+  assignedTo             String?
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference              String?                 @unique
+  // ── Sales Quotation PDF fields ──────────────────────────────────────────
+  // Populated by a Sales Consultant via the "Generate & Send Quotation PDF"
+  // panel (admin/components/admin/sales/QuotationPdfPanel.tsx) before the
+  // formal dealer quotation document exists — none of this is captured
+  // anywhere else on the lead (price only otherwise lives in the
+  // unstructured configurationJson.price, if set at all).
+  quotationNo            String?                 @unique // GY-SQ-DDMMYYYY-NNN, via generateReference()
+  quotationValidUntil    DateTime?
+  unitPrice              Float?
+  quantity               Int?                    @default(1)
+  discountAmount         Float?                  @default(0)
+  vatAmount              Float? // auto-computed at 15%, stored for the PDF/audit trail
+  vehicleYear            String?
+  vehicleColor           String?
+  paymentTerms           String?
+  deliveryTerms          String?
+  quotationGeneratedAt   DateTime?
+  // Manager sign-off gate: a generated quotation cannot be sent to the
+  // customer (see .../[id]/send-quotation/route.ts) until a manager
+  // approves it here. Rejecting resets to PENDING once the agent
+  // regenerates a corrected quotation (see .../[id]/quotation-pdf/route.ts).
+  managerApprovalStatus  QuotationApprovalStatus @default(PENDING)
+  managerApprovedById    String?
+  managerApprovedAt      DateTime?
+  managerRejectedById    String?
+  managerRejectedAt      DateTime?
+  managerRejectionReason String?                 @db.Text
+  // Customer e-sign/attach on the quotation PDF itself (distinct from the
+  // later SalesOrder agreement signature) — same drawn-signature-stamped-
+  // onto-PDF or uploaded-photo convention as SalesOrder.signedDocumentUrl.
+  // Setting this also flips status to "accepted", a value distinct from
+  // the older manually-set "approved" (a staff decision) so a customer's
+  // own digital acceptance is visible separately in the pipeline.
+  signedDocumentUrl      String?
+  signedAt               DateTime?
+  // Sales-rep-initiated escalation to a manager (POST .../[id]/escalate) —
+  // requires a reason, mirroring the managerRejected*/managerRejectionReason
+  // convention above. Only the latest escalation is retained (no history
+  // table), same "flat latest-action fields" pattern already used for
+  // manager approval/rejection on this model. escalatedFrom preserves who
+  // held the quotation immediately before escalation, for context once
+  // assignedTo has moved on to the manager.
+  escalatedAt            DateTime?
+  escalatedById          String?
+  escalationReason       String?                 @db.Text
+  escalatedFrom          String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  salesOrder             SalesOrder?
+}
+
+// ─── Sales Orders & PDI (BRD §6.1 FR-105/106, UC-12) ───────────────────────
+// A Quotation can be converted into (at most) one SalesOrder — quotationId
+// is unique below. Deliberately does NOT do real VIN-level allocation
+// against an OEM/ERP system (BR in FR-101-106: "Vehicle stock allocation
+// (VIN-level) must be checked in real time against the ERP/OEM allocation
+// system") — no such system exists in this codebase (same reasoning as
+// every other ERP-dependent BRD item in docs/SWMS-INTEGRATION-BACKLOG.md).
+// financingStatus is a recorded flag only, per the BRD's own out-of-scope
+// note: "the system records financing status; it does not underwrite
+// financing."
+// Manager sign-off gate on Quotation.managerApprovalStatus — a quotation
+// must be APPROVED before it can be sent to the customer.
+enum QuotationApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  QUOTED
+  BOOKED
+  FINANCING_PENDING
+  READY_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+// Full bank-financing pipeline, not just a flat pending/approved/declined
+// flag — mirrors the real stages a financed sale actually goes through.
+// NOT_REQUESTED/REQUESTED were previously NOT_APPLICABLE/PENDING; REJECTED
+// was previously DECLINED (see migration 20260828_expand_financing_status).
+enum FinancingStatus {
+  NOT_REQUESTED
+  REQUESTED
+  DOCUMENTS_PENDING
+  DOCUMENTS_SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  CONDITIONALLY_APPROVED
+  REJECTED
+  CUSTOMER_DECLINED
+  DISBURSED
+  COMPLETED
+  CANCELLED
+}
+
+// Mirrors FinancingStatus's own enum convention for a SalesOrder lifecycle
+// flag. PENDING once a salesAgentId is set; EARNED is stamped automatically
+// when the order reaches DELIVERED; PAID is a separate manual staff action
+// (accounting actually pays the agent on their own schedule).
+enum CommissionStatus {
+  NOT_APPLICABLE
+  PENDING
+  EARNED
+  PAID
+}
+
+// Real payment status, distinct from FinancingStatus (which tracks the
+// loan/financing decision, not whether money has actually moved).
+// PENDING_REVIEW is set once a customer uploads a bank-transfer proof and
+// is waiting on staff to confirm/reject it; the online "pay now" mock
+// path skips straight to PAID.
+enum PaymentStatus {
+  UNPAID
+  PENDING_REVIEW
+  PAID
+}
+
+model SalesOrder {
+  id                        String                    @id @default(uuid())
+  orderNo                   String                    @unique
+  quotationId               String?                   @unique
+  quotation                 Quotation?                @relation(fields: [quotationId], references: [id])
+  customerName              String
+  customerPhone             String
+  customerEmail             String?
+  vehicleModel              String
+  // Carried over from Quotation.configurationJson at conversion time (see
+  // admin/app/api/admin/quotations/[id]/convert-to-order/route.ts) — same
+  // shape, same nullability.
+  configurationJson         Json?
+  totalPrice                Float?
+  financingStatus           FinancingStatus           @default(NOT_REQUESTED)
+  status                    OrderStatus               @default(QUOTED)
+  orderDate                 DateTime                  @default(now())
+  deliveredAt               DateTime?
+  // Set once the "vehicle delivered, thank you" confirmation (with the
+  // invoice PDF re-attached) is actually emailed — a separate action from
+  // the DELIVERED status transition itself, fired by the dedicated Handover
+  // panel. Not a one-way lock: resending updates this timestamp again.
+  handoverNotifiedAt        DateTime?
+  // Handover dual sign-off — the customer's own acknowledgement that they
+  // received the vehicle, distinct from handoverNotifiedAt (a staff-sent
+  // email) above. Mirrors the agreement e-sign/countersign pair exactly:
+  // customer signs first (web/app/handover/[orderId]), then a manager
+  // countersigns (admin/app/api/admin/orders/[id]/handover-countersign).
+  handoverSignedDocumentUrl String?
+  handoverSignedAt          DateTime?
+  handoverCountersignedAt   DateTime?
+  handoverCountersignedById String?
+  // Sales agreement approval/e-sign (BRD-adjacent: "Sales Quotation
+  // Approval by sales agent -> Generate Agreement -> e-sign/attach").
+  // approvedById is a loose actor reference (no FK), matching every other
+  // changedById-style field in this codebase. The agreement document itself
+  // isn't stored — it's rendered on demand from live order data (see
+  // GET /api/admin/orders/[id]/agreement, mirroring the vehicle brochure's
+  // print-ready-HTML pattern) once approvedAt is set; signedDocumentUrl is
+  // staff uploading a photo/scan of the physically-signed copy, reusing the
+  // existing /api/upload/image convention (same as TestDrive's idPhotoUrl).
+  approvedAt                DateTime?
+  approvedById              String?
+  // Set once the agreement PDF is actually emailed to the customer — a
+  // separate, later action from approving (see .../send-agreement), so
+  // staff can review/adjust price before the customer ever sees it. Not a
+  // one-way lock: resending a revised copy updates this timestamp again.
+  agreementSentAt           DateTime?
+  signedDocumentUrl         String?
+  signedAt                  DateTime?
+  // Manager countersignature — a second, staff-side sign-off after the
+  // customer signs. No drawn signature captured, only identity + timestamp
+  // (matching the approvedById/approvedAt convention above). Gates the
+  // payment-link email so the customer isn't asked to pay before staff
+  // have reviewed the customer's signed copy.
+  countersignedAt           DateTime?
+  countersignedById         String?
+  // Manager rejects the customer's signed agreement instead of
+  // countersigning it — "Return for Correction" (see .../[id]/reject-agreement).
+  // Cleared implicitly when a new signedDocumentUrl is attached.
+  rejectedAt                DateTime?
+  rejectedById              String?
+  rejectionReason           String?                   @db.Text
+  // Payment tracking — see PaymentStatus. paymentProofUrl is the customer's
+  // uploaded bank-transfer receipt (reuses the /api/upload/document
+  // convention); paymentConfirmedById is null for the online mock-pay path
+  // since no staff review is involved there.
+  paymentStatus             PaymentStatus             @default(UNPAID)
+  paymentProofUrl           String?
+  paymentSubmittedAt        DateTime?
+  paymentConfirmedAt        DateTime?
+  paymentConfirmedById      String?
+  // Vehicle Registration — a stage between PDI and Invoice in the CRM
+  // pipeline diagram; a loose actor reference (no FK), matching every
+  // other changedById-style field in this codebase.
+  registrationNumber        String?
+  registeredAt              DateTime?
+  registeredById            String?
+  // Sales Invoice — deliberately minimal scope, mirroring JobCard's own
+  // invoiceAmount field: a single amount, not a line-item invoice/AR
+  // posting (that needs an ERP this codebase doesn't have — see
+  // docs/SWMS-INTEGRATION-BACKLOG.md's "Explicitly deferred" table).
+  invoiceNo                 String?
+  invoiceAmount             Float?
+  invoicedAt                DateTime?
+  invoicedById              String?
+  // Commission tracking — salesAgentId is a free-text field, matching
+  // Quotation.assignedTo's existing convention (no user-picker UI exists
+  // for this anywhere in the codebase to reuse). commissionAmount is
+  // computed (totalPrice * commissionRate / 100) and stamped automatically
+  // when the order reaches DELIVERED; commissionStatus PAID is a separate
+  // manual step (accounting pays the agent on their own schedule).
+  salesAgentId              String?
+  commissionRate            Float?
+  commissionAmount          Float?
+  commissionStatus          CommissionStatus          @default(NOT_APPLICABLE)
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  pdiItems                  PdiChecklistItem[]
+  statusHistory             SalesOrderStatusHistory[]
+  testDrives                TestDrive[]
+  vehicleAllocation         VehicleAllocation?
+
+  @@index([status])
+}
+
+// Pre-Delivery Inspection checklist (BR: "An order cannot be marked 'ready
+// for delivery' until the PDI checklist is 100% complete"). A default
+// checklist is seeded when an order is booked — see
+// admin/lib/sales/pdiChecklistTemplate.ts.
+model PdiChecklistItem {
+  id          String     @id @default(uuid())
+  orderId     String
+  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  label       String
+  isChecked   Boolean    @default(false)
+  checkedById String?
+  checkedAt   DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([orderId])
+}
+
+// Generic per-document signature ledger, config-driven via the
+// 'signature_requirements' Setting (admin/lib/services/documents/signatureService.ts).
+// entityId is a loose reference (Quotation.id or SalesOrder.id depending on
+// documentType) rather than an FK, matching the approvedById/changedById
+// convention used throughout this schema for actor/entity references that
+// span multiple possible tables. Existing hardcoded columns on SalesOrder
+// (approvedAt/signedDocumentUrl/countersignedAt/handoverSignedAt/...) remain
+// the source of truth for those specific signatures and are dual-written
+// here so the configurable "required signers" check has a uniform table to
+// query regardless of document type.
+model DocumentSignature {
+  id             String   @id @default(uuid())
+  documentType   String // 'QUOTATION' | 'SALES_AGREEMENT' | 'HANDOVER'
+  entityId       String
+  role           String // 'sales_agent' | 'manager' | 'customer'
+  signedByUserId String?
+  signedByName   String?
+  signatureUrl   String?
+  signedAt       DateTime @default(now())
+
+  @@unique([documentType, entityId, role])
+  @@index([documentType, entityId])
+}
+
+model SalesOrderStatusHistory {
+  id          String       @id @default(uuid())
+  orderId     String
+  order       SalesOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime     @default(now())
+
+  @@index([orderId])
+}
+
+// Dealers
+model Dealer {
+  id           String   @id @default(uuid())
+  name         String
+  type         String // 'showroom', 'service', 'both'
+  description  String?  @db.Text
+  city         String
+  region       String
+  country      String   @default("Ethiopia")
+  address      Json // {street, area, city, region, country, postalCode}
+  latitude     Float
+  longitude    Float
+  contact      Json // {phone, email, whatsapp}
+  website      String?
+  services     Json // Array of service strings
+  workingHours Json // {weekdays, saturday, sunday}
+  facilities   Json // {showroom, serviceCenter, partsShop, testDriveArea, customerLounge, parking}
+  logo         String? // Dealer logo image path
+  gallery      Json     @default("[]") // Array of gallery image paths
+  active       Boolean  @default(true)
+  featured     Boolean  @default(false)
+  salesCount   Int      @default(0)
+  staffCount   Int      @default(0)
+  rating       Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Service Bookings
+model ServiceBooking {
+  id            String   @id @default(uuid())
+  customerName  String
+  customerPhone String
+  customerEmail String
+  vehicleInfo   String
+  serviceType   String
+  date          DateTime
+  technician    String?
+  status        String   @default("scheduled")
+  notes         String?
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference     String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  jobCard       JobCard?
+}
+
+// ─── Workshop & Job Card Management (SWMS Phase 1) ─────────────────────────
+
+enum TechnicianSkillLevel {
+  JUNIOR
+  INTERMEDIATE
+  SENIOR
+  MASTER
+}
+
+enum BayType {
+  GENERAL
+  DIAGNOSTIC
+  ALIGNMENT
+  QUICK_SERVICE
+  PDI
+}
+
+enum BayStatus {
+  FREE
+  OCCUPIED
+  OUT_OF_SERVICE
+}
+
+enum JobCardStatus {
+  DRAFT_CHECKIN
+  AWAITING_BAY
+  DIAGNOSIS_ESTIMATE
+  AWAITING_APPROVAL
+  IN_PROGRESS
+  PARTS_WAITING
+  QUALITY_CONTROL
+  INVOICED_CLOSED
+  CANCELLED
+}
+
+model Technician {
+  id                 String               @id @default(uuid())
+  name               String
+  phone              String?
+  skillLevel         TechnicianSkillLevel @default(JUNIOR)
+  certificationLevel String?
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  jobCards           JobCard[]
+}
+
+model ServiceBay {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  bayType   BayType   @default(GENERAL)
+  status    BayStatus @default(FREE)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  jobCards  JobCard[]
+}
+
+model JobCard {
+  id                   String                 @id @default(uuid())
+  jobCardNo            String                 @unique
+  plateNo              String
+  vin                  String?
+  vehicleModel         String?
+  vehicleYear          Int?
+  mileage              Int?
+  customerName         String
+  customerPhone        String
+  customerEmail        String?
+  // Nullable so a kiosk self-check-in (BRD Screen 3, UC-04 alt flow) can
+  // create a bare Draft/Check-in job card before an advisor has captured a
+  // complaint. The state machine (jobCardStateMachine.ts) blocks leaving
+  // DRAFT_CHECKIN until this is filled in.
+  complaintText        String?                @db.Text
+  diagnosisNotes       String?                @db.Text
+  estimateAmount       Float?
+  isWarrantyOrGoodwill Boolean                @default(false)
+  customerApprovedAt   DateTime?
+  // Populated either manually (walk-in with no matching vehicle record) or
+  // derived server-side from the linked CustomerVehicle at write-up (BRD
+  // FR-501) — see customerVehicleId below and
+  // docs/SWMS-INTEGRATION-BACKLOG.md for the Phase 6 scope decision on why
+  // both paths still exist side by side.
+  warrantyStartDate    DateTime?
+  warrantyEndDate      DateTime?
+  // Optional link to a persistent vehicle-ownership record (Phase 6). Null
+  // for walk-ins that were never matched/saved to a CustomerVehicle — the
+  // plateNo/vin/customer* fields above remain the source of truth for what
+  // was true on THIS visit either way.
+  customerVehicleId    String?
+  customerVehicle      CustomerVehicle?       @relation(fields: [customerVehicleId], references: [id])
+  technicianId         String?
+  technician           Technician?            @relation(fields: [technicianId], references: [id])
+  bayId                String?
+  bay                  ServiceBay?            @relation(fields: [bayId], references: [id])
+  scheduledStart       DateTime?
+  scheduledEnd         DateTime?
+  status               JobCardStatus          @default(DRAFT_CHECKIN)
+  qcPassed             Boolean?
+  qcNotes              String?                @db.Text
+  qcById               String?
+  invoiceAmount        Float?
+  serviceBookingId     String?                @unique
+  serviceBooking       ServiceBooking?        @relation(fields: [serviceBookingId], references: [id])
+  openTs               DateTime               @default(now())
+  closeTs              DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  statusHistory        JobCardStatusHistory[]
+  jobCardParts         JobCardPart[]
+  warrantyClaims       WarrantyClaim[]
+  csiSurveyResponse    CSISurveyResponse?
+
+  @@index([status])
+  @@index([technicianId])
+  @@index([bayId])
+  @@index([customerVehicleId])
+}
+
+model JobCardStatusHistory {
+  id          String         @id @default(uuid())
+  jobCardId   String
+  jobCard     JobCard        @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  fromStatus  JobCardStatus?
+  toStatus    JobCardStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime       @default(now())
+
+  @@index([jobCardId])
+}
+
+model Counter {
+  name  String @id
+  value Int    @default(0)
+}
+
+// ─── Parts Issued Against a Job Card + Warranty Claims (SWMS Phase 2) ──────
+
+enum JobCardPartStatus {
+  REQUESTED
+  ISSUED
+  BACKORDERED
+  CANCELLED
+}
+
+model JobCardPart {
+  id            String            @id @default(uuid())
+  jobCardId     String
+  jobCard       JobCard           @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  sparePartId   String
+  sparePart     SparePart         @relation(fields: [sparePartId], references: [id])
+  quantity      Int
+  unitPrice     Float // snapshot of SparePart.price at request time
+  status        JobCardPartStatus @default(REQUESTED)
+  isWarranty    Boolean           @default(false)
+  requestedById String
+  issuedById    String?
+  requestedAt   DateTime          @default(now())
+  issuedAt      DateTime?
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([jobCardId])
+  @@index([sparePartId])
+}
+
+enum WarrantyClaimStatus {
+  DRAFTED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REIMBURSED
+}
+
+model WarrantyClaim {
+  id              String                       @id @default(uuid())
+  claimNo         String                       @unique
+  jobCardId       String
+  jobCard         JobCard                      @relation(fields: [jobCardId], references: [id])
+  defectCode      String
+  component       String?
+  diagnosticCodes String?
+  description     String?                      @db.Text
+  photoUrls       Json                         @default("[]") // Array of uploaded photo URLs
+  status          WarrantyClaimStatus          @default(DRAFTED)
+  oemPortalRef    String?
+  approvedAmount  Float?
+  rejectionReason String?                      @db.Text
+  submittedById   String?
+  submittedAt     DateTime?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  statusHistory   WarrantyClaimStatusHistory[]
+
+  @@index([jobCardId])
+  @@index([status])
+}
+
+model WarrantyClaimStatusHistory {
+  id          String               @id @default(uuid())
+  claimId     String
+  claim       WarrantyClaim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fromStatus  WarrantyClaimStatus?
+  toStatus    WarrantyClaimStatus
+  changedById String
+  reasonCode  String?
+  changedAt   DateTime             @default(now())
+
+  @@index([claimId])
+}
+
+// ─── Customer & Vehicle Ownership (BRD FR-501, UC-01 dedupe rule) ──────────
+// Deliberately additive: JobCard keeps its own customerName/customerPhone/
+// customerEmail/plateNo/vin/warrantyStartDate/EndDate fields as the
+// point-in-time record of what was true on that visit. customerVehicleId
+// (on JobCard, above) is an OPTIONAL cross-reference for when a match is
+// found or a new record is saved — a walk-in that's never matched still
+// works exactly as it did before this model existed. See
+// docs/SWMS-INTEGRATION-BACKLOG.md for the Phase 6 scope decision. Named
+// "CustomerVehicle", not "Vehicle" — that name is already taken by the
+// sales-catalog listing model (e.g. "Model X SUV" trim/config), which is an
+// unrelated concept from an individual customer's own VIN-level car.
+model Customer {
+  id        String            @id @default(uuid())
+  fullName  String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  vehicles  CustomerVehicle[]
+
+  // Not @unique: phone is the dedupe lookup key (UC-01 business rule), but
+  // enforcing uniqueness at the DB level risks write failures on legitimate
+  // shared/reused numbers (e.g. a family landline) — dedupe is an
+  // application-level find-or-create, not a hard constraint.
+  @@index([phone])
+}
+
+model CustomerVehicle {
+  id                String    @id @default(uuid())
+  customerId        String
+  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vin               String?   @unique
+  plateNo           String
+  model             String?
+  trim              String?
+  color             String?
+  isNev             Boolean   @default(false)
+  warrantyStartDate DateTime?
+  warrantyEndDate   DateTime?
+  mileageLastKnown  Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  jobCards          JobCard[]
+
+  @@index([customerId])
+  @@index([plateNo])
+}
+
+// Post-visit satisfaction survey (BRD FR-602, UC-16). Triggered automatically
+// when a job card reaches INVOICED_CLOSED (see admin/lib/workshop/csiSurvey.ts);
+// the public, no-login survey page lives in the `web` app and looks the
+// response up by JobCard.id — see docs/SWMS-INTEGRATION-BACKLOG.md. One
+// response per job card (jobCardId is unique), so a resubmission attempt is
+// rejected rather than overwriting the original.
+model CSISurveyResponse {
+  id          String   @id @default(uuid())
+  jobCardId   String   @unique
+  jobCard     JobCard  @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  rating      Int // 1-5
+  comment     String?  @db.Text
+  submittedAt DateTime @default(now())
+
+  @@index([jobCardId])
+}
+
+// Spare Parts
+model SparePart {
+  id             String        @id @default(uuid())
+  name           String
+  sku            String        @unique
+  category       String
+  partCategoryId String?
+  partCategory   PartCategory? @relation(fields: [partCategoryId], references: [id], onDelete: SetNull)
+  description    String?       @db.Text
+  imageUrl       String?
+  brand          String?
+  stock          Int           @default(0)
+  reservedQty    Int           @default(0) // committed to open JobCardPart REQUESTED lines
+  reorderPoint   Int           @default(10)
+  price          Float
+  supplier       String
+  isFeatured     Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  displayOrder   Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  jobCardParts   JobCardPart[]
+}
+
+// Parts Request / Quote (submitted from the /parts cart)
+model PartRequest {
+  id        String            @id @default(uuid())
+  name      String
+  company   String?
+  phone     String
+  email     String
+  address   String?           @db.Text
+  notes     String?           @db.Text
+  status    String            @default("new") // new, contacted, in_progress, quoted, closed
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
+  // creation via web/lib/reference.ts. Nullable for rows created before
+  // this column existed.
+  reference String?           @unique
+  items     PartRequestItem[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model PartRequestItem {
+  id        String      @id @default(uuid())
+  requestId String
+  request   PartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  partId    String?
+  partName  String
+  partSku   String?
+  unitPrice Float       @default(0)
+  quantity  Int         @default(1)
+  createdAt DateTime    @default(now())
+}
+
+// Parts Page CMS Content (single record manages the /parts page)
+model PartsPageContent {
+  id                  String   @id @default(uuid())
+  heroTitle           String?
+  heroSubtitle        String?
+  heroBannerImage     String?
+  heroBackgroundImage String?
+  introHeading        String?
+  introDescription    String?  @db.Text
+  ctaTitle            String?
+  ctaDescription      String?  @db.Text
+  ctaButtonText       String?
+  ctaButtonLink       String?
+  metaTitle           String?
+  metaDescription     String?
+  metaKeywords        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Parts Categories (shown on /parts page)
+model PartCategory {
+  id           String      @id @default(uuid())
+  name         String
+  slug         String      @unique
+  description  String?     @db.Text
+  imageUrl     String?
+  displayOrder Int         @default(0)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  parts        SparePart[]
+}
+
+// Supported vehicle brands for parts compatibility
+model PartBrand {
+  id           String   @id @default(uuid())
+  name         String
+  imageUrl     String?
+  description  String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Benefits shown on /parts page
+model PartBenefit {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  icon         String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Promotions
+model Promotion {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  bannerImage   String?
+  ctaButtonText String?
+  ctaButtonLink String?
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  startDate     DateTime
+  endDate       DateTime
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Customer Reviews
+model Review {
+  id            String   @id @default(uuid())
+  fullName      String
+  email         String?
+  vehicleModel  String
+  rating        Int // 1-5 stars
+  reviewTitle   String
+  reviewMessage String
+  profileImage  String?
+  status        String   @default("pending") // pending, approved, rejected
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// News Articles
+model NewsArticle {
+  id          String    @id @default(uuid())
+  title       String
+  category    String
+  author      String
+  content     String
+  imageUrl    String? // Featured image for the article
+  excerpt     String? // Short excerpt/summary
+  status      String    @default("draft")
+  publishDate DateTime?
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Messages
+model Message {
+  id        String   @id @default(uuid())
+  from      String
+  email     String
+  subject   String
+  category  String
+  priority  String   @default("medium")
+  status    String   @default("unread")
+  content   String
+  response  String?
+  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
+  // creation via web/lib/reference.ts, for Message rows that back a
+  // customer-facing flow (financing applications, contact-derived leads).
+  // Nullable for rows created before this column existed and for purely
+  // internal messages that never had a reference.
+  reference String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// CRM Sync Logs
+model CRMSyncLog {
+  id          String   @id @default(uuid())
+  provider    String
+  type        String
+  message     String
+  recordCount Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Newsletter subscriptions from the public site footer
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  status    String   @default("subscribed")
+  source    String   @default("website")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Site Settings (Policies & Social Media)
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String // JSON or plain text
+  type      String // 'policy' or 'social' or 'general'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Hero Sections (Homepage Banner Management)
+model HeroSection {
+  id          String   @id @default(uuid())
+  title       String
+  subtitle    String?
+  description String?
+  mediaType   String // IMAGE or VIDEO
+  imageUrl    String?
+  videoUrl    String?
+  posterUrl   String? // Poster image for video (shows before video loads)
+  buttonText  String?
+  buttonLink  String?
+  status      String   @default("draft") // draft, active, inactive
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Media Library (Uploaded Files)
+model MediaAsset {
+  id           String   @id @default(uuid())
+  fileName     String
+  originalName String
+  fileType     String // image, video
+  mimeType     String
+  fileSize     Int
+  url          String
+  thumbnailUrl String?
+  width        Int?
+  height       Int?
+  duration     Int? // For videos (in seconds)
+  altText      String?
+  category     String? // hero, vehicle, gallery, etc.
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 360° Viewer Showcase (Explore Every Angle Section)
+model VehicleShowcase {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  vehicleName String
+  title       String // e.g., "Explore Every Angle"
+  subtitle    String? // e.g., "Experience our vehicles like never before"
+  views       Json // Array of {angle, imageUrl, label}
+  videoUrl    String? // Optional uploaded 360° showcase video
+  ctaText     String? // Call to action button text
+  ctaLink     String? // Call to action button link
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Vehicle Colors
+model VehicleColor {
+  id        String   @id @default(uuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name      String // e.g., "Pearl White", "Midnight Black"
+  colorCode String // Hex code e.g., "#FFFFFF"
+  imageUrl  String? // Image showing this color
+  price     Float    @default(0) // Additional price for this color
+  inStock   Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Vehicle Accessories
+model VehicleAccessory {
+  id          String   @id @default(uuid())
+  vehicleId   String? // Null means available for all vehicles
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  name        String
+  description String?
+  category    String // e.g., "Interior", "Exterior", "Technology", "Safety"
+  price       Float
+  imageUrl    String?
+  inStock     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Electric Pages (Charging Map, Home Charging, Fast Charging, etc.)
+model ElectricPage {
+  id               String            @id @default(uuid())
+  title            String
+  slug             String            @unique
+  pageType         String // charging-map, home-charging, fast-charging, custom
+  heroTitle        String?
+  heroSubtitle     String?
+  heroImage        String?
+  content          String?           @db.Text // Rich text content
+  sections         Json? // Array of content sections
+  metadata         Json? // SEO metadata, custom fields
+  isPublished      Boolean           @default(false)
+  displayOrder     Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  chargingStations ChargingStation[]
+}
+
+// Charging Stations
+model ChargingStation {
+  id             String        @id @default(uuid())
+  name           String
+  address        String
+  city           String
+  latitude       Float
+  longitude      Float
+  stationType    String // fast-dc, level-2, home
+  chargerCount   Int           @default(1)
+  maxPower       String // e.g., "150kW"
+  connector      Json // Array of connector types
+  availability   String        @default("operational") // operational, maintenance, planned
+  pricing        String?
+  hours          String?
+  amenities      Json? // Array of amenities
+  images         Json? // Array of image URLs
+  electricPageId String?
+  electricPage   ElectricPage? @relation(fields: [electricPageId], references: [id], onDelete: SetNull)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+// Vehicle Packages
+model VehiclePackage {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name        String // e.g., "Premium Package", "Sport Package"
+  description String?
+  features    Json // Array of feature strings
+  price       Float
+  imageUrl    String?
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Vehicle Interior Options
+model VehicleInterior {
+  id           String   @id @default(uuid())
+  vehicleId    String
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name         String // e.g., "Black Leather", "Beige Fabric"
+  description  String?
+  materialType String // e.g., "Leather", "Fabric", "Synthetic"
+  imageUrl     String?
+  price        Float    @default(0)
+  isDefault    Boolean  @default(false)
+  inStock      Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Vehicle Wheels (configurator "Choose Wheels" step)
+model VehicleWheel {
+  id        String   @id @default(uuid())
+  vehicleId String? // Null means available for all vehicles
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  name      String // e.g., "Standard Alloy", "Sport Alloy"
+  size      String // e.g., "16\"", "17\"", "18\""
+  imageUrl  String?
+  price     Float    @default(0)
+  isDefault Boolean  @default(false)
+  inStock   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+// Services Menu System
+model ServiceSection {
+  id           String        @id @default(uuid())
+  title        String // e.g., "Sales", "Service & Parts"
+  slug         String        @unique
+  description  String?
+  iconUrl      String?
+  isActive     Boolean       @default(true)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  items        ServiceItem[]
+}
+
+model ServiceItem {
+  id           String         @id @default(uuid())
+  sectionId    String
+  section      ServiceSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String // e.g., "Test Drive", "Service Booking"
+  description  String? // Short description
+  icon         String? // Lucide icon name
+  image        String? // Featured image URL
+  url          String? // Link URL
+  isActive     Boolean        @default(true)
+  isFeatured   Boolean        @default(false)
+  displayOrder Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model ServicePage {
+  id              String   @id @default(uuid())
+  title           String
+  slug            String   @unique
+  excerpt         String? // Short summary
+  content         String?  @db.Text // Rich text content
+  heroImage       String?
+  heroVideo       String?
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Electric Menu System (identical to Services Menu)
+model ElectricSection {
+  id           String         @id @default(uuid())
+  title        String // e.g., "Models", "Charging", "Benefits"
+  slug         String         @unique
+  description  String?
+  icon         String? // Lucide icon name
+  isActive     Boolean        @default(true)
+  displayOrder Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  items        ElectricItem[]
+}
+
+model ElectricItem {
+  id           String            @id @default(uuid())
+  sectionId    String
+  section      ElectricSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String // e.g., "Charging Map", "Cost Calculator"
+  description  String? // Short description
+  icon         String? // Lucide icon name
+  image        String? // Featured image URL
+  url          String? // Link URL
+  pageId       String?           @unique
+  page         ElectricMenuPage?
+  isActive     Boolean           @default(true)
+  isFeatured   Boolean           @default(false)
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ElectricMenuPage {
+  id              String       @id @default(uuid())
+  itemId          String       @unique
+  item            ElectricItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String       @unique
+  excerpt         String? // Short summary
+  content         String?      @db.Text // Rich text content
+  heroImage       String?
+  heroVideo       String?
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// FAQ Management
+model FAQ {
+  id           String   @id @default(uuid())
+  question     String
+  answer       String   @db.Text
+  category     String? // Optional category for grouping
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  isFeatured   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// URL Redirect Management
+// Manages 301/302 redirects when model slugs change or pages are retired
+model Redirect {
+  id         String   @id @default(uuid())
+  fromPath   String   @unique // e.g. /models/old-coolray
+  toPath     String // e.g. /models/coolray
+  statusCode Int      @default(301) // 301 (permanent) or 302 (temporary)
+  isActive   Boolean  @default(true)
+  note       String? // Admin note explaining why redirect was created
+  hitCount   Int      @default(0) // How many times this redirect was used
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([fromPath, isActive])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FINANCING SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// A bank / finance partner that provides vehicle loans
+model FinancingBank {
+  id                String             @id @default(uuid())
+  name              String // e.g. "Dashen Bank"
+  slug              String             @unique
+  logoUrl           String?
+  websiteUrl        String?
+  phoneNumber       String?
+  email             String?
+  branchAddress     String?
+  shortDescription  String? // 1-2 line elevator pitch for the partner
+  isActive          Boolean            @default(true)
+  displayOrder      Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  financingPrograms FinancingProgram[]
+
+  @@index([isActive, displayOrder])
+}
+
+// A concrete financing offer (e.g. "Dashen Bank 5-Year 12.5% - Coolray")
+// Frontend "Monthly Payment" is calculated dynamically from vehicle price + these fields
+enum FinancingProgramStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model FinancingProgram {
+  id     String        @id @default(uuid())
+  name   String // Admin-facing label e.g. "Standard 5-Year Plan"
+  slug   String        @unique
+  bankId String
+  bank   FinancingBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  // Core loan terms (editable in admin)
+  interestRate          Decimal @db.Decimal(6, 3) // annual % e.g. 12.500
+  downPaymentPercent    Decimal @db.Decimal(5, 2) // % of vehicle price e.g. 20.00
+  minDownPaymentPercent Decimal @default(10) @db.Decimal(5, 2)
+  maxDownPaymentPercent Decimal @default(70) @db.Decimal(5, 2)
+  tenureMonths          Int // e.g. 60 for 5 years
+  minTenureMonths       Int     @default(12)
+  maxTenureMonths       Int     @default(84)
+
+  processingFeePercent Decimal  @default(2.5) @db.Decimal(5, 2)
+  processingFeeMin     Decimal? @db.Decimal(12, 2) // floor in ETB
+  processingFeeMax     Decimal? @db.Decimal(12, 2) // ceiling in ETB
+  insurancePercent     Decimal  @default(5) @db.Decimal(5, 2)
+
+  // Optionally restrict program to specific vehicle(s) or category
+  vehicleId            String?
+  vehicle              Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  vehicleCategoryId    String?
+  vehicleCategory      VehicleCategory? @relation(fields: [vehicleCategoryId], references: [id], onDelete: SetNull)
+  appliesToAllVehicles Boolean          @default(true) // when true, vehicleId/categoryId are ignored
+
+  // Call-to-Action toggles (per-program, overrides global settings)
+  applyEnabled         Boolean @default(true)
+  applyUrl             String? // e.g. "https://dashenbank.com/auto-loan/apply" OR "/financing/apply?plan=xxx"
+  applyLabel           String? // default: "Apply for Financing"
+  directPayEnabled     Boolean @default(false)
+  directPayUrl         String? // payment gateway / telebirr / bank transfer link
+  directPayLabel       String? // default: "Pay Direct"
+  visitShowroomEnabled Boolean @default(true)
+  visitShowroomUrl     String? // default: "/dealers"
+  visitShowroomLabel   String? // default: "Visit Showroom"
+  scheduleEnabled      Boolean @default(true) // show/hide schedule on program card
+  scheduleUrl          String? // optional: "/schedule?program=xxx"
+
+  // Metadata
+  badgeText       String? // e.g. "Most Popular", "Lowest Rate"
+  highlightBadge  Boolean                @default(false)
+  finePrint       String? // legal text e.g. "Terms and conditions apply"
+  eligibilityNote String? // short eligibility summary
+  status          FinancingProgramStatus @default(DRAFT)
+  publishedAt     DateTime?
+  displayOrder    Int                    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, displayOrder])
+  @@index([bankId, status])
+  @@index([vehicleId, status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITE NAVIGATION (header main nav + Models mega-menu Quick Actions panel)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum SiteNavPlacement {
+  TOP_NAV
+  MODELS_QUICK_ACTIONS
+}
+
+model SiteNavItem {
+  id            String           @id @default(uuid())
+  placement     SiteNavPlacement
+  label         String
+  subtitle      String? // Quick Actions only
+  icon          String? // name from a fixed lucide-icon allowlist — see web/lib/navIcons.ts
+  href          String
+  openInNewTab  Boolean          @default(false)
+  isHighlighted Boolean          @default(false) // Quick Actions: renders as the dark CTA tile
+  isActive      Boolean          @default(true)
+  displayOrder  Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([placement, isActive, displayOrder])
+}
+
+enum VehicleAllocationStatus {
+  RESERVED
+  ALLOCATED
+  RELEASED
+  DELIVERED
+}
+
+// Local allocation ledger prepared for a future ERP/OEM connector.
+model VehicleAllocation {
+  id            String                  @id @default(uuid())
+  orderId       String                  @unique
+  vehicleId     String
+  vin           String?
+  status        VehicleAllocationStatus @default(RESERVED)
+  erpSystem     String?
+  erpReference  String?
+  allocatedAt   DateTime                @default(now())
+  releasedAt    DateTime?
+  allocatedById String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  order         SalesOrder              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle                 @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  @@index([vehicleId, status])
+  @@index([vin])
+}
