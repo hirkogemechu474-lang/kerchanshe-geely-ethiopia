@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader } from '@/components/admin/ui';
 import StaffSignaturesTable from '@/components/admin/users/StaffSignaturesTable';
 import { env } from '@/lib/env';
@@ -12,18 +12,14 @@ import { env } from '@/lib/env';
 export default async function StaffSignaturesPage() {
   await requirePermission('canManageUsers');
 
-  const users = await prisma.user.findMany({
-    where: { isActive: true },
-    orderBy: { name: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      signatureUrl: true,
-      signatureUpdatedAt: true,
-    },
-  });
+  let users: any[] = [];
+  try {
+    const client = await serverApiClient();
+    const { data } = await client.get('/admin/users/signatures');
+    users = data;
+  } catch (error) {
+    console.error('Error fetching staff signatures:', error);
+  }
 
   const webAppUrl = env.app.url.replace(/\/$/, '');
 

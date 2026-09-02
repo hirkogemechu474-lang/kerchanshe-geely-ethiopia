@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import ServiceSectionForm from '@/components/admin/services/ServiceSectionForm';
 
@@ -9,9 +9,14 @@ export default async function EditServiceSectionPage({ params }: { params: Promi
     const { id } = await params;
   await requirePermission('canManageContent');
 
-  const section = await prisma.serviceSection.findUnique({
-    where: { id: id },
-  });
+  let section = null;
+  try {
+    const client = await serverApiClient();
+    const { data } = await client.get(`/services-menu/sections/${id}`);
+    section = data;
+  } catch (error) {
+    console.error('Error fetching section:', error);
+  }
 
   if (!section) {
     notFound();

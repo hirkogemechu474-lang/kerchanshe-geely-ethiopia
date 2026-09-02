@@ -1,17 +1,17 @@
 import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
 import { Plus, Package, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 
 
 
 export default async function PartsPage() {
   await requirePermission('canManageSpareParts');
 
-  // Fetch spare parts from database
-  const parts = await prisma.sparePart.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  // Fetch spare parts from the backend
+  const client = await serverApiClient();
+  const { data } = await client.get('/parts', { params: { pageSize: 1000 } });
+  const parts = data.items;
 
   // Calculate statistics
   const totalParts = parts.length;

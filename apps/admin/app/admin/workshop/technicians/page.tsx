@@ -1,17 +1,15 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader } from '@/components/admin/ui';
 import TechnicianManager from '@/components/admin/workshop/TechnicianManager';
 
 export default async function TechniciansPage() {
   await requirePermission('canManageTechnicians');
 
-  const rows = await prisma.technician.findMany({
-    orderBy: { name: 'asc' },
-    include: { _count: { select: { jobCards: true } } },
-  });
+  const client = await serverApiClient();
+  const { data: rows } = await client.get('/admin/workshop/technicians');
 
-  const technicians = rows.map((t) => ({
+  const technicians = rows.map((t: any) => ({
     id: t.id,
     name: t.name,
     phone: t.phone,

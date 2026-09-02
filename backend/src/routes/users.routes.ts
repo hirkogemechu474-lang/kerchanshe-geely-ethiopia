@@ -57,6 +57,30 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/admin/users/signatures (staff signatures list)
+// Registered before '/:id' below — Express matches routes in registration
+// order, and '/:id' would otherwise swallow this request as id === 'signatures'.
+router.get('/signatures', async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        signatureUrl: true,
+        signatureUpdatedAt: true,
+      },
+    });
+    res.json(users);
+  } catch (error) {
+    console.error('Get staff signatures error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/admin/users/:id (admin detail)
 router.get('/:id', async (req: Request, res: Response) => {
   try {

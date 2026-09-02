@@ -1,12 +1,13 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import MessagesInbox from '@/components/admin/messages/MessagesInbox';
 
 export default async function MessagesPage() {
   await requirePermission('canViewMessages');
 
-  const messages = await prisma.message.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
-  return <MessagesInbox initialMessages={messages.map((message) => ({ ...message, createdAt: message.createdAt.toISOString() }))} />;
+  const client = await serverApiClient();
+  const { data } = await client.get('/messages', { params: { pageSize: 200 } });
+  return <MessagesInbox initialMessages={data.items} />;
   /* return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

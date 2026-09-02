@@ -1,7 +1,7 @@
 import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
 import { Plus, FileText, Eye, Calendar, Edit } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader, LinkButton, StatTile, TableCard, THead, TBody, Tr, Th, Td, Badge, EmptyState, type Tone } from '@/components/admin/ui';
 
 function articleStatusTone(status: string): Tone {
@@ -13,10 +13,10 @@ function articleStatusTone(status: string): Tone {
 export default async function NewsPage() {
   await requirePermission('canManageContent');
 
-  // Fetch articles from database
-  const articles = await prisma.newsArticle.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  // Fetch articles from the backend
+  const client = await serverApiClient();
+  const { data } = await client.get('/news');
+  const articles = data.items;
 
   // Calculate statistics
   const totalArticles = articles.length;

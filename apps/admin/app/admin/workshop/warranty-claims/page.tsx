@@ -1,23 +1,21 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader } from '@/components/admin/ui';
 import WarrantyClaimList from '@/components/admin/workshop/WarrantyClaimList';
 
 export default async function WarrantyClaimsPage() {
   await requirePermission('canViewJobCards');
 
-  const rows = await prisma.warrantyClaim.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { jobCard: { select: { jobCardNo: true, plateNo: true, customerName: true } } },
-    take: 200,
-  });
+  const client = await serverApiClient();
+  const { data } = await client.get('/admin/workshop/warranty-claims', { params: { pageSize: 200 } });
+  const rows = data.items;
 
-  const claims = rows.map((c) => ({
+  const claims = rows.map((c: any) => ({
     id: c.id,
     claimNo: c.claimNo,
     defectCode: c.defectCode,
     status: c.status,
-    createdAt: c.createdAt.toISOString(),
+    createdAt: c.createdAt,
     jobCardNo: c.jobCard.jobCardNo,
     plateNo: c.jobCard.plateNo,
     customerName: c.jobCard.customerName,

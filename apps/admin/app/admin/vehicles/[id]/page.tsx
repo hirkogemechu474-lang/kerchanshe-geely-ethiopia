@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -95,25 +95,17 @@ export default async function VehicleDetailsPage({ params }: Props) {
 
   const { id } = await params;
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id },
-    include: {
-      testDrives: {
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-      },
-      _count: {
-        select: {
-          testDrives: true,
-        },
-      },
-      brand: true,
-      vehicleCategory: true,
-    },
-  });
+  const client = await serverApiClient();
 
-  if (!vehicle) {
-    notFound();
+  let vehicle: any;
+  try {
+    const { data } = await client.get(`/vehicles/${id}`);
+    vehicle = data;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
   const imageUrl = getImageUrl(vehicle);

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Plus, Edit, Eye, EyeOff, ExternalLink, FileText } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader, LinkButton, Card, StatTile, TableCard, THead, TBody, Tr, Th, Td, EmptyState, Badge } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 
 async function getPages() {
   try {
-    return await prisma.servicePage.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
+    const client = await serverApiClient();
+    const { data } = await client.get('/services-menu/pages');
+    return data;
   } catch (error) {
     console.error('Error fetching pages:', error);
     return [];

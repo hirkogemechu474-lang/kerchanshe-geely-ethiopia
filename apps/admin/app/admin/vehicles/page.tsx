@@ -1,32 +1,23 @@
 import { requirePermission } from '@/lib/auth/middleware';
 import Link from 'next/link';
 import { Plus, Car, FolderTree, Settings, LayoutGrid, ListChecks, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import VehicleManagementClient from '@/components/admin/vehicles/VehicleManagementClient';
 import { PageHeader, LinkButton, Card, StatTile } from '@/components/admin/ui';
 
 export default async function VehiclesPage() {
   await requirePermission('canViewVehicles');
 
-  const [totalVehicles, inStock, lowStock, outOfStock, totalCategories] = await Promise.all([
-    prisma.vehicle.count(),
-    prisma.vehicle.count({ where: { stock: { gt: 5 } } }),
-    prisma.vehicle.count({ where: { stock: { gt: 0, lte: 5 } } }),
-    prisma.vehicle.count({ where: { stock: 0 } }),
-    prisma.vehicleCategory.count(),
+  const client = await serverApiClient();
+
+  const [statsRes, listRes] = await Promise.all([
+    client.get('/vehicles/stats'),
+    client.get('/vehicles', { params: { pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc' } }),
   ]);
 
-  const vehicles = await prisma.vehicle.findMany({
-    select: {
-      id: true, name: true, slug: true, model: true, year: true,
-      category: true, basePrice: true, finalPrice: true, hidePrice: true, stock: true,
-      status: true, heroImageUrl: true, images: true, sku: true,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  });
-
-  const stats = { total: totalVehicles, inStock, lowStock, outOfStock };
+  const stats = statsRes.data;
+  const vehicles = listRes.data.items ?? [];
+  const totalCategories = stats.totalCategories;
 
   const tabs = [
     {

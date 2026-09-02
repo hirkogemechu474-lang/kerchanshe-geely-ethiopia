@@ -2,18 +2,21 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, Car, Clock, Mail, MapPin, Phone, User } from 'lucide-react';
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { Card, StatusBadge } from '@/components/admin/ui';
 import TestDriveIdCapture from '@/components/admin/test-drives/TestDriveIdCapture';
 
 export default async function TestDriveDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission('canViewTestDrives');
   const { id } = await params;
-  const testDrive = await prisma.testDrive.findUnique({
-    where: { id },
-    include: { vehicle: { select: { name: true, slug: true } } },
-  });
-  if (!testDrive) notFound();
+  const client = await serverApiClient();
+  let testDrive: any;
+  try {
+    const { data } = await client.get(`/test-drives/${id}`);
+    testDrive = data;
+  } catch {
+    notFound();
+  }
 
   return (
     <div className="space-y-6">
@@ -21,7 +24,7 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Test Drive Booking</h1>
-          <p className="mt-1 text-sm text-gray-500">Booking created {testDrive.createdAt.toISOString().slice(0, 10)}</p>
+          <p className="mt-1 text-sm text-gray-500">Booking created {testDrive.createdAt.slice(0, 10)}</p>
         </div>
         <StatusBadge status={testDrive.status} />
       </div>
@@ -35,7 +38,7 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-gray-900">Appointment</h2>
           <div className="flex items-center gap-3"><Car className="w-5 h-5 text-gray-400" /><span>{testDrive.vehicle.name}</span></div>
-          <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-gray-400" /><span>{testDrive.preferredDate.toISOString().slice(0, 10)}</span></div>
+          <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-gray-400" /><span>{testDrive.preferredDate.slice(0, 10)}</span></div>
           <div className="flex items-center gap-3"><Clock className="w-5 h-5 text-gray-400" /><span>{testDrive.preferredTime}</span></div>
           <div className="flex items-center gap-3"><MapPin className="w-5 h-5 text-gray-400" /><span>{testDrive.location}</span></div>
         </Card>
@@ -47,7 +50,7 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
           idDocumentType: testDrive.idDocumentType,
           idDocumentNumber: testDrive.idDocumentNumber,
           idPhotoUrl: testDrive.idPhotoUrl,
-          idVerifiedAt: testDrive.idVerifiedAt?.toISOString() || null,
+          idVerifiedAt: testDrive.idVerifiedAt || null,
         }}
         canManage={session.user.permissions.canViewTestDrives}
       />

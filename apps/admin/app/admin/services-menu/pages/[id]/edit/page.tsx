@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import ServicePageForm from '@/components/admin/services/ServicePageForm';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader, LinkButton, Card } from '@/components/admin/ui';
 
 export const metadata: Metadata = {
@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 async function getPage(id: string) {
   try {
-    return await prisma.servicePage.findUnique({
-      where: { id },
-    });
+    const client = await serverApiClient();
+    const { data } = await client.get(`/services-menu/pages/${id}`);
+    return data;
   } catch (error) {
     console.error('Error fetching page:', error);
     return null;

@@ -48,8 +48,8 @@ router.get('/job-cards', async (req: Request, res: Response) => {
     const where: any = {};
     if (search) {
       where.OR = [
-        { jobCardNumber: { contains: search, mode: 'insensitive' } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { jobCardNo: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (status) where.status = status;
@@ -57,7 +57,7 @@ router.get('/job-cards', async (req: Request, res: Response) => {
     const [items, total] = await Promise.all([
       prisma.jobCard.findMany({
         where,
-        include: { customer: true, vehicle: true, technician: true, bay: true },
+        include: { technician: { select: { name: true } }, bay: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -88,10 +88,22 @@ router.get('/job-cards/:id', async (req: Request, res: Response) => {
   try {
     const jobCard = await prisma.jobCard.findUnique({
       where: { id: req.params.id },
-      include: { customer: true, vehicle: true, technician: true, bay: true, parts: true, serviceBooking: true },
+      include: {
+        technician: true,
+        bay: true,
+        statusHistory: { orderBy: { changedAt: 'asc' } },
+        jobCardParts: { include: { sparePart: true }, orderBy: { requestedAt: 'asc' } },
+        warrantyClaims: { orderBy: { createdAt: 'desc' } },
+        customerVehicle: {
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+            jobCards: { select: { id: true }, orderBy: { openTs: 'desc' } },
+          },
+        },
+      },
     });
     if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
-    res.json(jobCard);
+    res.json({ jobCard });
   } catch (error) {
     console.error('Get job card error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -162,7 +174,7 @@ router.patch('/job-cards/:id/parts/:lineId', async (req: Request, res: Response)
 // GET /api/admin/workshop/bays (list)
 router.get('/bays', async (req: Request, res: Response) => {
   try {
-    const bays = await prisma.workshopBay.findMany({ orderBy: { name: 'asc' } });
+    const bays = await prisma.serviceBay.findMany({ orderBy: { name: 'asc' } });
     res.json(bays);
   } catch (error) {
     console.error('List bays error:', error);
@@ -173,8 +185,8 @@ router.get('/bays', async (req: Request, res: Response) => {
 // POST /api/admin/workshop/bays (create)
 router.post('/bays', async (req: Request, res: Response) => {
   try {
-    const bay = await prisma.workshopBay.create({ data: req.body });
-    res.status(201).json(bay);
+    const bay = await prisma.serviceBay.create({ data: req.body });
+    res.status(201).json({ bay });
   } catch (error) {
     console.error('Create bay error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -184,8 +196,8 @@ router.post('/bays', async (req: Request, res: Response) => {
 // PATCH /api/admin/workshop/bays/:id (update)
 router.patch('/bays/:id', async (req: Request, res: Response) => {
   try {
-    const bay = await prisma.workshopBay.update({ where: { id: req.params.id }, data: req.body });
-    res.json(bay);
+    const bay = await prisma.serviceBay.update({ where: { id: req.params.id }, data: req.body });
+    res.json({ bay });
   } catch (error) {
     console.error('Update bay error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -195,7 +207,7 @@ router.patch('/bays/:id', async (req: Request, res: Response) => {
 // DELETE /api/admin/workshop/bays/:id (deactivate)
 router.delete('/bays/:id', async (req: Request, res: Response) => {
   try {
-    await prisma.workshopBay.update({ where: { id: req.params.id }, data: { isActive: false } });
+    await prisma.serviceBay.update({ where: { id: req.params.id }, data: { isActive: false } });
     res.json({ success: true });
   } catch (error) {
     console.error('Delete bay error:', error);
@@ -206,7 +218,10 @@ router.delete('/bays/:id', async (req: Request, res: Response) => {
 // GET /api/admin/workshop/technicians (list)
 router.get('/technicians', async (req: Request, res: Response) => {
   try {
-    const technicians = await prisma.technician.findMany({ orderBy: { name: 'asc' } });
+    const technicians = await prisma.technician.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { jobCards: true } } },
+    });
     res.json(technicians);
   } catch (error) {
     console.error('List technicians error:', error);
@@ -218,7 +233,7 @@ router.get('/technicians', async (req: Request, res: Response) => {
 router.post('/technicians', async (req: Request, res: Response) => {
   try {
     const technician = await prisma.technician.create({ data: req.body });
-    res.status(201).json(technician);
+    res.status(201).json({ technician });
   } catch (error) {
     console.error('Create technician error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -229,7 +244,7 @@ router.post('/technicians', async (req: Request, res: Response) => {
 router.patch('/technicians/:id', async (req: Request, res: Response) => {
   try {
     const technician = await prisma.technician.update({ where: { id: req.params.id }, data: req.body });
-    res.json(technician);
+    res.json({ technician });
   } catch (error) {
     console.error('Update technician error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -254,7 +269,12 @@ router.get('/warranty-claims', async (req: Request, res: Response) => {
     const pageSize = parseInt(req.query.pageSize as string) || 20;
 
     const [items, total] = await Promise.all([
-      prisma.warrantyClaim.findMany({ orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize, include: { jobCard: true, vehicle: true } }),
+      prisma.warrantyClaim.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: { jobCard: { select: { jobCardNo: true, plateNo: true, customerName: true } } },
+      }),
       prisma.warrantyClaim.count(),
     ]);
 
@@ -279,9 +299,12 @@ router.post('/warranty-claims', async (req: Request, res: Response) => {
 // GET /api/admin/workshop/warranty-claims/:id (detail)
 router.get('/warranty-claims/:id', async (req: Request, res: Response) => {
   try {
-    const claim = await prisma.warrantyClaim.findUnique({ where: { id: req.params.id }, include: { jobCard: true, vehicle: true } });
+    const claim = await prisma.warrantyClaim.findUnique({
+      where: { id: req.params.id },
+      include: { jobCard: true, statusHistory: { orderBy: { changedAt: 'asc' } } },
+    });
     if (!claim) { res.status(404).json({ error: 'Warranty claim not found' }); return; }
-    res.json(claim);
+    res.json({ claim });
   } catch (error) {
     console.error('Get warranty claim error:', error);
     res.status(500).json({ error: 'Internal server error' });

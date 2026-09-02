@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import ServiceItemForm from '@/components/admin/services/ServiceItemForm';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 
 export const metadata: Metadata = {
   title: 'Edit Menu Item - Services Menu',
@@ -12,10 +12,9 @@ export const metadata: Metadata = {
 
 async function getItem(id: string) {
   try {
-    return await prisma.serviceItem.findUnique({
-      where: { id },
-      include: { section: true },
-    });
+    const client = await serverApiClient();
+    const { data } = await client.get(`/services-menu/items/${id}`);
+    return data;
   } catch (error) {
     console.error('Error fetching item:', error);
     return null;

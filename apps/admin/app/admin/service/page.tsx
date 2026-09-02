@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import Link from 'next/link';
 import { Calendar, CheckCircle, Clock, Wrench } from 'lucide-react';
 import ConvertToJobCardButton from '@/components/admin/workshop/ConvertToJobCardButton';
@@ -8,23 +8,18 @@ import { PageHeader, StatTile, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRo
 export default async function ServicePage() {
   await requirePermission('canManageService');
 
-  const [bookings, scheduled, inProgress, completed, technicians] = await Promise.all([
-    prisma.serviceBooking.findMany({
-      orderBy: { date: 'desc' },
-      take: 100,
-      include: { jobCard: { select: { id: true, jobCardNo: true } } },
-    }),
-    prisma.serviceBooking.count({ where: { status: 'scheduled' } }),
-    prisma.serviceBooking.count({ where: { status: 'in_progress' } }),
-    prisma.serviceBooking.count({ where: { status: 'completed' } }),
-    prisma.serviceBooking.findMany({ where: { technician: { not: null } }, select: { technician: true }, distinct: ['technician'] }),
+  const client = await serverApiClient();
+  const [{ data: bookingsPage }, { data: stats }] = await Promise.all([
+    client.get('/service-bookings', { params: { pageSize: 100 } }),
+    client.get('/service-bookings/stats'),
   ]);
+  const bookings = bookingsPage.items;
 
   const cards = [
-    { label: 'Scheduled', value: scheduled, icon: Calendar, color: 'text-geely-blue' },
-    { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-yellow-600' },
-    { label: 'Completed', value: completed, icon: CheckCircle, color: 'text-green-600' },
-    { label: 'Technicians', value: technicians.length, icon: Wrench, color: 'text-purple-600' },
+    { label: 'Scheduled', value: stats.scheduled, icon: Calendar, color: 'text-geely-blue' },
+    { label: 'In Progress', value: stats.inProgress, icon: Clock, color: 'text-yellow-600' },
+    { label: 'Completed', value: stats.completed, icon: CheckCircle, color: 'text-green-600' },
+    { label: 'Technicians', value: stats.technicianCount, icon: Wrench, color: 'text-purple-600' },
   ];
 
   return (
@@ -53,7 +48,7 @@ export default async function ServicePage() {
           </tr>
         </THead>
         <TBody>
-          {bookings.map((booking) => (
+          {bookings.map((booking: any) => (
             <Tr key={booking.id}>
               <Td>
                 <div className="font-medium text-gray-900">{booking.customerName}</div>
@@ -61,7 +56,7 @@ export default async function ServicePage() {
               </Td>
               <Td>{booking.vehicleInfo}</Td>
               <Td className="text-gray-900">{booking.serviceType}</Td>
-              <Td>{booking.date.toLocaleDateString()}</Td>
+              <Td>{new Date(booking.date).toLocaleDateString()}</Td>
               <Td className="text-gray-900">{booking.technician || 'Unassigned'}</Td>
               <Td><StatusBadge status={booking.status} /></Td>
               <Td>

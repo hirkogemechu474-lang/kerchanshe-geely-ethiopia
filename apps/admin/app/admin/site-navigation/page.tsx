@@ -1,15 +1,19 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader } from '@/components/admin/ui';
 import SiteNavManager from '@/components/admin/site-nav/SiteNavManager';
 
 export default async function SiteNavigationPage() {
   await requirePermission('canManageContent');
 
-  const items = await prisma.siteNavItem.findMany({
-    where: { placement: 'TOP_NAV' },
-    orderBy: { displayOrder: 'asc' },
-  });
+  let items: any[] = [];
+  try {
+    const client = await serverApiClient();
+    const { data } = await client.get('/content/site-nav', { params: { placement: 'TOP_NAV' } });
+    items = data;
+  } catch (error) {
+    console.error('Error fetching site nav items:', error);
+  }
 
   return (
     <div className="space-y-6">

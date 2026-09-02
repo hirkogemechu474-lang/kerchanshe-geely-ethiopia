@@ -3,7 +3,7 @@ import { Plus, Calendar as CalendarIcon, List, Filter } from 'lucide-react';
 import TestDriveStats from '@/components/admin/test-drives/TestDriveStats';
 import TestDriveList from '@/components/admin/test-drives/TestDriveList';
 import TestDriveCalendar from '@/components/admin/test-drives/TestDriveCalendar';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader, LinkButton, Card, Button } from '@/components/admin/ui';
 
 export default async function TestDrivesPage({
@@ -14,34 +14,32 @@ export default async function TestDrivesPage({
   await requirePermission('canViewTestDrives');
   const { view } = await searchParams;
   const activeView = view || 'list';
-  const rows = await prisma.testDrive.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { vehicle: { select: { name: true } } },
-    take: 300,
-  });
-  const testDrives = rows.map((row) => ({
+  const client = await serverApiClient();
+  const { data } = await client.get('/test-drives', { params: { pageSize: 300 } });
+  const rows = data.items;
+  const testDrives = rows.map((row: any) => ({
     id: row.id,
     customerName: row.customerName,
     customerEmail: row.customerEmail,
     customerPhone: row.customerPhone,
     vehicleModel: row.vehicle.name,
-    date: row.preferredDate.toISOString(),
+    date: row.preferredDate,
     time: row.preferredTime,
     location: row.location,
     assignedTo: row.salesRepId || 'Unassigned',
     status: row.status as 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show',
-    createdAt: row.createdAt.toISOString(),
+    createdAt: row.createdAt,
     notes: row.specialRequests || undefined,
   }));
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
-  const monthRows = rows.filter((row) => row.createdAt >= monthStart);
+  const monthRows = rows.filter((row: any) => new Date(row.createdAt) >= monthStart);
   const stats = {
     total: monthRows.length,
-    pending: rows.filter((row) => row.status === 'pending').length,
-    confirmed: rows.filter((row) => row.status === 'confirmed').length,
-    completed: rows.filter((row) => row.status === 'completed').length,
+    pending: rows.filter((row: any) => row.status === 'pending').length,
+    confirmed: rows.filter((row: any) => row.status === 'confirmed').length,
+    completed: rows.filter((row: any) => row.status === 'completed').length,
   };
   const calendarEvents = testDrives.map((row) => ({
     id: row.id,

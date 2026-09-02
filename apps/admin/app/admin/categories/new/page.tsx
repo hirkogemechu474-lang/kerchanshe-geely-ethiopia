@@ -1,6 +1,6 @@
 import { requirePermission } from '@/lib/auth/middleware';
 import CategoryForm from '@/components/admin/categories/CategoryForm';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 
 
 
@@ -8,10 +8,8 @@ export default async function NewCategoryPage() {
   await requirePermission('canManageVehicles');
 
   // Fetch brands for dropdown
-  const brands = await prisma.vehicleBrand.findMany({
-    where: { isActive: true },
-    orderBy: { name: 'asc' },
-  });
+  const client = await serverApiClient();
+  const { data: brands } = await client.get('/vehicles/brands');
 
   return <CategoryForm brands={brands} />;
 }

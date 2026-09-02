@@ -1,7 +1,5 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import {
   Eye,
   EyeOff,
@@ -16,8 +14,8 @@ import {
   Star,
   Globe,
 } from 'lucide-react';
-import { authOptions } from '@/lib/auth/config';
-import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/middleware';
+import { serverApiClient } from '@/lib/serverApiClient';
 
 export const metadata: Metadata = {
   title: 'All Dynamic Pages',
@@ -38,19 +36,15 @@ interface PageRow {
 }
 
 export default async function AllPagesPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user.permissions.canManageContent) {
-    redirect('/admin/unauthorized');
-  }
+  await requirePermission('canManageContent');
 
+  const client = await serverApiClient();
   const pages: PageRow[] = [];
 
   // Service pages
   try {
-    const servicePages = await prisma.servicePage.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-    servicePages.forEach((p) =>
+    const { data: servicePages } = await client.get('/services-menu/pages');
+    servicePages.forEach((p: any) =>
       pages.push({
         id: p.id,
         type: 'service',
@@ -70,8 +64,8 @@ export default async function AllPagesPage() {
 
   // Parts page content (single record)
   try {
-    const parts = await prisma.partsPageContent.findFirst();
-    if (parts) {
+    const { data: parts } = await client.get('/parts/admin/parts/content');
+    if (parts?.id) {
       pages.push({
         id: parts.id,
         type: 'parts',
@@ -91,10 +85,8 @@ export default async function AllPagesPage() {
 
   // Hero sections
   try {
-    const heroes = await prisma.heroSection.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-    heroes.forEach((h) =>
+    const { data: heroes } = await client.get('/content/hero-sections');
+    heroes.forEach((h: any) =>
       pages.push({
         id: h.id,
         type: 'hero',
@@ -114,10 +106,8 @@ export default async function AllPagesPage() {
 
   // Vehicle showcase
   try {
-    const showcases = await prisma.vehicleShowcase.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-    showcases.forEach((s) =>
+    const { data: showcases } = await client.get('/content/showcases');
+    showcases.forEach((s: any) =>
       pages.push({
         id: s.id,
         type: 'showcase',
@@ -137,11 +127,8 @@ export default async function AllPagesPage() {
 
   // Policy settings
   try {
-    const policies = await prisma.setting.findMany({
-      where: { type: 'policy' },
-      orderBy: { updatedAt: 'desc' },
-    });
-    policies.forEach((s) =>
+    const { data: policies } = await client.get('/settings/by-type/policy');
+    policies.forEach((s: any) =>
       pages.push({
         id: s.id,
         type: 'policy',
@@ -149,7 +136,7 @@ export default async function AllPagesPage() {
         icon: Shield,
         title: s.key
           .split('_')
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(' '),
         publicUrl: `/${s.key.replace('_', '-').replace('policy-', '')}`,
         editHref: '/admin/settings/policies',
@@ -161,14 +148,20 @@ export default async function AllPagesPage() {
     console.error('Policies:', e);
   }
 
-  // FAQ counts
+  // FAQ / review counts
   let faqCount = 0;
   let reviewCount = 0;
   try {
-    faqCount = await prisma.fAQ.count({ where: { isActive: true } });
-    reviewCount = await prisma.review.count({ where: { isActive: true } });
+    const { data: faqs } = await client.get('/content/faqs');
+    faqCount = faqs.length;
   } catch (e) {
-    console.error('Counts:', e);
+    console.error('FAQ count:', e);
+  }
+  try {
+    const { data: reviewsData } = await client.get('/reviews/admin/reviews');
+    reviewCount = reviewsData.total ?? 0;
+  } catch (e) {
+    console.error('Review count:', e);
   }
 
   const published = pages.filter((p) => p.isPublished).length;

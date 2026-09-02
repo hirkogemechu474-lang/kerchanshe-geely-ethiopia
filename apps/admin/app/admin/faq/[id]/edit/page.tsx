@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import FAQForm from '@/components/admin/faq/FAQForm';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { requirePermission } from '@/lib/auth/middleware';
 
 export const metadata: Metadata = {
@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 async function getFAQ(id: string) {
   try {
-    return await prisma.fAQ.findUnique({
-      where: { id },
-    });
+    const client = await serverApiClient();
+    const { data } = await client.get(`/content/faqs/${id}`);
+    return data;
   } catch (error) {
     console.error('Error fetching FAQ:', error);
     return null;

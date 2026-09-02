@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import CategoryForm from '@/components/admin/categories/CategoryForm';
 
@@ -9,18 +9,20 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
     const { id } = await params;
   await requirePermission('canManageVehicles');
 
-  const category = await prisma.vehicleCategory.findUnique({
-    where: { id: id },
-  });
+  const client = await serverApiClient();
 
-  if (!category) {
-    notFound();
+  let category: any;
+  try {
+    const { data } = await client.get(`/vehicles/categories/${id}`);
+    category = data;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
-  const brands = await prisma.vehicleBrand.findMany({
-    where: { isActive: true },
-    orderBy: { name: 'asc' },
-  });
+  const { data: brands } = await client.get('/vehicles/brands');
 
   return <CategoryForm category={category as any} brands={brands} isEdit={true} />;
 }

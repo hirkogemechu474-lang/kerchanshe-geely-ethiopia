@@ -1,8 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { settingRepository } from '../repositories/setting.repository';
 
 const router = Router();
+
+// GET /api/settings/by-type/:type (list settings of a given type, e.g. 'policy')
+// Registered before '/:key' below just for readability — the two patterns
+// don't actually shadow each other since '/:key' only matches a single path
+// segment and this route always has two.
+router.get('/by-type/:type', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const settings = await settingRepository.findManyByType(req.params.type);
+    res.json(settings);
+  } catch (error) {
+    console.error('Get settings by type error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // GET /api/settings/:key (get setting)
 router.get('/:key', requireAdminApiSession, async (req: Request, res: Response) => {

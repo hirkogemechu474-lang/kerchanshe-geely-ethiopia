@@ -4,6 +4,14 @@ import { requireAdminApiSession } from '../middleware/auth';
 
 const router = Router();
 
+// Fields callers are allowed to sort the admin list by. Keep this in sync
+// with actual scalar columns on Vehicle — never pass req.query.sortBy
+// straight through to Prisma's orderBy (arbitrary-field injection).
+const SORTABLE_VEHICLE_FIELDS = new Set([
+  'name', 'model', 'year', 'category', 'basePrice', 'finalPrice', 'stock',
+  'status', 'displayOrder', 'createdAt', 'updatedAt',
+]);
+
 // GET /api/vehicles (admin list)
 router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
@@ -18,8 +26,16 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     if (status) where.status = status;
     if (categoryId) where.categoryId = categoryId;
 
+    // Default to the pre-existing displayOrder asc behavior so callers that
+    // don't pass sortBy/sortOrder (e.g. the public site) see no change.
+    const sortByParam = req.query.sortBy as string | undefined;
+    const sortOrderParam = (req.query.sortOrder as string | undefined)?.toLowerCase();
+    const orderBy: any = sortByParam && SORTABLE_VEHICLE_FIELDS.has(sortByParam)
+      ? { [sortByParam]: sortOrderParam === 'desc' ? 'desc' : 'asc' }
+      : { displayOrder: 'asc' as const };
+
     const [items, total] = await Promise.all([
-      prisma.vehicle.findMany({ where, include: { brand: true, vehicleCategory: true, colors: true }, orderBy: { displayOrder: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.vehicle.findMany({ where, include: { brand: true, vehicleCategory: true, colors: true }, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.vehicle.count({ where }),
     ]);
 
@@ -41,12 +57,87 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/vehicles/stats (admin dashboard tiles)
+// Registered before GET /:id so Express doesn't shadow it (a bare
+// `/:id` route would otherwise match /stats with id="stats").
+router.get('/stats', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const [total, outOfStock, totalCategories, stockLevels] = await Promise.all([
+      prisma.vehicle.count(),
+      prisma.vehicle.count({ where: { stock: { lte: 0 } } }),
+      prisma.vehicleCategory.count(),
+      // reorderPoint is a per-row column, so "stock > reorderPoint" can't be
+      // expressed as a plain Prisma where filter (no field-to-field compare) —
+      // pull the two columns for in-stock rows and split them in JS instead,
+      // same pattern as reorderAlerts.service.ts / sparePartStock.service.ts.
+      prisma.vehicle.findMany({
+        where: { stock: { gt: 0 } },
+        select: { stock: true, reorderPoint: true },
+      }),
+    ]);
+
+    const inStock = stockLevels.filter((v) => v.stock > (v.reorderPoint ?? 0)).length;
+    const lowStock = stockLevels.length - inStock;
+
+    res.json({ total, inStock, lowStock, outOfStock, totalCategories });
+  } catch (error) {
+    console.error('Vehicle stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/vehicles/brands (active brands, for admin dropdowns)
+// Also registered before GET /:id to avoid route-shadowing.
+router.get('/brands', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const brands = await prisma.vehicleBrand.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    });
+    res.json(brands);
+  } catch (error) {
+    console.error('List vehicle brands error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/vehicles/categories/:id (single category, admin editing)
+// Not filtered by isActive — admins need to be able to open/edit inactive
+// categories too. Registered before GET /:id to avoid route-shadowing.
+router.get('/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const category = await prisma.vehicleCategory.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!category) { res.status(404).json({ error: 'Category not found' }); return; }
+    res.json(category);
+  } catch (error) {
+    console.error('Get vehicle category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/vehicles/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: req.params.id },
-      include: { brand: true, vehicleCategory: true, colors: true, accessories: true, packages: true, interiors: true, wheels: true },
+      include: {
+        brand: true,
+        vehicleCategory: true,
+        colors: true,
+        accessories: true,
+        packages: true,
+        interiors: true,
+        wheels: true,
+        testDrives: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: { testDrives: true },
+        },
+      },
     });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
     res.json(vehicle);

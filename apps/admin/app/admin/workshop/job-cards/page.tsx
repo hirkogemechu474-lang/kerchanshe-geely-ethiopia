@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { Plus } from 'lucide-react';
 import { PageHeader, LinkButton } from '@/components/admin/ui';
 import JobCardList from '@/components/admin/workshop/JobCardList';
@@ -7,16 +7,11 @@ import JobCardList from '@/components/admin/workshop/JobCardList';
 export default async function JobCardsPage() {
   await requirePermission('canViewJobCards');
 
-  const rows = await prisma.jobCard.findMany({
-    orderBy: { openTs: 'desc' },
-    include: {
-      technician: { select: { name: true } },
-      bay: { select: { name: true } },
-    },
-    take: 200,
-  });
+  const client = await serverApiClient();
+  const { data } = await client.get('/admin/workshop/job-cards', { params: { pageSize: 200 } });
+  const rows = data.items;
 
-  const jobCards = rows.map((j) => ({
+  const jobCards = rows.map((j: any) => ({
     id: j.id,
     jobCardNo: j.jobCardNo,
     plateNo: j.plateNo,
@@ -26,7 +21,7 @@ export default async function JobCardsPage() {
     status: j.status,
     technicianName: j.technician?.name || null,
     bayName: j.bay?.name || null,
-    openTs: j.openTs.toISOString(),
+    openTs: j.openTs,
   }));
 
   return (

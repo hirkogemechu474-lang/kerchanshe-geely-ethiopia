@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import VehicleForm from '@/components/admin/vehicles/VehicleForm';
 
@@ -15,13 +15,17 @@ export default async function EditVehiclePage({ params, searchParams }: Props) {
   const { step } = await searchParams;
   const initialStep = step ? parseInt(step, 10) : undefined;
 
-  // Fetch vehicle from database
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id },
-  });
+  const client = await serverApiClient();
 
-  if (!vehicle) {
-    notFound();
+  let vehicle: any;
+  try {
+    const { data } = await client.get(`/vehicles/${id}`);
+    vehicle = data;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
   return (

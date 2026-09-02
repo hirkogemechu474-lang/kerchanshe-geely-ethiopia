@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth/middleware';
-import { prisma } from '@/lib/prisma';
+import { serverApiClient } from '@/lib/serverApiClient';
 import { PageHeader } from '@/components/admin/ui';
 import WarrantyClaimNewForm from '@/components/admin/workshop/WarrantyClaimNewForm';
 
@@ -11,12 +11,16 @@ export default async function NewWarrantyClaimPage({
   await requirePermission('canManageJobCards');
   const { jobCardId } = await searchParams;
 
-  const jobCard = jobCardId
-    ? await prisma.jobCard.findUnique({
-        where: { id: jobCardId },
-        select: { id: true, jobCardNo: true, plateNo: true, customerName: true, warrantyEndDate: true },
-      })
-    : null;
+  let jobCard: any = null;
+  if (jobCardId) {
+    const client = await serverApiClient();
+    try {
+      const res = await client.get(`/admin/workshop/job-cards/${jobCardId}`);
+      jobCard = res.data.jobCard;
+    } catch {
+      jobCard = null;
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -28,7 +32,7 @@ export default async function NewWarrantyClaimPage({
             jobCardNo: jobCard.jobCardNo,
             plateNo: jobCard.plateNo,
             customerName: jobCard.customerName,
-            warrantyEndDate: jobCard.warrantyEndDate?.toISOString() || null,
+            warrantyEndDate: jobCard.warrantyEndDate || null,
           }}
         />
       ) : (
