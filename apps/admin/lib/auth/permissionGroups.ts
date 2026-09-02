@@ -20,7 +20,7 @@ export const PERMISSION_GROUPS: Record<string, { label: string; permissions: str
   promotions: { label: 'Promotion Management', permissions: ['canManagePromotions'] },
 };
 
-export function roleLabel(role: AdminRole): string {
+export function roleLabel(role: string): string {
   const labels: Record<AdminRole, string> = {
     super_admin: 'Super Admin',
     admin: 'Admin',

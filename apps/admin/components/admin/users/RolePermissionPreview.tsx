@@ -24,9 +24,9 @@ export default function RolePermissionPreview({ role }: { role: string }) {
   const permissions = effective?.[role] ?? ROLE_PERMISSIONS[role as AdminRole];
   if (!permissions) return null;
 
-  const allowed = PERMISSION_GROUPS.flatMap((group) =>
-    group.keys.filter(({ key }) => permissions[key]).map(({ label }) => label)
-  );
+  const allowed = Object.values(PERMISSION_GROUPS)
+    .filter((group) => group.permissions.some((key) => permissions[key as keyof AdminPermissions]))
+    .map((group) => group.label);
 
   return (
     <div className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2.5 text-xs text-blue-900 dark:text-blue-200">

@@ -96,6 +96,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageTechnicians: true, canManageService: true, canManageSpareParts: true,
     canViewSpareParts: true, canViewQuotations: true, canViewDealers: true,
     canViewTestDrives: true, canViewMessages: true, canViewReports: true,
+    canCountersignAgreements: true, canApproveWarrantyClaims: true, canPerformQC: true,
+    canManagePartsIssue: true, canExportReports: true,
   },
   sales: {
     canManageUsers: false, canManageVehicles: false, canManageOrders: true,
@@ -111,6 +113,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageTechnicians: false, canManageService: false, canManageSpareParts: false,
     canViewSpareParts: false, canViewQuotations: true, canViewDealers: false,
     canViewTestDrives: true, canViewMessages: false, canViewReports: false,
+    canCountersignAgreements: false, canApproveWarrantyClaims: false, canPerformQC: false,
+    canManagePartsIssue: false, canExportReports: false,
   },
   service: {
     canManageUsers: false, canManageVehicles: false, canManageOrders: false,
@@ -126,6 +130,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageTechnicians: true, canManageService: true, canManageSpareParts: true,
     canViewSpareParts: true, canViewQuotations: false, canViewDealers: false,
     canViewTestDrives: false, canViewMessages: false, canViewReports: false,
+    canCountersignAgreements: false, canApproveWarrantyClaims: true, canPerformQC: true,
+    canManagePartsIssue: true, canExportReports: false,
   },
   viewer: {
     canManageUsers: false, canManageVehicles: false, canManageOrders: false,
@@ -141,6 +147,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageTechnicians: false, canManageService: false, canManageSpareParts: false,
     canViewSpareParts: false, canViewQuotations: false, canViewDealers: false,
     canViewTestDrives: false, canViewMessages: false, canViewReports: true,
+    canCountersignAgreements: false, canApproveWarrantyClaims: false, canPerformQC: false,
+    canManagePartsIssue: false, canExportReports: false,
   },
 };
 

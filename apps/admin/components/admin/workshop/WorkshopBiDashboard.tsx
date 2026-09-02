@@ -81,6 +81,15 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
   };
 
   const csiAverage = data?.csi.available ? data.csi.averageRating : null;
+  let csiText = '';
+  if (data) {
+    const csi = data.csi;
+    if ('reason' in csi) {
+      csiText = `No data — ${csi.reason}`;
+    } else {
+      csiText = `${csi.averageRating.toFixed(2)} / 5 average from ${csi.responseCount} response${csi.responseCount === 1 ? '' : 's'} this month`;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -230,9 +239,7 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Customer Satisfaction (CSI)</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {data.csi.available
-                    ? `${data.csi.averageRating.toFixed(2)} / 5 average from ${data.csi.responseCount} response${data.csi.responseCount === 1 ? '' : 's'} this month`
-                    : `No data — ${data.csi.reason}`}
+                  {csiText}
                 </p>
               </div>
             </div>
