@@ -47,11 +47,24 @@ export async function assignSalesRep(params: {
       if (!autoResult.ok) return autoResult;
 
       resolvedRepId = autoResult.data!.userId;
-      // Return the assigned rep info alongside the result
+
+      // Persist the auto-assignment when there's a real target to persist it
+      // to. quotationService.create() intentionally calls this with
+      // targetId: '' before the row exists yet (and writes the result
+      // itself once it does) — without this guard, every other caller
+      // (e.g. the POST /:id/assign-rep route) computed a "best rep" that
+      // was never actually saved anywhere.
+      if (params.targetId) {
+        if (params.targetType === 'quotation') {
+          await quotationRepository.update(params.targetId, { assignedTo: resolvedRepId });
+        } else {
+          await salesOrderRepository.update(params.targetId, { salesAgentId: resolvedRepId });
+        }
+      }
+
       return {
         ok: true,
         data: autoResult.data,
-        error: autoResult.error,
         assignedRep: autoResult.data,
       };
     }

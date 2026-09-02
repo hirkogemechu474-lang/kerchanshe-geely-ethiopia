@@ -2,18 +2,24 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
+import { orderHandoverService } from '../services/sales/orderHandover.service';
 
 const router = Router();
 
-// GET /api/handover/:orderId (get handover summary)
+// GET /api/handover/:orderId (get handover summary) — customer-facing,
+// reached via the emailed sign-off link (see orderHandoverService.
+// generateHandoverLink), so it's gated by the signed token, not an admin
+// session. The old wiring skipped verifyLinkToken entirely and queried
+// nonexistent `customer`/`vehicle`/`allocation` relations on SalesOrder.
 router.get('/:orderId', async (req: Request, res: Response) => {
   try {
-    const order = await prisma.salesOrder.findUnique({
-      where: { id: req.params.orderId },
-      include: { customer: true, vehicle: true, allocation: true },
-    });
-    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
-    res.json(order);
+    const token = (req.query.token as string) || '';
+    const result = await orderHandoverService.getHandoverView(req.params.orderId, token);
+    if (!result.ok) {
+      res.status(result.error === 'Order not found.' ? 404 : 403).json({ error: result.error });
+      return;
+    }
+    res.json(result.data);
   } catch (error) {
     console.error('Get handover error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -23,28 +29,34 @@ router.get('/:orderId', async (req: Request, res: Response) => {
 // POST /api/handover/:orderId/sign (customer sign)
 router.post('/:orderId/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { signatureData, signerName } = req.body;
-    const order = await prisma.salesOrder.update({
-      where: { id: req.params.orderId },
-      data: { handoverSignedAt: new Date(), handoverSignatureData: signatureData, handoverSignerName: signerName },
-    });
-    res.json(order);
+    const token = (req.query.token as string) || '';
+    const { signatureDataUrl, photoUrl } = req.body;
+    const handoverSignedDocumentUrl = photoUrl || signatureDataUrl;
+    if (!handoverSignedDocumentUrl) { res.status(400).json({ error: 'A signature or a signed photo is required.' }); return; }
+
+    const result = await orderHandoverService.signHandover(req.params.orderId, token, handoverSignedDocumentUrl);
+    if (!result.ok) {
+      res.status(result.error === 'Order not found.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json(result.data);
   } catch (error) {
     console.error('Sign handover error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/handover/:orderId/pdf (generate PDF)
+// GET /api/handover/:orderId/pdf (view/download handover confirmation PDF)
 router.get('/:orderId/pdf', async (req: Request, res: Response) => {
   try {
-    const order = await prisma.salesOrder.findUnique({
-      where: { id: req.params.orderId },
-      include: { customer: true, vehicle: true, allocation: true },
-    });
-    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    const token = (req.query.token as string) || '';
+    const result = await orderHandoverService.getHandoverView(req.params.orderId, token);
+    if (!result.ok) {
+      res.status(result.error === 'Order not found.' ? 404 : 403).json({ error: result.error });
+      return;
+    }
     // TODO: Generate handover PDF
-    res.json({ order, pdfUrl: null });
+    res.json({ order: result.data, pdfUrl: null });
   } catch (error) {
     console.error('Generate handover PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -54,13 +66,11 @@ router.get('/:orderId/pdf', async (req: Request, res: Response) => {
 // POST /api/handover/:orderId/countersign-stamp (staff countersign)
 router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { signatureData } = req.body;
     const order = await prisma.salesOrder.update({
       where: { id: req.params.orderId },
       data: {
         handoverCountersignedAt: new Date(),
         handoverCountersignedById: req.adminSession!.user.id,
-        handoverCountersignatureData: signatureData,
       },
     });
     res.json(order);

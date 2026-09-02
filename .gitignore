@@ -21,6 +21,9 @@ node_modules
 # production
 /build
 
+# backend build output (backend/dist, via `tsc`)
+/backend/dist/
+
 # misc
 .DS_Store
 *.pem

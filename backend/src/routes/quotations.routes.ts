@@ -3,6 +3,12 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { assignSalesRep } from '../services/sales/assignSalesRep';
+import { quotationService } from '../services/sales/quotation.service';
+import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
+import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
+import { userRepository } from '../repositories';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -19,7 +25,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       where.OR = [
         { reference: { contains: search, mode: 'insensitive' } },
         { customerName: { contains: search, mode: 'insensitive' } },
-        { customerEmail: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (status) where.status = status;
@@ -27,7 +33,6 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     const [items, total] = await Promise.all([
       prisma.quotation.findMany({
         where,
-        include: { vehicle: true, salesAgent: true },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -45,9 +50,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 // POST /api/quotations (admin create walk-in lead)
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.create({
-      data: { ...req.body, createdById: req.adminSession!.user.id },
-    });
+    const quotation = await prisma.quotation.create({ data: req.body });
     res.status(201).json(quotation);
   } catch (error) {
     console.error('Create quotation error:', error);
@@ -111,61 +114,67 @@ router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response
   }
 });
 
-// POST /api/quotations/:id/send-quotation (email to customer)
+// POST /api/quotations/:id/send-quotation (email the generated quotation PDF
+// to the customer — gated on manager approval, per Quotation.
+// managerApprovalStatus's doc comment: "a generated quotation cannot be sent
+// to the customer until a manager approves it here")
 router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.update({
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
+    if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
+    if (quotation.managerApprovalStatus !== 'APPROVED') {
+      res.status(400).json({ error: 'This quotation must be approved by a manager before it can be sent.' });
+      return;
+    }
+
+    const updated = await prisma.quotation.update({
       where: { id: req.params.id },
-      data: { status: 'sent', sentAt: new Date() },
+      data: { status: 'sent' },
     });
-    // Notify customer that quotation was sent
-    const q = await prisma.quotation.findUnique({ where: { id: req.params.id }, include: { vehicle: true, salesAgent: true } });
-    if (q?.email) {
-      await dispatchNotification({
+
+    let notificationSent = false;
+    if (quotation.email) {
+      const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
+      const result = await dispatchNotification({
         type: 'quotation',
-        to: [q.email],
-        subject: `Quotation Sent${q.reference ? ` (${q.reference})` : ''}`,
+        to: [quotation.email],
+        subject: `Your Quotation${quotation.reference ? ` (${quotation.reference})` : ''}`,
         data: {
-          quotationId: q.id,
-          quotationNo: q.reference,
-          customerName: q.customerName,
-          vehicleModel: q.vehicleModel,
-          assignedTo: q.salesAgent?.name,
-          totalPrice: q.unitPrice,
+          quotationId: quotation.id,
+          quotationNo: quotation.reference,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          ...(link && { link }),
         },
       });
+      notificationSent = result.ok;
     }
-    // TODO: Send email with quotation
-    res.json(quotation);
+
+    res.json({ ...updated, notificationSent });
   } catch (error) {
     console.error('Send quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// POST /api/quotations/:id/reject-quotation (manager reject)
+// POST /api/quotations/:id/reject-quotation (manager returns a generated
+// quotation for correction — this is the manager-approval-status reject,
+// same gate QuotationApprovalPanel.tsx surfaces, not a customer-facing
+// rejection: the customer never sees a quotation until it's sent).
 router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const { reason } = req.body;
+    if (!reason) { res.status(400).json({ error: 'A rejection reason is required.' }); return; }
+
     const quotation = await prisma.quotation.update({
       where: { id: req.params.id },
-      data: { status: 'rejected', rejectedReason: reason, rejectedById: req.adminSession!.user.id },
+      data: {
+        managerApprovalStatus: 'REJECTED',
+        managerRejectedById: req.adminSession!.user.id,
+        managerRejectedAt: new Date(),
+        managerRejectionReason: reason,
+      },
     });
-    // Notify customer that quotation was rejected
-    const q = await prisma.quotation.findUnique({ where: { id: req.params.id } });
-    if (q?.email) {
-      await dispatchNotification({
-        type: 'quotation',
-        to: [q.email],
-        subject: `Quotation Rejected${q.reference ? ` (${q.reference})` : ''}`,
-        data: {
-          quotationId: q.id,
-          quotationNo: q.reference,
-          customerName: q.customerName,
-          reason: reason,
-        },
-      });
-    }
     res.json(quotation);
   } catch (error) {
     console.error('Reject quotation error:', error);
@@ -173,26 +182,65 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
   }
 });
 
-// GET /api/quotations/:id/quotation-pdf (view PDF)
+// GET /api/quotations/:id/quotation-pdf (view PDF) — Quotation has no stored
+// pdfUrl; the PDF is generated on demand (see quotationPdf.service.ts). The
+// closest thing to a persisted document link is signedDocumentUrl once the
+// customer has actually signed (same convention as public.routes.ts's
+// GET /quotations/:reference/pdf).
 router.get('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id }, include: { vehicle: true, salesAgent: true } });
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    // TODO: Generate PDF
-    res.json({ quotation });
+    res.json({ quotation, pdfUrl: quotation.signedDocumentUrl });
   } catch (error) {
     console.error('Get quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// POST /api/quotations/:id/quotation-pdf (generate PDF)
+// POST /api/quotations/:id/quotation-pdf (generate/regenerate the Sales
+// Quotation — see QuotationPdfPanel.tsx for the real request body shape and
+// the manager-approval reset-on-regenerate behavior).
 router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id }, include: { vehicle: true, salesAgent: true } });
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    // TODO: Generate PDF and store URL
-    res.json({ quotation, pdfUrl: null });
+
+    const { unitPrice, quantity, discountAmount, vehicleYear, vehicleColor, quotationValidUntil, paymentTerms, deliveryTerms } = req.body;
+    const parsedUnitPrice = unitPrice != null && unitPrice !== '' ? Number(unitPrice) : null;
+    if (parsedUnitPrice == null || Number.isNaN(parsedUnitPrice)) {
+      res.status(400).json({ error: 'unitPrice is required' });
+      return;
+    }
+    const parsedQuantity = quantity != null && quantity !== '' ? Number(quantity) : 1;
+    const parsedDiscount = discountAmount != null && discountAmount !== '' ? Number(discountAmount) : 0;
+    // VAT is calculated automatically at 15% of the vehicle price minus discount (per QuotationPdfPanel.tsx).
+    const vatAmount = Math.max(0, parsedUnitPrice * parsedQuantity - parsedDiscount) * 0.15;
+
+    const updated = await prisma.quotation.update({
+      where: { id: req.params.id },
+      data: {
+        unitPrice: parsedUnitPrice,
+        quantity: parsedQuantity,
+        discountAmount: parsedDiscount,
+        vatAmount,
+        vehicleYear: vehicleYear || null,
+        vehicleColor: vehicleColor || null,
+        paymentTerms: paymentTerms || null,
+        deliveryTerms: deliveryTerms || null,
+        quotationValidUntil: quotationValidUntil ? new Date(quotationValidUntil) : null,
+        quotationNo: quotation.quotationNo || (await generateReference(REFERENCE_CATEGORY.QUOTATION)),
+        quotationGeneratedAt: new Date(),
+        // Rejecting resets to PENDING once the agent regenerates a corrected
+        // quotation (see Quotation.managerApprovalStatus's doc comment).
+        managerApprovalStatus: 'PENDING',
+        managerRejectedById: null,
+        managerRejectedAt: null,
+        managerRejectionReason: null,
+      },
+    });
+
+    res.json({ quotation: updated, pdfUrl: null });
   } catch (error) {
     console.error('Generate quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -202,9 +250,18 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
 // POST /api/quotations/:id/escalate (escalate to manager)
 router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    const existing = await prisma.quotation.findUnique({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Quotation not found' }); return; }
+
     const quotation = await prisma.quotation.update({
       where: { id: req.params.id },
-      data: { status: 'escalated', escalatedAt: new Date(), escalatedById: req.adminSession!.user.id, escalationReason: req.body.reason },
+      data: {
+        status: 'escalated',
+        escalatedAt: new Date(),
+        escalatedById: req.adminSession!.user.id,
+        escalatedFrom: existing.assignedTo,
+        escalationReason: req.body.reason,
+      },
     });
     // TODO: Send email notification to new assignee and manager
     res.json(quotation);
@@ -228,44 +285,31 @@ router.post('/check-overdue-escalations', requireAdminApiSession, async (req: Re
 // POST /api/quotations/:id/convert-to-order (convert to sales order)
 router.post('/:id/convert-to-order', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
-    if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-
-    const order = await prisma.salesOrder.create({
-      data: { quotationId: quotation.id, customerId: quotation.customerId, vehicleId: quotation.vehicleId, totalAmount: quotation.totalAmount, createdById: req.adminSession!.user.id },
-    });
-
-    await prisma.quotation.update({ where: { id: req.params.id }, data: { status: 'converted', orderId: order.id } });
-
-    res.status(201).json(order);
+    const result = await convertQuotationToOrderService.convert(req.params.id, req.body?.assignedTo);
+    if (!result.ok) {
+      res.status(result.error === 'Quotation not found.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result.data);
   } catch (error) {
     console.error('Convert quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// POST /api/quotations/:id/approve-quotation (manager approve)
+// POST /api/quotations/:id/approve-quotation (manager approves the generated
+// quotation — sets the manager sign-off gate, not the general lifecycle
+// `status`; see QuotationApprovalPanel.tsx).
 router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.update({
       where: { id: req.params.id },
-      data: { status: 'approved', approvedById: req.adminSession!.user.id, approvedAt: new Date() },
+      data: {
+        managerApprovalStatus: 'APPROVED',
+        managerApprovedById: req.adminSession!.user.id,
+        managerApprovedAt: new Date(),
+      },
     });
-    // Notify customer that quotation was approved
-    const q = await prisma.quotation.findUnique({ where: { id: req.params.id } });
-    if (q?.email) {
-      await dispatchNotification({
-        type: 'quotation',
-        to: [q.email],
-        subject: `Quotation Approved${q.reference ? ` (${q.reference})` : ''}`,
-        data: {
-          quotationId: q.id,
-          quotationNo: q.reference,
-          customerName: q.customerName,
-          totalPrice: q.unitPrice,
-        },
-      });
-    }
     res.json(quotation);
   } catch (error) {
     console.error('Approve quotation error:', error);
@@ -273,12 +317,12 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
   }
 });
 
-// POST /api/quotations (public - submit lead quotation)
+// POST /api/quotations/submit (public - submit lead quotation)
 router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
     const { autoAssign, assignmentFactors, ...body } = req.body;
-    const quotation = await prisma.quotation.create({ data: { ...body, createdById: req.adminSession?.user?.id } });
-    
+    const quotation = await prisma.quotation.create({ data: body });
+
     // Auto-assign sales representative if requested
     let assignedRep = null;
     if (autoAssign) {
@@ -297,7 +341,7 @@ router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Respo
         });
       }
     }
-    
+
     res.status(201).json({ success: true, reference: quotation.reference, assignedRep });
   } catch (error) {
     console.error('Submit quotation error:', error);
@@ -311,7 +355,7 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
     const { autoAssign, salesRepName, salesRepId, assignmentFactors } = req.body;
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    
+
     const result = await assignSalesRep({
       targetType: 'quotation',
       targetId: req.params.id,
@@ -320,11 +364,11 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
       autoAssign,
       factors: assignmentFactors,
     });
-    
+
     if (!result.ok) {
       return res.status(400).json({ error: result.error });
     }
-    
+
     // Send email notification to the assigned rep and manager
     const assignedRep = await userRepository.findById(result.data!.userId);
     if (assignedRep?.email) {
@@ -342,7 +386,7 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
         },
       });
     }
-    
+
     res.json({ success: true, assignedRep: result.data, error: result.error });
   } catch (error) {
     console.error('Assign rep error:', error);
