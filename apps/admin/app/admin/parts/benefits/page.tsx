@@ -26,7 +26,7 @@ export default function PartBenefitsPage() {
 
   const fetchBenefits = async () => {
     try {
-      const response = await fetch('/api/admin/parts/benefits');
+      const response = await fetch('/api/parts/admin/parts/benefits');
       const data = await response.json();
       if (data.benefits) setBenefits(data.benefits);
     } catch (error) {
@@ -44,7 +44,7 @@ export default function PartBenefitsPage() {
     setMessage(null);
 
     try {
-      const url = editing ? `/api/admin/parts/benefits/${editing.id}` : '/api/admin/parts/benefits';
+      const url = editing ? `/api/parts/admin/parts/benefits/${editing.id}` : '/api/parts/admin/parts/benefits';
       const method = editing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -71,7 +71,7 @@ export default function PartBenefitsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this benefit?')) return;
     try {
-      const response = await fetch(`/api/admin/parts/benefits/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/parts/admin/parts/benefits/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setMessage({ type: 'success', text: 'Benefit deleted' });
         fetchBenefits();

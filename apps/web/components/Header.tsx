@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, ChevronDown, Car } from 'lucide-react';
+import { ChevronDown, Car } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import type { VehicleRecord } from '@/services/vehicleService';
@@ -158,21 +158,26 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white/95 dark:bg-midnight-surface/95 backdrop-blur-sm border-b border-black/[0.06] dark:border-midnight-line sticky top-0 z-50 transition-colors">
+    <header className="sticky top-0 z-50 border-b border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md transition-colors dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none">
       <div className="page-container">
-        <div className="flex items-center justify-between gap-3 py-2.5">
+        <div className="flex min-h-[64px] flex-wrap items-center justify-between gap-2 py-2 sm:min-h-[84px] sm:gap-4 sm:py-3 lg:flex-nowrap lg:gap-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group" onClick={closeAllMenus}>
-            <img
-              src={withBasePath('/assets/logos/geely-logo.png')}
-              alt="Geely Ethiopia"
-              className="h-9 md:h-10 w-auto max-w-[132px] object-contain transition-opacity group-hover:opacity-70 dark:brightness-0 dark:invert"
-            />
+          <Link href="/" className="group flex shrink-0 items-center gap-3" onClick={closeAllMenus}>
+            <span className="relative h-7 w-14 overflow-hidden sm:h-8 sm:w-[4.5rem]" aria-hidden="true">
+              <img
+                src={withBasePath('/assets/logos/geely-logo.png')}
+                alt=""
+                className="absolute inset-0 h-full w-full scale-[4] object-contain transition-opacity group-hover:opacity-70 dark:brightness-0 dark:invert"
+              />
+            </span>
+            <span className="font-display text-[1.25rem] font-bold leading-none tracking-[0.08em] text-black transition-opacity group-hover:opacity-70 dark:text-white sm:text-[1.7rem]">
+              GEELY
+            </span>
             <span className="sr-only">Geely Ethiopia</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex flex-1 items-center justify-center gap-2 whitespace-nowrap">
+          <nav className="order-last flex basis-full flex-1 items-center justify-start gap-1 overflow-x-auto whitespace-nowrap pb-1 sm:gap-2 sm:pb-0 lg:order-none lg:basis-auto lg:justify-center lg:overflow-visible">
             {mainNavItems.map((item) => (
               <div
                 key={item.label}
@@ -201,7 +206,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
               >
                 {item.hasDropdown ? (
                   <button
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
                     onClick={() => {
                       loadMenuData();
                       setModelsDropdownOpen(!modelsDropdownOpen);
@@ -218,7 +223,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                   </button>
                 ) : item.hasLinkGroup ? (
                   <button
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
                     onClick={() => {
                       setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
                       setModelsDropdownOpen(false);
@@ -236,7 +241,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
                     href={item.href}
                     target={item.openInNewTab ? '_blank' : undefined}
                     rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="nav-link flex items-center gap-1.5 text-ink dark:text-ice hover:text-active-blue font-display font-medium text-[12.5px] uppercase tracking-[0.1em] px-3 py-2.5 transition-colors whitespace-nowrap"
+                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
                     onClick={closeAllMenus}
                   >
                     {item.icon}
@@ -267,26 +272,6 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
             ))}
           </nav>
 
-          {/* Right Actions */}
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            {/* No separate "Book Test Drive" CTA here — "Test Drive" is
-                already a top-level nav item (see mainNavItems), and having
-                both linked to the same /test-drive page was a duplicate.
-                Dark mode and login are intentionally not in the persistent
-                header — neither appears on Geely's regional distributor
-                sites (geely.com.eg, geelyauto.co.za). Dark mode is still
-                reachable from the mobile drawer's quick actions; login only
-                via /login directly for now. Search, language, and Get Quote
-                live in the drawer behind this button (see MobileDrawer) —
-                kept off the persistent header bar at every screen size. */}
-            <button
-              onClick={onMobileMenuToggle}
-              aria-label="Open menu"
-              className="text-navy dark:text-ice p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            >
-              <Menu size={22} strokeWidth={1.75} />
-            </button>
-          </div>
         </div>
 
         {/* Vehicle Dropdown — data already loaded, no spinner */}

@@ -31,7 +31,7 @@ export default function PartCategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/admin/parts/categories');
+      const response = await fetch('/api/parts/admin/parts/categories');
       const data = await response.json();
       if (data.categories) setCategories(data.categories);
     } catch (error) {
@@ -51,7 +51,7 @@ export default function PartCategoriesPage() {
     setMessage(null);
 
     try {
-      const url = editing ? `/api/admin/parts/categories/${editing.id}` : '/api/admin/parts/categories';
+      const url = editing ? `/api/parts/admin/parts/categories/${editing.id}` : '/api/parts/admin/parts/categories';
       const method = editing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -81,7 +81,7 @@ export default function PartCategoriesPage() {
     if (!confirm('Delete this category? Parts in it will keep their category field but unlink. Continue?')) return;
 
     try {
-      const response = await fetch(`/api/admin/parts/categories/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/parts/admin/parts/categories/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setMessage({ type: 'success', text: 'Category deleted' });
         fetchCategories();

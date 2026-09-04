@@ -59,6 +59,10 @@ import {
   Repeat,
   ScrollText,
   Timer,
+  GitBranch,
+  Bot,
+  BookOpen,
+  MessagesSquare,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { useTheme } from './ThemeProvider';
@@ -171,6 +175,14 @@ const navSections: NavSection[] = [
         ],
       },
       {
+        label: 'Chatbot',
+        items: [
+          { name: 'Chatbot Settings', href: '/admin/chatbot', icon: Bot, permission: 'canManageContent' },
+          { name: 'Knowledge Base', href: '/admin/chatbot/knowledge', icon: BookOpen, permission: 'canManageContent' },
+          { name: 'Conversations', href: '/admin/chatbot/conversations', icon: MessagesSquare, permission: 'canManageContent' },
+        ],
+      },
+      {
         label: 'Dealers & Parts',
         items: [
           { name: 'Dealer Locations', href: '/admin/dealers', icon: MapPin, permission: 'canViewDealers' },
@@ -241,6 +253,7 @@ const navSections: NavSection[] = [
         label: 'CRM & Post-Sales',
         items: [
           { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'Dealership Workflow', href: '/admin/workflow', icon: GitBranch, permission: 'canViewReports' },
           { name: 'Commissions', href: '/admin/commissions', icon: BadgeDollarSign, permission: 'canManageOrders' },
           { name: 'Warranty Register', href: '/admin/warranty', icon: ShieldCheck, permission: 'canViewJobCards' },
           { name: 'Customer Satisfaction', href: '/admin/satisfaction', icon: Smile, permission: 'canManageCustomers' },

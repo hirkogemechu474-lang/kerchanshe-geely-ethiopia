@@ -50,13 +50,14 @@ router.post('/:orderId/sign', rateLimiters.contactForm, async (req: Request, res
 router.get('/:orderId/pdf', async (req: Request, res: Response) => {
   try {
     const token = (req.query.token as string) || '';
-    const result = await orderHandoverService.getHandoverView(req.params.orderId, token);
-    if (!result.ok) {
+    const result = await orderHandoverService.generateHandoverPdf(req.params.orderId, token);
+    if (!result.ok || !result.data) {
       res.status(result.error === 'Order not found.' ? 404 : 403).json({ error: result.error });
       return;
     }
-    // TODO: Generate handover PDF
-    res.json({ order: result.data, pdfUrl: null });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="handover-confirmation-${req.params.orderId}.pdf"`);
+    res.send(result.data);
   } catch (error) {
     console.error('Generate handover PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });

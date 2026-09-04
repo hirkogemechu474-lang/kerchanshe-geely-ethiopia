@@ -178,6 +178,7 @@ export default async function VehicleDetailPage({
   const publicHeroVideoUrl = publicMediaUrl(vehicle.heroVideoUrl);
   const badge = vehicle.badge || getAvailabilityBadge(vehicle.status || "published").label;
   const specs = (vehicle.specifications || {}) as any;
+  const overviewImageUrl = publicImageList[1] || publicHeroImageUrl;
 
   // Real per-vehicle options from the admin panel (/admin/vehicles/colors,
   // /admin/vehicles/models-variants), already included by the public vehicle
@@ -271,7 +272,7 @@ export default async function VehicleDetailPage({
       {/* ── HERO SECTION — full-bleed image, minimal chrome, no price on this
            browsing page (matches the pattern on Geely's regional model pages,
            e.g. geely.com.eg/models/gx3-pro, which show no pricing at all) ── */}
-      <div id="section-overview" className="relative bg-ink text-white scroll-mt-16">
+      <div id="section-overview" className="relative scroll-mt-[108px] bg-ink text-white sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
         <div className="relative h-[70vh] min-h-[420px] max-h-[720px] w-full overflow-hidden">
           {publicHeroVideoUrl ? (
             <video
@@ -355,12 +356,15 @@ export default async function VehicleDetailPage({
       </div>
 
       {/* ── OVERVIEW COPY + SECONDARY ACTIONS ─────────────────────────── */}
-      <div className="bg-white">
-        <div className="page-container py-10">
-          <p className="text-steel text-base leading-relaxed max-w-3xl mb-6">
-            {vehicle.description || "Vehicle details are managed from the admin panel."}
-          </p>
-          <div className="flex gap-5 flex-wrap items-center text-sm">
+      <section className="bg-white py-14 md:py-20">
+        <div className="page-container grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div className="order-2 lg:order-1">
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.24em] text-active-blue">Overview</div>
+            <h2 className="disp mb-5 max-w-xl text-3xl font-bold text-navy md:text-5xl">Designed to move you forward.</h2>
+            <p className="mb-7 max-w-xl text-base leading-relaxed text-steel">
+              {vehicle.description || `The ${vehicle.name} brings confident performance, intelligent technology, and everyday comfort together in one distinctive Geely vehicle.`}
+            </p>
+            <div className="mb-8 flex flex-wrap items-center gap-5 text-sm">
             <a href={contactPhoneHref} className="flex items-center gap-2 font-semibold text-navy hover:text-active-blue transition-colors">
               <Phone size={16} /> Call Us
             </a>
@@ -381,16 +385,27 @@ export default async function VehicleDetailPage({
             <QuickRequestCallback vehicleModel={vehicle.name} />
             <ShareButton title={vehicle.name} />
           </div>
+          </div>
+          <div className="order-1 overflow-hidden bg-brand-neutral-3 lg:order-2">
+            {overviewImageUrl ? (
+              <img src={overviewImageUrl} alt={`${vehicle.name} overview`} className="aspect-[4/3] h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+            ) : (
+              <div className="flex aspect-[4/3] items-center justify-center bg-navy text-sm text-white/60">{vehicle.name}</div>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* ── TAB NAVIGATION ────────────────────────────────────────────── */}
-      <ModelPageTabs />
+      <ModelPageTabs
+        vehicleName={vehicle.name}
+        testDriveHref={`/test-drive?model=${vehicle.slug}${visitParam}`}
+      />
 
       {/* ── GALLERY SECTION ───────────────────────────────────────────── */}
-      <section id="section-gallery" className="py-12 bg-white scroll-mt-16">
+      <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
         <div className="page-container">
-          <h2 className="disp text-3xl text-navy font-bold mb-6">Gallery</h2>
+          <h2 className="disp text-3xl text-navy font-bold mb-6">Exteriors</h2>
           {galleries.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {galleries.map((img: string, index: number) => (
@@ -448,7 +463,7 @@ export default async function VehicleDetailPage({
 
       {/* ── SPECIFICATIONS — plain tabular layout, light typography, no
            boxed cards, matching the reference's spec table treatment ── */}
-      <section id="section-specs" className="py-16 bg-white scroll-mt-16">
+      <section id="section-specs" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
         <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-10">Technical Specifications</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
@@ -513,7 +528,7 @@ export default async function VehicleDetailPage({
 
       {/* ── FEATURES SECTION ──────────────────────────────────────────── */}
       {featuredFeatures.length > 0 && (
-        <section className="py-16 bg-ice">
+        <section id="section-safety" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
           <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-8">Vehicle Features</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">

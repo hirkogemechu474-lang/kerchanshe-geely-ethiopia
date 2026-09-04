@@ -4,6 +4,7 @@ import "./globals.css";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { WebVitals } from "@/components/WebVitals";
 import CookieBanner from "@/components/CookieBanner";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import Script from "next/script";
@@ -135,6 +136,7 @@ export default function RootLayout({
         </ThemeProvider>
         <PWAInstallPrompt />
         <CookieBanner />
+        <ChatbotWidget />
         <WebVitals />
         
         {/* Service Worker Registration */}
@@ -143,7 +145,7 @@ export default function RootLayout({
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator) {
+              if (${JSON.stringify(process.env.NODE_ENV === 'production')} && 'serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register(${JSON.stringify(withBasePath('/sw.js'))}).then(
                     function(registration) {
@@ -154,6 +156,15 @@ export default function RootLayout({
                     }
                   );
                 });
+              } else if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  registrations.forEach(function(registration) { registration.unregister(); });
+                });
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    keys.forEach(function(key) { caches.delete(key); });
+                  });
+                }
               }
             `,
           }}

@@ -6,7 +6,7 @@ export const homepageContentService = {
       const [heroSections, showcases, featuredVehicles, faqs] = await Promise.all([
         contentRepository.findActiveHeroSections(),
         contentRepository.findActiveShowcases(),
-        import('../../repositories').then((r) =>
+        import('../../repositories/index.js').then((r) =>
           r.vehicleRepository.findManyPublic({ isActive: true, status: 'published', isFeatured: true }, 6)
         ),
         contentRepository.findActiveFaqs({ featuredOnly: true, limit: 6 }),

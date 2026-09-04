@@ -570,6 +570,12 @@ export default function FinancingManagementPage() {
               <Wallet size={18} /> View Payment Banks
             </button>
           )}
+          <Link
+            href="/admin/financing/content"
+            className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <LayoutDashboard size={18} /> Public Page Content
+          </Link>
         </div>
       </div>
 

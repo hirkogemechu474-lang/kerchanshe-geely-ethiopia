@@ -27,7 +27,7 @@ export default function PartBrandsPage() {
 
   const fetchBrands = async () => {
     try {
-      const response = await fetch('/api/admin/parts/brands');
+      const response = await fetch('/api/parts/admin/parts/brands');
       const data = await response.json();
       if (data.brands) setBrands(data.brands);
     } catch (error) {
@@ -45,7 +45,7 @@ export default function PartBrandsPage() {
     setMessage(null);
 
     try {
-      const url = editing ? `/api/admin/parts/brands/${editing.id}` : '/api/admin/parts/brands';
+      const url = editing ? `/api/parts/admin/parts/brands/${editing.id}` : '/api/parts/admin/parts/brands';
       const method = editing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -72,7 +72,7 @@ export default function PartBrandsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this brand?')) return;
     try {
-      const response = await fetch(`/api/admin/parts/brands/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/parts/admin/parts/brands/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setMessage({ type: 'success', text: 'Brand deleted' });
         fetchBrands();

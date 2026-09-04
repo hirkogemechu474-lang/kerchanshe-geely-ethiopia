@@ -240,101 +240,101 @@ model ShowroomVisit {
 
 // Quotations
 model Quotation {
-  id                     String                  @id @default(uuid())
-  customerName           String
-  phoneNumber            String
+  id                         String                       @id @default(uuid())
+  customerName               String
+  phoneNumber                String
   // Optional: digital ("website") leads always have one (enforced in
   // web/app/api/quotations/route.ts), but a walk-in lead logged by a Sales
   // Executive at the counter may only have name + phone at capture time
   // (BRD FR-101: "at minimum" name and phone).
-  email                  String?
-  nationalId             String?
+  email                      String?
+  nationalId                 String?
   // Digital ID capture on the public quote form — same convention as
   // TestDrive.idDocumentType/idPhotoUrl (nationalId above doubles as the
   // document number here, so there's no separate idDocumentNumber column).
-  idDocumentType         String?
-  idPhotoUrl             String?
+  idDocumentType             String?
+  idPhotoUrl                 String?
   // Optional: UC-01 alt flow — "If no vehicle model is selected, the lead
   // is still saved as a general enquiry."
-  vehicleModel           String?
-  preferredDealer        String?
-  financingInterest      Boolean                 @default(false)
-  tradeInInterest        Boolean                 @default(false)
-  message                String?                 @db.Text
+  vehicleModel               String?
+  preferredDealer            String?
+  financingInterest          Boolean                      @default(false)
+  tradeInInterest            Boolean                      @default(false)
+  message                    String?                      @db.Text
   // FR-101 lead source tagging: 'website' | 'walk-in' | 'referral' | 'phone' | 'other'.
   // Plain string, matching the existing `status` field's convention rather
   // than a Prisma enum.
-  source                 String                  @default("website")
+  source                     String                       @default("website")
   // Structured configurator selection (FR-102/103): { vehicle, trim, color,
   // wheels, interior, accessories: string[], price }, set by
   // web/app/quote/page.tsx when the customer arrived via the configurator's
   // "Send Configuration" handoff. Null for quotations submitted without a
   // configurator session (e.g. a plain "request a quote" form fill).
-  configurationJson      Json?
-  status                 String                  @default("new") // new, contacted, in_progress, converted, closed
-  internalNotes          String?                 @db.Text
-  assignedTo             String?
+  configurationJson          Json?
+  status                     String                       @default("new") // new, contacted, in_progress, converted, closed
+  internalNotes              String?                      @db.Text
+  assignedTo                 String?
   // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
   // creation via web/lib/reference.ts. Nullable for rows created before
   // this column existed.
-  reference              String?                 @unique
+  reference                  String?                      @unique
   // ── Sales Quotation PDF fields ──────────────────────────────────────────
   // Populated by a Sales Consultant via the "Generate & Send Quotation PDF"
   // panel (admin/components/admin/sales/QuotationPdfPanel.tsx) before the
   // formal dealer quotation document exists — none of this is captured
   // anywhere else on the lead (price only otherwise lives in the
   // unstructured configurationJson.price, if set at all).
-  quotationNo            String?                 @unique // GY-SQ-DDMMYYYY-NNN, via generateReference()
-  quotationValidUntil    DateTime?
-  unitPrice              Float?
-  quantity               Int?                    @default(1)
-  discountAmount         Float?                  @default(0)
-  vatAmount              Float? // auto-computed at 15%, stored for the PDF/audit trail
-  vehicleYear            String?
-  vehicleColor           String?
-  paymentTerms           String?
-  deliveryTerms          String?
-  quotationGeneratedAt   DateTime?
+  quotationNo                String?                      @unique // GY-SQ-DDMMYYYY-NNN, via generateReference()
+  quotationValidUntil        DateTime?
+  unitPrice                  Float?
+  quantity                   Int?                         @default(1)
+  discountAmount             Float?                       @default(0)
+  vatAmount                  Float? // auto-computed at 15%, stored for the PDF/audit trail
+  vehicleYear                String?
+  vehicleColor               String?
+  paymentTerms               String?
+  deliveryTerms              String?
+  quotationGeneratedAt       DateTime?
   // Manager sign-off gate: a generated quotation cannot be sent to the
   // customer (see .../[id]/send-quotation/route.ts) until a manager
   // approves it here. Rejecting resets to PENDING once the agent
   // regenerates a corrected quotation (see .../[id]/quotation-pdf/route.ts).
-  managerApprovalStatus  QuotationApprovalStatus @default(PENDING)
-  managerApprovedById    String?
-  managerApprovedAt      DateTime?
-  managerRejectedById    String?
-  managerRejectedAt      DateTime?
-  managerRejectionReason String?                 @db.Text
+  managerApprovalStatus      QuotationApprovalStatus      @default(PENDING)
+  managerApprovedById        String?
+  managerApprovedAt          DateTime?
+  managerRejectedById        String?
+  managerRejectedAt          DateTime?
+  managerRejectionReason     String?                      @db.Text
   // Customer e-sign/attach on the quotation PDF itself (distinct from the
   // later SalesOrder agreement signature) — same drawn-signature-stamped-
   // onto-PDF or uploaded-photo convention as SalesOrder.signedDocumentUrl.
   // Setting this also flips status to "accepted", a value distinct from
   // the older manually-set "approved" (a staff decision) so a customer's
   // own digital acceptance is visible separately in the pipeline.
-  signedDocumentUrl      String?
-  signedAt               DateTime?
+  signedDocumentUrl          String?
+  signedAt                   DateTime?
   // ── New Sales Quotation format fields (Kerchanshe Trading PLC draft) ────
   // 'showroom' | 'order' — printed on the quotation header.
-  salesType              String?
+  salesType                  String?
   // Free-text display name for the PDF, distinct from `assignedTo` (an
   // internal rep id/free-text lookup key) so a Sales Consultant can correct
   // the printed spelling without touching assignment.
-  salesExecutiveName     String?
-  customerTin            String?
-  customerAddress        String?                 @db.Text
-  vehicleVariant         String? // Variant/Battery
-  vehicleVin             String? // VIN/Chassis No., if already known at quotation stage
-  registrationCharge     Float?
+  salesExecutiveName         String?
+  customerTin                String?
+  customerAddress            String?                      @db.Text
+  vehicleVariant             String? // Variant/Battery
+  vehicleVin                 String? // VIN/Chassis No., if already known at quotation stage
+  registrationCharge         Float?
   // 'included' | 'customer' | 'actual_cost'
   registrationResponsibility String?
   // 'included' | 'customer'
-  insuranceResponsibility String?
-  chargingEquipmentDetails String?                @db.Text
-  depositAmount          Float?
-  depositDueDate         DateTime?
-  balanceDueDate         DateTime?
-  deliveryLocation       String?
-  expectedHandoverNote   String? // free text, e.g. a date or "2-3 weeks"
+  insuranceResponsibility    String?
+  chargingEquipmentDetails   String?                      @db.Text
+  depositAmount              Float?
+  depositDueDate             DateTime?
+  balanceDueDate             DateTime?
+  deliveryLocation           String?
+  expectedHandoverNote       String? // free text, e.g. a date or "2-3 weeks"
   // Sales-rep-initiated escalation to a manager (POST .../[id]/escalate) —
   // requires a reason, mirroring the managerRejected*/managerRejectionReason
   // convention above. Only the latest escalation is retained (no history
@@ -342,15 +342,15 @@ model Quotation {
   // manager approval/rejection on this model. escalatedFrom preserves who
   // held the quotation immediately before escalation, for context once
   // assignedTo has moved on to the manager.
-  escalatedAt            DateTime?
-  escalatedById          String?
-  escalationReason       String?                 @db.Text
-  escalatedFrom          String?
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  salesOrder             SalesOrder?
-  assignmentHistory      QuotationAssignmentHistory[]
-  escalationHistory      QuotationEscalationHistory[]
+  escalatedAt                DateTime?
+  escalatedById              String?
+  escalationReason           String?                      @db.Text
+  escalatedFrom              String?
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  salesOrder                 SalesOrder?
+  assignmentHistory          QuotationAssignmentHistory[]
+  escalationHistory          QuotationEscalationHistory[]
 }
 
 // ─── Sales Orders & PDI (BRD §6.1 FR-105/106, UC-12) ───────────────────────
@@ -423,37 +423,37 @@ enum PaymentStatus {
 }
 
 model SalesOrder {
-  id                        String                    @id @default(uuid())
-  orderNo                   String                    @unique
-  quotationId               String?                   @unique
-  quotation                 Quotation?                @relation(fields: [quotationId], references: [id])
-  customerName              String
-  customerPhone             String
-  customerEmail             String?
-  vehicleModel              String
+  id                             String                    @id @default(uuid())
+  orderNo                        String                    @unique
+  quotationId                    String?                   @unique
+  quotation                      Quotation?                @relation(fields: [quotationId], references: [id])
+  customerName                   String
+  customerPhone                  String
+  customerEmail                  String?
+  vehicleModel                   String
   // Carried over from Quotation.configurationJson at conversion time (see
   // admin/app/api/admin/quotations/[id]/convert-to-order/route.ts) — same
   // shape, same nullability.
-  configurationJson         Json?
-  totalPrice                Float?
-  financingStatus           FinancingStatus           @default(NOT_REQUESTED)
-  status                    OrderStatus               @default(QUOTED)
-  orderDate                 DateTime                  @default(now())
-  deliveredAt               DateTime?
+  configurationJson              Json?
+  totalPrice                     Float?
+  financingStatus                FinancingStatus           @default(NOT_REQUESTED)
+  status                         OrderStatus               @default(QUOTED)
+  orderDate                      DateTime                  @default(now())
+  deliveredAt                    DateTime?
   // Set once the "vehicle delivered, thank you" confirmation (with the
   // invoice PDF re-attached) is actually emailed — a separate action from
   // the DELIVERED status transition itself, fired by the dedicated Handover
   // panel. Not a one-way lock: resending updates this timestamp again.
-  handoverNotifiedAt        DateTime?
+  handoverNotifiedAt             DateTime?
   // Handover dual sign-off — the customer's own acknowledgement that they
   // received the vehicle, distinct from handoverNotifiedAt (a staff-sent
   // email) above. Mirrors the agreement e-sign/countersign pair exactly:
   // customer signs first (web/app/handover/[orderId]), then a manager
   // countersigns (admin/app/api/admin/orders/[id]/handover-countersign).
-  handoverSignedDocumentUrl String?
-  handoverSignedAt          DateTime?
-  handoverCountersignedAt   DateTime?
-  handoverCountersignedById String?
+  handoverSignedDocumentUrl      String?
+  handoverSignedAt               DateTime?
+  handoverCountersignedAt        DateTime?
+  handoverCountersignedById      String?
   // Sales agreement approval/e-sign (BRD-adjacent: "Sales Quotation
   // Approval by sales agent -> Generate Agreement -> e-sign/attach").
   // approvedById is a loose actor reference (no FK), matching every other
@@ -463,130 +463,130 @@ model SalesOrder {
   // print-ready-HTML pattern) once approvedAt is set; signedDocumentUrl is
   // staff uploading a photo/scan of the physically-signed copy, reusing the
   // existing /api/upload/image convention (same as TestDrive's idPhotoUrl).
-  approvedAt                DateTime?
-  approvedById              String?
+  approvedAt                     DateTime?
+  approvedById                   String?
   // Set once the agreement PDF is actually emailed to the customer — a
   // separate, later action from approving (see .../send-agreement), so
   // staff can review/adjust price before the customer ever sees it. Not a
   // one-way lock: resending a revised copy updates this timestamp again.
-  agreementSentAt           DateTime?
-  signedDocumentUrl         String?
-  signedAt                  DateTime?
+  agreementSentAt                DateTime?
+  signedDocumentUrl              String?
+  signedAt                       DateTime?
   // Manager countersignature — a second, staff-side sign-off after the
   // customer signs. No drawn signature captured, only identity + timestamp
   // (matching the approvedById/approvedAt convention above). Gates the
   // payment-link email so the customer isn't asked to pay before staff
   // have reviewed the customer's signed copy.
-  countersignedAt           DateTime?
-  countersignedById         String?
+  countersignedAt                DateTime?
+  countersignedById              String?
   // Manager rejects the customer's signed agreement instead of
   // countersigning it — "Return for Correction" (see .../[id]/reject-agreement).
   // Cleared implicitly when a new signedDocumentUrl is attached.
-  rejectedAt                DateTime?
-  rejectedById              String?
-  rejectionReason           String?                   @db.Text
+  rejectedAt                     DateTime?
+  rejectedById                   String?
+  rejectionReason                String?                   @db.Text
   // Payment tracking — see PaymentStatus. paymentProofUrl is the customer's
   // uploaded bank-transfer receipt (reuses the /api/upload/document
   // convention); paymentConfirmedById is null for the online mock-pay path
   // since no staff review is involved there.
-  paymentStatus             PaymentStatus             @default(UNPAID)
-  paymentProofUrl           String?
-  paymentSubmittedAt        DateTime?
-  paymentConfirmedAt        DateTime?
-  paymentConfirmedById      String?
+  paymentStatus                  PaymentStatus             @default(UNPAID)
+  paymentProofUrl                String?
+  paymentSubmittedAt             DateTime?
+  paymentConfirmedAt             DateTime?
+  paymentConfirmedById           String?
   // Vehicle Registration — a stage between PDI and Invoice in the CRM
   // pipeline diagram; a loose actor reference (no FK), matching every
   // other changedById-style field in this codebase.
-  registrationNumber        String?
-  registeredAt              DateTime?
-  registeredById            String?
+  registrationNumber             String?
+  registeredAt                   DateTime?
+  registeredById                 String?
   // Sales Invoice — deliberately minimal scope, mirroring JobCard's own
   // invoiceAmount field: a single amount, not a line-item invoice/AR
   // posting (that needs an ERP this codebase doesn't have — see
   // docs/SWMS-INTEGRATION-BACKLOG.md's "Explicitly deferred" table).
-  invoiceNo                 String?
-  invoiceAmount             Float?
-  invoicedAt                DateTime?
-  invoicedById              String?
+  invoiceNo                      String?
+  invoiceAmount                  Float?
+  invoicedAt                     DateTime?
+  invoicedById                   String?
   // Commission tracking — salesAgentId is a free-text field, matching
   // Quotation.assignedTo's existing convention (no user-picker UI exists
   // for this anywhere in the codebase to reuse). commissionAmount is
   // computed (totalPrice * commissionRate / 100) and stamped automatically
   // when the order reaches DELIVERED; commissionStatus PAID is a separate
   // manual step (accounting pays the agent on their own schedule).
-  salesAgentId              String?
-  commissionRate            Float?
-  commissionAmount          Float?
-  commissionStatus          CommissionStatus          @default(NOT_APPLICABLE)
+  salesAgentId                   String?
+  commissionRate                 Float?
+  commissionAmount               Float?
+  commissionStatus               CommissionStatus          @default(NOT_APPLICABLE)
   // Commission ownership tracking — tracks who originated the deal, if
   // reassigned, the split ratio, and payment lifecycle.
-  originalSalesAgentId      String?                   // The agent who originated the deal
-  commissionSplitPercent    Float?                    @default(100) // % of commission to the current owner (100 = no split)
-  commissionReassignedAt    DateTime?
-  commissionReassignedById  String?                   // Manager who approved reassignment
-  commissionReassignmentNote String?                  @db.Text
-  commissionPaidAt          DateTime?
-  commissionPaidById        String?
-  commissionPaymentRef      String?                   // Payroll reference number
+  originalSalesAgentId           String? // The agent who originated the deal
+  commissionSplitPercent         Float?                    @default(100) // % of commission to the current owner (100 = no split)
+  commissionReassignedAt         DateTime?
+  commissionReassignedById       String? // Manager who approved reassignment
+  commissionReassignmentNote     String?                   @db.Text
+  commissionPaidAt               DateTime?
+  commissionPaidById             String?
+  commissionPaymentRef           String? // Payroll reference number
   // ── New Sales Agreement / Invoice / Delivery-Handover format fields ─────
   // (Kerchanshe Trading PLC draft documents). All additive/nullable —
   // carried over from Quotation.* at conversion where the quotation
   // captured an equivalent value, otherwise entered directly on the order.
-  salesType                  String? // 'showroom' | 'order'
-  vehicleType                String?                   @default("BEV") // 'BEV' | 'Other'
-  motorBatterySerialNo       String?
-  purchaserTin               String?
-  purchaserAddress           String?                   @db.Text
-  purchaserAuthorizedRep     String?
-  accessoriesDescription     String?                   @db.Text
-  proformaInvoiceNo          String?
-  proformaInvoiceDate        DateTime?
-  vatAmount                  Float?
-  registrationCharge         Float?
-  accessoriesAmount          Float?
-  depositAmount               Float?
-  depositDueDate               DateTime?
-  otherPaymentAmount         Float?
-  otherPaymentNote           String?
-  otherPaymentDueDate        DateTime?
-  estimatedDeliveryDate      DateTime?
-  deliveryLocation           String?
-  exteriorColor               String?
-  interiorColor               String?
+  salesType                      String? // 'showroom' | 'order'
+  vehicleType                    String?                   @default("BEV") // 'BEV' | 'Other'
+  motorBatterySerialNo           String?
+  purchaserTin                   String?
+  purchaserAddress               String?                   @db.Text
+  purchaserAuthorizedRep         String?
+  accessoriesDescription         String?                   @db.Text
+  proformaInvoiceNo              String?
+  proformaInvoiceDate            DateTime?
+  vatAmount                      Float?
+  registrationCharge             Float?
+  accessoriesAmount              Float?
+  depositAmount                  Float?
+  depositDueDate                 DateTime?
+  otherPaymentAmount             Float?
+  otherPaymentNote               String?
+  otherPaymentDueDate            DateTime?
+  estimatedDeliveryDate          DateTime?
+  deliveryLocation               String?
+  exteriorColor                  String?
+  interiorColor                  String?
   // ── Invoice ───────────────────────────────────────────────────────────
   // Fixed-shape array (≤3 rows: vehicle / accessories / other item), see
   // InvoiceLineItem in salesInvoice.pdf.ts — not a relational line-items
   // table, matching this schema's Json-for-bounded-content convention.
-  invoiceLineItems           Json?
-  amountPaid                  Float?
-  paymentMethod               String? // 'bank_transfer' | 'cheque' | 'other'
-  paymentReferenceNo         String?
+  invoiceLineItems               Json?
+  amountPaid                     Float?
+  paymentMethod                  String? // 'bank_transfer' | 'cheque' | 'other'
+  paymentReferenceNo             String?
   // ── Delivery & Handover Note ─────────────────────────────────────────
   // Distinct numbering series from orderNo/invoiceNo (GY-DN-DDMMYYYY-NNN).
-  deliveryNoteNo              String?                   @unique
-  odometerAtDelivery         Int?
-  customerTitle               String? // e.g. "Owner", "Fleet Manager" — for the Final Acknowledgement block
+  deliveryNoteNo                 String?                   @unique
+  odometerAtDelivery             Int?
+  customerTitle                  String? // e.g. "Owner", "Fleet Manager" — for the Final Acknowledgement block
   // Fixed-membership checklists (see handover.pdf.ts for the seeded shape
   // of each array) — item sets are defined by the printed form, not
   // user-configurable, so a Json column is used instead of a child table
   // like PdiChecklistItem (which exists because ITS item set does vary).
-  itemsHandedOver             Json?
-  inspectionChecklist        Json?
-  evGuidanceChecklist        Json?
-  handoverDamageNotes        String?                   @db.Text
-  handoverOutstandingItems   String?                   @db.Text
-  handoverResponsiblePerson  String?
+  itemsHandedOver                Json?
+  inspectionChecklist            Json?
+  evGuidanceChecklist            Json?
+  handoverDamageNotes            String?                   @db.Text
+  handoverOutstandingItems       String?                   @db.Text
+  handoverResponsiblePerson      String?
   handoverExpectedCompletionDate DateTime?
-  createdAt                 DateTime                  @default(now())
-  updatedAt                 DateTime                  @updatedAt
-  pdiItems                  PdiChecklistItem[]
-  statusHistory             SalesOrderStatusHistory[]
-  commissionHistory         CommissionHistory[]
-  warranty                  Warranty?
-  customerFollowUps         CustomerFollowUp[]
-  customerNPS               CustomerNPS?
-  testDrives                TestDrive[]
-  vehicleAllocation         VehicleAllocation?
+  createdAt                      DateTime                  @default(now())
+  updatedAt                      DateTime                  @updatedAt
+  pdiItems                       PdiChecklistItem[]
+  statusHistory                  SalesOrderStatusHistory[]
+  commissionHistory              CommissionHistory[]
+  warranty                       Warranty?
+  customerFollowUps              CustomerFollowUp[]
+  customerNPS                    CustomerNPS?
+  testDrives                     TestDrive[]
+  vehicleAllocation              VehicleAllocation?
 
   @@index([status])
 }
@@ -646,41 +646,41 @@ model SalesOrderStatusHistory {
 }
 
 model CommissionHistory {
-  id              String   @id @default(uuid())
-  orderId         String
-  order           SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  eventType       String   // REASSIGNED | PAYMENT_CONFIRMED | PAYMENT_PAID | SPLIT_CHANGED
-  fromAgentId     String?
-  toAgentId       String?
+  id               String     @id @default(uuid())
+  orderId          String
+  order            SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventType        String // REASSIGNED | PAYMENT_CONFIRMED | PAYMENT_PAID | SPLIT_CHANGED
+  fromAgentId      String?
+  toAgentId        String?
   fromSplitPercent Float?
-  toSplitPercent  Float?
-  amount          Float?
-  changedById     String
-  changedAt       DateTime @default(now())
-  note            String?  @db.Text
+  toSplitPercent   Float?
+  amount           Float?
+  changedById      String
+  changedAt        DateTime   @default(now())
+  note             String?    @db.Text
 
   @@index([orderId])
   @@index([changedAt])
 }
 
 model QuotationAssignmentHistory {
-  id              String   @id @default(uuid())
-  quotationId     String
-  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  assignedTo      String
-  assignedById    String
+  id               String    @id @default(uuid())
+  quotationId      String
+  quotation        Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  assignedTo       String
+  assignedById     String
   assignmentReason String? // e.g., "auto-assign", "manual", "escalation"
-  assignedAt      DateTime @default(now())
+  assignedAt       DateTime  @default(now())
 
   @@index([quotationId])
 }
 
 model QuotationEscalationHistory {
-  id              String   @id @default(uuid())
-  quotationId     String
-  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  escalatedById   String
-  escalatedAt     DateTime @default(now())
+  id               String    @id @default(uuid())
+  quotationId      String
+  quotation        Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  escalatedById    String
+  escalatedAt      DateTime  @default(now())
   escalationReason String?
   previousAssignee String?
 
@@ -688,13 +688,13 @@ model QuotationEscalationHistory {
 }
 
 model NotificationHistory {
-  id              String   @id @default(uuid())
-  recipientEmail  String
+  id               String   @id @default(uuid())
+  recipientEmail   String
   notificationType String // 'lead_assignment', 'quotation_approved', 'quotation_accepted', 'agreement_created', 'agreement_signed', 'payment_received', 'delivery_confirmed', 'handover_complete'
-  subject         String
-  data              Json? // Additional context data
-  sentAt          DateTime @default(now())
-  sentStatus      String @default("sent")
+  subject          String
+  data             Json? // Additional context data
+  sentAt           DateTime @default(now())
+  sentStatus       String   @default("sent")
 
   @@index([sentAt])
 }
@@ -975,14 +975,14 @@ model WarrantyClaimStatusHistory {
 // sales-catalog listing model (e.g. "Model X SUV" trim/config), which is an
 // unrelated concept from an individual customer's own VIN-level car.
 model Customer {
-  id        String            @id @default(uuid())
-  fullName  String
-  phone     String
-  email     String?
-  address   String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  vehicles  CustomerVehicle[]
+  id                   String               @id @default(uuid())
+  fullName             String
+  phone                String
+  email                String?
+  address              String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  vehicles             CustomerVehicle[]
   upgradeOpportunities UpgradeOpportunity[]
 
   // Not @unique: phone is the dedupe lookup key (UC-01 business rule), but
@@ -993,25 +993,26 @@ model Customer {
 }
 
 model CustomerVehicle {
-  id                String    @id @default(uuid())
-  customerId        String
-  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  vin               String?   @unique
-  plateNo           String
-  make              String?
-  model             String?
-  year              Int?
-  trim              String?
-  color             String?
-  isNev             Boolean   @default(false)
-  warrantyStartDate DateTime?
-  warrantyEndDate   DateTime?
-  mileageLastKnown  Int?
-  lastServiceDate   DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String               @id @default(uuid())
+  customerId           String
+  customer             Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vin                  String?              @unique
+  plateNo              String
+  make                 String?
+  model                String?
+  year                 Int?
+  trim                 String?
+  color                String?
+  isNev                Boolean              @default(false)
+  warrantyStartDate    DateTime?
+  warrantyEndDate      DateTime?
+  mileageLastKnown     Int?
+  lastServiceDate      DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   upgradeOpportunities UpgradeOpportunity[]
-  jobCards          JobCard[]
+  jobCards             JobCard[]
+
   @@index([customerId])
   @@index([plateNo])
 }
@@ -1184,44 +1185,44 @@ model Review {
 // A lead represents an initial customer inquiry before qualification.
 // Status convention: new → qualified → contacted → in_progress → converted → closed
 model Lead {
-  id                String     @id @default(uuid())
-  reference         String?    @unique
-  customerName      String
-  customerEmail     String?
-  customerPhone     String
-  customerAddress   String?
-  nationalId        String?
+  id                    String                 @id @default(uuid())
+  reference             String?                @unique
+  customerName          String
+  customerEmail         String?
+  customerPhone         String
+  customerAddress       String?
+  nationalId            String?
   // Source: website | walk-in | referral | phone | marketing | other
-  source            String     @default("website")
+  source                String                 @default("website")
   // Selected vehicle (if known at capture time)
-  vehicleModel      String?
-  vehicleId         String?
+  vehicleModel          String?
+  vehicleId             String?
   // Customer requirements
-  budgetMin         Float?
-  budgetMax         Float?
-  financingInterest Boolean    @default(false)
-  tradeInInterest   Boolean    @default(false)
-  testDriveRequired Boolean    @default(false)
+  budgetMin             Float?
+  budgetMax             Float?
+  financingInterest     Boolean                @default(false)
+  tradeInInterest       Boolean                @default(false)
+  testDriveRequired     Boolean                @default(false)
   // Purchase timeline
-  purchaseTimeline  String? // e.g. "immediate" | "within-1-month" | "within-3-months" | "within-6-months" | "undefined"
+  purchaseTimeline      String? // e.g. "immediate" | "within-1-month" | "within-3-months" | "within-6-months" | "undefined"
   // Preferred contact method
-  preferredContact  String? // phone | email | whatsapp | in-person
+  preferredContact      String? // phone | email | whatsapp | in-person
   // Lead status pipeline
-  status            String     @default("new") // new, qualified, contacted, in_progress, converted, closed
-  internalNotes     String?    @db.Text
+  status                String                 @default("new") // new, qualified, contacted, in_progress, converted, closed
+  internalNotes         String?                @db.Text
   // Assignment
-  assignedTo        String? // Sales rep ID (free-text, matching Quotation.assignedTo convention)
-  commissionOwner   String? // Sales rep who owns the commission for this lead
-  commissionSince   DateTime? // When this rep became the commission owner
+  assignedTo            String? // Sales rep ID (free-text, matching Quotation.assignedTo convention)
+  commissionOwner       String? // Sales rep who owns the commission for this lead
+  commissionSince       DateTime? // When this rep became the commission owner
   // Assignment history (JSON for flexibility — previous assignees, reasons, timestamps)
-  assignmentHistory Json? // Array of {assignee, role, reason, assignedAt, releasedAt}
+  assignmentHistory     Json? // Array of {assignee, role, reason, assignedAt, releasedAt}
   // Timestamps
-  qualifiedAt       DateTime? // When lead was qualified
-  contactedAt       DateTime? // When first contacted
-  convertedAt       DateTime? // When converted to quotation
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  tradeInEvaluations TradeInEvaluation[]
+  qualifiedAt           DateTime? // When lead was qualified
+  contactedAt           DateTime? // When first contacted
+  convertedAt           DateTime? // When converted to quotation
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  tradeInEvaluations    TradeInEvaluation[]
   financingApplications FinancingApplication[]
 }
 
@@ -1231,35 +1232,35 @@ model Lead {
 // created during the lead qualification phase and carry through to the
 // Sales Order.
 model TradeInEvaluation {
-  id                String     @id @default(uuid())
-  leadId            String
-  lead              Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(uuid())
+  leadId              String
+  lead                Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
   // Vehicle being traded in
-  vin               String?
-  plateNo           String
-  year              Int
-  make              String?
-  model             String?
-  color             String?
-  mileage           Int
+  vin                 String?
+  plateNo             String
+  year                Int
+  make                String?
+  model               String?
+  color               String?
+  mileage             Int
   // Condition assessment
-  condition         String // e.g. "excellent" | "good" | "fair" | "poor"
-  interiorCondition String?
-  exteriorCondition String?
+  condition           String // e.g. "excellent" | "good" | "fair" | "poor"
+  interiorCondition   String?
+  exteriorCondition   String?
   mechanicalCondition String?
   // Photos (URLs to uploaded images)
-  photoUrls         Json // Array of image URLs
+  photoUrls           Json // Array of image URLs
   // Valuation
-  estimatedValue    Float // AI/manager estimated value
-  estimatedBy       String? // who performed the estimate: sales_agent | manager | finance
-  evaluatedValue    Float // Final approved value by finance
-  approvalStatus    String // PENDING | APPROVED | REJECTED
-  approvedById      String?
-  approvedAt        DateTime?
-  internalNotes     String?   @db.Text
+  estimatedValue      Float // AI/manager estimated value
+  estimatedBy         String? // who performed the estimate: sales_agent | manager | finance
+  evaluatedValue      Float // Final approved value by finance
+  approvalStatus      String // PENDING | APPROVED | REJECTED
+  approvedById        String?
+  approvedAt          DateTime?
+  internalNotes       String?   @db.Text
   // Timestamps
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 // FINANCING APPLICATION (BRD §4.1/§5.3, UC-08/UC-09)
@@ -1268,34 +1269,34 @@ model TradeInEvaluation {
 // SUBMITTED → UNDER_REVIEW → APPROVED/CONDITIONALLY_APPROVED → DECLINED.
 // When approved, the financing amount is linked to the Sales Order and Quotation.
 model FinancingApplication {
-  id                String     @id @default(uuid())
-  leadId            String
-  lead              Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(uuid())
+  leadId             String
+  lead               Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
   // Customer information (carried from lead)
-  customerName      String
-  customerPhone     String
-  customerEmail     String?
+  customerName       String
+  customerPhone      String
+  customerEmail      String?
   // Vehicle information
-  vehicleId         String?
-  vehicleModel      String
-  vehiclePrice      Float
+  vehicleId          String?
+  vehicleModel       String
+  vehiclePrice       Float
   // Loan terms
-  requestedAmount   Float
-  downPayment       Float @default(0)
-  tenureMonths      Int // e.g. 36, 48, 60
-  interestRate      Float @default(0)
+  requestedAmount    Float
+  downPayment        Float     @default(0)
+  tenureMonths       Int // e.g. 36, 48, 60
+  interestRate       Float     @default(0)
   // Application status pipeline
   // PENDING → DOCUMENTS_REQUIRED → SUBMITTED → UNDER_REVIEW → APPROVED | CONDITIONALLY_APPROVED → DECLINED
-  status            String     @default("PENDING") // PENDING | DOCUMENTS_REQUIRED | SUBMITTED | UNDER_REVIEW | APPROVED | CONDITIONALLY_APPROVED | DECLINED
-  rejectionReason   String?    @db.Text
-  approvedById      String?
-  approvedAt        DateTime?
+  status             String    @default("PENDING") // PENDING | DOCUMENTS_REQUIRED | SUBMITTED | UNDER_REVIEW | APPROVED | CONDITIONALLY_APPROVED | DECLINED
+  rejectionReason    String?   @db.Text
+  approvedById       String?
+  approvedAt         DateTime?
   // Document tracking
-  documentsSubmitted Boolean    @default(false)
-  paymentProofUrl   String? // uploaded bank transfer receipt
+  documentsSubmitted Boolean   @default(false)
+  paymentProofUrl    String? // uploaded bank transfer receipt
   // Relations
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 // News Articles
@@ -1363,6 +1364,58 @@ model Setting {
   type      String // 'policy' or 'social' or 'general'
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Chatbot knowledge base entry, admin-managed. Branding/on-off config lives
+// in Setting['chatbot_config'] (same convention as the cookie banner), not
+// its own table, since it's just a small JSON blob.
+model ChatbotKnowledge {
+  id           String   @id @default(uuid())
+  question     String // Admin-facing label, e.g. "What is the warranty period?"
+  keywords     String[] // Lowercase trigger words/phrases matched against user messages
+  answer       String   @db.Text
+  category     String? // vehicles | test-drive | promotions | financing | dealers | general
+  isActive     Boolean  @default(true)
+  priority     Int      @default(0) // Higher wins ties when multiple entries match
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// One chat session with a website visitor, keyed by a browser-generated id.
+model ChatbotConversation {
+  id            String           @id @default(uuid())
+  sessionId     String           @unique
+  customerName  String?
+  customerPhone String?
+  customerEmail String?
+  // Set once handleMessage() infers enough info to create a real Lead
+  // (see backend/src/services/leads/lead.service.ts) — loose reference,
+  // matching this codebase's existing decoupled-link convention (e.g.
+  // ShowroomVisit.quotationId) rather than a Prisma relation.
+  leadId        String?
+  startedAt     DateTime         @default(now())
+  lastMessageAt DateTime         @updatedAt
+  messages      ChatbotMessage[]
+}
+
+model ChatbotMessage {
+  id                 String              @id @default(uuid())
+  conversationId     String
+  conversation       ChatbotConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role               String // 'user' | 'bot'
+  content            String              @db.Text
+  // Which structured intent answered ('vehicles' | 'test-drive' |
+  // 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'fallback').
+  intent             String?
+  // Set when a ChatbotKnowledge entry answered; null for structured
+  // intents and for the final fallback (both bypass the knowledge base).
+  matchedKnowledgeId String?
+  createdAt          DateTime            @default(now())
+
+  @@index([conversationId])
 }
 
 // Hero Sections (Homepage Banner Management)
@@ -1823,9 +1876,9 @@ model VehicleAllocation {
 }
 
 model Warranty {
-  id                String   @id @default(uuid())
-  orderId           String   @unique
-  order             SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                String          @id @default(uuid())
+  orderId           String          @unique
+  order             SalesOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   vin               String?
   vehicleModel      String
   customerName      String
@@ -1834,16 +1887,16 @@ model Warranty {
   purchaseDate      DateTime
   warrantyStartDate DateTime
   warrantyEndDate   DateTime
-  warrantyYears     Int      @default(3)
-  warrantyKm        Int      @default(100000)
-  currentKm         Int      @default(0)
-  status            String   @default("ACTIVE") // ACTIVE | EXPIRED | CLAIMED | VOID
+  warrantyYears     Int             @default(3)
+  warrantyKm        Int             @default(100000)
+  currentKm         Int             @default(0)
+  status            String          @default("ACTIVE") // ACTIVE | EXPIRED | CLAIMED | VOID
   lastServiceDate   DateTime?
   nextServiceDate   DateTime?
   nextServiceKm     Int?
   serviceHistory    ServiceRecord[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([orderId])
   @@index([vin])
@@ -1851,39 +1904,39 @@ model Warranty {
 }
 
 model ServiceRecord {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   warrantyId      String
-  warranty        Warranty @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+  warranty        Warranty  @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
   serviceDate     DateTime
-  serviceType     String   // SCHEDULED | REPAIR | RECALL | INSPECTION
-  description     String?  @db.Text
+  serviceType     String // SCHEDULED | REPAIR | RECALL | INSPECTION
+  description     String?   @db.Text
   kmAtService     Int?
   cost            Float?
   performedBy     String?
   nextServiceDate DateTime?
   nextServiceKm   Int?
-  documents       Json?    // URLs of attached documents
-  createdAt       DateTime @default(now())
+  documents       Json? // URLs of attached documents
+  createdAt       DateTime  @default(now())
 
   @@index([warrantyId])
   @@index([serviceDate])
 }
 
 model CustomerFollowUp {
-  id               String   @id @default(uuid())
-  orderId          String
-  order            SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  followUpType     String   // INITIAL_CHECK | SATISFACTION | LOYALTY | SERVICE_REMINDER
-  scheduledDate    DateTime
-  assignedTo       String?
-  status           String   @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | COMPLETED | NO_ANSWER | WRONG_NUMBER | REQUESTED_CALLBACK
-  notes            String?  @db.Text
-  npsScore         Int?     // 0-10
-  satisfactionScore Int?    // 1-5
-  wouldRecommend   Boolean?
-  callbackDate     DateTime?
-  completedAt      DateTime?
-  createdAt        DateTime @default(now())
+  id                String     @id @default(uuid())
+  orderId           String
+  order             SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  followUpType      String // INITIAL_CHECK | SATISFACTION | LOYALTY | SERVICE_REMINDER
+  scheduledDate     DateTime
+  assignedTo        String?
+  status            String     @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | COMPLETED | NO_ANSWER | WRONG_NUMBER | REQUESTED_CALLBACK
+  notes             String?    @db.Text
+  npsScore          Int? // 0-10
+  satisfactionScore Int? // 1-5
+  wouldRecommend    Boolean?
+  callbackDate      DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime   @default(now())
 
   @@index([orderId])
   @@index([assignedTo, status])
@@ -1891,13 +1944,13 @@ model CustomerFollowUp {
 }
 
 model CustomerNPS {
-  id                String   @id @default(uuid())
-  orderId           String   @unique
+  id                String     @id @default(uuid())
+  orderId           String     @unique
   order             SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  npsScore          Int      // 0-10
-  satisfactionScore Int?     // 1-5
+  npsScore          Int // 0-10
+  satisfactionScore Int? // 1-5
   wouldRecommend    Boolean?
-  recordedAt        DateTime @default(now())
+  recordedAt        DateTime   @default(now())
 
   @@index([npsScore])
 }
@@ -1922,27 +1975,27 @@ model AuditLog {
 }
 
 model ComplaintCase {
-  id              String   @id @default(uuid())
-  caseNo          String   @unique
-  customerName    String
-  customerPhone   String
-  customerEmail   String?
-  orderId         String?
-  vehicleModel    String?
-  vin             String?
-  category        String   // VEHICLE_ISSUE | SERVICE_QUALITY | BILLING | STAFF_CONDUCT | DELIVERY | OTHER
-  priority        String   // LOW | MEDIUM | HIGH | CRITICAL
-  subject         String
-  description     String   @db.Text
-  source          String   // PHONE | EMAIL | WALK_IN | ONLINE | SOCIAL_MEDIA
-  status          String   @default("OPEN") // OPEN | IN_PROGRESS | PENDING_CUSTOMER | PENDING_INTERNAL | RESOLVED | CLOSED | REOPENED
-  assignedTo      String?
-  resolvedAt      DateTime?
-  resolvedById    String?
-  closedAt        DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  notes           ComplaintNote[]
+  id            String          @id @default(uuid())
+  caseNo        String          @unique
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  orderId       String?
+  vehicleModel  String?
+  vin           String?
+  category      String // VEHICLE_ISSUE | SERVICE_QUALITY | BILLING | STAFF_CONDUCT | DELIVERY | OTHER
+  priority      String // LOW | MEDIUM | HIGH | CRITICAL
+  subject       String
+  description   String          @db.Text
+  source        String // PHONE | EMAIL | WALK_IN | ONLINE | SOCIAL_MEDIA
+  status        String          @default("OPEN") // OPEN | IN_PROGRESS | PENDING_CUSTOMER | PENDING_INTERNAL | RESOLVED | CLOSED | REOPENED
+  assignedTo    String?
+  resolvedAt    DateTime?
+  resolvedById  String?
+  closedAt      DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  notes         ComplaintNote[]
 
   @@index([status])
   @@index([priority])
@@ -1951,38 +2004,38 @@ model ComplaintCase {
 }
 
 model ComplaintNote {
-  id          String   @id @default(uuid())
-  caseId      String
-  case        ComplaintCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  noteType    String   // INTERNAL | CUSTOMER_COMMUNICATION | RESOLUTION
-  content     String   @db.Text
-  createdBy   String
-  isPublic    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String        @id @default(uuid())
+  caseId    String
+  case      ComplaintCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  noteType  String // INTERNAL | CUSTOMER_COMMUNICATION | RESOLUTION
+  content   String        @db.Text
+  createdBy String
+  isPublic  Boolean       @default(false)
+  createdAt DateTime      @default(now())
 
   @@index([caseId])
 }
 
 model UpgradeOpportunity {
-  id                String   @id @default(uuid())
-  opportunityNo     String   @unique
-  customerId        String
-  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  vehicleId         String?
-  vehicle           CustomerVehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
-  opportunityType   String   // TRADE_IN | UPGRADE | FAMILY_ADDITION | FLEET
-  targetModel       String?
-  estimatedBudget   Float?
-  source            String   // SERVICE_VISIT | FOLLOW_UP | MARKETING | SELF_REFERRAL
-  status            String   @default("IDENTIFIED") // IDENTIFIED | CONTACTED | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST | EXPIRED
-  assignedTo        String?
-  notes             String?  @db.Text
-  wonAt             DateTime?
-  wonById           String?
-  lostAt            DateTime?
-  lostReason        String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String           @id @default(uuid())
+  opportunityNo   String           @unique
+  customerId      String
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicleId       String?
+  vehicle         CustomerVehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  opportunityType String // TRADE_IN | UPGRADE | FAMILY_ADDITION | FLEET
+  targetModel     String?
+  estimatedBudget Float?
+  source          String // SERVICE_VISIT | FOLLOW_UP | MARKETING | SELF_REFERRAL
+  status          String           @default("IDENTIFIED") // IDENTIFIED | CONTACTED | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST | EXPIRED
+  assignedTo      String?
+  notes           String?          @db.Text
+  wonAt           DateTime?
+  wonById         String?
+  lostAt          DateTime?
+  lostReason      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([customerId])
   @@index([status])
@@ -1991,18 +2044,18 @@ model UpgradeOpportunity {
 }
 
 model SLATimer {
-  id              String    @id @default(uuid())
-  entityType      String
-  entityId        String
-  stage           String
-  startTime       DateTime  @default(now())
-  deadline        DateTime
-  escalateAt      DateTime?
-  assignedTo      String?
-  status          String    @default("ACTIVE") // ACTIVE | COMPLETED | BREACHED
-  completedAt     DateTime?
-  minutesTaken    Int?
-  createdAt       DateTime  @default(now())
+  id           String    @id @default(uuid())
+  entityType   String
+  entityId     String
+  stage        String
+  startTime    DateTime  @default(now())
+  deadline     DateTime
+  escalateAt   DateTime?
+  assignedTo   String?
+  status       String    @default("ACTIVE") // ACTIVE | COMPLETED | BREACHED
+  completedAt  DateTime?
+  minutesTaken Int?
+  createdAt    DateTime  @default(now())
 
   @@index([entityType, entityId])
   @@index([status, deadline])

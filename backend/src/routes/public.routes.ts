@@ -6,6 +6,7 @@ import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { env } from '../config/env';
+import { chatbotService } from '../services/chatbot/chatbot.service';
 
 const router = Router();
 
@@ -725,7 +726,19 @@ router.get('/financing-programs', async (req: Request, res: Response) => {
     // NOTE: FinancingProgram has no `isActive` — "active" is expressed via
     // the `status` enum (DRAFT/PUBLISHED/ARCHIVED); a publicly-listable
     // program is one with status PUBLISHED.
-    const programs = await prisma.financingProgram.findMany({ where: { status: 'PUBLISHED' } });
+    const { vehicleId } = req.query;
+    const where: any = { status: 'PUBLISHED' };
+    if (vehicleId) {
+      where.OR = [
+        { vehicleId: vehicleId as string },
+        { vehicleCategoryId: vehicleId as string }, // Also check if it's a category ID
+        { appliesToAllVehicles: true },
+      ];
+    }
+    const programs = await prisma.financingProgram.findMany({
+      where,
+      include: { bank: true },
+    });
     res.json(programs);
   } catch (error) {
     console.error('List financing programs error:', error);
@@ -736,7 +749,10 @@ router.get('/financing-programs', async (req: Request, res: Response) => {
 router.get('/financing-banks', async (req: Request, res: Response) => {
   try {
     // NOTE: was `prisma.bank` — the real model is `FinancingBank`.
-    const banks = await prisma.financingBank.findMany({ where: { isActive: true } });
+    const banks = await prisma.financingBank.findMany({
+      where: { isActive: true },
+      include: { _count: { select: { financingPrograms: true } } }
+    });
     res.json(banks);
   } catch (error) {
     console.error('List financing banks error:', error);
@@ -752,8 +768,57 @@ router.get('/financing-banks', async (req: Request, res: Response) => {
 // salesOrderRepository helpers used by legacyPayment.service.ts.
 router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
+    const {
+      fullName,
+      phone,
+      email,
+      vehicleId,
+      purchaseAmount,
+      nationalId,
+      color,
+      address,
+      bankId,
+      consent,
+      paymentMethod,
+      quoteReference,
+      visitId,
+      quantity,
+    } = req.body;
+
+    if (!fullName || !phone || !vehicleId) {
+      res.status(400).json({ error: 'Missing required fields: fullName, phone, vehicleId' });
+      return;
+    }
+
+    // Fetch vehicle to get the model name
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle) {
+      res.status(404).json({ error: 'Vehicle not found' });
+      return;
+    }
+
     const orderNo = await salesOrderRepository.nextOrderNo();
-    const purchase = await prisma.salesOrder.create({ data: { ...req.body, orderNo } });
+    const purchase = await prisma.salesOrder.create({
+      data: {
+        orderNo,
+        customerName: fullName,
+        customerPhone: phone,
+        customerEmail: email || null,
+        vehicleModel: vehicle.name,
+        totalPrice: purchaseAmount,
+        configurationJson: {
+          nationalId,
+          color,
+          address,
+          bankId,
+          consent,
+          paymentMethod,
+          quoteReference,
+          visitId,
+          quantity: quantity || 1,
+        },
+      },
+    });
     await seedPdiChecklist(prisma, purchase.id);
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (error) {
@@ -836,6 +901,31 @@ router.post('/payments/direct', rateLimiters.contactForm, async (req: Request, r
     res.status(201).json({ success: true, id: payment.id });
   } catch (error) {
     console.error('Direct payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/chatbot/config', async (req: Request, res: Response) => {
+  try {
+    const config = await chatbotService.getConfig();
+    res.json(config);
+  } catch (error) {
+    console.error('Get chatbot config error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/chatbot/message', rateLimiters.chatbotMessage, async (req: Request, res: Response) => {
+  try {
+    const { sessionId, message } = req.body;
+    if (!sessionId || typeof message !== 'string' || !message.trim()) {
+      res.status(400).json({ error: 'sessionId and message are required' });
+      return;
+    }
+    const reply = await chatbotService.handleMessage(sessionId, message.trim());
+    res.json(reply);
+  } catch (error) {
+    console.error('Chatbot message error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

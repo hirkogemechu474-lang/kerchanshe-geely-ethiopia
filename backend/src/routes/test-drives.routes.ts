@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { sendTestDriveApprovalEmail } from '../services/email/statusEmail';
+import { settingRepository } from '../repositories';
 
 const router = Router();
 
@@ -57,6 +59,68 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   } catch (error) {
     console.error('Get test drive error:', error);
     res.status(404).json({ error: 'Test drive not found' });
+  }
+});
+
+// POST /api/test-drives/:id/approve (admin approve + send email)
+router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const testDrive = await prisma.testDrive.findUnique({
+      where: { id: req.params.id },
+      include: { vehicle: true },
+    });
+    if (!testDrive) {
+      res.status(404).json({ error: 'Test drive not found' });
+      return;
+    }
+
+    // Update status to confirmed
+    const updated = await prisma.testDrive.update({
+      where: { id: req.params.id },
+      data: { status: 'confirmed' },
+      include: { vehicle: true },
+    });
+
+    // Fetch contact info for the email
+    let contactPhone = '';
+    let contactAddress = '';
+    try {
+      const settings = await settingRepository.findManyByKeys([
+        'contact_phone',
+        'contact_address',
+      ]);
+      for (const s of settings) {
+        if (s.key === 'contact_phone') contactPhone = s.value;
+        if (s.key === 'contact_address') contactAddress = s.value;
+      }
+    } catch {
+      /* use empty strings */
+    }
+
+    // Send approval email to customer
+    const emailResult = await sendTestDriveApprovalEmail({
+      to: testDrive.customerEmail,
+      customerName: testDrive.customerName,
+      vehicleName: testDrive.vehicle.name,
+      preferredDate: testDrive.preferredDate.toISOString().slice(0, 10),
+      preferredTime: testDrive.preferredTime,
+      location: testDrive.location,
+      contactPhone,
+      contactAddress,
+    });
+
+    if (!emailResult.ok) {
+      console.error('[TEST DRIVE APPROVE] Email failed:', emailResult.error);
+    }
+
+    res.json({
+      ...updated,
+      emailSent: emailResult.ok,
+      emailError: emailResult.ok ? undefined : emailResult.error,
+    });
+  } catch (error) {
+    console.error('Approve test drive error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

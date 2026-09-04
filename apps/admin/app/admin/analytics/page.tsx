@@ -10,6 +10,7 @@ import {
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
 import { OverviewTile, RankedBarChart, StatusBarChart } from '@/components/admin/analytics/AnalyticsCharts';
 import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
+import apiClient from '@/lib/apiClient';
 
 const WARRANTY_STATUS_FILL: Record<string, string> = {
   DRAFTED: 'bg-gray-400 dark:bg-gray-500',
@@ -75,6 +76,39 @@ function formatMinutes(mins: number | null) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function normalizeAnalyticsData(responseData: any): AnalyticsData {
+  const overview = responseData?.overview || {};
+  const recentActivity = responseData?.recentActivity || {};
+  const needsAttention = responseData?.needsAttention || {};
+
+  return {
+    overview: {
+      totalVehicles: overview.totalVehicles ?? 0,
+      totalTestDrives: overview.totalTestDrives ?? 0,
+      totalQuotations: overview.totalQuotations ?? responseData?.totalOrders ?? 0,
+      totalServiceBookings: overview.totalServiceBookings ?? responseData?.totalJobCards ?? 0,
+      totalReviews: overview.totalReviews ?? 0,
+      avgRating: overview.avgRating ?? 0,
+    },
+    recentActivity: {
+      testDrives: recentActivity.testDrives ?? 0,
+      quotations: recentActivity.quotations ?? 0,
+      reviews: recentActivity.reviews ?? 0,
+    },
+    salesByCategory: Array.isArray(responseData?.salesByCategory) ? responseData.salesByCategory : [],
+    topVehicles: Array.isArray(responseData?.topVehicles) ? responseData.topVehicles : [],
+    needsAttention: {
+      pendingQuotations: needsAttention.pendingQuotations ?? 0,
+      pendingReviews: needsAttention.pendingReviews ?? 0,
+      unreadMessages: needsAttention.unreadMessages ?? 0,
+      overdueJobCards: needsAttention.overdueJobCards ?? 0,
+      partsBelowReorder: needsAttention.partsBelowReorder ?? 0,
+    },
+    workshop: responseData?.workshop ?? null,
+    salesPipeline: responseData?.salesPipeline ?? null,
+  };
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,15 +121,12 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/analytics');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
-      const result = await response.json();
-      setData(result);
+      const { data: result } = await apiClient.get('/analytics');
+      setData(normalizeAnalyticsData(result));
     } catch (err) {
+      if (err && typeof err === 'object' && 'response' in err && (err as { response?: { status?: number } }).response?.status === 401) {
+        return;
+      }
       setError('Failed to load analytics data');
       console.error(err);
     } finally {

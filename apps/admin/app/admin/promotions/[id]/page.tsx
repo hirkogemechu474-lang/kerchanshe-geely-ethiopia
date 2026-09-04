@@ -47,7 +47,7 @@ export default function EditPromotionPage() {
 
   useEffect(() => {
     if (!params.id) return;
-    fetch(`/api/admin/promotions/${params.id}`)
+    fetch(`/api/promotions/${params.id}`)
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Failed to load promotion');
@@ -79,7 +79,7 @@ export default function EditPromotionPage() {
     try {
       const body = new FormData();
       body.append('file', file);
-      const response = await fetch('/api/admin/upload', { method: 'POST', body });
+      const response = await fetch('/api/upload', { method: 'POST', body });
       const result = await response.json();
       if (!response.ok || !result.url) throw new Error(result.error || 'Image upload failed');
       update('bannerImage', result.url);
@@ -96,7 +96,7 @@ export default function EditPromotionPage() {
     setError('');
     setSuccess(false);
     try {
-      const response = await fetch(`/api/admin/promotions/${params.id}`, {
+      const response = await fetch(`/api/promotions/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

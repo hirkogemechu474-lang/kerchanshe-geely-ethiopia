@@ -61,7 +61,7 @@ const IMPORTANT_NOTES = [
 export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  const title = 'SALES INVOICE';
+  const title = 'GEELY ELECTRIC VEHICLE SALES INVOICE';
   drawHeaderFooter(ctx, title, company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;

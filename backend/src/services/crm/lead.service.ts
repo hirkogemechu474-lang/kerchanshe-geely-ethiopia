@@ -11,6 +11,7 @@ export const leadService = {
     vehicleInterest?: string;
     message?: string;
     source?: string;
+    nationalId?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const reference = await generateReference(REFERENCE_CATEGORY.CONTACT);
@@ -25,6 +26,7 @@ export const leadService = {
           message: data.message,
           source: data.source || 'website',
           status: 'new',
+          nationalId: data.nationalId || null,
         },
       });
 

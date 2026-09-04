@@ -36,7 +36,7 @@ export default function DealersPage() {
       if (search) params.set('q', search);
       if (cityFilter !== 'all') params.set('city', cityFilter);
       if (typeFilter !== 'all') params.set('type', typeFilter);
-      const response = await fetch(`/api/admin/dealers?${params.toString()}`);
+      const response = await fetch(`/api/dealers?${params.toString()}`);
       const data = await response.json();
       if (data.success) setDealers(data.dealers);
     } catch (error) {
@@ -53,7 +53,7 @@ export default function DealersPage() {
 
   const togglePublish = async (dealer: Dealer) => {
     try {
-      const response = await fetch(`/api/admin/dealers/${dealer.id}`, {
+      const response = await fetch(`/api/dealers/${dealer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !dealer.active }),
@@ -71,7 +71,7 @@ export default function DealersPage() {
   const handleDelete = async (dealer: Dealer) => {
     if (!confirm(`Delete "${dealer.name}"? This cannot be undone.`)) return;
     try {
-      const response = await fetch(`/api/admin/dealers/${dealer.id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/dealers/${dealer.id}`, { method: 'DELETE' });
       const data = await response.json();
       if (data.success) {
         setMessage({ type: 'success', text: `"${dealer.name}" deleted` });

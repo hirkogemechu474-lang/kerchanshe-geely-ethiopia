@@ -33,7 +33,7 @@ export default function CookieBannerSettingsPage() {
 
   async function fetchConfig() {
     try {
-      const response = await fetch('/api/admin/settings/cookie-banner');
+      const response = await fetch('/api/settings/cookie-banner');
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
@@ -52,7 +52,7 @@ export default function CookieBannerSettingsPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/admin/settings/cookie-banner', {
+      const response = await fetch('/api/settings/cookie-banner', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -61,7 +61,7 @@ function clauseHeading(ctx: PagedContext, text: string): PagedContext {
 export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  const title = 'SALES AGREEMENT';
+  const title = 'GEELY ELECTRIC VEHICLE SALES AGREEMENT';
   drawHeaderFooter(ctx, title, company);
 
   // ── Page 1: header, intro, Parties ──────────────────────────────────────

@@ -162,7 +162,7 @@ function drawInspectionTable(ctx: PagedContext, rows: InspectionRow[]): PagedCon
 export async function generateHandoverPdf(data: HandoverPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  const title = 'DELIVERY & HANDOVER NOTE';
+  const title = 'GEELY ELECTRIC VEHICLE DELIVERY & HANDOVER NOTE';
   drawHeaderFooter(ctx, title, company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;

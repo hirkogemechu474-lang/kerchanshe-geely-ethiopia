@@ -117,7 +117,7 @@ export const orderInvoiceService = {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
 
-      const { signLinkToken, verifyLinkToken } = await import('../../utils/secureLink');
+      const { signLinkToken, verifyLinkToken } = await import('../../utils/secureLink.js');
       if (!verifyLinkToken(token, 'payment', orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };
       }

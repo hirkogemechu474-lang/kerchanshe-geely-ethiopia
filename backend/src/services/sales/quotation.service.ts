@@ -3,6 +3,7 @@ import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { assignSalesRep, type AssignmentFactors } from './assignSalesRep';
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { checkDiscountAuthorization, type DiscountAuthority } from '../../services/discount/discount.authority';
 
 export const quotationService = {
   async create(data: {
@@ -14,7 +15,9 @@ export const quotationService = {
     assignedTo?: string;
     autoAssign?: boolean;
     assignmentFactors?: AssignmentFactors;
-  }): Promise<{ ok: boolean; data?: any; error?: string; assignedRep?: any }> {
+    discountPercent?: number;
+    agentRole?: string;
+  }): Promise<{ ok: boolean; data?: any; error?: string; assignedRep?: any; discountAuthorized?: boolean; discountRequiresManager?: boolean }> {
     try {
       const existingOpen = await quotationRepository.findOpenByPhone(data.phoneNumber);
       if (existingOpen) {
@@ -33,6 +36,26 @@ export const quotationService = {
         status: 'new',
         managerApprovalStatus: 'PENDING',
       };
+
+      // Handle discount authorization
+      let discountAuthorized = false;
+      let discountRequiresManager = false;
+
+      if (data.discountPercent !== undefined && data.discountPercent > 0) {
+        const authResult = checkDiscountAuthorization(data.agentRole ?? 'sales_agent', data.discountPercent);
+        discountAuthorized = authResult.authorized;
+        discountRequiresManager = authResult.requiresManager;
+
+        if (discountRequiresManager) {
+          quotationCreateData.managerApprovalStatus = 'PENDING_DISCOUNT';
+          quotationCreateData.internalNotes = `Discount of ${data.discountPercent}% requested by agent - requires manager approval`;
+        } else if (discountAuthorized) {
+          quotationCreateData.discountAmount = data.discountPercent;
+        } else {
+          // Discount exceeds agent authority - will need manager approval later
+          quotationCreateData.internalNotes = `Discount of ${data.discountPercent}% exceeds agent authority - pending manager review`;
+        }
+      }
 
       // Auto-assign sales representative if requested
       let assignedRep: any = null;
@@ -74,7 +97,7 @@ export const quotationService = {
         }
       }
 
-      return { ok: true, data: quotation, assignedRep };
+      return { ok: true, data: quotation, assignedRep, discountAuthorized, discountRequiresManager };
     } catch (error: any) {
       console.error('[QUOTATION CREATE ERROR]', error.message);
       return { ok: false, error: 'Failed to create quotation.' };

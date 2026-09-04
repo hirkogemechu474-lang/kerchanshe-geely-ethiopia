@@ -28,7 +28,7 @@ export default function NewPromotionPage() {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/admin/promotions', {
+      const response = await fetch('/api/promotions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

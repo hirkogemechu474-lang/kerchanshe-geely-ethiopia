@@ -52,7 +52,7 @@ export default function PartsContentPage() {
 
   const fetchContent = async () => {
     try {
-      const response = await fetch('/api/admin/parts/content');
+      const response = await fetch('/api/parts/admin/parts/content');
       const data = await response.json();
       if (data.content) {
         setFormData({ ...formData, ...data.content });
@@ -70,7 +70,7 @@ export default function PartsContentPage() {
     setMessage(null);
 
     try {
-      const response = await fetch('/api/admin/parts/content', {
+      const response = await fetch('/api/parts/admin/parts/content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

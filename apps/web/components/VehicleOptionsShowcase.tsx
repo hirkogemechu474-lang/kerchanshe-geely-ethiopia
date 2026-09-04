@@ -91,7 +91,7 @@ export function VehicleOptionsShowcase({
   const previewImage = activeColor?.imageUrl || heroImage || '';
 
   return (
-    <section id="section-options" className="py-16 bg-white dark:bg-midnight-surface border-t border-b border-line dark:border-midnight-line scroll-mt-16">
+    <section id="section-options" className="py-16 bg-white dark:bg-midnight-surface border-t border-b border-line dark:border-midnight-line scroll-mt-[108px] sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
         <div className="mb-10 text-center md:text-left">
           <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">

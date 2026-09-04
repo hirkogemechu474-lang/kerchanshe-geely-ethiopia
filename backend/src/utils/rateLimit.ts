@@ -36,4 +36,5 @@ export const rateLimiters = {
   paymentSubmit: createRateLimiter(10 * 60 * 1000, 5, 'Too many attempts.'),
   quotationView: createRateLimiter(10 * 60 * 1000, 30, 'Too many requests.'),
   quotationSign: createRateLimiter(10 * 60 * 1000, 5, 'Too many attempts.'),
+  chatbotMessage: createRateLimiter(60 * 1000, 20, 'Too many messages. Please wait a moment.'),
 };

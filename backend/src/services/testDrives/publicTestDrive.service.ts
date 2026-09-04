@@ -53,7 +53,7 @@ export const publicTestDriveService = {
       const testDrive = await testDriveRepository.findById(id);
       if (!testDrive) return { ok: false, error: 'Test drive not found.' };
 
-      const { verifyLinkToken } = await import('../../utils/secureLink');
+      const { verifyLinkToken } = await import('../../utils/secureLink.js');
       if (!verifyLinkToken(token, 'quotation', id)) {
         return { ok: false, error: 'Invalid or expired link.' };
       }

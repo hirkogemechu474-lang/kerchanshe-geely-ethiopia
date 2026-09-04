@@ -62,7 +62,7 @@ export default function ModelsPage() {
 
       if (categoriesResponse.ok) {
         const data = await categoriesResponse.json();
-        setCategories(data.categories);
+        setCategories(Array.isArray(data) ? data : data?.categories || []);
       }
     } catch (error) {
       console.error("Error loading model lookups:", error);

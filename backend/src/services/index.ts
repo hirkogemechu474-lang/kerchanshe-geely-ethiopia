@@ -31,7 +31,7 @@ export { biSummaryService } from './workshop/biSummary.service';
 export { dashboardSummaryService } from './workshop/dashboardSummary.service';
 
 export { financingService } from './financing/financing.service';
-export { financingApplicationService } from './financing/financingApplication.service';
+export { FinancingApplicationService } from './financing/financingApplication.service';
 
 export { sparePartService } from './parts/sparePart.service';
 export { partsContentService } from './parts/partsContent.service';

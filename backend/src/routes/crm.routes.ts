@@ -10,8 +10,8 @@ const router = Router();
 // comment). The old wiring called a nonexistent prisma.cRMLead model.
 router.post('/lead', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { source, name, email, phone, notes, vehicleInterest } = req.body;
-    const result = await leadService.submit({ name, email, phone, vehicleInterest, message: notes, source });
+    const { source, name, email, phone, notes, vehicleInterest, nationalId } = req.body;
+    const result = await leadService.submit({ name, email, phone, vehicleInterest, message: notes, source, nationalId });
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
     res.status(201).json({ success: true, id: result.data.id });
   } catch (error) {

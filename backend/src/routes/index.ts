@@ -45,6 +45,7 @@ import { auditRoutes } from './audit.routes';
 import { complaintRoutes } from './complaints.routes';
 import { repeatPurchaseRoutes } from './repeat-purchase.routes';
 import { syncRoutes } from './sync.routes';
+import { chatbotRoutes } from './chatbot.routes';
 
 const router = Router();
 
@@ -94,5 +95,6 @@ router.use('/audit', auditRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/repeat-purchase', repeatPurchaseRoutes);
 router.use('/sync', syncRoutes);
+router.use('/chatbot', chatbotRoutes);
 
 export { router as routes };
