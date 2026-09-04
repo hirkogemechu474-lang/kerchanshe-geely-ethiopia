@@ -43,8 +43,8 @@ export default function EditSparePartPage() {
     (async () => {
       try {
         const [categoryRes, { spareParts }] = await Promise.all([
-          fetch('/api/admin/parts/categories'),
-          fetch('/api/admin/spare-parts').then((r) => r.json()),
+          fetch('/api/parts/admin/parts/categories'),
+          fetch('/api/parts').then((r) => r.json()),
         ]);
         const catData = await categoryRes.json();
         setCategories(catData.categories || []);

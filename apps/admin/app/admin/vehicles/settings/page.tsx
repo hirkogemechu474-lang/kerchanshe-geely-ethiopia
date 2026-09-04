@@ -151,7 +151,7 @@ export default function VehicleSettingsPage() {
 
   async function fetchShowcases() {
     try {
-      const response = await fetch('/api/admin/showcase');
+      const response = await fetch('/api/content/showcases');
       if (response.ok) {
         const data = await response.json();
         setShowcases(data);

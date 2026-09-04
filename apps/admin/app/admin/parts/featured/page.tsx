@@ -25,7 +25,7 @@ export default function FeaturedPartsPage() {
 
   const fetchParts = async () => {
     try {
-      const response = await fetch('/api/admin/spare-parts');
+      const response = await fetch('/api/parts');
       const data = await response.json();
       if (data.spareParts) setParts(data.spareParts);
     } catch (error) {

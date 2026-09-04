@@ -27,7 +27,7 @@ export default function FAQList() {
 
   const fetchFAQs = async () => {
     try {
-      const response = await fetch('/api/admin/faq');
+      const response = await fetch('/api/content/faqs');
       const data = await response.json();
       
       if (data.success) {

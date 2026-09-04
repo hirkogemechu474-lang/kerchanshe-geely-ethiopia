@@ -29,7 +29,7 @@ export default function NewSparePartPage() {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/admin/spare-parts', {
+      const response = await fetch('/api/parts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

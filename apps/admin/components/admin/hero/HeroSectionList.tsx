@@ -33,7 +33,7 @@ export default function HeroSectionList() {
 
   const fetchHeroSections = async () => {
     try {
-      const response = await fetch('/api/admin/hero?includeInactive=true');
+      const response = await fetch('/api/content/hero-sections?includeInactive=true');
       const data = await response.json();
       setHeroSections(data.heroSections || []);
     } catch (error) {
