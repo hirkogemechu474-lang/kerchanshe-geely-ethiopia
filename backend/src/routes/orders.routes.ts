@@ -5,6 +5,7 @@ import { orderService } from '../services/sales/order.service';
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
 import { orderInvoiceService } from '../services/sales/orderInvoice.service';
+import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { vehicleAllocationRepository, vehicleRepository } from '../repositories';
 import { signLinkToken } from '../utils/secureLink';
@@ -76,6 +77,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const order = await prisma.salesOrder.create({ data: req.body });
+    await seedPdiChecklist(prisma, order.id);
     res.status(201).json(order);
   } catch (error) {
     console.error('Create order error:', error);

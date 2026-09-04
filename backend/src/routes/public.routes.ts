@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository } from '../repositories';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
+import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { env } from '../config/env';
 
@@ -657,6 +658,7 @@ router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Re
   try {
     const orderNo = await salesOrderRepository.nextOrderNo();
     const purchase = await prisma.salesOrder.create({ data: { ...req.body, orderNo } });
+    await seedPdiChecklist(prisma, purchase.id);
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (error) {
     console.error('Submit purchase error:', error);

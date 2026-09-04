@@ -1,5 +1,8 @@
 import { salesOrderRepository, quotationRepository, vehicleRepository } from '../../repositories';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
+import { commissionService } from './commission.service';
+import { seedPdiChecklist } from './pdiChecklist.template';
+import { prisma } from '../../config/database';
 
 // Real OrderStatus enum values are QUOTED/BOOKED/FINANCING_PENDING/
 // READY_FOR_DELIVERY/DELIVERED/CANCELLED (see schema.prisma) — this used to
@@ -86,6 +89,13 @@ export const orderService = {
         }),
       });
 
+      // Initialize commission ownership if sales agent is assigned
+      if (data.assignedTo) {
+        await commissionService.initializeCommission(order.id, data.assignedTo);
+      }
+
+      await seedPdiChecklist(prisma, order.id);
+
       return { ok: true, data: order };
     } catch (error: any) {
       console.error('[ORDER CREATE ERROR]', error.message);
@@ -149,6 +159,8 @@ export const orderService = {
       let commissionStatus = order.commissionStatus;
       if (toStatus === 'DELIVERED' && commissionStatus !== 'EARNED') {
         commissionStatus = 'EARNED'; // Auto-earn commission when delivered
+        // Also use commissionService to properly calculate and record the earned amount
+        await commissionService.markEarned(id, changedById);
       } else if (toStatus === 'CANCELLED' && commissionStatus !== 'NOT_APPLICABLE') {
         commissionStatus = 'NOT_APPLICABLE'; // Reset if cancelled
       }

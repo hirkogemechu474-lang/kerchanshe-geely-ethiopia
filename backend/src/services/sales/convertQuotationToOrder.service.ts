@@ -1,4 +1,6 @@
 import { quotationRepository, salesOrderRepository } from '../../repositories';
+import { prisma } from '../../config/database';
+import { seedPdiChecklist } from './pdiChecklist.template';
 
 export const convertQuotationToOrderService = {
   async convert(quotationId: string, assignedTo?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -58,6 +60,8 @@ export const convertQuotationToOrderService = {
         status: 'converted',
         salesOrder: { connect: { id: order.id } },
       });
+
+      await seedPdiChecklist(prisma, order.id);
 
       return { ok: true, data: order };
     } catch (error: any) {

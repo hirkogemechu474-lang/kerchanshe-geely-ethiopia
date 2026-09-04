@@ -36,3 +36,18 @@ export function getPdiChecklist(): PdiChecklistItem[] {
 export function getPdiCategories(): string[] {
   return [...new Set(PDI_CHECKLIST_TEMPLATE.map((item) => item.category))];
 }
+
+// Seeds the PDI checklist for a newly-created order. The BOOKED ->
+// READY_FOR_DELIVERY gate (order.service.ts's getTransitionBlockReason)
+// requires `pdiItems.length > 0 && every(isChecked)`, so ANY order created
+// without this being called can never legitimately reach Ready for
+// Delivery or Delivered — call this from every SalesOrder creation path,
+// not just the quotation-conversion one.
+export async function seedPdiChecklist(prisma: { pdiChecklistItem: { createMany: (args: any) => Promise<unknown> } }, orderId: string): Promise<void> {
+  await prisma.pdiChecklistItem.createMany({
+    data: PDI_CHECKLIST_TEMPLATE.map((item) => ({
+      orderId,
+      label: `${item.category}: ${item.label}`,
+    })),
+  });
+}

@@ -3,6 +3,7 @@ import { prisma } from '../../config/database';
 import { salesOrderRepository } from '../../repositories';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { sendEmail } from '../email/smtp';
+import { seedPdiChecklist } from '../sales/pdiChecklist.template';
 
 // NOTE: no `Purchase` model exists in schema.prisma — a purchase is a
 // `SalesOrder` (see the identical note in public.routes.ts and
@@ -38,6 +39,8 @@ export const purchaseService = {
           },
         },
       });
+
+      await seedPdiChecklist(prisma, purchase.id);
 
       await sendEmail({
         to: data.customerEmail,
