@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
-import { CheckCircle, FileText, DollarSign, AlertCircle, Clock, ShieldCheck, RotateCcw, Calculator, Search, Eye, UserCheck, Mail, Copy, Check } from "lucide-react";
+import { CheckCircle, FileText, DollarSign, AlertCircle, Clock, ShieldCheck, RotateCcw, Calculator, Search, Eye, UserCheck, Mail, Copy, Check, Upload } from "lucide-react";
 
 const TIMEFRAME_LABELS: Record<string, string> = {
   '1-month': 'Within 1 month',
@@ -21,6 +21,7 @@ interface QuoteFormData {
   email: string;
   phone: string;
   nationalId: string;
+  idDocumentType: string;
   vehicleId: string;
   purchaseTimeframe: string;
   financingNeeded: string;
@@ -49,6 +50,12 @@ export default function QuotePage() {
   const [quoteReference, setQuoteReference] = useState<string | null>(null);
   const [quotedVehicleId, setQuotedVehicleId] = useState<string | null>(null);
   const [referenceCopied, setReferenceCopied] = useState(false);
+  // Digital ID capture (photo of the document) — optional, separate from
+  // the form's own state since it's an async upload-then-store-URL step,
+  // same pattern as TestDriveIdCapture.tsx's /api/upload/image flow.
+  const [idPhotoUrl, setIdPhotoUrl] = useState<string | null>(null);
+  const [idPhotoUploading, setIdPhotoUploading] = useState(false);
+  const [idPhotoError, setIdPhotoError] = useState<string | null>(null);
 
   const {
     register,
@@ -61,6 +68,7 @@ export default function QuotePage() {
       vehicleId: preselectedModel || "",
       financingNeeded: "not-sure",
       tradeIn: "no",
+      idDocumentType: "national_id",
     },
   });
 
@@ -174,6 +182,27 @@ export default function QuotePage() {
     };
   }, []);
 
+  const handleIdPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIdPhotoUploading(true);
+    setIdPhotoError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "quote-id");
+      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setIdPhotoUrl(data.url);
+    } catch (err) {
+      setIdPhotoError(err instanceof Error ? err.message : "Failed to upload ID photo. Please try again.");
+    } finally {
+      setIdPhotoUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const onSubmit = async (data: QuoteFormData) => {
     setSubmitError(null);
     try {
@@ -200,6 +229,8 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           phoneNumber: data.phone,
           email: data.email,
           nationalId: data.nationalId,
+          idDocumentType: data.idDocumentType,
+          idPhotoUrl: idPhotoUrl || undefined,
           vehicleModel: selectedVehicle?.name || data.vehicleId,
           preferredDealer: null,
           financingInterest: data.financingNeeded === 'yes',
@@ -232,6 +263,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
       setIsSubmitted(true);
       reset();
+      setIdPhotoUrl(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error('Failed to submit quote request:', err);
@@ -540,9 +572,24 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     )}
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      National ID / Driver&apos;s License <span className="text-red-500">*</span>
+                      ID Document Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      {...register("idDocumentType", { required: "Please select a document type" })}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                    >
+                      <option value="national_id">National ID</option>
+                      <option value="passport">Passport</option>
+                      <option value="drivers_license">Driver&apos;s License</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      ID / License Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -557,6 +604,27 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     {errors.nationalId && (
                       <p className="text-red-500 text-xs mt-1">{errors.nationalId.message}</p>
                     )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      ID Document Photo <span className="text-steel dark:text-steel-light font-normal">(optional — speeds up verification)</span>
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {idPhotoUrl ? (
+                        <img src={idPhotoUrl} alt="Uploaded ID document" className="w-24 h-16 object-cover rounded-lg border border-line dark:border-midnight-line" />
+                      ) : (
+                        <div className="w-24 h-16 rounded-lg border border-dashed border-line dark:border-midnight-line flex items-center justify-center text-[10px] text-steel dark:text-steel-light text-center px-1">
+                          No photo yet
+                        </div>
+                      )}
+                      <label className="inline-flex items-center gap-2 border-2 border-navy dark:border-ice text-navy dark:text-ice font-bold text-sm px-4 py-2.5 rounded-lg hover:bg-ice dark:hover:bg-midnight transition-all cursor-pointer">
+                        <Upload size={16} />
+                        {idPhotoUploading ? "Uploading…" : idPhotoUrl ? "Replace Photo" : "Upload Photo"}
+                        <input type="file" accept="image/*" onChange={handleIdPhotoChange} disabled={idPhotoUploading} className="hidden" />
+                      </label>
+                    </div>
+                    {idPhotoError && <p className="text-red-500 text-xs mt-1">{idPhotoError}</p>}
                   </div>
                 </div>
               </div>

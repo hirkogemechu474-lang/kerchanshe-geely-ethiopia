@@ -249,6 +249,11 @@ model Quotation {
   // (BRD FR-101: "at minimum" name and phone).
   email                  String?
   nationalId             String?
+  // Digital ID capture on the public quote form — same convention as
+  // TestDrive.idDocumentType/idPhotoUrl (nationalId above doubles as the
+  // document number here, so there's no separate idDocumentNumber column).
+  idDocumentType         String?
+  idPhotoUrl             String?
   // Optional: UC-01 alt flow — "If no vehicle model is selected, the lead
   // is still saved as a general enquiry."
   vehicleModel           String?
