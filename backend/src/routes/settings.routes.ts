@@ -199,6 +199,117 @@ router.post('/bank-details', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
+// GET/POST /api/settings/financing-settings — calculator defaults, eligibility
+// requirements, fee schedule, and support contact for the /financing page.
+// Registered before the generic '/:key' route for the same shadowing reason
+// as the settings pairs above. Unlike those, FinancingSettingsEditor.tsx does
+// NOT defensively merge against its own client-side defaults on load
+// (`setSettings(data)` is used as-is) — so unlike an empty `{}` fallback,
+// GET must always return this same fully-populated default shape when unset,
+// or the editor's nested field reads (settings.calculator.enabled, etc.)
+// throw immediately.
+const DEFAULT_FINANCING_SETTINGS = {
+  enabled: true,
+  calculator: {
+    enabled: true,
+    defaultDownPayment: 20,
+    minDownPayment: 10,
+    maxDownPayment: 80,
+    defaultTenure: 5,
+    minTenure: 1,
+    maxTenure: 7,
+    tenureOptions: [1, 2, 3, 4, 5, 6, 7],
+    defaultInterestRate: 13.5,
+    interestRateRange: { min: 12.5, max: 15.5 },
+  },
+  requirements: {
+    ethiopianCitizenship: true,
+    minAge: 21,
+    maxAge: 65,
+    minMonthlyIncome: 15000,
+    employmentRequired: true,
+    minEmploymentYears: 1,
+    documents: [
+      'Valid Ethiopian ID or Passport',
+      'Proof of Income (Salary slip or Bank statement for 3-6 months)',
+      'Employment Letter / Contract',
+      'Proof of Residence (Utility bill, Lease agreement)',
+      'Completed Application Form',
+      'Down Payment Receipt',
+      'TIN (Tax Identification Number)',
+      'Two Recent Passport Photos',
+      'Bank account statement (latest 6 months)',
+      'Credit Bureau report (if applicable)',
+    ],
+  },
+  process: {
+    steps: [
+      { step: 1, title: 'Calculate & Estimate', description: 'Use our online calculator to estimate monthly payments based on vehicle price, down payment, and preferred loan term.', duration: '5 minutes' },
+      { step: 2, title: 'Submit Application', description: 'Complete the financing application form online or at any showroom. Submit all required documentation for initial review.', duration: '1-2 hours' },
+      { step: 3, title: 'Document Verification', description: 'The bank verifies your employment, income, and submitted documents. A credit check may also be performed.', duration: '1-2 business days' },
+      { step: 4, title: 'Loan Approval', description: 'Upon successful verification, the bank approves your loan and issues a sanction letter with approved terms and conditions.', duration: '2-3 business days' },
+      { step: 5, title: 'Sign Agreement & Pay Down Payment', description: 'Review and sign the loan agreement. Pay the down payment amount and any processing fees to complete the purchase.', duration: '1 day' },
+      { step: 6, title: 'Vehicle Delivery', description: 'Once all paperwork is complete and payment is confirmed, you can take delivery of your new Geely vehicle!', duration: 'Same day' },
+    ],
+    totalDuration: '3-5 business days',
+    fastTrackAvailable: true,
+    fastTrackDuration: '2 business days',
+  },
+  fees: {
+    processingFee: { percentage: 2.5, min: 5000, max: 30000 },
+    insurance: {
+      comprehensive: { percentage: 5, description: 'Full comprehensive insurance covering theft, accident, fire, and third-party liability.' },
+      thirdParty: { fixed: 3500, description: 'Basic third-party liability insurance as required by Ethiopian law.' },
+    },
+    registration: { plates: 1800, license: 600, inspection: 1200 },
+  },
+  additionalInfo: {
+    latePaymentPenalty: 2,
+    earlyRepaymentAllowed: true,
+    earlyRepaymentPenalty: 1,
+    gracePeriod: 7,
+    maxMissedPayments: 3,
+    balloonPaymentAvailable: false,
+  },
+  support: {
+    phone: '+251 11 000 0000',
+    email: 'financing@geely-ethiopia.com',
+    whatsapp: '+251 99 338 9874',
+    consultationAvailable: true,
+    consultationFree: true,
+  },
+};
+
+router.get('/financing-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'financing_settings' } });
+    if (!setting?.value) { res.json(DEFAULT_FINANCING_SETTINGS); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json(DEFAULT_FINANCING_SETTINGS);
+    }
+  } catch (error) {
+    console.error('Get financing settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/financing-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'financing_settings' },
+      update: { value },
+      create: { key: 'financing_settings', value, type: 'general' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update financing settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/settings/financing-page-content (get public financing page content)
 router.get('/financing-page-content', requireAdminApiSession, async (req: Request, res: Response) => {
   try {

@@ -5,22 +5,145 @@ import { rateLimiters } from '../utils/rateLimit';
 
 const router = Router();
 
-// GET /api/analytics (admin analytics data)
+// GET /api/analytics (admin analytics dashboard data — full shape consumed by
+// apps/admin/app/admin/analytics/page.tsx's normalizeAnalyticsData()).
 router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const period = req.query.period as string || '30d';
     const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const overdueThreshold = new Date();
+    overdueThreshold.setDate(overdueThreshold.getDate() - 3);
+    const openJobCardWhere = { status: { notIn: ['INVOICED_CLOSED', 'CANCELLED'] as ('INVOICED_CLOSED' | 'CANCELLED')[] } };
 
-    const [totalOrders, totalRevenue, totalCustomers, totalJobCards] = await Promise.all([
-      prisma.salesOrder.count({ where: { createdAt: { gte: startDate } } }),
-      prisma.salesOrder.aggregate({ _sum: { totalPrice: true }, where: { createdAt: { gte: startDate }, status: 'DELIVERED' } }),
-      prisma.user.count({ where: { role: 'customer', createdAt: { gte: startDate } } }),
-      prisma.jobCard.count({ where: { createdAt: { gte: startDate } } }),
+    const [
+      totalVehicles, totalTestDrives, totalQuotations, totalServiceBookings, totalReviews, avgRatingAgg,
+      recentTestDrives, recentQuotations, recentReviews,
+      vehiclesByCategory, testDrivesByVehicle,
+      pendingQuotations, pendingReviews, unreadMessages, overdueJobCards, partsForReorderCheck,
+      baysBusy, baysTotal, jobsToday, closedJobCardDurations, pendingApproval, warrantyClaimsByStatusRaw, bays,
+      paymentUnpaid, paymentPendingReview, paymentPaid, paymentCollectedAgg,
+      agreementApproved, agreementSent, agreementSigned, agreementCountersigned,
+      handoverDelivered, handoverSigned, handoverCountersigned, orderLinkedTestDrives,
+    ] = await Promise.all([
+      prisma.vehicle.count({ where: { isActive: true } }),
+      prisma.testDrive.count(),
+      prisma.quotation.count(),
+      prisma.serviceBooking.count(),
+      prisma.review.count(),
+      prisma.review.aggregate({ _avg: { rating: true } }),
+      prisma.testDrive.count({ where: { createdAt: { gte: startDate } } }),
+      prisma.quotation.count({ where: { createdAt: { gte: startDate } } }),
+      prisma.review.count({ where: { createdAt: { gte: startDate } } }),
+      prisma.vehicle.groupBy({ by: ['category'], _count: true, where: { isActive: true } }),
+      prisma.testDrive.groupBy({ by: ['vehicleId'], _count: true, orderBy: { _count: { vehicleId: 'desc' } }, take: 5 }),
+      prisma.quotation.count({ where: { status: { notIn: ['converted', 'closed'] } } }),
+      prisma.review.count({ where: { status: 'pending' } }),
+      prisma.message.count({ where: { status: 'unread' } }),
+      prisma.jobCard.count({ where: { ...openJobCardWhere, openTs: { lt: overdueThreshold } } }),
+      prisma.sparePart.findMany({ where: { isActive: true }, select: { stock: true, reorderPoint: true } }),
+      prisma.serviceBay.count({ where: { isActive: true, status: 'OCCUPIED' } }),
+      prisma.serviceBay.count({ where: { isActive: true } }),
+      prisma.jobCard.count({ where: { openTs: { gte: startOfToday } } }),
+      prisma.jobCard.findMany({ where: { closeTs: { not: null } }, select: { openTs: true, closeTs: true }, orderBy: { closeTs: 'desc' }, take: 200 }),
+      prisma.jobCard.count({ where: { status: 'AWAITING_APPROVAL' } }),
+      prisma.warrantyClaim.groupBy({ by: ['status'], _count: true }),
+      prisma.serviceBay.findMany({ where: { isActive: true }, select: { id: true, name: true, status: true }, orderBy: { name: 'asc' } }),
+      prisma.salesOrder.count({ where: { paymentStatus: 'UNPAID' } }),
+      prisma.salesOrder.count({ where: { paymentStatus: 'PENDING_REVIEW' } }),
+      prisma.salesOrder.count({ where: { paymentStatus: 'PAID' } }),
+      prisma.salesOrder.aggregate({ _sum: { totalPrice: true }, where: { paymentStatus: 'PAID' } }),
+      prisma.salesOrder.count({ where: { approvedAt: { not: null } } }),
+      prisma.salesOrder.count({ where: { agreementSentAt: { not: null } } }),
+      prisma.salesOrder.count({ where: { signedAt: { not: null } } }),
+      prisma.salesOrder.count({ where: { countersignedAt: { not: null } } }),
+      prisma.salesOrder.count({ where: { status: 'DELIVERED' } }),
+      prisma.salesOrder.count({ where: { handoverSignedAt: { not: null } } }),
+      prisma.salesOrder.count({ where: { handoverCountersignedAt: { not: null } } }),
+      prisma.testDrive.count({ where: { salesOrderId: { not: null } } }),
     ]);
 
-    res.json({ totalOrders, totalRevenue: totalRevenue._sum?.totalPrice || 0, totalCustomers, totalJobCards });
+    const topVehicleIds = testDrivesByVehicle.map((v) => v.vehicleId);
+    const topVehicleRows = topVehicleIds.length
+      ? await prisma.vehicle.findMany({ where: { id: { in: topVehicleIds } }, select: { id: true, name: true } })
+      : [];
+    const vehicleNameById = new Map(topVehicleRows.map((v) => [v.id, v.name]));
+    const topVehicles = testDrivesByVehicle.map((v) => ({
+      name: vehicleNameById.get(v.vehicleId) || 'Unknown vehicle',
+      testDrives: v._count,
+    }));
+
+    const partsBelowReorder = partsForReorderCheck.filter((p) => p.stock <= p.reorderPoint).length;
+
+    const durations = closedJobCardDurations
+      .map((jc) => (jc.closeTs ? (jc.closeTs.getTime() - jc.openTs.getTime()) / 60000 : null))
+      .filter((m): m is number => m != null && m >= 0);
+    const avgTurnaroundMinutes = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+
+    res.json({
+      overview: {
+        totalVehicles,
+        totalTestDrives,
+        totalQuotations,
+        totalServiceBookings,
+        totalReviews,
+        avgRating: avgRatingAgg._avg.rating || 0,
+      },
+      recentActivity: {
+        testDrives: recentTestDrives,
+        quotations: recentQuotations,
+        reviews: recentReviews,
+      },
+      // Vehicle catalog distribution by category — Quotation/SalesOrder store
+      // vehicleModel as free text (no real FK to Vehicle), so a true
+      // "quotes/orders by category" breakdown isn't reliable; this shows
+      // what's in the active catalog instead.
+      salesByCategory: vehiclesByCategory.map((v) => ({ category: v.category, count: v._count })),
+      topVehicles,
+      needsAttention: {
+        pendingQuotations,
+        pendingReviews,
+        unreadMessages,
+        overdueJobCards,
+        partsBelowReorder,
+      },
+      workshop: {
+        kpis: {
+          baysBusy,
+          baysTotal,
+          jobsToday,
+          avgTurnaroundMinutes,
+          pendingApproval,
+          overdueCount: overdueJobCards,
+          partsBelowReorder,
+        },
+        bays,
+        warrantyClaimsByStatus: warrantyClaimsByStatusRaw.map((w) => ({ status: w.status, count: w._count })),
+      },
+      salesPipeline: {
+        payment: {
+          unpaid: paymentUnpaid,
+          pendingReview: paymentPendingReview,
+          paid: paymentPaid,
+          totalCollected: paymentCollectedAgg._sum?.totalPrice || 0,
+        },
+        agreement: {
+          approved: agreementApproved,
+          sent: agreementSent,
+          signed: agreementSigned,
+          countersigned: agreementCountersigned,
+        },
+        handover: {
+          delivered: handoverDelivered,
+          signed: handoverSigned,
+          countersigned: handoverCountersigned,
+        },
+        orderLinkedTestDrives,
+      },
+    });
   } catch (error) {
     console.error('Analytics error:', error);
     res.status(500).json({ error: 'Internal server error' });

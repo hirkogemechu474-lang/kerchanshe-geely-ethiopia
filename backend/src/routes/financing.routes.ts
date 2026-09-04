@@ -1,8 +1,35 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { slugify } from '../utils/formatting';
 
 const router = Router();
+
+// FinancingProgram's canonical Prisma fields — the admin UI form
+// (apps/admin/app/admin/financing/page.tsx) uses short UI-only field names
+// (downPayment, minDp, maxDp, minTM, maxTM, processingFee, procFeeMin,
+// procFeeMax, insurance) alongside the canonical ones in its `toApi()`
+// mapper, and never collects a `slug` at all — so create/update must
+// whitelist to just these columns (dropping the UI-only extras, which
+// Prisma would otherwise reject) and generate a slug server-side.
+function pickProgramFields(body: any) {
+  const {
+    name, bankId, interestRate, downPaymentPercent, minDownPaymentPercent, maxDownPaymentPercent,
+    tenureMonths, minTenureMonths, maxTenureMonths, processingFeePercent, processingFeeMin, processingFeeMax,
+    insurancePercent, vehicleId, vehicleCategoryId, appliesToAllVehicles,
+    applyEnabled, applyUrl, applyLabel, directPayEnabled, directPayUrl, directPayLabel,
+    visitShowroomEnabled, visitShowroomUrl, visitShowroomLabel, scheduleEnabled, scheduleUrl,
+    badgeText, highlightBadge, finePrint, eligibilityNote, status, displayOrder,
+  } = body;
+  return {
+    name, bankId, interestRate, downPaymentPercent, minDownPaymentPercent, maxDownPaymentPercent,
+    tenureMonths, minTenureMonths, maxTenureMonths, processingFeePercent, processingFeeMin, processingFeeMax,
+    insurancePercent, vehicleId: vehicleId || null, vehicleCategoryId: vehicleCategoryId || null, appliesToAllVehicles,
+    applyEnabled, applyUrl, applyLabel, directPayEnabled, directPayUrl, directPayLabel,
+    visitShowroomEnabled, visitShowroomUrl, visitShowroomLabel, scheduleEnabled, scheduleUrl,
+    badgeText, highlightBadge, finePrint, eligibilityNote, status, displayOrder,
+  };
+}
 
 // ── Programs ─────────────────────────────────────────────────────────────
 
@@ -20,7 +47,8 @@ router.get('/programs', requireAdminApiSession, async (req: Request, res: Respon
 // POST /api/financing/programs (admin create)
 router.post('/programs', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const program = await prisma.financingProgram.create({ data: req.body });
+    const slug = `${slugify(req.body.name || 'program')}-${Date.now().toString(36)}`;
+    const program = await prisma.financingProgram.create({ data: { ...pickProgramFields(req.body), slug } });
     res.status(201).json(program);
   } catch (error) {
     console.error('Create financing program error:', error);
@@ -43,7 +71,7 @@ router.get('/programs/:id', requireAdminApiSession, async (req: Request, res: Re
 // PUT /api/financing/programs/:id (admin update)
 router.put('/programs/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const program = await prisma.financingProgram.update({ where: { id: req.params.id }, data: req.body });
+    const program = await prisma.financingProgram.update({ where: { id: req.params.id }, data: pickProgramFields(req.body) });
     res.json(program);
   } catch (error) {
     console.error('Update financing program error:', error);
@@ -64,10 +92,24 @@ router.delete('/programs/:id', requireAdminApiSession, async (req: Request, res:
 
 // ── Banks ────────────────────────────────────────────────────────────────
 
+// FinancingBank's editable Prisma columns — the admin UI's GET response
+// includes a computed `_count.financingPrograms`, which `openEditBank()`/
+// `toggleBankActive()` then spread straight back into the PUT body (and
+// `emptyBank()` seeds a literal `id: ''` sent on every create) — neither
+// `_count` nor a client-supplied `id` are real writable columns, so both
+// must be dropped before hitting Prisma.
+function pickBankFields(body: any) {
+  const { name, slug, logoUrl, websiteUrl, phoneNumber, email, branchAddress, shortDescription, isActive, displayOrder } = body;
+  return { name, slug, logoUrl, websiteUrl, phoneNumber, email, branchAddress, shortDescription, isActive, displayOrder };
+}
+
 // GET /api/financing/banks (admin list)
 router.get('/banks', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const banks = await prisma.financingBank.findMany({ orderBy: { name: 'asc' } });
+    const banks = await prisma.financingBank.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { financingPrograms: true } } }
+    });
     res.json(banks);
   } catch (error) {
     console.error('List banks error:', error);
@@ -78,7 +120,7 @@ router.get('/banks', requireAdminApiSession, async (req: Request, res: Response)
 // POST /api/financing/banks (admin create)
 router.post('/banks', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const bank = await prisma.financingBank.create({ data: req.body });
+    const bank = await prisma.financingBank.create({ data: pickBankFields(req.body) });
     res.status(201).json(bank);
   } catch (error) {
     console.error('Create bank error:', error);
@@ -89,7 +131,10 @@ router.post('/banks', requireAdminApiSession, async (req: Request, res: Response
 // GET /api/financing/banks/:id (admin detail)
 router.get('/banks/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const bank = await prisma.financingBank.findUnique({ where: { id: req.params.id } });
+    const bank = await prisma.financingBank.findUnique({
+      where: { id: req.params.id },
+      include: { _count: { select: { financingPrograms: true } } }
+    });
     if (!bank) { res.status(404).json({ error: 'Bank not found' }); return; }
     res.json(bank);
   } catch (error) {
@@ -101,7 +146,7 @@ router.get('/banks/:id', requireAdminApiSession, async (req: Request, res: Respo
 // PUT /api/financing/banks/:id (admin update)
 router.put('/banks/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const bank = await prisma.financingBank.update({ where: { id: req.params.id }, data: req.body });
+    const bank = await prisma.financingBank.update({ where: { id: req.params.id }, data: pickBankFields(req.body) });
     res.json(bank);
   } catch (error) {
     console.error('Update bank error:', error);
