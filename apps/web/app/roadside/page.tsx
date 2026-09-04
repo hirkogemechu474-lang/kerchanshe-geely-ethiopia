@@ -96,7 +96,7 @@ export default function RoadsidePage() {
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
               <p className="text-sm text-red-800">
-                <strong>Emergency?</strong> Call us immediately: <a href="tel:+251911234567" className="font-bold underline">+251 91 123 4567</a>
+                <strong>Emergency?</strong> Call us immediately: <a href="tel:+251993389874" className="font-bold underline">+251 99 338 9874</a>
               </p>
             </div>
             <div className="flex gap-4 justify-center flex-wrap">
@@ -149,11 +149,11 @@ export default function RoadsidePage() {
             </div>
             <div className="flex items-center gap-6">
               <a 
-                href="tel:+251911234567" 
+                href="tel:+251993389874" 
                 className="flex items-center gap-2 bg-white dark:bg-midnight-surface text-red-600 px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all"
               >
                 <Phone size={20} />
-                +251 91 123 4567
+                +251 99 338 9874
               </a>
               <span className="text-sm opacity-90">Available 24/7</span>
             </div>
@@ -377,11 +377,11 @@ export default function RoadsidePage() {
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <a
-                href="tel:+251911234567"
+                href="tel:+251993389874"
                 className="bg-white dark:bg-midnight-surface text-geely-blue font-bold text-base px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all inline-flex items-center gap-2"
               >
                 <Phone size={20} />
-                Call Now: +251 91 123 4567
+                Call Now: +251 99 338 9874
               </a>
               <button
                 onClick={() => {

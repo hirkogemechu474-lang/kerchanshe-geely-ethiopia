@@ -292,7 +292,7 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-              <input type="tel" value={formData.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="+251 911 000 000" />
+              <input type="tel" value={formData.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="+251 99 338 9874" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>

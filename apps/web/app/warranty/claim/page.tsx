@@ -222,7 +222,7 @@ export default function WarrantyClaimPage() {
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
                         errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
                       }`}
-                      placeholder="+251 91 234 5678"
+                      placeholder="+251 99 338 9874"
                     />
                     {errors.phone && (
                       <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>

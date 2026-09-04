@@ -81,12 +81,12 @@ export default function OfflinePage() {
               </a>
               <span className="hidden sm:inline text-gray-300">|</span>
               <a
-                href="https://wa.me/251110000000"
+                href="https://wa.me/251993389874"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-600 hover:underline font-semibold"
               >
-                💬 WhatsApp: +251 11 000 0000
+                💬 WhatsApp: +251 99 338 9874
               </a>
             </div>
           </div>

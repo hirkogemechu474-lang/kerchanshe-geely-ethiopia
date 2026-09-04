@@ -2,10 +2,10 @@
 
 // WhatsApp business numbers for Geely Ethiopia
 export const WHATSAPP_NUMBERS = {
-  main: '+251110000000',
-  sales: '+251110000001',
-  service: '+251110000002',
-  parts: '+251110000003',
+  main: '+251993389874',
+  sales: '+251993389874',
+  service: '+251993389874',
+  parts: '+251993389874',
   // Dealer-specific numbers
   dealers: {
     'addis-ababa-bole': '+251110001000',

@@ -6,21 +6,33 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/services/vehicleService";
-import { useCRMSubmit } from "@/hooks/useCRMSubmit";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
-import { Calendar, Clock, MapPin, CheckCircle, Car, AlertCircle } from "lucide-react";
+import { withBasePath } from "@/lib/publicPath";
+import { CheckCircle, AlertCircle, Info } from "lucide-react";
 
 interface TestDriveFormData {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  nationalId: string;
   vehicleId: string;
   preferredDate: string;
   preferredTime: string;
   location: string;
-  message: string;
-  consent: boolean;
+  consentPrivacy: boolean;
+  consentEmail: boolean;
+  consentPhone: boolean;
+}
+
+function vehicleImageUrl(vehicle: VehicleRecord): string | null {
+  const raw =
+    vehicle.heroImageUrl ||
+    (Array.isArray(vehicle.images) && typeof vehicle.images[0] === "string"
+      ? vehicle.images[0]
+      : null);
+  if (!raw) return null;
+  return withBasePath(raw);
 }
 
 export default function TestDrivePage() {
@@ -32,18 +44,22 @@ export default function TestDrivePage() {
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [contactPhone, setContactPhone] = useState("+251 11 000 0000");
-  const { submitLead, loading, error, success } = useCRMSubmit();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<TestDriveFormData>();
+    watch,
+    setValue,
+  } = useForm<TestDriveFormData>({
+    defaultValues: { vehicleId: "" },
+  });
 
-  // Showroom QR walk-in flow: a visitor arriving here already registered
-  // their name/phone/email against a ShowroomVisit row — prefill the form
-  // from it instead of asking again.
+  const selectedVehicleId = watch("vehicleId");
+
   useEffect(() => {
     if (!visitId) return;
     let active = true;
@@ -52,7 +68,9 @@ export default function TestDrivePage() {
         const res = await fetch(`/api/visit/${encodeURIComponent(visitId)}`);
         const data = await res.json().catch(() => null);
         if (!res.ok || !active) return;
-        const [firstName, ...lastNameParts] = String(data.fullName || "").split(" ");
+        const [firstName, ...lastNameParts] = String(
+          data.fullName || ""
+        ).split(" ");
         reset((current) => ({
           ...current,
           firstName: firstName || current.firstName,
@@ -61,7 +79,7 @@ export default function TestDrivePage() {
           email: data.email || current.email,
         }));
       } catch {
-        /* silent — the form is simply left blank */
+        /* silent */
       }
     })();
     return () => {
@@ -76,17 +94,14 @@ export default function TestDrivePage() {
       try {
         const response = await fetch("/api/public/vehicles");
         if (!response.ok) return;
-
         const data = await response.json();
         if (active) {
           setVehicles(Array.isArray(data) ? data : data?.vehicles || []);
         }
-      } catch (error) {
-        console.error("Failed to load vehicles:", error);
+      } catch (err) {
+        console.error("Failed to load vehicles:", err);
       } finally {
-        if (active) {
-          setVehiclesLoading(false);
-        }
+        if (active) setVehiclesLoading(false);
       }
     }
 
@@ -96,15 +111,16 @@ export default function TestDrivePage() {
         if (!response.ok) return;
         const data = await response.json();
         const dealers = Array.isArray(data) ? data : data?.data || [];
-        // Showrooms that actually offer test drives — falls back to every
-        // dealer if none have the flag set, so the field is never empty.
-        const withTestDrives = dealers.filter((d: any) => d?.facilities?.testDriveArea);
-        const names = (withTestDrives.length > 0 ? withTestDrives : dealers).map(
-          (d: any) => `${d.name}, ${d.city}`
+        const withTestDrives = dealers.filter(
+          (d: any) => d?.facilities?.testDriveArea
         );
+        const rawNames = (withTestDrives.length > 0 ? withTestDrives : dealers).map(
+          (d: any) => `${d.name}, ${d.city}` as string
+        );
+        const names = [...new Set<string>(rawNames)];
         if (active) setLocations(names);
-      } catch (error) {
-        console.error("Failed to load showroom locations:", error);
+      } catch (err) {
+        console.error("Failed to load showroom locations:", err);
       } finally {
         if (active) setLocationsLoading(false);
       }
@@ -133,29 +149,42 @@ export default function TestDrivePage() {
   }, []);
 
   const onSubmit = async (data: TestDriveFormData) => {
+    setSubmitting(true);
+    setSubmitError(null);
     try {
-      const selectedVehicle = vehicles.find(v => v.id === data.vehicleId);
-      
-      const result = await submitLead({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        leadType: 'test-drive',
-        modelInterest: selectedVehicle?.name || data.vehicleId,
-        vehicleId: data.vehicleId,
-        preferredDealer: data.location,
-        preferredDate: data.preferredDate,
-        preferredTime: data.preferredTime,
-        message: data.message,
-        consentGiven: data.consent
+      const res = await fetch("/api/public/test-drive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          nationalId: data.nationalId,
+          vehicleId: data.vehicleId,
+          preferredDate: data.preferredDate,
+          preferredTime: data.preferredTime,
+          location: data.location,
+          message: null,
+          consentGiven: data.consentPrivacy,
+        }),
       });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(result.error || "Failed to submit. Please try again.");
+        return;
+      }
 
       if (visitId) {
         void fetch(`/api/visit/${encodeURIComponent(visitId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ selectedAction: "test-drive", testDriveId: result.testDriveId }),
+          body: JSON.stringify({
+            selectedAction: "test-drive",
+            testDriveId: result.testDriveId,
+          }),
         });
       }
 
@@ -163,8 +192,10 @@ export default function TestDrivePage() {
       reset();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      console.error('Failed to submit test drive request:', err);
-      // Error is handled by the hook
+      console.error("Failed to submit test drive request:", err);
+      setSubmitError("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -181,37 +212,50 @@ export default function TestDrivePage() {
     return (
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="max-w-xl mx-auto px-4 text-center">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-green-100">
               <CheckCircle className="text-green-600" size={40} />
             </div>
-            <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
-              Test Drive Booked Successfully!
+            <h1 className="text-3xl sm:text-4xl font-bold text-navy mb-4">
+              Booking Confirmed!
             </h1>
-            <p className="text-lg text-steel dark:text-steel-light mb-8 leading-relaxed">
-              Thank you for booking a test drive with Geely Ethiopia. Our team will contact you within 24 hours to confirm your appointment and provide additional details.
+            <p className="text-steel mb-8 leading-relaxed">
+              Thank you for booking a test drive with Geely Ethiopia. Our team
+              will contact you within 24 hours to confirm your appointment.
             </p>
-            <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
-              <p className="text-sm text-steel dark:text-steel-light mb-2">
-                <strong className="text-navy dark:text-ice">What happens next?</strong>
+            <div className="bg-ice p-6 rounded-lg mb-8 text-left max-w-md mx-auto">
+              <p className="font-bold text-navy text-sm mb-3">
+                What happens next?
               </p>
-              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
-                <li>✓ You'll receive a confirmation email</li>
-                <li>✓ Our team will call to confirm your preferred date and time</li>
-                <li>✓ We'll prepare your selected vehicle for the test drive</li>
-                <li>✓ Bring your valid driver's license on the day</li>
+              <ul className="text-sm text-steel space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
+                  You will receive a confirmation email
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
+                  Our team will call to confirm your preferred date and time
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
+                  We will prepare your selected vehicle for the test drive
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
+                  Bring your valid driver&apos;s license on the day
+                </li>
               </ul>
             </div>
             <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-navy text-white font-bold text-sm px-8 py-3 rounded-sm hover:bg-ink transition-colors"
               >
                 Book Another Test Drive
               </button>
               <Link
                 href="/models"
-                className="border border-line dark:border-midnight-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line text-navy font-semibold text-sm px-8 py-3 rounded-sm hover:bg-ice transition-colors"
               >
                 Explore Models
               </Link>
@@ -224,354 +268,496 @@ export default function TestDrivePage() {
 
   return (
     <MainLayout>
-      {/* Page Header */}
-      <div className="bg-navy text-white py-16">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
-            EXPERIENCE GEELY
-          </div>
-          <h1 className="disp text-4xl sm:text-5xl font-bold mb-4">
+      {/* Page Heading */}
+      <div className="pt-[120px] md:pt-[152px] pb-10 md:pb-[60px] px-4">
+        <div className="max-w-[960px] mx-auto text-center">
+          <h1 className="text-4xl sm:text-[56px] md:text-[64px] font-bold text-navy leading-none mb-6">
             Book a Test Drive
           </h1>
-          <p className="text-[#d8e4f5] text-base max-w-2xl">
-            Experience the quality, comfort, and performance of Geely vehicles firsthand. Book your test drive today and discover why Geely is trusted worldwide.
+          <p className="text-steel text-base max-w-2xl mx-auto">
+            Experience the quality, comfort, and performance of Geely vehicles
+            firsthand. Select your preferred model and schedule your test drive
+            today.
           </p>
         </div>
       </div>
 
-      {/* Why Test Drive Section */}
-      <section className="py-12 bg-ice">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Car className="text-geely-blue" size={24} />
+      {/* Form */}
+      <section className="pb-16 md:pb-[120px] px-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="max-w-[960px] mx-auto"
+        >
+          {/* Section 1: Choose Model */}
+          <div className="mb-10 md:mb-[60px]">
+            <h2 className="text-lg md:text-xl font-bold text-navy mb-6">
+              Choose Model
+            </h2>
+
+            {vehiclesLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse rounded-lg bg-ice h-[180px]"
+                  />
+                ))}
               </div>
-              <h3 className="font-bold text-navy mb-2">Feel the Performance</h3>
-              <p className="text-xs text-steel">
-                Experience the power and handling on real roads
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {vehicles.map((vehicle) => {
+                  const img = vehicleImageUrl(vehicle);
+                  const isActive = selectedVehicleId === vehicle.id;
+                  return (
+                    <button
+                      key={vehicle.id}
+                      type="button"
+                      onClick={() =>
+                        setValue("vehicleId", vehicle.id, {
+                          shouldValidate: true,
+                        })
+                      }
+                      className={`relative rounded-lg overflow-hidden text-left transition-all ${
+                        isActive
+                          ? "ring-2 ring-navy ring-offset-2"
+                          : "ring-1 ring-black/10 hover:ring-black/30"
+                      }`}
+                    >
+                      <div className="aspect-[2/1] bg-ice relative overflow-hidden">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={vehicle.name}
+                            className="w-full h-full object-cover object-center"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-steel text-sm">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-4 py-3 bg-white">
+                        <span className="font-bold text-navy text-sm">
+                          {vehicle.name}
+                        </span>
+                      </div>
+                      {isActive && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-navy rounded-full flex items-center justify-center">
+                          <CheckCircle size={14} className="text-white" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {!vehiclesLoading && vehicles.length === 0 && (
+              <p className="text-steel text-sm">
+                No vehicles available at the moment.
               </p>
+            )}
+            {errors.vehicleId && (
+              <p className="text-red-500 text-xs mt-2">
+                {errors.vehicleId.message}
+              </p>
+            )}
+            <input
+              type="hidden"
+              {...register("vehicleId", {
+                required: "Please select a vehicle",
+              })}
+            />
+          </div>
+
+          {/* Section 2: Find Location */}
+          <div className="mb-10 md:mb-[60px]">
+            <h2 className="text-lg md:text-xl font-bold text-navy mb-6">
+              Find Location
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Showroom Location <span className="text-red-500">*</span>
+                </label>
+                <select
+                  {...register("location", {
+                    required: "Please select a location",
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors appearance-none bg-white ${
+                    errors.location
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  disabled={locationsLoading}
+                >
+                  <option value="">
+                    {locationsLoading
+                      ? "Loading showrooms..."
+                      : "Select a showroom"}
+                  </option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+                {errors.location && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.location.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Preferred Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  {...register("preferredDate", {
+                    required: "Please select a date",
+                    validate: (value) => {
+                      const selectedDate = new Date(value);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return (
+                        selectedDate >= today ||
+                        "Date must be today or in the future"
+                      );
+                    },
+                  })}
+                  min={new Date().toISOString().split("T")[0]}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.preferredDate
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                />
+                {errors.preferredDate && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.preferredDate.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Preferred Time <span className="text-red-500">*</span>
+                </label>
+                <select
+                  {...register("preferredTime", {
+                    required: "Please select a time slot",
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors appearance-none bg-white ${
+                    errors.preferredTime
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                >
+                  <option value="">Select a time</option>
+                  {timeSlots.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
+                  ))}
+                </select>
+                {errors.preferredTime && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.preferredTime.message}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <MapPin className="text-geely-blue" size={24} />
-              </div>
-              <h3 className="font-bold text-navy mb-2">Convenient Locations</h3>
-              <p className="text-xs text-steel">
-                {locationsLoading
-                  ? "Choose from showrooms across Ethiopia"
-                  : `Choose from ${locations.length} showroom${locations.length === 1 ? "" : "s"} across Ethiopia`}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Calendar className="text-geely-blue" size={24} />
-              </div>
-              <h3 className="font-bold text-navy mb-2">Flexible Scheduling</h3>
-              <p className="text-xs text-steel">
-                Pick a date and time that works for you
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="text-geely-blue" size={24} />
-              </div>
-              <h3 className="font-bold text-navy mb-2">No Obligation</h3>
-              <p className="text-xs text-steel">
-                Free test drive with no purchase required
-              </p>
+
+            <div className="flex items-start gap-2 mt-4 text-xs text-steel">
+              <Info size={14} className="mt-0.5 shrink-0" />
+              <span>
+                The date and time are references. Our support team will reach
+                out to you to finalize your booking.
+              </span>
             </div>
           </div>
+
+          {/* Section 3: Contact Information */}
+          <div className="mb-10 md:mb-[60px]">
+            <h2 className="text-lg md:text-xl font-bold text-navy mb-6">
+              Contact Information
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  {...register("firstName", {
+                    required: "First name is required",
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.firstName
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  placeholder="First Name"
+                />
+                {errors.firstName && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.firstName.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  {...register("lastName", {
+                    required: "Last name is required",
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.lastName
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  placeholder="Last Name"
+                />
+                {errors.lastName && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.lastName.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  maxLength={30}
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^[0-9+\-\s()]+$/,
+                      message: "Invalid phone number",
+                    },
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.phone
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  placeholder="+251 99 338 9874"
+                />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address",
+                    },
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.email
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  placeholder="your.email@example.com"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-navy mb-2">
+                  National ID / Driver&apos;s License <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  {...register("nationalId", {
+                    required: "National ID or Driver's License number is required",
+                  })}
+                  className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
+                    errors.nationalId
+                      ? "border-red-500"
+                      : "border-[#bdbfbf]"
+                  }`}
+                  placeholder="Enter your ID or license number"
+                />
+                {errors.nationalId && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.nationalId.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Consent Checkboxes */}
+            <div className="mt-6 space-y-3">
+              <label className="flex items-start gap-3 text-sm text-navy cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("consentPrivacy", {
+                    required:
+                      "You must agree to the privacy policy to continue",
+                  })}
+                  className="mt-0.5 w-4 h-4 rounded border-[#bdbfbf] accent-navy shrink-0"
+                />
+                <span>
+                  I acknowledge and agree to the Geely Ethiopia{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    className="text-geely-blue hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  . By submitting this contact form, I acknowledge that my
+                  personal data will be processed in accordance with the
+                  Privacy Policy.{" "}
+                  <span className="text-red-500">*</span>
+                </span>
+              </label>
+              {errors.consentPrivacy && (
+                <p className="text-red-500 text-xs ml-7">
+                  {errors.consentPrivacy.message}
+                </p>
+              )}
+
+              <label className="flex items-start gap-3 text-sm text-navy cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("consentEmail")}
+                  className="mt-0.5 w-4 h-4 rounded border-[#bdbfbf] accent-navy shrink-0"
+                />
+                <span>
+                  Yes, I agree to receive information and offers about
+                  products and services from Geely Ethiopia via email. I can
+                  withdraw this consent at any time.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 text-sm text-navy cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("consentPhone")}
+                  className="mt-0.5 w-4 h-4 rounded border-[#bdbfbf] accent-navy shrink-0"
+                />
+                <span>
+                  I agree to be contacted with more information and offers
+                  about Geely products and services through phone call. This
+                  consent can be withdrawn at any time.
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="text-center">
+            {submitError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 max-w-md mx-auto">
+                <AlertCircle
+                  className="text-red-500 shrink-0 mt-0.5"
+                  size={20}
+                />
+                <div>
+                  <p className="font-semibold text-red-800 text-sm mb-1">
+                    Submission Error
+                  </p>
+                  <p className="text-red-600 text-sm">{submitError}</p>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`bg-navy text-white font-bold text-base px-12 py-3.5 rounded-sm transition-colors ${
+                submitting
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-ink"
+              }`}
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  Submitting...
+                </span>
+              ) : (
+                "Book a Test Drive"
+              )}
+            </button>
+          </div>
+        </form>
+
+        {/* WhatsApp Alternative */}
+        <div className="max-w-[960px] mx-auto mt-10">
+          <WhatsAppInlineCTA
+            title="Prefer to chat? We're on WhatsApp!"
+            description="Book your test drive instantly via WhatsApp - our team responds within minutes"
+            inquiryType="test-drive"
+          />
+        </div>
+
+        <div className="max-w-[960px] mx-auto mt-6 text-center">
+          <p className="text-sm text-steel mb-2">Or call us directly</p>
+          <a
+            href={`tel:${contactPhone.replace(/[^\d+]/g, "")}`}
+            className="inline-flex items-center gap-2 text-geely-blue font-bold hover:underline"
+          >
+            {contactPhone}
+          </a>
         </div>
       </section>
 
-      {/* Form Section */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
-            <div className="bg-ice p-6 border-b border-line">
-              <h2 className="text-2xl font-bold text-navy">Complete Your Booking</h2>
-              <p className="text-sm text-steel mt-1">Fill in the details below to schedule your test drive</p>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
-                      First Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      {...register("firstName", { required: "First name is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.firstName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      placeholder="Enter your first name"
-                    />
-                    {errors.firstName && (
-                      <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Last Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      {...register("lastName", { required: "Last name is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.lastName ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      placeholder="Enter your last name"
-                    />
-                    {errors.lastName && (
-                      <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      {...register("email", {
-                        required: "Email is required",
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: "Invalid email address",
-                        },
-                      })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.email ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      placeholder="your.email@example.com"
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      {...register("phone", {
-                        required: "Phone number is required",
-                        pattern: {
-                          value: /^[0-9+\-\s()]+$/,
-                          message: "Invalid phone number",
-                        },
-                      })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.phone ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      placeholder="+251 91 234 5678"
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Test Drive Details */}
-              <div>
-                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Test Drive Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
-                      Select Vehicle <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      {...register("vehicleId", { required: "Please select a vehicle" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      disabled={vehiclesLoading}
-                    >
-                      <option value="">{vehiclesLoading ? "Loading vehicles..." : "Choose a vehicle"}</option>
-                      {vehicles.map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.vehicleId && (
-                      <p className="text-red-500 text-xs mt-1">{errors.vehicleId.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Preferred Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      {...register("preferredDate", {
-                        required: "Please select a date",
-                        validate: (value) => {
-                          const selectedDate = new Date(value);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          return selectedDate >= today || "Date must be today or in the future";
-                        },
-                      })}
-                      min={new Date().toISOString().split("T")[0]}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredDate ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                    />
-                    {errors.preferredDate && (
-                      <p className="text-red-500 text-xs mt-1">{errors.preferredDate.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Preferred Time <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      {...register("preferredTime", { required: "Please select a time slot" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredTime ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                    >
-                      <option value="">Choose a time slot</option>
-                      {timeSlots.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {slot}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.preferredTime && (
-                      <p className="text-red-500 text-xs mt-1">{errors.preferredTime.message}</p>
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Showroom Location <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      {...register("location", { required: "Please select a location" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.location ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      disabled={locationsLoading}
-                    >
-                      <option value="">{locationsLoading ? "Loading showrooms..." : "Choose a showroom"}</option>
-                      {locations.map((location) => (
-                        <option key={location} value={location}>
-                          {location}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.location && (
-                      <p className="text-red-500 text-xs mt-1">{errors.location.message}</p>
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      Additional Message (Optional)
-                    </label>
-                    <textarea
-                      {...register("message")}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
-                      placeholder="Any specific requirements or questions?"
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-
-              {/* Consent */}
-              <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
-                <input
-                  type="checkbox"
-                  {...register("consent", {
-                    required: "You must agree to the terms to continue",
-                  })}
-                  className="mt-1 w-4 h-4 accent-geely-blue"
-                />
-                <div>
-                  <label className="text-sm text-navy">
-                    <span className="text-red-500">* </span>
-                    I agree to be contacted by Geely Ethiopia regarding my test drive booking and consent to the collection of my personal information as per the{" "}
-                    <a href="/privacy" className="text-geely-blue hover:underline">
-                      Privacy Policy
-                    </a>
-                    .
-                  </label>
-                  {errors.consent && (
-                    <p className="text-red-500 text-xs mt-1">{errors.consent.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                {error && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                    <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-                    <div>
-                      <p className="font-semibold text-red-800 text-sm mb-1">Submission Error</p>
-                      <p className="text-red-600 text-sm">{error}</p>
-                    </div>
-                  </div>
-                )}
-                
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 rounded-lg transition-all ${
-                    loading
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-opacity-90"
-                  }`}
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
-                      Submitting...
-                    </span>
-                  ) : (
-                    "Book Test Drive"
-                  )}
-                </button>
-                <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
-                  By submitting this form, you agree to our terms and conditions
-                </p>
-              </div>
-            </div>
-          </form>
-
-          {/* Contact Alternative */}
-          <div className="mt-8">
-            <WhatsAppInlineCTA
-              title="Prefer to chat? We're on WhatsApp!"
-              description="Book your test drive instantly via WhatsApp - our team responds within minutes"
-              inquiryType="test-drive"
-            />
-          </div>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-steel mb-3">
-              Or call us directly
-            </p>
-            <a
-              href={`tel:${contactPhone.replace(/[^\d+]/g, "")}`}
-              className="inline-flex items-center gap-2 text-geely-blue font-bold hover:underline"
+      {/* Why Wait CTA Banner */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 to-black/90" />
+        <div className="relative flex flex-col md:flex-row items-stretch">
+          <div className="flex-1 flex flex-col justify-center px-8 py-16 md:py-24 md:px-[7.5%] text-left">
+            <h2
+              className="text-xl md:text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-300 bg-clip-text text-transparent"
             >
-              {contactPhone}
-            </a>
+              WHY WAIT?
+            </h2>
+            <p className="text-white text-lg md:text-xl font-bold mb-8 max-w-md">
+              Experience the future of driving with Geely. Book your test drive
+              today and discover innovation, comfort, and performance.
+            </p>
+            <div>
+              <Link
+                href="/test-drive"
+                className="inline-block bg-white text-navy font-bold text-sm px-8 py-3.5 rounded-sm hover:bg-gray-100 transition-colors"
+              >
+                Book a Test Drive
+              </Link>
+            </div>
+          </div>
+          <div className="hidden md:block md:flex-[0_0_40%] relative min-h-[300px]">
+            <img
+              src="/images/vehicles/coolray-studio.png"
+              alt="Geely vehicle"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>

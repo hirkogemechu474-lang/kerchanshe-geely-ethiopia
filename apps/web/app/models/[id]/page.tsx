@@ -67,7 +67,7 @@ async function getBrochureSetting() {
   }
 }
 
-const FALLBACK_CONTACT_PHONE = "+251110000000";
+const FALLBACK_CONTACT_PHONE = "+251 11 000 0000";
 
 // Same admin-managed Contact Information data the footer reads
 // (web/components/Footer.tsx), so this page's "Call Us"/"WhatsApp" links

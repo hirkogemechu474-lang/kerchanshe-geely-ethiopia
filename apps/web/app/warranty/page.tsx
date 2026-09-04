@@ -74,8 +74,8 @@ const FALLBACK_NOT_COVERED: CoverageItem[] = [
 ];
 
 const FALLBACK_CONTACT = {
-  phone: "+251 91 123 4567",
-  phoneHref: "tel:+251911234567",
+  phone: "+251 99 338 9874",
+  phoneHref: "tel:+251993389874",
   email: "warranty@geelyethiopia.com",
 };
 

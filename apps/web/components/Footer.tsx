@@ -53,7 +53,7 @@ const FALLBACK_CONTACT: ContactInfo = {
     sales: '+251 11 000 0001',
     service: '+251 11 000 0002',
     parts: '+251 11 000 0003',
-    emergency: '+251 911 000 000',
+    emergency: '+251 99 338 9874',
   },
   email: {
     general: 'info@geelyethiopia.com',
@@ -61,7 +61,7 @@ const FALLBACK_CONTACT: ContactInfo = {
     service: 'service@geelyethiopia.com',
     support: 'support@geelyethiopia.com',
   },
-  whatsapp: '+251 911 000 000',
+  whatsapp: '+251 99 338 9874',
   website: 'https://geelyethiopia.com',
 };
 

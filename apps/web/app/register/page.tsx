@@ -177,7 +177,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
-                  placeholder="+251 91 234 5678"
+                  placeholder="+251 99 338 9874"
                 />
               </div>
 

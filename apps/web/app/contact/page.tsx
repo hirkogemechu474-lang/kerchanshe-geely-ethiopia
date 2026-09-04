@@ -7,9 +7,9 @@ import { MainLayout } from "@/components/MainLayout";
 import { useCRMSubmit } from "@/hooks/useCRMSubmit";
 
 const FALLBACK_CONTACT = {
-  phone: "+251110000000",
+  phone: "+251 11 000 0000",
   email: "info@geelyethiopia.com",
-  whatsapp: "+251110000000",
+  whatsapp: "+251 99 338 9874",
 };
 
 export default function ContactPage() {
@@ -22,6 +22,7 @@ export default function ContactPage() {
     lastName: "",
     email: "",
     phone: "",
+    nationalId: "",
     subject: "General enquiry",
     message: "",
     consentGiven: false,
@@ -54,6 +55,7 @@ export default function ContactPage() {
         lastName: form.lastName,
         email: form.email,
         phone: form.phone,
+        nationalId: form.nationalId,
         leadType: "contact",
         message: `${form.subject}: ${form.message}`,
         consentGiven: form.consentGiven,
@@ -104,6 +106,7 @@ export default function ContactPage() {
                   <input required value={form.lastName} onChange={(e) => update("lastName", e.target.value)} placeholder="Last name *" className="border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3" />
                   <input required type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="Email address *" className="border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3" />
                   <input required type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="Phone number *" className="border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3" />
+                  <input required value={form.nationalId} onChange={(e) => update("nationalId", e.target.value)} placeholder="National ID / Driver's License *" className="border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3 md:col-span-2" />
                 </div>
                 <select value={form.subject} onChange={(e) => update("subject", e.target.value)} className="w-full border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3">
                   <option>General enquiry</option><option>Vehicle sales</option><option>Financing</option><option>Service and parts</option><option>Dealership support</option>

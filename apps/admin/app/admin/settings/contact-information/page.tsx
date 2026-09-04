@@ -72,7 +72,7 @@ const DEFAULT_DATA: ContactInformation = {
     sales: '+251 11 000 0001',
     service: '+251 11 000 0002',
     parts: '+251 11 000 0003',
-    emergency: '+251 911 000 000',
+    emergency: '+251 99 338 9874',
   },
   email: {
     general: 'info@geely-ethiopia.com',
@@ -81,7 +81,7 @@ const DEFAULT_DATA: ContactInformation = {
     support: 'support@geely-ethiopia.com',
     careers: 'careers@geely-ethiopia.com',
   },
-  whatsapp: '+251 911 000 000',
+  whatsapp: '+251 99 338 9874',
   website: 'https://www.geely-ethiopia.com',
 };
 
@@ -525,7 +525,7 @@ export default function ContactInformationPage() {
                       value={data.whatsapp}
                       onChange={e => setData(d => ({ ...d, whatsapp: e.target.value }))}
                       className="w-full px-4 py-2.5 border border-green-200 bg-white rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      placeholder="+251 911 000 000"
+                      placeholder="+251 99 338 9874"
                     />
                   </div>
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
