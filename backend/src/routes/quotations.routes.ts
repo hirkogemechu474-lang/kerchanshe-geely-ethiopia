@@ -31,7 +31,18 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     }
     if (status) where.status = status;
 
-    const [items, total] = await Promise.all([
+    // NOTE: this used to return `{ items, total, page, pageSize, totalPages }`
+    // with no `stats` at all — but QuotationsList.tsx reads `data.quotations`
+    // and `data.stats` (matching the working OrdersList.tsx/orders.routes.ts
+    // pair's `{ orders, stats, total }` shape). Since neither key existed,
+    // `setQuotations(undefined)` ran on every load, the `!quotations` render
+    // guard (initial state `null`) never cleared, and the page was stuck on
+    // "Loading quotations…" permanently for every user, every time — not an
+    // intermittent failure, a 100%-reproducible one. `stats` is computed
+    // unfiltered (independent of the current search/status filter) so the
+    // tab badge counts reflect the whole table, matching the orders list's
+    // behavior.
+    const [quotations, total, statusCounts] = await Promise.all([
       prisma.quotation.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -39,9 +50,22 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
         take: pageSize,
       }),
       prisma.quotation.count({ where }),
+      prisma.quotation.groupBy({ by: ['status'], _count: true }),
     ]);
 
-    res.json({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+    const counts: Record<string, number> = {};
+    for (const row of statusCounts) counts[row.status] = row._count;
+    const stats = {
+      total: statusCounts.reduce((sum, row) => sum + row._count, 0),
+      new: counts['new'] || 0,
+      contacted: counts['contacted'] || 0,
+      approved: counts['approved'] || 0,
+      accepted: counts['accepted'] || 0,
+      converted: counts['converted'] || 0,
+      closed: counts['closed'] || 0,
+    };
+
+    res.json({ quotations, stats, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error) {
     console.error('List quotations error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -370,7 +394,9 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
 // POST /api/quotations/submit (public - submit lead quotation)
 router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { autoAssign, assignmentFactors, ...body } = req.body;
+    const { autoAssign, assignmentFactors, configuration, visitId, ...body } = req.body;
+    if (configuration !== undefined) body.configurationJson = configuration;
+    if (!body.reference) body.reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
     const quotation = await prisma.quotation.create({ data: body });
 
     // Auto-assign sales representative if requested
@@ -392,7 +418,25 @@ router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Respo
       }
     }
 
-    res.status(201).json({ success: true, reference: quotation.reference, assignedRep });
+    let notificationSent = false;
+    if (quotation.email) {
+      const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
+      const result = await dispatchNotification({
+        type: 'quotation',
+        to: [quotation.email],
+        subject: `Your Quotation${quotation.reference ? ` (${quotation.reference})` : ''}`,
+        data: {
+          quotationId: quotation.id,
+          quotationNo: quotation.reference,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          ...(link && { link }),
+        },
+      });
+      notificationSent = result.ok;
+    }
+
+    res.status(201).json({ success: true, reference: quotation.reference, assignedRep, notificationSent });
   } catch (error) {
     console.error('Submit quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });

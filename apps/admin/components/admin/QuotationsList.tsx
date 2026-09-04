@@ -71,17 +71,28 @@ export default function QuotationsList() {
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [loadError, setLoadError] = useState('');
 
+  // Previously had no failure path at all — a non-ok response (or a network
+  // error) left `quotations` at its initial `null` forever, and the render
+  // guard below (`if (!quotations) return <Loading>`) never cleared, so any
+  // failure (auth hiccup, transient 500, etc.) looked identical to "still
+  // loading" with no way to tell or recover short of a hard refresh.
   const load = useCallback(async (status: string, p: number, q: string) => {
-    const params = new URLSearchParams({ page: String(p) });
-    if (status !== 'all') params.set('status', status);
-    if (q) params.set('search', q);
-    const res = await fetch(`/api/quotations?${params.toString()}`);
-    if (res.ok) {
-      const data = await res.json();
-      setQuotations(data.quotations);
-      setStats(data.stats);
-      setTotal(data.total);
+    setLoadError('');
+    try {
+      const params = new URLSearchParams({ page: String(p) });
+      if (status !== 'all') params.set('status', status);
+      if (q) params.set('search', q);
+      const res = await fetch(`/api/quotations?${params.toString()}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to load quotations (${res.status}).`);
+      setQuotations(data.quotations || []);
+      setStats(data.stats || { total: 0, new: 0, contacted: 0, approved: 0, accepted: 0, converted: 0, closed: 0 });
+      setTotal(data.total || 0);
+    } catch (err: any) {
+      setLoadError(err.message || 'Failed to load quotations.');
+      setQuotations((prev) => prev ?? []);
     }
   }, []);
 
@@ -144,6 +155,14 @@ export default function QuotationsList() {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+          <span>{loadError}</span>
+          <button onClick={() => load(filter, page, search)} className="font-medium underline shrink-0">
+            Retry
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatTile label="Total" value={stats.total} icon={FileText} />
         <StatTile label="New" value={stats.new} icon={Inbox} tone={stats.new > 0 ? 'highlight' : 'default'} />

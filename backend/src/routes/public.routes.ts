@@ -280,10 +280,98 @@ router.get('/financing-page-content', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/public/status?ref=GY-<CAT>-DDMMYYYY-NNN — was a complete stub
+// (`res.json({ type, reference, status: 'unknown' })`, never queried
+// anything, and read req.query.type/reference instead of the `ref` param
+// apps/web/app/status/page.tsx actually sends) — every lookup silently
+// "succeeded" with no `found` flag, which the frontend treats as "no
+// request found for that reference number" regardless of whether a real
+// record exists. The reference's category segment (e.g. "SQ" in
+// GY-SQ-...) tells us which model to query — see utils/reference.ts's
+// REFERENCE_CATEGORY. Only categories with an actual `reference` column
+// are supported (Quotation/TestDrive/ServiceBooking/PartRequest/Lead/
+// Message) — Purchase (SalesOrder), Financing (FinancingApplication) and
+// Trade-In (TradeInEvaluation) have no reference column to look up by, so
+// those categories report not-found rather than guessing.
 router.get('/status', async (req: Request, res: Response) => {
   try {
-    const { type, reference } = req.query;
-    res.json({ type, reference, status: 'unknown' });
+    const ref = (req.query.ref as string || '').trim();
+    if (!ref) { res.json({ found: false, error: 'A reference number is required.' }); return; }
+
+    const category = ref.split('-')[1] || '';
+
+    if (category === 'SQ') {
+      const quotation = await prisma.quotation.findFirst({
+        where: { reference: ref },
+        include: { salesOrder: { select: { orderNo: true } } },
+      });
+      if (!quotation) { res.json({ found: false, error: 'No quotation found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: {
+          type: 'quotation',
+          label: 'Vehicle Quotation Request',
+          reference: quotation.reference,
+          status: quotation.status,
+          createdAt: quotation.createdAt,
+          quotationNo: quotation.quotationNo,
+          orderNo: quotation.salesOrder?.orderNo ?? null,
+        },
+      });
+      return;
+    }
+
+    if (category === 'TD') {
+      const testDrive = await prisma.testDrive.findFirst({ where: { reference: ref } });
+      if (!testDrive) { res.json({ found: false, error: 'No test drive found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: { type: 'test-drive', label: 'Test Drive Booking', reference: testDrive.reference, status: testDrive.status, createdAt: testDrive.createdAt },
+      });
+      return;
+    }
+
+    if (category === 'SB') {
+      const booking = await prisma.serviceBooking.findFirst({ where: { reference: ref } });
+      if (!booking) { res.json({ found: false, error: 'No service appointment found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: { type: 'service-booking', label: 'Service Appointment', reference: booking.reference, status: booking.status, createdAt: booking.createdAt },
+      });
+      return;
+    }
+
+    if (category === 'PR') {
+      const partRequest = await prisma.partRequest.findFirst({ where: { reference: ref } });
+      if (!partRequest) { res.json({ found: false, error: 'No parts request found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: { type: 'parts-request', label: 'Parts Request', reference: partRequest.reference, status: partRequest.status, createdAt: partRequest.createdAt },
+      });
+      return;
+    }
+
+    if (category === 'LD') {
+      const lead = await prisma.lead.findFirst({ where: { reference: ref } });
+      if (!lead) { res.json({ found: false, error: 'No request found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: { type: 'lead', label: 'Sales Inquiry', reference: lead.reference, status: lead.status, createdAt: lead.createdAt },
+      });
+      return;
+    }
+
+    if (category === 'CT') {
+      const message = await prisma.message.findFirst({ where: { reference: ref } });
+      if (!message) { res.json({ found: false, error: 'No request found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: { type: 'message', label: 'Contact / Support Request', reference: message.reference, status: message.status, createdAt: message.createdAt },
+      });
+      return;
+    }
+
+    res.json({ found: false, error: 'No request found for that reference number.' });
   } catch (error) {
     console.error('Status lookup error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -469,8 +557,11 @@ router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req:
 
 router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => {
   try {
-    // Generate the quotation PDF on demand. Falls back to the persisted
-    // signed document URL if the quotation has no pricing/quote number yet.
+    // Generate the quotation PDF on demand. This is a link target opened in
+    // a new tab (see apps/web/app/status/page.tsx) — it must always respond
+    // with either a real PDF or a redirect to a real document, never a bare
+    // JSON body (the browser would just render the JSON text where a PDF
+    // was expected).
     const result = await quotationPdfService.generatePdfByReference(req.params.reference);
     if (result.ok && result.data) {
       res.setHeader('Content-Type', 'application/pdf');
@@ -481,7 +572,12 @@ router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => 
 
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    res.json({ quotation, pdfUrl: quotation.signedDocumentUrl });
+    // No priced quotation PDF yet — if the customer already signed
+    // (signedDocumentUrl is a photo/drawn-signature image, not a PDF),
+    // redirect there as the next-best document; otherwise there is
+    // genuinely nothing to show yet.
+    if (quotation.signedDocumentUrl) { res.redirect(quotation.signedDocumentUrl); return; }
+    res.status(404).json({ error: 'This quotation has not been priced yet — a PDF is not available until a sales consultant generates it.' });
   } catch (error) {
     console.error('Get quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
