@@ -95,7 +95,7 @@ const QUOTATION_CONDITIONS = [
 export async function generateSalesQuotationPdf(data: QuotationPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'SALES QUOTATION', company);
+  drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawLabelValue(ctx, 'Quotation No.', data.quotationNo, PDF_MARGIN, ctx.y);
@@ -113,8 +113,14 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   drawLabelValue(ctx, 'Phone', data.customerPhone || '—', PDF_MARGIN + 440, ctx.y);
   ctx.y -= 34;
 
+  // Email and address each get a full-width row — the narrow columns used
+  // above (~64-118px before the page edge) truncate a realistic email
+  // address or a multi-part Ethiopian address when squeezed next to
+  // another field on the same line.
+  drawLabelValue(ctx, 'Email', data.customerEmail || '—', PDF_MARGIN, ctx.y);
+  ctx.y -= 34;
+
   drawLabelValue(ctx, 'Address', data.customerAddress || '—', PDF_MARGIN, ctx.y);
-  drawLabelValue(ctx, 'Email', data.customerEmail || '—', PDF_MARGIN + 440, ctx.y);
   ctx.y -= 34;
 
   drawLabelValue(ctx, 'Brand / Model', data.vehicleModel ? formatBrandModel(data.vehicleModel) : 'General enquiry', PDF_MARGIN, ctx.y);
@@ -158,15 +164,20 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   ctx = drawWhatsIncludedTable(ctx, data);
   ctx.y -= 16;
 
-  ctx = ensureSpace(ctx, 90);
+  ctx = ensureSpace(ctx, 110);
   drawSectionTitle(ctx, 'Payment & Delivery');
   const balance = data.totalPrice != null && data.depositAmount != null ? data.totalPrice - data.depositAmount : null;
-  ctx.page.drawText('Deposit / Booking', { x: PDF_MARGIN, y: ctx.y, size: 9, font: ctx.font, color: COLORS.gray });
-  drawRightText(ctx, `${fillValue(data.depositAmount)}${data.depositDueDate ? ` · due ${dateValue(data.depositDueDate)}` : ''}`, rightCol, ctx.y, 9, ctx.font, COLORS.dark);
-  ctx.y -= 16;
-  ctx.page.drawText('Balance', { x: PDF_MARGIN, y: ctx.y, size: 9, font: ctx.font, color: COLORS.gray });
-  drawRightText(ctx, balance != null ? `${fillValue(balance)} · ${data.balanceDueDate ? `due ${dateValue(data.balanceDueDate)}` : 'before delivery / as agreed'}` : 'Before delivery / as agreed', rightCol, ctx.y, 9, ctx.font, COLORS.dark);
-  ctx.y -= 20;
+  drawTable(
+    ctx,
+    ['Payment', 'Amount / %', 'Due'],
+    [
+      ['Deposit / Booking', fillValue(data.depositAmount), data.depositDueDate ? dateValue(data.depositDueDate) : '—'],
+      ['Balance', balance != null ? fillValue(balance) : '—', data.balanceDueDate ? dateValue(data.balanceDueDate) : 'Before delivery / as agreed'],
+      ['Total', fillValue(data.totalPrice), '—'],
+    ],
+    [200, 152, 152],
+  );
+  ctx.y -= 10;
   const deliveryLine = data.salesType === 'order'
     ? `Order — expected arrival/handover: ${data.expectedHandoverNote || '—'}`
     : `Showroom / Stock — expected handover: ${data.expectedHandoverNote || '—'}`;
@@ -177,7 +188,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
 
   // Page 2 — Quotation Conditions + Customer Confirmation, per the draft.
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'SALES QUOTATION', company);
+  drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, 'Quotation Conditions');
   ctx.y -= 4;

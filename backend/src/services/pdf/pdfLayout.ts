@@ -59,15 +59,24 @@ export function ensureSpace(ctx: PagedContext, needed: number): PagedContext {
 }
 
 export function drawHeaderFooter(ctx: PagedContext, title: string | undefined, company: CompanyInfo) {
-  const { page, font } = ctx;
+  const { page } = ctx;
   const width = page.getWidth();
   const top = 792;
+  const centerX = width / 2;
 
-  page.drawText('GEELY', { x: PDF_MARGIN, y: top - 46, size: 16, font: ctx.bold, color: COLORS.dark });
-  page.drawText(company.legalName.toUpperCase(), { x: PDF_MARGIN, y: top - 62, size: 7, font, color: COLORS.gray });
+  // Centered two-line title block — company legal name, then the document
+  // title below it — matching the drafts' letterhead ("KERCHANSHE TRADING
+  // PLC" / "GEELY ELECTRIC VEHICLE SALES QUOTATION" etc.) instead of a
+  // left-aligned wordmark + right-aligned title.
+  const nameSize = 14;
+  const nameText = company.legalName.toUpperCase();
+  const nameWidth = ctx.bold.widthOfTextAtSize(nameText, nameSize);
+  page.drawText(nameText, { x: centerX - nameWidth / 2, y: top - 38, size: nameSize, font: ctx.bold, color: COLORS.dark });
 
   if (title) {
-    drawRightText(ctx, title, width - PDF_MARGIN, top - 46, 13, ctx.bold, COLORS.dark);
+    const titleSize = 11;
+    const titleWidth = ctx.bold.widthOfTextAtSize(title, titleSize);
+    page.drawText(title, { x: centerX - titleWidth / 2, y: top - 56, size: titleSize, font: ctx.bold, color: COLORS.dark });
   }
 
   page.drawLine({
@@ -91,7 +100,7 @@ export function drawHeaderFooter(ctx: PagedContext, title: string | undefined, c
     company.phone ? `Tel: ${company.phone}` : null,
     company.email ? `Email: ${company.email}` : null,
   ].filter(Boolean);
-  page.drawText(footerParts.join(' | '), { x: PDF_MARGIN, y: 20, size: 7, font, color: COLORS.gray });
+  page.drawText(footerParts.join(' | '), { x: PDF_MARGIN, y: 20, size: 7, font: ctx.font, color: COLORS.gray });
 }
 
 export function drawRightText(ctx: PagedContext, text: string, x: number, y: number, size: number, font: PDFFont, color: RGB = COLORS.dark) {
