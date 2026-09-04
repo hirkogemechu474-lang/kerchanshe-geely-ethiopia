@@ -156,9 +156,6 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
                           <div className="font-semibold text-navy dark:text-ice group-hover:text-geely-blue transition-colors text-sm truncate">
                             {vehicle.name}
                           </div>
-                          <div className="text-xs text-geely-blue font-medium">
-                            Price on request
-                          </div>
                         </div>
                         <ArrowRight size={14} className="text-steel dark:text-steel-light group-hover:text-geely-blue transition-colors flex-shrink-0" />
                       </div>

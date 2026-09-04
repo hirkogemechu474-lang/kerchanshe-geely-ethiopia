@@ -127,7 +127,6 @@ export default function OrderPaymentPage() {
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {order.customerName} · {order.vehicleModel}
-              {order.totalPrice != null && ` · ETB ${order.totalPrice.toLocaleString('en-US')}`}
             </p>
 
             {submitError && <p className="text-sm text-red-600 mb-4">{submitError}</p>}

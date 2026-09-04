@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MainLayout } from '@/components/MainLayout';
-import { formatVehiclePrice, type VehicleRecord } from '@/services/vehicleService';
+import { type VehicleRecord } from '@/services/vehicleService';
 import { Check, Share2, Download, Mail, ArrowLeft, CarFront, FileText } from 'lucide-react';
 import { withBasePath } from '@/lib/basePath';
 
@@ -191,10 +191,6 @@ export default function ConfiguratorPage() {
     setTotalPrice(basePrice + trimPrice + colorPrice + wheelsPrice + interiorPrice + accessoriesPrice);
   }, [selectedVehicle, selectedTrim, selectedColor, selectedWheels, selectedInterior, selectedAccessories]);
 
-  const formatPrice = (price: number) => {
-    return `ETB ${price.toLocaleString()}`;
-  };
-
   const handleShare = () => {
     if (!selectedVehicle) return;
     const config = {
@@ -212,7 +208,7 @@ export default function ConfiguratorPage() {
     if (navigator.share) {
       navigator.share({
         title: `My ${selectedVehicle.name} Configuration`,
-        text: `Check out my custom ${selectedVehicle.name} - ${formatPrice(totalPrice)}`,
+        text: `Check out my custom ${selectedVehicle.name}`,
         url: shareUrl
       });
     } else {
@@ -271,12 +267,12 @@ export default function ConfiguratorPage() {
             <Link href="/configure" className="inline-flex items-center gap-2 text-sm font-bold text-gold hover:underline mb-6">
               <ArrowLeft size={16} /> Back to Models
             </Link>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70 mb-3">Build &amp; Price</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70 mb-3">Build Your Geely</p>
             <h1 className="font-display font-bold text-3xl lg:text-5xl mb-4">
               Configure Your {selectedVehicle ? selectedVehicle.name.replace('Geely ', '') : 'Geely'}
             </h1>
             <p className="text-white/80 max-w-xl text-base lg:text-lg">
-              Customize your vehicle with your preferred trim, color, wheels, and more — see the price update in real time.
+              Customize your vehicle with your preferred trim, color, wheels, and more — see your configuration update in real time.
             </p>
             {selectedVehicle && (
               <Link
@@ -292,14 +288,6 @@ export default function ConfiguratorPage() {
               <img src={previewImage} alt={selectedVehicle?.name || 'Geely'} className="max-h-[260px] w-full object-contain" />
             ) : (
               <CarFront size={110} className="text-white/30" />
-            )}
-            {selectedVehicle && (
-              <div className="absolute bottom-4 left-4 rounded-lg bg-black/30 px-4 py-2.5 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-widest text-blue-200">Starting from</p>
-                <p className="font-bold">
-                  {selectedVehicle.hidePrice ? 'Price on request' : formatVehiclePrice(selectedVehicle.finalPrice || selectedVehicle.basePrice)}
-                </p>
-              </div>
             )}
           </div>
         </div>
@@ -337,9 +325,6 @@ export default function ConfiguratorPage() {
                         <div className="font-bold text-navy dark:text-ice text-sm mb-0.5 truncate">
                           {vehicle.name.replace('Geely ', '')}
                         </div>
-                        <div className="text-xs text-steel dark:text-steel-light">
-                          {vehicle.hidePrice ? 'Price on request' : `From ${formatVehiclePrice(vehicle.finalPrice || vehicle.basePrice)}`}
-                        </div>
                       </div>
                       {isSelected && (
                         <div className="absolute top-2 right-2 w-5 h-5 bg-geely-blue rounded-full flex items-center justify-center">
@@ -370,9 +355,6 @@ export default function ConfiguratorPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-bold text-navy dark:text-ice text-lg mb-1">{trim.name}</h3>
-                          <p className="text-gold font-bold">
-                            {trim.price === 0 ? 'Included' : `+${formatPrice(trim.price)}`}
-                          </p>
                         </div>
                         {selectedTrim?.id === trim.id && (
                           <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center">
@@ -420,9 +402,6 @@ export default function ConfiguratorPage() {
                       <div className="text-xs font-semibold text-navy dark:text-ice mb-1 text-center">
                         {color.name}
                       </div>
-                      <div className="text-xs text-steel dark:text-steel-light text-center">
-                        {color.price === 0 ? 'Standard' : `+${formatPrice(color.price)}`}
-                      </div>
                       {selectedColor?.id === color.id && (
                         <div className="mt-2 flex justify-center">
                           <div className="w-5 h-5 bg-geely-blue rounded-full flex items-center justify-center">
@@ -460,9 +439,6 @@ export default function ConfiguratorPage() {
                       </div>
                       <h3 className="font-bold text-navy dark:text-ice mb-1 text-center">{wheel.name}</h3>
                       <p className="text-sm text-steel dark:text-steel-light mb-2 text-center">{wheel.size} Wheels</p>
-                      <p className="text-sm font-bold text-gold text-center">
-                        {wheel.price === 0 ? 'Included' : `+${formatPrice(wheel.price)}`}
-                      </p>
                       {selectedWheels?.id === wheel.id && (
                         <div className="mt-3 flex justify-center">
                           <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center">
@@ -506,9 +482,6 @@ export default function ConfiguratorPage() {
                             {interior.description && (
                               <p className="text-xs text-steel dark:text-steel-light mt-1">{interior.description}</p>
                             )}
-                            <p className="text-sm font-bold text-gold mt-2">
-                              {interior.price === 0 ? 'Included' : `+${formatPrice(interior.price)}`}
-                            </p>
                           </div>
                           {selectedInterior?.id === interior.id && (
                             <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
@@ -555,7 +528,6 @@ export default function ConfiguratorPage() {
                               {accessory.description && (
                                 <p className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</p>
                               )}
-                              <p className="text-sm font-bold text-gold mt-2">+{formatPrice(accessory.price)}</p>
                             </div>
                             {isSelected && (
                               <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
@@ -640,62 +612,10 @@ export default function ConfiguratorPage() {
                       {selectedAccessories.map((acc) => (
                         <div key={acc.id} className="flex justify-between items-center mt-1">
                           <span className="text-sm font-semibold text-navy dark:text-ice">{acc.name}</span>
-                          <span className="text-xs text-steel dark:text-steel-light">+{formatPrice(acc.price)}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
-
-                {/* Price Breakdown */}
-                <div className="bg-ice dark:bg-midnight p-4 rounded-xl mb-6">
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-steel dark:text-steel-light">Base Price</span>
-                      <span className="text-navy dark:text-ice">
-                        {selectedVehicle?.hidePrice ? "Price on request" : formatVehiclePrice(selectedVehicle?.finalPrice || selectedVehicle?.basePrice || 0)}
-                      </span>
-                    </div>
-                    {selectedTrim && selectedTrim.price > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-steel dark:text-steel-light">Trim Package</span>
-                        <span className="text-navy dark:text-ice">+{formatPrice(selectedTrim.price)}</span>
-                      </div>
-                    )}
-                    {selectedColor && selectedColor.price > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-steel dark:text-steel-light">Premium Color</span>
-                        <span className="text-navy dark:text-ice">+{formatPrice(selectedColor.price)}</span>
-                      </div>
-                    )}
-                    {selectedWheels && selectedWheels.price > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-steel dark:text-steel-light">Upgraded Wheels</span>
-                        <span className="text-navy dark:text-ice">+{formatPrice(selectedWheels.price)}</span>
-                      </div>
-                    )}
-                    {selectedInterior && selectedInterior.price > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-steel dark:text-steel-light">Interior</span>
-                        <span className="text-navy dark:text-ice">+{formatPrice(selectedInterior.price)}</span>
-                      </div>
-                    )}
-                    {selectedAccessories.length > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-steel dark:text-steel-light">Accessories ({selectedAccessories.length})</span>
-                        <span className="text-navy dark:text-ice">+{formatPrice(selectedAccessories.reduce((sum, a) => sum + a.price, 0))}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t-2 border-navy">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-navy dark:text-ice">Total Price</span>
-                      <span className="text-2xl font-bold text-geely-blue">
-                        {formatPrice(totalPrice)}
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Actions */}
@@ -738,25 +658,6 @@ export default function ConfiguratorPage() {
                     </Link>
                   )}
                 </div>
-              </div>
-
-              {/* Financing Estimate */}
-              <div className="bg-ice dark:bg-midnight rounded-2xl p-6 border border-line dark:border-midnight-line">
-                <h4 className="font-bold text-navy dark:text-ice mb-3">Estimated Monthly Payment</h4>
-                <div className="text-center mb-4">
-                  <div className="text-3xl font-bold text-geely-blue mb-1">
-                    {formatPrice(Math.round(totalPrice * 0.02))}
-                  </div>
-                  <div className="text-xs text-steel dark:text-steel-light">
-                    Based on 20% down, 5 years @ 13% APR
-                  </div>
-                </div>
-                <a
-                  href="/financing"
-                  className="block text-center text-sm text-geely-blue font-semibold hover:underline"
-                >
-                  Calculate Full Financing →
-                </a>
               </div>
             </div>
           </div>

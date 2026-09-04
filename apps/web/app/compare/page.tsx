@@ -5,13 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import { withBasePath } from "@/lib/publicPath";
-import {
-  X,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  AlertCircle,
-} from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 
 interface Vehicle {
   id: string;
@@ -31,7 +25,6 @@ type CompareRow = {
   label: string;
   value: (vehicle: Vehicle) => string | number;
   section?: boolean;
-  lowerIsBetter?: boolean;
 };
 
 export default function ComparePage() {
@@ -80,8 +73,7 @@ export default function ComparePage() {
     [selectedVehicles, vehicles]
   );
 
-  const compareRows: CompareRow[] = [
-    {
+  const compareRows: CompareRow[] = [    {
       label: "Vehicle Details",
       value: () => "",
       section: true,
@@ -169,13 +161,6 @@ export default function ComparePage() {
     },
   ];
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("en-ET", {
-      style: "currency",
-      currency: "ETB",
-      minimumFractionDigits: 0,
-    }).format(price);
-
   const getImageUrl = (vehicle: Vehicle) =>
     vehicle.heroImageUrl ||
     (Array.isArray(vehicle.images) && vehicle.images[0]) ||
@@ -200,27 +185,6 @@ export default function ComparePage() {
     return normalized.some((value, index) => index > 0 && value !== normalized[0]);
   };
 
-  const getValueIndicator = (
-    value: number,
-    allValues: number[],
-    higherIsBetter = true
-  ) => {
-    if (allValues.length < 2) return null;
-
-    const max = Math.max(...allValues);
-    const min = Math.min(...allValues);
-
-    if (higherIsBetter) {
-      if (value === max) return <TrendingUp className="inline text-green-600" size={16} />;
-      if (value === min) return <TrendingDown className="inline text-red-600" size={16} />;
-    } else {
-      if (value === min) return <TrendingUp className="inline text-green-600" size={16} />;
-      if (value === max) return <TrendingDown className="inline text-red-600" size={16} />;
-    }
-
-    return <Minus className="inline text-gray-400" size={16} />;
-  };
-
   if (loading) {
     return (
       <MainLayout>
@@ -233,8 +197,6 @@ export default function ComparePage() {
       </MainLayout>
     );
   }
-
-  const selectedPrices = selectedVehicleData.map((vehicle) => vehicle.finalPrice ?? vehicle.basePrice);
 
   return (
     <MainLayout>
@@ -294,7 +256,6 @@ export default function ComparePage() {
                       )}
                     </div>
                     <div className="mb-1 text-center text-sm font-bold text-navy dark:text-ice">{vehicle.name}</div>
-                    <div className="text-center text-[11px] text-steel dark:text-steel-light">Price on request</div>
                     {isSelected && (
                       <div className="mt-2 flex justify-center">
                         <div className="rounded-full bg-geely-blue p-1 text-white">
@@ -359,7 +320,6 @@ export default function ComparePage() {
                             )}
                           </div>
                           <div className="text-base font-bold">{vehicle.name}</div>
-                          <div className="text-sm text-gold">Price on request</div>
                         </div>
                       </th>
                     ))}
@@ -394,25 +354,11 @@ export default function ComparePage() {
                         </td>
                         {selectedVehicleData.map((vehicle) => {
                           const rawValue = row.value(vehicle);
-                          const numericValue =
-                            typeof rawValue === "number"
-                              ? rawValue
-                              : Number(rawValue.toString().replace(/[^0-9.-]/g, ""));
-                          const hasNumericValues = selectedPrices.length > 1 && !Number.isNaN(numericValue);
 
                           return (
                             <td key={vehicle.id} className="p-4 text-center">
                               <div className="flex items-center justify-center gap-2 font-medium text-navy dark:text-ice">
-                                {row.label === "Starting Price" && typeof rawValue === "number"
-                                  ? formatPrice(rawValue)
-                                  : rawValue}
-                                {row.label === "Starting Price" &&
-                                  hasNumericValues &&
-                                  getValueIndicator(
-                                    typeof rawValue === "number" ? rawValue : selectedPrices[0],
-                                    selectedPrices,
-                                    !row.lowerIsBetter
-                                  )}
+                                {rawValue}
                               </div>
                             </td>
                           );

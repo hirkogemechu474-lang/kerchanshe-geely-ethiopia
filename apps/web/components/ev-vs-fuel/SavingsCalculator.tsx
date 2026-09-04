@@ -254,9 +254,9 @@ export default function SavingsCalculator() {
       description: copy.fuelBreakdownDescription,
       rows: [
         { label: 'Annual fuel consumption', value: `${num(results.litersPerYear)} L` },
-        { label: 'Monthly fuel bill', value: etb(results.monthlyFuelBill) },
-        { label: 'Cost per kilometer', value: `ETB ${num(results.costPerKmPetrol, 2)}` },
-        { label: 'Weekly fuel spend', value: etb(results.weeklyFuelSpend) },
+        { label: 'Monthly fuel bill', value: 'On request' },
+        { label: 'Cost per kilometer', value: 'On request' },
+        { label: 'Weekly fuel spend', value: 'On request' },
       ],
     },
     {
@@ -265,9 +265,9 @@ export default function SavingsCalculator() {
       description: copy.electricityBreakdownDescription,
       rows: [
         { label: 'Annual electricity consumption', value: `${num(results.kwhPerYear)} kWh` },
-        { label: 'Monthly electricity bill', value: etb(results.monthlyElectricityBill) },
-        { label: 'Cost per kilometer', value: `ETB ${num(results.costPerKmEV, 2)}` },
-        { label: 'Weekly charging cost', value: etb(results.weeklyChargingCost) },
+        { label: 'Monthly electricity bill', value: 'On request' },
+        { label: 'Cost per kilometer', value: 'On request' },
+        { label: 'Weekly charging cost', value: 'On request' },
       ],
     },
     {
@@ -275,9 +275,9 @@ export default function SavingsCalculator() {
       title: copy.projectionsTitle,
       description: copy.projectionsDescription,
       rows: [
-        { label: 'Year 1 savings', value: etb(results.annualSavings) },
-        { label: `Year ${results.milestoneYears} cumulative`, value: etb(results.milestoneSavings) },
-        { label: `Year ${results.warrantyYears} cumulative`, value: etb(results.warrantySavings) },
+        { label: 'Year 1 savings', value: 'On request' },
+        { label: `Year ${results.milestoneYears} cumulative`, value: 'On request' },
+        { label: `Year ${results.warrantyYears} cumulative`, value: 'On request' },
       ],
     },
     {
@@ -285,27 +285,27 @@ export default function SavingsCalculator() {
       title: copy.maintenanceTitle,
       description: copy.maintenanceDescription,
       rows: [
-        { label: maintenance.oilChanges.label, value: `~ ${etb(maintenance.oilChanges.min)} - ${etb(maintenance.oilChanges.max)} saved` },
-        { label: maintenance.brakePads.label, value: `~ ${etb(maintenance.brakePads.min)} - ${etb(maintenance.brakePads.max)} saved` },
+        { label: maintenance.oilChanges.label, value: 'On request' },
+        { label: maintenance.brakePads.label, value: 'On request' },
         {
           label: 'Estimated total/year',
-          value: `~ ${etb(maintenance.oilChanges.min + maintenance.brakePads.min)} - ${etb(maintenance.oilChanges.max + maintenance.brakePads.max)} saved`,
+          value: 'On request',
         },
       ],
     },
   ];
 
   const comparisonRows: { label: string; petrol: string; electric: string }[] = [
-    { label: 'Annual Fuel / Energy Cost', petrol: etb(results.annualFuelCost), electric: etb(results.annualElectricityCost) },
-    { label: 'Cost per Kilometer', petrol: `ETB ${num(results.costPerKmPetrol, 2)}`, electric: `ETB ${num(results.costPerKmEV, 2)}` },
-    { label: 'Monthly Running Cost (Fuel)', petrol: etb(results.monthlyFuelBill), electric: etb(results.monthlyElectricityBill) },
-    { label: `${results.milestoneYears}-Year Fuel / Energy`, petrol: etb(results.annualFuelCost * results.milestoneYears), electric: etb(results.annualElectricityCost * results.milestoneYears) },
-    { label: `${results.warrantyYears}-Year Fuel / Energy`, petrol: etb(results.annualFuelCost * results.warrantyYears), electric: etb(results.annualElectricityCost * results.warrantyYears) },
-    { label: 'Annual Maintenance (Avg)', petrol: `ETB ${num(maintenance.petrolAnnualMin)} - ${num(maintenance.petrolAnnualMax)}`, electric: `ETB ${num(maintenance.evAnnualMin)} - ${num(maintenance.evAnnualMax)}` },
+    { label: 'Annual Fuel / Energy Cost', petrol: 'On request', electric: 'On request' },
+    { label: 'Cost per Kilometer', petrol: 'On request', electric: 'On request' },
+    { label: 'Monthly Running Cost (Fuel)', petrol: 'On request', electric: 'On request' },
+    { label: `${results.milestoneYears}-Year Fuel / Energy`, petrol: 'On request', electric: 'On request' },
+    { label: `${results.warrantyYears}-Year Fuel / Energy`, petrol: 'On request', electric: 'On request' },
+    { label: 'Annual Maintenance (Avg)', petrol: 'On request', electric: 'On request' },
     { label: 'Oil Changes (Annual)', petrol: maintenance.oilChangeRequirement, electric: 'None required' },
     { label: 'Brake Pad Lifespan', petrol: maintenance.brakePadLifespanPetrol, electric: maintenance.brakePadLifespanEV },
     { label: 'CO₂ Emissions per Year', petrol: `${num(results.co2SavedPerYear)} kg`, electric: '0 kg (Tailpipe)' },
-    { label: 'Total Annual Net Savings', petrol: '—', electric: etb(results.annualSavings) },
+    { label: 'Total Annual Net Savings', petrol: '—', electric: 'On request' },
   ];
 
   return (
@@ -388,19 +388,19 @@ export default function SavingsCalculator() {
               <StatTile
                 icon={Fuel}
                 label="Annual Fuel Cost (Petrol)"
-                value={etb(results.annualFuelCost)}
+                value="On request"
                 sublabel={`${num(results.litersPerYear)} liters consumed per year`}
               />
               <StatTile
                 icon={Zap}
                 label="Annual Electricity Cost (EV)"
-                value={etb(results.annualElectricityCost)}
+                value="On request"
                 sublabel={`${num(results.kwhPerYear)} kWh consumed per year`}
               />
               <StatTile
                 icon={Wallet}
                 label="Annual Savings"
-                value={etb(results.annualSavings)}
+                value="On request"
                 sublabel="That's how much less you'll spend on energy alone each year with a Geely EV."
                 emphasis
               />
@@ -413,13 +413,13 @@ export default function SavingsCalculator() {
               <StatTile
                 icon={TrendingUp}
                 label={`${results.milestoneYears}-Year Total Savings`}
-                value={etb(results.milestoneSavings)}
+                value="On request"
                 sublabel={`${num(results.milestonePercentOfWarranty, 1)}% of ${results.warrantyYears}-year horizon`}
               />
               <StatTile
                 icon={TrendingUp}
                 label={`${results.warrantyYears}-Year Total Savings`}
-                value={etb(results.warrantySavings)}
+                value="On request"
                 sublabel="Full EV warranty period coverage"
               />
             </div>

@@ -136,14 +136,6 @@ export default function FeaturedVehicles() {
                     <h3 className="text-[19px] text-navy font-bold mb-2">
                       {vehicle.name}
                     </h3>
-                    <div className="text-[13px] text-steel mb-4">
-                      <Link
-                        href={`/quote?model=${vehicle.slug}`}
-                        className="text-ink font-bold hover:text-active-blue transition-colors"
-                      >
-                        Price on request
-                      </Link>
-                    </div>
                     <div className="flex gap-3">
                       <Button href={`/quote?model=${vehicle.slug}`} variant="solid" size="sm" className="flex-1">
                         Get a Quote

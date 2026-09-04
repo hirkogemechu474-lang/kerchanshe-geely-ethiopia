@@ -84,8 +84,6 @@ const toAvailability = (part: Part): "in-stock" | "limited" | "out-of-stock" => 
   return "in-stock";
 };
 
-const formatPrice = (price: number) => `ETB ${price.toLocaleString()}`;
-
 export default function PartsPage() {
   const [data, setData] = useState<PartsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -468,7 +466,6 @@ export default function PartsPage() {
                       <p className="text-xs text-steel dark:text-steel-light mb-3 leading-relaxed line-clamp-2">{part.description}</p>
 
                       <div className="border-t border-line dark:border-midnight-line pt-3">
-                        <div className="text-lg font-bold text-navy dark:text-ice mb-3">{formatPrice(part.price)}</div>
                         <div className="flex gap-2">
                           {availability === "in-stock" || availability === "limited" ? (
                             <button onClick={() => isInCart ? removeFromCart(part.id) : addToCart(part.id)} className={`flex-1 text-xs font-bold py-2 px-3 rounded transition-all ${isInCart ? "bg-green-600 text-white" : "bg-geely-blue text-white hover:bg-opacity-90"}`}>
@@ -525,7 +522,6 @@ export default function PartsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-navy dark:text-ice text-sm leading-tight">{part.name}</div>
                       <div className="text-xs text-steel dark:text-steel-light mb-1">Part #: {part.sku}</div>
-                      <div className="text-sm font-bold text-navy dark:text-ice">{formatPrice(part.price)}</div>
                       <div className="flex items-center gap-1 mt-2">
                         <button onClick={() => updateQuantity(part.id, cart.quantity - 1)} className="w-7 h-7 flex items-center justify-center border border-line dark:border-midnight-line rounded hover:bg-ice dark:hover:bg-midnight dark:hover:bg-midnight dark:hover:bg-midnight transition-colors">
                           <Minus className="w-3 h-3" />
@@ -621,7 +617,6 @@ export default function PartsPage() {
                   {cartItems.map(({ part, cart }) => (
                     <div key={part.id} className="flex justify-between">
                       <span className="truncate pr-2">{part.name} × {cart.quantity}</span>
-                      <span className="font-semibold text-navy dark:text-ice flex-shrink-0">{formatPrice(part.price * cart.quantity)}</span>
                     </div>
                   ))}
                 </div>

@@ -259,16 +259,6 @@ export default function CategoryPage() {
                         </div>
                       )}
 
-                      {/* Price */}
-                      <div className="mb-4">
-                        <Link
-                          href={`/quote?model=${vehicle.slug}`}
-                          className="text-2xl font-bold text-navy dark:text-ice hover:text-geely-blue transition-colors"
-                        >
-                          Price on request
-                        </Link>
-                      </div>
-
                       {/* Actions */}
                       <div className="flex gap-3">
                         <Link

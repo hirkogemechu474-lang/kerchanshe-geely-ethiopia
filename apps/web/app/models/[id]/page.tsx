@@ -589,9 +589,6 @@ export default async function VehicleDetailPage({
                     <h3 className="text-lg text-navy font-bold mb-2 group-hover:text-active-blue transition-colors">
                       {rv.name}
                     </h3>
-                    <div className="text-sm text-steel">
-                      Price on request
-                    </div>
                   </div>
                 </Card>
               ))}
@@ -604,7 +601,6 @@ export default async function VehicleDetailPage({
       <StickyCTABar
         vehicleSlug={vehicle.slug}
         vehicleName={vehicle.name}
-        price="Price on request"
         brochureUrl={brochureUrl}
         visitId={visitId}
         contactPhone={contactPhone}

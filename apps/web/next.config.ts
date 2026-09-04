@@ -53,12 +53,21 @@ const nextConfig: NextConfig = {
 
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
+    // Uploaded media (hero images, vehicle galleries, news/team photos, etc.)
+    // is physically stored in the admin app's public/uploads and served at the
+    // admin origin. The web app stores only relative "/uploads/..." URLs, so we
+    // proxy them here to keep every page's <img src> working.
+    const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:7500";
 
     return {
       beforeFiles: [
         {
           source: "/api/:path*",
           destination: `${backendUrl}/api/:path*`,
+        },
+        {
+          source: "/uploads/:path*",
+          destination: `${adminUrl.replace(/\/$/, "")}/uploads/:path*`,
         },
       ],
       afterFiles: [],

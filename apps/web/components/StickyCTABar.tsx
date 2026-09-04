@@ -7,7 +7,6 @@ import Button from '@/components/ui/Button';
 interface StickyCTABarProps {
   vehicleSlug: string;
   vehicleName: string;
-  price: string;
   brochureUrl?: string;
   /** Showroom QR walk-in visit id — appended to the quote/test-drive links so
    * the visitor's already-captured name/phone/email carries through. */
@@ -23,7 +22,6 @@ const FALLBACK_CONTACT_PHONE = '+251110000000';
 export function StickyCTABar({
   vehicleSlug,
   vehicleName,
-  price,
   brochureUrl,
   visitId,
   contactPhone = FALLBACK_CONTACT_PHONE,
@@ -68,11 +66,10 @@ export function StickyCTABar({
         </button>
 
         <div className="px-4 py-3">
-          {/* Vehicle name + price strip */}
+          {/* Vehicle name strip */}
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-xs text-steel dark:text-steel-light">Geely {vehicleName}</div>
-              <div className="text-sm font-bold text-navy dark:text-ice">{price}</div>
+              <div className="text-sm font-bold text-navy dark:text-ice">Geely {vehicleName}</div>
             </div>
             <a
               href={telHref}
@@ -108,7 +105,6 @@ export function StickyCTABar({
         <div className="bg-white dark:bg-midnight-surface border border-line dark:border-midnight-line rounded-xl shadow-xl p-3 flex flex-col gap-2 min-w-[160px]">
           <div className="text-xs text-steel border-b border-line pb-2 mb-1">
             <div className="font-bold text-navy text-sm">{vehicleName}</div>
-            <div className="text-active-blue font-semibold">{price}</div>
           </div>
 
           <Button href={`/quote?model=${vehicleSlug}${visitParam}`} variant="solid" size="sm">

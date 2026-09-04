@@ -20,6 +20,7 @@ interface QuoteFormData {
   lastName: string;
   email: string;
   phone: string;
+  nationalId: string;
   vehicleId: string;
   purchaseTimeframe: string;
   financingNeeded: string;
@@ -189,7 +190,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       `.trim();
 
       // Save the quotation and send its SMTP notification from the quotation API.
-      const quotationRequest = fetch('/api/quotations', {
+      const quotationRequest = fetch('/api/quotations/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,6 +199,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           customerName: `${data.firstName} ${data.lastName}`,
           phoneNumber: data.phone,
           email: data.email,
+          nationalId: data.nationalId,
           vehicleModel: selectedVehicle?.name || data.vehicleId,
           preferredDealer: null,
           financingInterest: data.financingNeeded === 'yes',
@@ -535,6 +537,25 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     />
                     {errors.phone && (
                       <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      National ID / Driver&apos;s License <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      {...register("nationalId", {
+                        required: "National ID or Driver's License number is required",
+                      })}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
+                        errors.nationalId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
+                      }`}
+                      placeholder="Enter your ID or license number"
+                    />
+                    {errors.nationalId && (
+                      <p className="text-red-500 text-xs mt-1">{errors.nationalId.message}</p>
                     )}
                   </div>
                 </div>

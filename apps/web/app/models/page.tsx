@@ -322,15 +322,6 @@ export default function ModelsPage() {
                           </div>
                         )}
 
-                        <div className="mt-4 pt-4 border-t border-line dark:border-midnight-line">
-                          <Link
-                            href={`/quote?model=${vehicle.slug}${visitParam}`}
-                            className="text-[13px] font-bold text-active-blue hover:underline"
-                          >
-                            Price on request
-                          </Link>
-                        </div>
-
                         <div className="flex gap-3 mt-auto pt-5 border-t border-line dark:border-midnight-line">
                           <Button
                             href={`/quote?model=${vehicle.slug}${visitParam}`}

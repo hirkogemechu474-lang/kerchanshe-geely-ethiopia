@@ -227,7 +227,7 @@ export function ModelSpotlight360({
   return (
     <div 
       ref={containerRef}
-      className={`relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden ${className}`}
+      className={`relative bg-mesh-blue rounded-xl overflow-hidden ${className}`}
     >
       {/* Canvas */}
       <div className="relative">

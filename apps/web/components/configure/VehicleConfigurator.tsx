@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ArrowLeft, Info } from 'lucide-react';
+import { Check, ArrowLeft } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -85,29 +85,6 @@ export default function VehicleConfigurator({
   );
   const [selectedAccessories, setSelectedAccessories] = useState<Accessory[]>([]);
 
-  // Calculate total price
-  const totalPrice = useMemo(() => {
-    let total = vehicle.finalPrice || vehicle.basePrice;
-    
-    if (selectedColor) total += selectedColor.price;
-    if (selectedInterior) total += selectedInterior.price;
-    if (selectedPackage) total += selectedPackage.price;
-    
-    selectedAccessories.forEach(acc => {
-      total += acc.price;
-    });
-    
-    return total;
-  }, [vehicle, selectedColor, selectedInterior, selectedPackage, selectedAccessories]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-ET', {
-      style: 'currency',
-      currency: 'ETB',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
   const toggleAccessory = (accessory: Accessory) => {
     if (selectedAccessories.find(a => a.id === accessory.id)) {
       setSelectedAccessories(selectedAccessories.filter(a => a.id !== accessory.id));
@@ -180,9 +157,6 @@ export default function VehicleConfigurator({
                         style={{ backgroundColor: color.colorCode }}
                       />
                       <div className="text-sm font-medium text-navy dark:text-ice">{color.name}</div>
-                      {color.price > 0 && (
-                        <div className="text-xs text-steel dark:text-steel-light">+{formatPrice(color.price)}</div>
-                      )}
                       {!color.inStock && (
                         <div className="text-xs text-red-600 mt-1">Out of Stock</div>
                       )}
@@ -222,9 +196,6 @@ export default function VehicleConfigurator({
                           )}
                         </div>
                         <div className="text-right">
-                          {interior.price > 0 && (
-                            <div className="font-bold text-navy dark:text-ice">+{formatPrice(interior.price)}</div>
-                          )}
                           {selectedInterior?.id === interior.id && (
                             <Check size={20} className="text-geely-blue mt-1" />
                           )}
@@ -254,9 +225,6 @@ export default function VehicleConfigurator({
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="font-bold text-navy dark:text-ice">{pkg.name}</div>
-                          <div className="text-sm font-bold text-geely-blue">
-                            +{formatPrice(pkg.price)}
-                          </div>
                         </div>
                         {selectedPackage?.id === pkg.id && (
                           <Check size={20} className="text-geely-blue" />
@@ -305,9 +273,6 @@ export default function VehicleConfigurator({
                             {accessory.description && (
                               <div className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</div>
                             )}
-                            <div className="text-sm font-bold text-geely-blue mt-2">
-                              +{formatPrice(accessory.price)}
-                            </div>
                           </div>
                           {isSelected && (
                             <Check size={20} className="text-geely-blue flex-shrink-0" />
@@ -330,16 +295,12 @@ export default function VehicleConfigurator({
                 <div className="pb-4 border-b border-line dark:border-midnight-line">
                   <div className="text-sm text-steel dark:text-steel-light">Base Vehicle</div>
                   <div className="font-bold text-navy dark:text-ice">{vehicle.name} {vehicle.year}</div>
-                  <div className="text-sm text-steel dark:text-steel-light">{formatPrice(vehicle.finalPrice || vehicle.basePrice)}</div>
                 </div>
 
                 {selectedColor && (
                   <div className="pb-4 border-b border-line dark:border-midnight-line">
                     <div className="text-sm text-steel dark:text-steel-light">Exterior Color</div>
                     <div className="font-medium text-navy dark:text-ice">{selectedColor.name}</div>
-                    {selectedColor.price > 0 && (
-                      <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedColor.price)}</div>
-                    )}
                   </div>
                 )}
 
@@ -347,9 +308,6 @@ export default function VehicleConfigurator({
                   <div className="pb-4 border-b border-line dark:border-midnight-line">
                     <div className="text-sm text-steel dark:text-steel-light">Interior</div>
                     <div className="font-medium text-navy dark:text-ice">{selectedInterior.name}</div>
-                    {selectedInterior.price > 0 && (
-                      <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedInterior.price)}</div>
-                    )}
                   </div>
                 )}
 
@@ -357,7 +315,6 @@ export default function VehicleConfigurator({
                   <div className="pb-4 border-b border-line dark:border-midnight-line">
                     <div className="text-sm text-steel dark:text-steel-light">Package</div>
                     <div className="font-medium text-navy dark:text-ice">{selectedPackage.name}</div>
-                    <div className="text-sm text-steel dark:text-steel-light">+{formatPrice(selectedPackage.price)}</div>
                   </div>
                 )}
 
@@ -367,17 +324,10 @@ export default function VehicleConfigurator({
                     {selectedAccessories.map(acc => (
                       <div key={acc.id} className="flex justify-between text-sm mb-1">
                         <span className="text-navy dark:text-ice">{acc.name}</span>
-                        <span className="text-steel dark:text-steel-light">+{formatPrice(acc.price)}</span>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="bg-navy text-white p-4 rounded-lg mb-6">
-                <div className="text-sm mb-1">Total Price</div>
-                <div className="text-3xl font-bold">{formatPrice(totalPrice)}</div>
-                <div className="text-xs text-[#d8e4f5] mt-1">Including VAT</div>
               </div>
 
               <div className="space-y-3">
@@ -398,15 +348,6 @@ export default function VehicleConfigurator({
                 >
                   Book Test Drive
                 </Link>
-              </div>
-
-              <div className="mt-6 p-4 bg-ice dark:bg-midnight rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Info size={16} className="text-geely-blue flex-shrink-0 mt-1" />
-                  <div className="text-xs text-steel dark:text-steel-light">
-                    Final price may vary based on dealer location and current promotions. Contact us for the most accurate pricing.
-                  </div>
-                </div>
               </div>
             </div>
           </div>

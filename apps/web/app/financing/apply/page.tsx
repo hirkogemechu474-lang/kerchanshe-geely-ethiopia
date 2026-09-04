@@ -59,8 +59,6 @@ interface Confirmation {
   approved?: boolean;
 }
 
-const formatETB = (value: number) => `ETB ${Math.round(value).toLocaleString("en-US")}`;
-
 export default function VehiclePurchasePage() {
   const searchParams = useSearchParams();
   const quoteReference = searchParams.get("quote") || "";
@@ -445,7 +443,7 @@ export default function VehiclePurchasePage() {
               {loading ? <p className="text-steel dark:text-steel-light">Loading vehicles...</p> : (
                 <select required value={selectedVehicleId} onChange={(event) => setSelectedVehicleId(event.target.value)} className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight-surface outline-none focus:ring-2 focus:ring-geely-blue">
                   <option value="">Choose a Geely vehicle</option>
-                  {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name} — {vehicle.hidePrice ? "Price on request" : formatETB(vehicle.finalPrice ?? vehicle.basePrice)}</option>)}
+                  {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name}</option>)}
                 </select>
               )}
             </div>
@@ -472,18 +470,18 @@ export default function VehiclePurchasePage() {
                 </select>
                 <div className="px-4 py-3 bg-ice dark:bg-midnight rounded-lg flex items-center justify-between gap-4">
                   <span className="text-steel dark:text-steel-light">
-                    {quotedPrice != null ? "Your quoted price" : "Exact purchase amount"}
+                    {quotedPrice != null ? "Quotation" : "Vehicle pricing"}
                   </span>
                   <strong className="text-navy dark:text-ice text-lg">
-                    {selectedVehicle?.hidePrice && quotedPrice == null ? "Price on request" : formatETB(purchaseAmount)}
+                    {quotedPrice != null ? "Signed & agreed" : "Available on request"}
                   </strong>
                 </div>
               </div>
               {quotedPrice != null && (
                 <p className="mt-2 text-xs text-steel dark:text-steel-light">
                   {quote?.signedAt
-                    ? `This is the price you signed and agreed to on ${new Date(quote.signedAt).toLocaleDateString()}.`
-                    : "This is your quoted price from Geely Ethiopia — sign your quotation to confirm it before paying."}
+                    ? `This quotation was signed and agreed to on ${new Date(quote.signedAt).toLocaleDateString()}.`
+                    : "This quotation from Geely Ethiopia needs your signature to confirm it before paying."}
                   {quote?.signedDocumentUrl && (
                     <>
                       {" "}

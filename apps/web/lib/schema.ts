@@ -22,7 +22,7 @@ export function getOrganizationSchema() {
     '@type': 'Organization',
     name: 'Geely Ethiopia',
     url: 'https://geelyethiopia.com',
-    logo: 'https://geelyethiopia.com/icons/icon-192x192.png',
+    logo: 'https://geelyethiopia.com/assets/logos/geely-logo.png',
     description: 'Official Geely dealer in Ethiopia',
     address: {
       '@type': 'PostalAddress',

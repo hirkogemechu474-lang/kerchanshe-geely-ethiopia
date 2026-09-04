@@ -190,8 +190,8 @@ export default function QuotationSigningPage() {
 
             {totalPayable != null && (
               <div className="mb-6 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-steel">Total Price</div>
-                <div className="text-xl font-bold text-navy">ETB {totalPayable.toLocaleString('en-US')}</div>
+                <div className="text-xs uppercase tracking-wide text-steel">Vehicle Pricing</div>
+                <div className="text-xl font-bold text-navy">Available on request</div>
               </div>
             )}
 

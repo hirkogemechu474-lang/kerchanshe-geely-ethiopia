@@ -2,6 +2,9 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository } from '../repositories';
+import { quotationPdfService } from '../services/sales/quotationPdf.service';
+import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -261,6 +264,21 @@ router.get('/financing-settings', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/financing-page-content', async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'financing_page_content' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(typeof setting.value === 'string' ? JSON.parse(setting.value) : setting.value);
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get financing page content error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/status', async (req: Request, res: Response) => {
   try {
     const { type, reference } = req.query;
@@ -381,8 +399,36 @@ router.post('/quick-request', rateLimiters.contactForm, async (req: Request, res
 
 router.post('/quotations', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.create({ data: req.body });
-    res.status(201).json({ success: true, reference: quotation.reference });
+    // The web quote page POSTs `configuration` and `visitId`, but neither is a
+    // column on Quotation (the configurator selection is stored as
+    // `configurationJson`, and `visitId` is not persisted on this model).
+    // Map `configuration` -> `configurationJson` and drop the non-column keys
+    // so a defined `configuration` can't crash prisma.create.
+    const { configuration, visitId, ...rest } = (req.body ?? {}) as Record<string, any>;
+    const data: any = { ...rest };
+    if (configuration !== undefined) data.configurationJson = configuration;
+
+    const quotation = await prisma.quotation.create({ data });
+
+    let notificationSent = false;
+    if (quotation.email) {
+      const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
+      const result = await dispatchNotification({
+        type: 'quotation',
+        to: [quotation.email],
+        subject: `Your Quotation${quotation.reference ? ` (${quotation.reference})` : ''}`,
+        data: {
+          quotationId: quotation.id,
+          quotationNo: quotation.reference,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          ...(link && { link }),
+        },
+      });
+      notificationSent = result.ok;
+    }
+
+    res.status(201).json({ success: true, reference: quotation.reference, notificationSent });
   } catch (error) {
     console.error('Submit quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -422,11 +468,18 @@ router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req:
 
 router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => {
   try {
+    // Generate the quotation PDF on demand. Falls back to the persisted
+    // signed document URL if the quotation has no pricing/quote number yet.
+    const result = await quotationPdfService.generatePdfByReference(req.params.reference);
+    if (result.ok && result.data) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="quotation.pdf"');
+      res.send(result.data);
+      return;
+    }
+
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    // NOTE: Quotation has no stored `pdfUrl` — the quotation PDF is
-    // generated on demand (see quotationPdf.service.ts), and the only
-    // stored document link is `signedDocumentUrl` once the customer signs.
     res.json({ quotation, pdfUrl: quotation.signedDocumentUrl });
   } catch (error) {
     console.error('Get quotation PDF error:', error);
@@ -465,6 +518,51 @@ router.post('/financing-applications', rateLimiters.contactForm, async (req: Req
     res.status(201).json({ success: true, id: application.id });
   } catch (error) {
     console.error('Submit financing application error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/test-drive', rateLimiters.contactForm, async (req: Request, res: Response) => {
+  try {
+    const {
+      firstName, lastName, email, phone, nationalId,
+      vehicleId, preferredDate, preferredTime, location,
+      message, consentGiven,
+    } = req.body;
+
+    if (!firstName || !lastName || !email || !phone || !vehicleId || !preferredDate || !preferredTime || !location) {
+      res.status(400).json({ error: 'All required fields must be provided.' });
+      return;
+    }
+
+    // Verify vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle) {
+      res.status(400).json({ error: 'Selected vehicle not found.' });
+      return;
+    }
+
+    const reference = `TD-${Date.now().toString(36).toUpperCase()}`;
+
+    const testDrive = await prisma.testDrive.create({
+      data: {
+        customerName: `${firstName} ${lastName}`.trim(),
+        customerEmail: email,
+        customerPhone: phone,
+        nationalId: nationalId || null,
+        vehicleId,
+        preferredDate: new Date(preferredDate),
+        preferredTime,
+        location,
+        specialRequests: message || null,
+        status: 'pending',
+        reference,
+      },
+    });
+
+    res.status(201).json({ success: true, testDriveId: testDrive.id, reference });
+  } catch (error) {
+    console.error('Public test drive submit error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

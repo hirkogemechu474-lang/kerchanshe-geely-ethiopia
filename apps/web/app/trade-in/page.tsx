@@ -13,6 +13,7 @@ interface TradeInFormData {
   lastName: string;
   email: string;
   phone: string;
+  nationalId: string;
   
   // Current Vehicle
   currentMake: string;
@@ -292,6 +293,25 @@ export default function TradeInPage() {
                     />
                     {errors.phone && (
                       <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-navy mb-2">
+                      National ID / Driver&apos;s License <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      {...register("nationalId", {
+                        required: "National ID or Driver's License number is required",
+                      })}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
+                        errors.nationalId ? "border-red-500" : "border-line"
+                      }`}
+                      placeholder="Enter your ID or license number"
+                    />
+                    {errors.nationalId && (
+                      <p className="text-red-500 text-xs mt-1">{errors.nationalId.message}</p>
                     )}
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { corsOptions } from './config/cors';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { routes } from './routes';
+import { UPLOAD_ROOT } from './routes/upload.routes';
 
 const app = express();
 
@@ -35,7 +36,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api', routes);
 
 // ── Static Files (uploads) ─────────────────────────────────────────────
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(UPLOAD_ROOT));
 
 // ── Error Handling ──────────────────────────────────────────────────────
 app.use(notFoundHandler);
