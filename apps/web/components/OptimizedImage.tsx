@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { useState } from 'react';
+import imageLoader from '@/lib/imageLoader';
 
 interface OptimizedImageProps {
   src: string;
@@ -63,6 +64,7 @@ export function OptimizedImage({
   const imageProps = {
     src,
     alt,
+    loader: imageLoader,
     quality,
     priority,
     className: `${className} ${isLoading ? 'blur-sm' : 'blur-0'} transition-all duration-300`,

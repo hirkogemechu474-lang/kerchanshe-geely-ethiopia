@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
+import imageLoader from '@/lib/imageLoader';
 import Button from '@/components/ui/Button';
 
 interface Review {
@@ -105,6 +106,7 @@ export default function CustomerReviews({ initialData }: CustomerReviewsProps) {
                   <Image
                     src={review.profileImage}
                     alt={review.fullName}
+                    loader={imageLoader}
                     width={48}
                     height={48}
                     className="w-12 h-12 rounded-full object-cover"
