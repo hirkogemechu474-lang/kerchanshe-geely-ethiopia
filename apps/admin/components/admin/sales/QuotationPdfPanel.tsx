@@ -31,6 +31,22 @@ interface QuotationPdfData {
   signedAt: string | null;
   managerApprovalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   managerRejectionReason: string | null;
+  // New Sales Quotation format fields (Kerchanshe Trading PLC draft).
+  salesType: string | null;
+  salesExecutiveName: string | null;
+  customerTin: string | null;
+  customerAddress: string | null;
+  vehicleVariant: string | null;
+  vehicleVin: string | null;
+  registrationCharge: number | null;
+  registrationResponsibility: string | null;
+  insuranceResponsibility: string | null;
+  chargingEquipmentDetails: string | null;
+  depositAmount: number | null;
+  depositDueDate: string | null;
+  balanceDueDate: string | null;
+  deliveryLocation: string | null;
+  expectedHandoverNote: string | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -65,6 +81,21 @@ export default function QuotationPdfPanel({
   const [validUntil, setValidUntil] = useState(quotation.quotationValidUntil?.slice(0, 10) || '');
   const [paymentTerms, setPaymentTerms] = useState(quotation.paymentTerms || '');
   const [deliveryTerms, setDeliveryTerms] = useState(quotation.deliveryTerms || '');
+  const [salesType, setSalesType] = useState(quotation.salesType || 'showroom');
+  const [salesExecutiveName, setSalesExecutiveName] = useState(quotation.salesExecutiveName || '');
+  const [customerTin, setCustomerTin] = useState(quotation.customerTin || '');
+  const [customerAddress, setCustomerAddress] = useState(quotation.customerAddress || '');
+  const [vehicleVariant, setVehicleVariant] = useState(quotation.vehicleVariant || '');
+  const [vehicleVin, setVehicleVin] = useState(quotation.vehicleVin || '');
+  const [registrationCharge, setRegistrationCharge] = useState(quotation.registrationCharge?.toString() || '');
+  const [registrationResponsibility, setRegistrationResponsibility] = useState(quotation.registrationResponsibility || 'customer');
+  const [insuranceResponsibility, setInsuranceResponsibility] = useState(quotation.insuranceResponsibility || 'customer');
+  const [chargingEquipmentDetails, setChargingEquipmentDetails] = useState(quotation.chargingEquipmentDetails || '');
+  const [depositAmount, setDepositAmount] = useState(quotation.depositAmount?.toString() || '');
+  const [depositDueDate, setDepositDueDate] = useState(quotation.depositDueDate?.slice(0, 10) || '');
+  const [balanceDueDate, setBalanceDueDate] = useState(quotation.balanceDueDate?.slice(0, 10) || '');
+  const [deliveryLocation, setDeliveryLocation] = useState(quotation.deliveryLocation || '');
+  const [expectedHandoverNote, setExpectedHandoverNote] = useState(quotation.expectedHandoverNote || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -100,7 +131,7 @@ export default function QuotationPdfPanel({
     setError('');
     setNotice('');
     try {
-      const res = await fetch(`/api/admin/quotations/${quotation.id}/quotation-pdf`, {
+      const res = await fetch(`/api/quotations/${quotation.id}/quotation-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,6 +143,21 @@ export default function QuotationPdfPanel({
           quotationValidUntil: validUntil || null,
           paymentTerms,
           deliveryTerms,
+          salesType,
+          salesExecutiveName,
+          customerTin,
+          customerAddress,
+          vehicleVariant,
+          vehicleVin,
+          registrationCharge: registrationCharge || null,
+          registrationResponsibility,
+          insuranceResponsibility,
+          chargingEquipmentDetails,
+          depositAmount: depositAmount || null,
+          depositDueDate: depositDueDate || null,
+          balanceDueDate: balanceDueDate || null,
+          deliveryLocation,
+          expectedHandoverNote,
         }),
       });
       const data = await parseJsonResponse(res);
@@ -130,7 +176,7 @@ export default function QuotationPdfPanel({
     setError('');
     setNotice('');
     try {
-      const res = await fetch(`/api/admin/quotations/${quotation.id}/send-quotation`, { method: 'POST' });
+      const res = await fetch(`/api/quotations/${quotation.id}/send-quotation`, { method: 'POST' });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to send quotation');
       setNotice(data.notificationSent ? 'Quotation emailed to the customer.' : 'Quotation sent, but the email could not be delivered — check SMTP settings.');
@@ -185,7 +231,7 @@ export default function QuotationPdfPanel({
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <a
-              href={`/api/admin/quotations/${quotation.id}/quotation-pdf`}
+              href={`/api/quotations/${quotation.id}/quotation-pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"
@@ -296,6 +342,83 @@ export default function QuotationPdfPanel({
             </div>
           </div>
           <p className="text-xs text-gray-500">VAT is calculated automatically at 15% of the vehicle price minus discount.</p>
+
+          <div className="pt-3 border-t border-gray-100 space-y-3">
+            <p className="text-xs font-semibold text-gray-700">Sales Quotation format details</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sales type</label>
+                <select value={salesType} onChange={(e) => setSalesType(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="showroom">Showroom / Stock</option>
+                  <option value="order">Order</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sales executive</label>
+                <input value={salesExecutiveName} onChange={(e) => setSalesExecutiveName(e.target.value)} placeholder="Name printed on the quotation" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Delivery location</label>
+                <input value={deliveryLocation} onChange={(e) => setDeliveryLocation(e.target.value)} placeholder="Showroom address" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer TIN</label>
+                <input value={customerTin} onChange={(e) => setCustomerTin(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer address</label>
+                <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Variant / battery</label>
+                <input value={vehicleVariant} onChange={(e) => setVehicleVariant(e.target.value)} placeholder="e.g. Long Range 60kWh" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">VIN / chassis no. (if known)</label>
+                <input value={vehicleVin} onChange={(e) => setVehicleVin(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Registration / other charges (ETB)</label>
+                <input type="number" min={0} value={registrationCharge} onChange={(e) => setRegistrationCharge(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Registration responsibility</label>
+                <select value={registrationResponsibility} onChange={(e) => setRegistrationResponsibility(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="included">Included</option>
+                  <option value="customer">Customer responsibility</option>
+                  <option value="actual_cost">At actual cost</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Insurance responsibility</label>
+                <select value={insuranceResponsibility} onChange={(e) => setInsuranceResponsibility(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="included">Included</option>
+                  <option value="customer">Customer responsibility</option>
+                </select>
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Charging equipment / accessories</label>
+                <input value={chargingEquipmentDetails} onChange={(e) => setChargingEquipmentDetails(e.target.value)} placeholder="e.g. Type 2 home charger included" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Deposit / booking (ETB)</label>
+                <input type="number" min={0} value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Deposit due date</label>
+                <input type="date" value={depositDueDate} onChange={(e) => setDepositDueDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Balance due date</label>
+                <input type="date" value={balanceDueDate} onChange={(e) => setBalanceDueDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Expected handover</label>
+                <input value={expectedHandoverNote} onChange={(e) => setExpectedHandoverNote(e.target.value)} placeholder="e.g. 4-6 weeks from deposit" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+          </div>
+
           <Button onClick={generate} disabled={busy || !unitPrice}>
             {quotation.quotationNo ? 'Regenerate Quotation' : 'Generate Quotation'}
           </Button>

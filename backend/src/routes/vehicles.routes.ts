@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { generateBrochurePdf } from '../services/pdf/brochure.pdf';
+import { getCompanyInfo } from '../services/pdf/companyInfo';
+import { formatCurrency } from '../utils/formatting';
 
 const router = Router();
 
@@ -174,12 +177,46 @@ router.get('/:id/brochure', async (req: Request, res: Response) => {
   try {
     const vehicle = await prisma.vehicle.findUnique({ where: { id: req.params.id }, include: { brand: true, colors: true, accessories: true, packages: true, interiors: true, wheels: true } });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
-    // TODO: Generate brochure HTML/PDF
-    res.json({ vehicle });
+
+    const specsRaw = (vehicle.specifications as Record<string, any> | null) || {};
+    const specifications: Record<string, string> = {
+      Year: String(vehicle.year ?? '—'),
+      Category: vehicle.category || '—',
+      'Base Price': vehicle.basePrice ? formatCurrency(vehicle.basePrice) : '—',
+    };
+    flattenSpecs(specsRaw, specifications);
+
+    const images = Array.isArray(vehicle.images) ? (vehicle.images as string[]) : [];
+
+    const company = await getCompanyInfo();
+    const pdfBuffer = await generateBrochurePdf({
+      vehicleName: vehicle.name,
+      model: vehicle.model,
+      specifications,
+      images,
+    }, company);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${vehicle.slug}-brochure.pdf"`);
+    res.send(pdfBuffer);
   } catch (error) {
     console.error('Brochure error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+function flattenSpecs(specs: Record<string, any>, out: Record<string, string>, prefix = '', depth = 0): void {
+  if (depth > 2) return;
+  for (const [key, value] of Object.entries(specs)) {
+    if (value == null || value === '') continue;
+    const label = prefix ? `${prefix} · ${key}` : key;
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      flattenSpecs(value, out, label, depth + 1);
+    } else {
+      const v = Array.isArray(value) ? value.join(', ') : String(value);
+      if (v.trim()) out[label] = v;
+    }
+  }
+}
 
 export { router as vehicleRoutes };

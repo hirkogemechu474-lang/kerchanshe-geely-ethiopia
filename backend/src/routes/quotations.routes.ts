@@ -6,6 +6,7 @@ import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { assignSalesRep } from '../services/sales/assignSalesRep';
 import { quotationService } from '../services/sales/quotation.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
+import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
@@ -189,9 +190,14 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
 // GET /quotations/:reference/pdf).
 router.get('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
-    if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    res.json({ quotation, pdfUrl: quotation.signedDocumentUrl });
+    const result = await quotationPdfService.generatePdf(req.params.id);
+    if (!result.ok || !result.data) {
+      res.status(404).json({ error: result.error || 'Quotation not found or not generated yet.' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="quotation-${req.params.id}.pdf"`);
+    res.send(result.data);
   } catch (error) {
     console.error('Get quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -206,7 +212,13 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
 
-    const { unitPrice, quantity, discountAmount, vehicleYear, vehicleColor, quotationValidUntil, paymentTerms, deliveryTerms } = req.body;
+    const {
+      unitPrice, quantity, discountAmount, vehicleYear, vehicleColor, quotationValidUntil, paymentTerms, deliveryTerms,
+      // New Sales Quotation format fields (Kerchanshe Trading PLC draft) — see QuotationPdfPanel.tsx.
+      salesType, salesExecutiveName, customerTin, customerAddress, vehicleVariant, vehicleVin,
+      registrationCharge, registrationResponsibility, insuranceResponsibility, chargingEquipmentDetails,
+      depositAmount, depositDueDate, balanceDueDate, deliveryLocation, expectedHandoverNote,
+    } = req.body;
     const parsedUnitPrice = unitPrice != null && unitPrice !== '' ? Number(unitPrice) : null;
     if (parsedUnitPrice == null || Number.isNaN(parsedUnitPrice)) {
       res.status(400).json({ error: 'unitPrice is required' });
@@ -214,6 +226,8 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
     }
     const parsedQuantity = quantity != null && quantity !== '' ? Number(quantity) : 1;
     const parsedDiscount = discountAmount != null && discountAmount !== '' ? Number(discountAmount) : 0;
+    const parsedRegistrationCharge = registrationCharge != null && registrationCharge !== '' ? Number(registrationCharge) : null;
+    const parsedDepositAmount = depositAmount != null && depositAmount !== '' ? Number(depositAmount) : null;
     // VAT is calculated automatically at 15% of the vehicle price minus discount (per QuotationPdfPanel.tsx).
     const vatAmount = Math.max(0, parsedUnitPrice * parsedQuantity - parsedDiscount) * 0.15;
 
@@ -229,6 +243,21 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
         paymentTerms: paymentTerms || null,
         deliveryTerms: deliveryTerms || null,
         quotationValidUntil: quotationValidUntil ? new Date(quotationValidUntil) : null,
+        salesType: salesType || null,
+        salesExecutiveName: salesExecutiveName || null,
+        customerTin: customerTin || null,
+        customerAddress: customerAddress || null,
+        vehicleVariant: vehicleVariant || null,
+        vehicleVin: vehicleVin || null,
+        registrationCharge: parsedRegistrationCharge,
+        registrationResponsibility: registrationResponsibility || null,
+        insuranceResponsibility: insuranceResponsibility || null,
+        chargingEquipmentDetails: chargingEquipmentDetails || null,
+        depositAmount: parsedDepositAmount,
+        depositDueDate: depositDueDate ? new Date(depositDueDate) : null,
+        balanceDueDate: balanceDueDate ? new Date(balanceDueDate) : null,
+        deliveryLocation: deliveryLocation || null,
+        expectedHandoverNote: expectedHandoverNote || null,
         quotationNo: quotation.quotationNo || (await generateReference(REFERENCE_CATEGORY.QUOTATION)),
         quotationGeneratedAt: new Date(),
         // Rejecting resets to PENDING once the agent regenerates a corrected
@@ -299,10 +328,31 @@ router.post('/:id/convert-to-order', requireAdminApiSession, async (req: Request
 
 // POST /api/quotations/:id/approve-quotation (manager approves the generated
 // quotation — sets the manager sign-off gate, not the general lifecycle
-// `status`; see QuotationApprovalPanel.tsx).
+// `status`; see QuotationApprovalPanel.tsx). Also handles discount
+// approvals where managerApprovalStatus is PENDING_DISCOUNT.
 router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const quotation = await prisma.quotation.update({
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
+    if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
+
+    // Handle discount approval if pending
+    if (quotation.managerApprovalStatus === 'PENDING_DISCOUNT') {
+      const discountPercent = quotation.discountAmount;
+      // Manager is approving the discount - mark as approved
+      const updated = await prisma.quotation.update({
+        where: { id: req.params.id },
+        data: {
+          managerApprovalStatus: 'APPROVED',
+          managerApprovedById: req.adminSession!.user.id,
+          managerApprovedAt: new Date(),
+        },
+      });
+      res.json({ quotation: updated, discountApproved: true });
+      return;
+    }
+
+    // Standard quotation approval
+    const updated = await prisma.quotation.update({
       where: { id: req.params.id },
       data: {
         managerApprovalStatus: 'APPROVED',
@@ -310,7 +360,7 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
         managerApprovedAt: new Date(),
       },
     });
-    res.json(quotation);
+    res.json({ quotation: updated });
   } catch (error) {
     console.error('Approve quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });

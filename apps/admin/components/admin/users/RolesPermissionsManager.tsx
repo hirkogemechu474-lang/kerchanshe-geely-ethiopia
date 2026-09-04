@@ -186,7 +186,7 @@ export default function RolesPermissionsManager() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/admin/role-permissions');
+    const res = await fetch('/api/admin/users/admin/role-permissions');
     if (res.ok) setData(await res.json());
   }, []);
 
@@ -200,7 +200,7 @@ export default function RolesPermissionsManager() {
     setBusyCell(cellKey(role, key));
     setError('');
     try {
-      const res = await fetch('/api/admin/role-permissions', {
+      const res = await fetch('/api/admin/users/admin/role-permissions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, permissionKey: key, value: !current }),

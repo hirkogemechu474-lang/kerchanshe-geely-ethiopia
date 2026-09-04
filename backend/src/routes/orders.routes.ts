@@ -4,9 +4,11 @@ import { requireAdminApiSession } from '../middleware/auth';
 import { orderService } from '../services/sales/order.service';
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
+import { orderInvoiceService } from '../services/sales/orderInvoice.service';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { vehicleAllocationRepository, vehicleRepository } from '../repositories';
 import { signLinkToken } from '../utils/secureLink';
+import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { env } from '../config/env';
 import { rateLimiters } from '../utils/rateLimit';
 
@@ -180,15 +182,54 @@ router.delete('/:id/allocation', requireAdminApiSession, async (req: Request, re
   }
 });
 
-// GET /api/orders/:id/agreement (get agreement summary, for staff print/view)
+// GET /api/orders/:id/agreement (download the Sales Agreement PDF, for staff print/view)
 router.get('/:id/agreement', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
     if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
-    // TODO: Generate agreement PDF
-    res.json({ order });
+
+    const result = await orderAgreementService.generateAgreementPdfForStaff(req.params.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate agreement PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="agreement-${order.orderNo}.pdf"`);
+    res.send(result.data);
   } catch (error) {
     console.error('Get agreement error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/orders/:id/handover-pdf (download the Delivery & Handover Note PDF, for staff print/view)
+router.get('/:id/handover-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+
+    const result = await orderHandoverService.generateHandoverPdfForStaff(req.params.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate handover PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="handover-${order.orderNo}.pdf"`);
+    res.send(result.data);
+  } catch (error) {
+    console.error('Get handover PDF error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/delivery-note (stamp a Delivery Note number, one-way like invoiceNo)
+router.post('/:id/delivery-note', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (order.deliveryNoteNo) { res.status(400).json({ error: 'Delivery note already exists' }); return; }
+
+    const deliveryNoteNo = await generateReference(REFERENCE_CATEGORY.DELIVERY);
+    const updated = await prisma.salesOrder.update({ where: { id: req.params.id }, data: { deliveryNoteNo } });
+    res.status(201).json(updated);
+  } catch (error) {
+    console.error('Generate delivery note error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -285,15 +326,18 @@ router.patch('/:id/pdi', requireAdminApiSession, async (req: Request, res: Respo
   }
 });
 
-// GET /api/orders/:id/invoice (get invoice)
+// GET /api/orders/:id/invoice (download invoice PDF)
 router.get('/:id/invoice', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const order = await prisma.salesOrder.findUnique({
-      where: { id: req.params.id },
-      select: { id: true, orderNo: true, customerName: true, vehicleModel: true, invoiceNo: true, invoiceAmount: true, invoicedAt: true },
-    });
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
     if (!order || !order.invoicedAt) { res.status(404).json({ error: 'Invoice not found' }); return; }
-    res.json(order);
+
+    const result = await orderInvoiceService.generateInvoicePdf(req.params.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate invoice PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${order.orderNo}.pdf"`);
+    res.send(result.data);
   } catch (error) {
     console.error('Get invoice error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -307,6 +351,12 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
     if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
     if (order.invoicedAt) { res.status(400).json({ error: 'Invoice already exists' }); return; }
 
+    // Optional structured invoice details from the new Sales Invoice format
+    // (line items / VAT / registration charge / amount already paid / payment
+    // method & reference / odometer) — the admin invoice panel submits these;
+    // absent fields fall back to the pre-existing single-total behavior.
+    const { lineItems, vatAmount, registrationCharge, amountPaid, paymentMethod, paymentReferenceNo, odometerAtDelivery } = req.body ?? {};
+
     const updated = await prisma.salesOrder.update({
       where: { id: req.params.id },
       data: {
@@ -314,6 +364,13 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
         invoiceAmount: order.totalPrice,
         invoicedAt: new Date(),
         invoicedById: req.adminSession!.user.id,
+        ...(lineItems !== undefined ? { invoiceLineItems: lineItems } : {}),
+        ...(vatAmount !== undefined ? { vatAmount } : {}),
+        ...(registrationCharge !== undefined ? { registrationCharge } : {}),
+        ...(amountPaid !== undefined ? { amountPaid } : {}),
+        ...(paymentMethod !== undefined ? { paymentMethod } : {}),
+        ...(paymentReferenceNo !== undefined ? { paymentReferenceNo } : {}),
+        ...(odometerAtDelivery !== undefined ? { odometerAtDelivery } : {}),
       },
     });
 

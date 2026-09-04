@@ -29,7 +29,7 @@ export default function PromotionsList() {
 
   const fetchPromotions = async () => {
     try {
-      const response = await fetch('/api/admin/promotions');
+      const response = await fetch('/api/promotions');
       const data = await response.json();
       setPromotions(data.promotions || []);
     } catch (error) {
@@ -43,7 +43,7 @@ export default function PromotionsList() {
     if (!confirm('Are you sure you want to delete this promotion?')) return;
 
     try {
-      const response = await fetch(`/api/admin/promotions/${id}`, {
+      const response = await fetch(`/api/promotions/${id}`, {
         method: 'DELETE',
       });
 

@@ -53,6 +53,12 @@ import {
   LayoutPanelTop,
   BarChart3,
   ShoppingCart,
+  BadgeDollarSign,
+  Smile,
+  AlertCircle,
+  Repeat,
+  ScrollText,
+  Timer,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/lib/auth/types';
 import { useTheme } from './ThemeProvider';
@@ -231,6 +237,20 @@ const navSections: NavSection[] = [
           { name: 'Spare Parts', href: '/admin/parts', icon: Package, permission: 'canManageSpareParts' },
         ],
       },
+      {
+        label: 'CRM & Post-Sales',
+        items: [
+          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'Commissions', href: '/admin/commissions', icon: BadgeDollarSign, permission: 'canManageOrders' },
+          { name: 'Warranty Register', href: '/admin/warranty', icon: ShieldCheck, permission: 'canViewJobCards' },
+          { name: 'Customer Satisfaction', href: '/admin/satisfaction', icon: Smile, permission: 'canManageCustomers' },
+          { name: 'Complaints', href: '/admin/complaints', icon: AlertCircle, permission: 'canManageCustomers' },
+          { name: 'Repeat Purchase', href: '/admin/repeat-purchase', icon: Repeat, permission: 'canManageCustomers' },
+          { name: 'SLA Monitor', href: '/admin/sla', icon: Timer, permission: 'canManageOrders' },
+          { name: 'Service Check-In', href: '/admin/service-check-in', icon: Wrench, permission: 'canViewJobCards' },
+          { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, permission: 'canViewReports' },
+        ],
+      },
     ],
   },
 ];
@@ -256,7 +276,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   const [navBadges, setNavBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    fetch('/api/admin/parts/low-stock-count')
+    fetch('/api/parts/admin/parts/low-stock-count')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.count > 0) setNavBadges((prev) => ({ ...prev, '/admin/parts': data.count }));

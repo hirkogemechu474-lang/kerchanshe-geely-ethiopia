@@ -130,7 +130,7 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
         rating: parseFloat(formData.rating) || 0,
       };
 
-      const url = isEdit ? `/api/admin/dealers/${dealer?.id}` : `/api/admin/dealers`;
+      const url = isEdit ? `/api/dealers/${dealer?.id}` : `/api/dealers`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -161,7 +161,7 @@ export default function DealerForm({ dealer, isEdit = false }: { dealer?: Dealer
     if (!confirm('Are you sure you want to delete this dealer? This action cannot be undone.')) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/dealers/${dealer?.id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/dealers/${dealer?.id}`, { method: 'DELETE' });
       const data = await response.json();
       if (data.success) {
         router.push('/admin/dealers');

@@ -19,7 +19,7 @@ export default function CustomersList() {
   const [query, setQuery] = useState('');
 
   const load = useCallback(async (q: string) => {
-    const res = await fetch(`/api/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+    const res = await fetch(`/api/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`);
     if (res.ok) {
       const data = await res.json();
       setCustomers(data.customers);

@@ -29,7 +29,7 @@ export default function TestDriveIdCapture({ testDrive, canManage }: { testDrive
   const [error, setError] = useState('');
 
   const patch = async (body: Record<string, unknown>) => {
-    const res = await fetch(`/api/admin/test-drives/${state.id}`, {
+    const res = await fetch(`/api/test-drives/${state.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

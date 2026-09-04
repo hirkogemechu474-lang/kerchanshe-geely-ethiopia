@@ -1,7 +1,62 @@
-import { salesOrderRepository } from '../../repositories';
+import { salesOrderRepository, userRepository } from '../../repositories';
 import { formatCurrency } from '../../utils/formatting';
+import { generateSalesInvoicePdf, InvoiceLineItem, SalesInvoicePdfData } from '../pdf/salesInvoice.pdf';
+import { HandoverItemRow } from '../pdf/handover.pdf';
+import { getCompanyInfo } from '../pdf/companyInfo';
+
+async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
+  const config = (order.configurationJson as Record<string, any> | null) || {};
+  const detail = await salesOrderRepository.findByIdWithDocumentDetail(order.id);
+  const sellerSigner = order.invoicedById ? await userRepository.findById(order.invoicedById) : null;
+
+  return {
+    orderNo: order.orderNo,
+    customerName: order.customerName,
+    vehicleModel: order.vehicleModel,
+    totalPrice: order.invoiceAmount ?? order.totalPrice ?? 0,
+    invoiceNo: order.invoiceNo,
+    quotationNo: detail?.quotation?.quotationNo ?? null,
+    customerPhone: order.customerPhone,
+    customerEmail: order.customerEmail,
+    customerTin: order.purchaserTin,
+    customerAddress: order.purchaserAddress,
+    color: config.color ?? null,
+    vehicleVariant: config.variant ?? null,
+    vin: detail?.vehicleAllocation?.vin ?? null,
+    motorBatterySerialNo: order.motorBatterySerialNo,
+    odometerAtDelivery: order.odometerAtDelivery,
+    orderDate: order.invoicedAt ?? order.orderDate ?? order.createdAt,
+    salesType: order.salesType,
+    paymentStatus: order.paymentStatus,
+    lineItems: (order.invoiceLineItems as InvoiceLineItem[] | null) ?? null,
+    vatAmount: order.vatAmount,
+    registrationCharge: order.registrationCharge,
+    amountPaid: order.amountPaid,
+    paymentMethod: order.paymentMethod,
+    paymentReferenceNo: order.paymentReferenceNo,
+    deliveryDate: order.deliveredAt ?? order.handoverSignedAt,
+    deliveryLocation: order.deliveryLocation,
+    itemsHandedOver: (order.itemsHandedOver as HandoverItemRow[] | null) ?? null,
+    sellerSignerName: sellerSigner?.name ?? null,
+  };
+}
 
 export const orderInvoiceService = {
+  async generateInvoicePdf(orderId: string): Promise<{ ok: boolean; data?: Buffer; error?: string }> {
+    try {
+      const order = await salesOrderRepository.findById(orderId);
+      if (!order || !order.invoicedAt) return { ok: false, error: 'Invoice not found.' };
+
+      const [pdfData, company] = await Promise.all([buildInvoicePdfData(order), getCompanyInfo()]);
+      const pdfBuffer = await generateSalesInvoicePdf(pdfData, company);
+
+      return { ok: true, data: pdfBuffer };
+    } catch (error: any) {
+      console.error('[INVOICE PDF ERROR]', error.message);
+      return { ok: false, error: 'Failed to generate invoice PDF.' };
+    }
+  },
+
   async getInvoiceData(orderId: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const order = await salesOrderRepository.findById(orderId);

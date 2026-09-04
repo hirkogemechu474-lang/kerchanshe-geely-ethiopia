@@ -236,12 +236,7 @@ export default function JobCardDetail({
   const hasWarrantyPart = state.jobCardParts.some((p) => p.isWarranty);
   const canSubmitClaim = state.isWarrantyOrGoodwill || hasWarrantyPart;
 
-  const allowedTransitions = getAllowedTransitions(state.status as any, {
-    isWarrantyOrGoodwill: state.isWarrantyOrGoodwill,
-    customerApprovedAt: state.customerApprovedAt ? new Date(state.customerApprovedAt) : null,
-    qcPassed: state.qcPassed,
-    complaintText: state.complaintText,
-  });
+  const allowedTransitions = getAllowedTransitions(state.status as any);
 
   const isQcStage = state.status === 'QUALITY_CONTROL';
   const canAct = isQcStage ? permissions.canPerformQC : permissions.canManageJobCards;

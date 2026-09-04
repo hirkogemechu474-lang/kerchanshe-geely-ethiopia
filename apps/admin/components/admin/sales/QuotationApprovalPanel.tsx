@@ -56,7 +56,7 @@ export default function QuotationApprovalPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/quotations/${quotation.id}/approve-quotation`, { method: 'POST' });
+      const res = await fetch(`/api/quotations/${quotation.id}/approve-quotation`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Approval failed');
       router.refresh();
@@ -75,7 +75,7 @@ export default function QuotationApprovalPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/quotations/${quotation.id}/reject-quotation`, {
+      const res = await fetch(`/api/quotations/${quotation.id}/reject-quotation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),

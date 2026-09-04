@@ -29,7 +29,7 @@ export default function WalkInLeadForm() {
     setError('');
     setDeduped(false);
     try {
-      const res = await fetch('/api/admin/quotations', {
+      const res = await fetch('/api/quotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

@@ -44,7 +44,7 @@ export default function AssignedToPanel({
     setError('');
     try {
       const rep = salesReps.find((r) => r.name === repName);
-      const res = await fetch(`/api/admin/quotations/${quotationId}`, {
+      const res = await fetch(`/api/quotations/${quotationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assignedTo: repName || null, assignedToId: rep?.id || null }),
@@ -69,7 +69,7 @@ export default function AssignedToPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/quotations/${quotationId}/escalate`, {
+      const res = await fetch(`/api/quotations/${quotationId}/escalate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: escalateReason }),

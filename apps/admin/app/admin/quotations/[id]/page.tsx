@@ -161,6 +161,21 @@ export default async function QuotationDetailPage({
           signedAt: quotation.signedAt || null,
           managerApprovalStatus: quotation.managerApprovalStatus,
           managerRejectionReason: quotation.managerRejectionReason,
+          salesType: quotation.salesType || null,
+          salesExecutiveName: quotation.salesExecutiveName || null,
+          customerTin: quotation.customerTin || null,
+          customerAddress: quotation.customerAddress || null,
+          vehicleVariant: quotation.vehicleVariant || null,
+          vehicleVin: quotation.vehicleVin || null,
+          registrationCharge: quotation.registrationCharge ?? null,
+          registrationResponsibility: quotation.registrationResponsibility || null,
+          insuranceResponsibility: quotation.insuranceResponsibility || null,
+          chargingEquipmentDetails: quotation.chargingEquipmentDetails || null,
+          depositAmount: quotation.depositAmount ?? null,
+          depositDueDate: quotation.depositDueDate || null,
+          balanceDueDate: quotation.balanceDueDate || null,
+          deliveryLocation: quotation.deliveryLocation || null,
+          expectedHandoverNote: quotation.expectedHandoverNote || null,
         }}
         canManage={session.user.permissions.canManageQuotations}
         publicPdfUrl={publicPdfUrl}

@@ -274,7 +274,7 @@ export default function VehicleSettingsPage() {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
 
-      const response = await fetch('/api/admin/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: uploadFormData,
       });
@@ -306,7 +306,7 @@ export default function VehicleSettingsPage() {
     try {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
-      const response = await fetch('/api/admin/upload', { method: 'POST', body: uploadFormData });
+      const response = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.url) throw new Error(result.error || 'Failed to upload brochure');
 
@@ -338,7 +338,7 @@ export default function VehicleSettingsPage() {
     try {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
-      const response = await fetch('/api/admin/upload', { method: 'POST', body: uploadFormData });
+      const response = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.url) throw new Error(result.error || 'Failed to upload showcase video');
       setFormData((current) => ({ ...current, videoUrl: result.url }));

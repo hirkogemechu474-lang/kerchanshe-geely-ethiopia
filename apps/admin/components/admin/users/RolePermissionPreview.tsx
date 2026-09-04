@@ -15,7 +15,7 @@ export default function RolePermissionPreview({ role }: { role: string }) {
   const [effective, setEffective] = useState<Record<string, AdminPermissions> | null>(null);
 
   useEffect(() => {
-    fetch('/api/admin/role-permissions')
+    fetch('/api/admin/users/admin/role-permissions')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data && setEffective(data.effective))
       .catch(() => {});

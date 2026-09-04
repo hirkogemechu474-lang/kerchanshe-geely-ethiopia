@@ -50,7 +50,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
       if (categoryFilter !== 'all') params.append('category', categoryFilter);
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
-      const response = await fetch(`/api/admin/vehicles?${params}`);
+      const response = await fetch(`/api/vehicles?${params}`);
       if (response.ok) {
         const data = await response.json();
         setVehicles(data.vehicles || data);
@@ -78,7 +78,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
-      const response = await fetch(`/api/admin/vehicles/${id}`, {
+      const response = await fetch(`/api/vehicles/${id}`, {
         method: 'DELETE',
       });
 

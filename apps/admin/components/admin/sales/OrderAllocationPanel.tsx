@@ -24,7 +24,7 @@ export default function OrderAllocationPanel({ orderId, allocation, canManage }:
     if (!vehicleId) return;
     setBusy(true); setNotice('');
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/allocation`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vehicleId, vin }) });
+      const response = await fetch(`/api/orders/${orderId}/allocation`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vehicleId, vin }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Allocation failed');
       setNotice('Vehicle reserved for this order.');
@@ -36,7 +36,7 @@ export default function OrderAllocationPanel({ orderId, allocation, canManage }:
   const release = async () => {
     setBusy(true); setNotice('');
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/allocation`, { method: 'DELETE' });
+      const response = await fetch(`/api/orders/${orderId}/allocation`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Release failed');
       setNotice('Vehicle allocation released.');

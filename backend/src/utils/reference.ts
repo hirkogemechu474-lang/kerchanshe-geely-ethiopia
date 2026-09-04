@@ -4,6 +4,7 @@ export const REFERENCE_CATEGORY = {
   QUOTATION: 'SQ',
   TEST_DRIVE: 'TD',
   TRADE_IN: 'TI',
+  TRADE_IN_EVALUATION: 'TIE',
   SERVICE_BOOKING: 'SB',
   SERVICE_INQUIRY: 'SI',
   CONTACT: 'CT',
@@ -11,6 +12,8 @@ export const REFERENCE_CATEGORY = {
   PARTS_REQUEST: 'PR',
   PURCHASE: 'PU',
   SHOWROOM_VISIT: 'SV',
+  LEAD: 'LD',
+  DELIVERY: 'DN',
 } as const;
 
 export type ReferenceCategory = (typeof REFERENCE_CATEGORY)[keyof typeof REFERENCE_CATEGORY];

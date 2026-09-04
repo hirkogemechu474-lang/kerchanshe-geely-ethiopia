@@ -34,7 +34,7 @@ async function parseJsonResponse(res: Response): Promise<any> {
 // distinct from the standalone public /test-drive booking page — at any
 // point in the pipeline (before or after payment). Creates a real TestDrive
 // row the customer can track via /status?ref=... (see
-// admin/app/api/admin/orders/[id]/send-test-drive/route.ts).
+// admin/app/api/orders/[id]/send-test-drive/route.ts).
 export default function OrderTestDrivePanel({
   order,
   testDrives,
@@ -59,7 +59,7 @@ export default function OrderTestDrivePanel({
     setError('');
     setNotice('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/send-test-drive`, {
+      const res = await fetch(`/api/orders/${order.id}/send-test-drive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferredDate, preferredTime, location }),

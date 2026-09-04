@@ -44,8 +44,20 @@ export class WarrantyClaimTransitionError extends Error {
   }
 }
 
-export function assertSubmittable(currentStatus: string): void {
-  if (currentStatus !== 'draft') {
-    throw new WarrantyClaimTransitionError(`Cannot submit from status: ${currentStatus}`);
+export interface WarrantyClaimSubmitContext {
+  defectCode?: string | null;
+  photoUrls?: string[] | null;
+  warrantyEndDate?: Date | null;
+}
+
+export function assertSubmittable(ctx: WarrantyClaimSubmitContext): void {
+  if (!ctx.defectCode) {
+    throw new WarrantyClaimTransitionError('A defect code is required before submitting.');
+  }
+  if (!ctx.photoUrls || ctx.photoUrls.length === 0) {
+    throw new WarrantyClaimTransitionError('At least one supporting photo is required before submitting.');
+  }
+  if (ctx.warrantyEndDate && ctx.warrantyEndDate.getTime() < Date.now()) {
+    throw new WarrantyClaimTransitionError('Warranty has expired and cannot be claimed.');
   }
 }

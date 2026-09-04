@@ -23,6 +23,30 @@ interface OrderApprovalData {
   countersignedAt: string | null;
   rejectedAt: string | null;
   rejectionReason: string | null;
+  // New Sales Agreement format fields (Kerchanshe Trading PLC draft) —
+  // editable until approval locks the document, same convention as
+  // OrderDetail.tsx's totalPrice field.
+  salesType: string | null;
+  vehicleType: string | null;
+  motorBatterySerialNo: string | null;
+  purchaserTin: string | null;
+  purchaserAddress: string | null;
+  purchaserAuthorizedRep: string | null;
+  accessoriesDescription: string | null;
+  proformaInvoiceNo: string | null;
+  proformaInvoiceDate: string | null;
+  vatAmount: number | null;
+  registrationCharge: number | null;
+  accessoriesAmount: number | null;
+  depositAmount: number | null;
+  depositDueDate: string | null;
+  otherPaymentAmount: number | null;
+  otherPaymentNote: string | null;
+  otherPaymentDueDate: string | null;
+  estimatedDeliveryDate: string | null;
+  deliveryLocation: string | null;
+  exteriorColor: string | null;
+  interiorColor: string | null;
 }
 
 export default function OrderApprovalPanel({
@@ -46,6 +70,28 @@ export default function OrderApprovalPanel({
   const [approveNotice, setApproveNotice] = useState('');
   const [sendNotice, setSendNotice] = useState('');
   const [countersignNotice, setCountersignNotice] = useState('');
+  const [detailsSaved, setDetailsSaved] = useState(false);
+  const [salesType, setSalesType] = useState(order.salesType || 'showroom');
+  const [vehicleType, setVehicleType] = useState(order.vehicleType || 'BEV');
+  const [motorBatterySerialNo, setMotorBatterySerialNo] = useState(order.motorBatterySerialNo || '');
+  const [purchaserTin, setPurchaserTin] = useState(order.purchaserTin || '');
+  const [purchaserAddress, setPurchaserAddress] = useState(order.purchaserAddress || '');
+  const [purchaserAuthorizedRep, setPurchaserAuthorizedRep] = useState(order.purchaserAuthorizedRep || '');
+  const [accessoriesDescription, setAccessoriesDescription] = useState(order.accessoriesDescription || '');
+  const [proformaInvoiceNo, setProformaInvoiceNo] = useState(order.proformaInvoiceNo || '');
+  const [proformaInvoiceDate, setProformaInvoiceDate] = useState(order.proformaInvoiceDate?.slice(0, 10) || '');
+  const [vatAmount, setVatAmount] = useState(order.vatAmount?.toString() || '');
+  const [registrationCharge, setRegistrationCharge] = useState(order.registrationCharge?.toString() || '');
+  const [accessoriesAmount, setAccessoriesAmount] = useState(order.accessoriesAmount?.toString() || '');
+  const [depositAmount, setDepositAmount] = useState(order.depositAmount?.toString() || '');
+  const [depositDueDate, setDepositDueDate] = useState(order.depositDueDate?.slice(0, 10) || '');
+  const [otherPaymentAmount, setOtherPaymentAmount] = useState(order.otherPaymentAmount?.toString() || '');
+  const [otherPaymentNote, setOtherPaymentNote] = useState(order.otherPaymentNote || '');
+  const [otherPaymentDueDate, setOtherPaymentDueDate] = useState(order.otherPaymentDueDate?.slice(0, 10) || '');
+  const [estimatedDeliveryDate, setEstimatedDeliveryDate] = useState(order.estimatedDeliveryDate?.slice(0, 10) || '');
+  const [deliveryLocation, setDeliveryLocation] = useState(order.deliveryLocation || '');
+  const [exteriorColor, setExteriorColor] = useState(order.exteriorColor || '');
+  const [interiorColor, setInteriorColor] = useState(order.interiorColor || '');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -101,11 +147,55 @@ export default function OrderApprovalPanel({
     }
   };
 
+  const saveAgreementDetails = async () => {
+    setBusy(true);
+    setError('');
+    setDetailsSaved(false);
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          salesType,
+          vehicleType,
+          motorBatterySerialNo,
+          purchaserTin,
+          purchaserAddress,
+          purchaserAuthorizedRep,
+          accessoriesDescription,
+          proformaInvoiceNo,
+          proformaInvoiceDate: proformaInvoiceDate || null,
+          vatAmount: vatAmount || null,
+          registrationCharge: registrationCharge || null,
+          accessoriesAmount: accessoriesAmount || null,
+          depositAmount: depositAmount || null,
+          depositDueDate: depositDueDate || null,
+          otherPaymentAmount: otherPaymentAmount || null,
+          otherPaymentNote,
+          otherPaymentDueDate: otherPaymentDueDate || null,
+          estimatedDeliveryDate: estimatedDeliveryDate || null,
+          deliveryLocation,
+          exteriorColor,
+          interiorColor,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save agreement details');
+      setDetailsSaved(true);
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const approve = async () => {
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/approve`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/approve`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Approval failed');
       setApproveNotice('Approved. Review the agreement below, then send it to the customer when ready.');
@@ -122,7 +212,7 @@ export default function OrderApprovalPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/send-agreement`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/send-agreement`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Sending failed');
       setSendNotice(
@@ -145,7 +235,7 @@ export default function OrderApprovalPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/countersign`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/countersign`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Countersign failed');
       setCountersignNotice(
@@ -172,7 +262,7 @@ export default function OrderApprovalPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/reject-agreement`, {
+      const res = await fetch(`/api/orders/${order.id}/reject-agreement`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: rejectReason }),
@@ -203,7 +293,7 @@ export default function OrderApprovalPanel({
       const uploadData = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
 
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(`/api/orders/${order.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ signedDocumentUrl: uploadData.url }),
@@ -233,8 +323,110 @@ export default function OrderApprovalPanel({
       {countersignNotice && <p className="text-sm text-blue-700">{countersignNotice}</p>}
 
       {!order.approvedAt ? (
-        <div>
-          <p className="text-xs text-gray-500 mb-3">
+        <div className="space-y-4">
+          {canManage && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-700">Sales Agreement format details</p>
+              <p className="text-xs text-gray-500">Fill these in before approving — the agreement locks once approved.</p>
+              {detailsSaved && <p className="text-xs text-green-600">Saved.</p>}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Sales type</label>
+                  <select value={salesType} onChange={(e) => setSalesType(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="showroom">Showroom / In Stock</option>
+                    <option value="order">Order / To Be Imported</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle type</label>
+                  <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="BEV">Battery Electric Vehicle (BEV)</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Motor / battery serial no.</label>
+                  <input value={motorBatterySerialNo} onChange={(e) => setMotorBatterySerialNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Purchaser TIN</label>
+                  <input value={purchaserTin} onChange={(e) => setPurchaserTin(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Purchaser address</label>
+                  <input value={purchaserAddress} onChange={(e) => setPurchaserAddress(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Purchaser authorized rep. (if company)</label>
+                  <input value={purchaserAuthorizedRep} onChange={(e) => setPurchaserAuthorizedRep(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Exterior colour</label>
+                  <input value={exteriorColor} onChange={(e) => setExteriorColor(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Interior colour</label>
+                  <input value={interiorColor} onChange={(e) => setInteriorColor(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Accessories / inclusions</label>
+                  <input value={accessoriesDescription} onChange={(e) => setAccessoriesDescription(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Proforma invoice no.</label>
+                  <input value={proformaInvoiceNo} onChange={(e) => setProformaInvoiceNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Proforma invoice date</label>
+                  <input type="date" value={proformaInvoiceDate} onChange={(e) => setProformaInvoiceDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Estimated delivery date</label>
+                  <input type="date" value={estimatedDeliveryDate} onChange={(e) => setEstimatedDeliveryDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">VAT (ETB)</label>
+                  <input type="number" min={0} value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Registration / plate charge (ETB)</label>
+                  <input type="number" min={0} value={registrationCharge} onChange={(e) => setRegistrationCharge(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Accessories amount (ETB)</label>
+                  <input type="number" min={0} value={accessoriesAmount} onChange={(e) => setAccessoriesAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Booking / deposit (ETB)</label>
+                  <input type="number" min={0} value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Deposit due date</label>
+                  <input type="date" value={depositDueDate} onChange={(e) => setDepositDueDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Other payment (ETB)</label>
+                  <input type="number" min={0} value={otherPaymentAmount} onChange={(e) => setOtherPaymentAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Other payment note</label>
+                  <input value={otherPaymentNote} onChange={(e) => setOtherPaymentNote(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Other payment due date</label>
+                  <input type="date" value={otherPaymentDueDate} onChange={(e) => setOtherPaymentDueDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Delivery location</label>
+                  <input value={deliveryLocation} onChange={(e) => setDeliveryLocation(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <Button variant="secondary" onClick={saveAgreementDetails} disabled={busy}>
+                Save Agreement Details
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-gray-500">
             Approving unlocks a preview of the sales agreement to review — it is not emailed yet.
             {!order.customerEmail && ' No customer email is on file, so it can never be emailed for this order.'}
           </p>
@@ -265,7 +457,7 @@ export default function OrderApprovalPanel({
           )}
 
           <a
-            href={`/api/admin/orders/${order.id}/agreement`}
+            href={`/api/orders/${order.id}/agreement`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"

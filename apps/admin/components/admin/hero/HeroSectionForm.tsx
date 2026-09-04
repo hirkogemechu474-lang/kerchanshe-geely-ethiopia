@@ -87,7 +87,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
 
-      const response = await fetch('/api/admin/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: uploadFormData,
       });

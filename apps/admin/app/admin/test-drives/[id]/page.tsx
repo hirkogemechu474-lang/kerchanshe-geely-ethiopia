@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Car, Clock, Mail, MapPin, Phone, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Car, Clock, Mail, MapPin, Phone, User, CheckCircle, Send } from 'lucide-react';
 import { requirePermission } from '@/lib/auth/middleware';
 import { serverApiClient } from '@/lib/serverApiClient';
 import { Card, StatusBadge } from '@/components/admin/ui';
 import TestDriveIdCapture from '@/components/admin/test-drives/TestDriveIdCapture';
+import TestDriveApproveButton from '@/components/admin/test-drives/TestDriveApproveButton';
 
 export default async function TestDriveDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission('canViewTestDrives');
@@ -26,7 +27,12 @@ export default async function TestDriveDetailPage({ params }: { params: Promise<
           <h1 className="text-3xl font-bold text-gray-900">Test Drive Booking</h1>
           <p className="mt-1 text-sm text-gray-500">Booking created {testDrive.createdAt.slice(0, 10)}</p>
         </div>
-        <StatusBadge status={testDrive.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={testDrive.status} />
+          {testDrive.status === 'pending' && (
+            <TestDriveApproveButton testDriveId={testDrive.id} />
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="space-y-5">

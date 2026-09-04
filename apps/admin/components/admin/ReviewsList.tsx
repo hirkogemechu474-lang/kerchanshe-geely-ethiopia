@@ -30,7 +30,7 @@ export default function ReviewsList() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/admin/reviews');
+      const response = await fetch('/api/reviews/admin/reviews');
       const data = await response.json();
       setReviews(data.reviews || []);
     } catch (error) {
@@ -44,7 +44,7 @@ export default function ReviewsList() {
     if (!confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      const response = await fetch(`/api/admin/reviews/${id}`, {
+      const response = await fetch(`/api/reviews/admin/reviews/${id}`, {
         method: 'DELETE',
       });
 
@@ -58,7 +58,7 @@ export default function ReviewsList() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/reviews/${id}`, {
+      const response = await fetch(`/api/reviews/admin/reviews/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -74,7 +74,7 @@ export default function ReviewsList() {
 
   const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/admin/reviews/${id}`, {
+      const response = await fetch(`/api/reviews/admin/reviews/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isFeatured: !currentStatus }),

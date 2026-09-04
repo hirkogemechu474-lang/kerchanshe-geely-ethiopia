@@ -164,11 +164,7 @@ export default function WarrantyClaimDetail({ claim, permissions }: { claim: Cla
   };
 
   const warrantyEndDate = state.jobCard.warrantyEndDate ? new Date(state.jobCard.warrantyEndDate) : null;
-  const allowedTransitions = getAllowedClaimTransitions(state.status as any, {
-    defectCode: state.defectCode,
-    photoUrls: state.photoUrls,
-    warrantyEndDate,
-  });
+  const allowedTransitions = getAllowedClaimTransitions(state.status as any);
 
   let submitBlockedReason: string | null = null;
   if (isEditable) {

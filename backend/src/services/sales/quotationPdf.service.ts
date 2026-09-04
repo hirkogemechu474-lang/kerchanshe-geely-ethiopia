@@ -1,5 +1,6 @@
 import { generateSalesQuotationPdf } from '../pdf/salesQuotation.pdf';
 import { quotationRepository } from '../../repositories';
+import { getCompanyInfo } from '../pdf/companyInfo';
 
 // Quotation has no `totalPrice` column — the structured price lives across
 // unitPrice/quantity/discountAmount/vatAmount (see QuotationPdfPanel.tsx,
@@ -19,16 +20,42 @@ export const quotationPdfService = {
 
       const totalPrice = computeQuotationTotal(quotation);
       const vehicleModel = quotation.vehicleModel || 'General enquiry';
+      const company = await getCompanyInfo();
 
       const pdfBuffer = await generateSalesQuotationPdf({
         quotationNo: quotation.quotationNo,
+        reference: quotation.reference,
         customerName: quotation.customerName,
+        customerEmail: quotation.email,
+        customerPhone: quotation.phoneNumber,
+        customerTin: quotation.customerTin,
+        customerAddress: quotation.customerAddress,
         vehicleModel,
+        vehicleYear: quotation.vehicleYear,
+        vehicleColor: quotation.vehicleColor,
+        vehicleVariant: quotation.vehicleVariant,
+        vehicleVin: quotation.vehicleVin,
+        unitPrice: quotation.unitPrice,
+        quantity: quotation.quantity,
+        discountAmount: quotation.discountAmount,
+        vatAmount: quotation.vatAmount,
+        registrationCharge: quotation.registrationCharge,
+        registrationResponsibility: quotation.registrationResponsibility,
+        insuranceResponsibility: quotation.insuranceResponsibility,
+        chargingEquipmentDetails: quotation.chargingEquipmentDetails,
+        salesType: quotation.salesType,
+        salesExecutiveName: quotation.salesExecutiveName,
+        depositAmount: quotation.depositAmount,
+        depositDueDate: quotation.depositDueDate,
+        balanceDueDate: quotation.balanceDueDate,
+        deliveryLocation: quotation.deliveryLocation,
+        expectedHandoverNote: quotation.expectedHandoverNote,
+        paymentTerms: quotation.paymentTerms,
+        deliveryTerms: quotation.deliveryTerms,
+        validUntil: quotation.quotationValidUntil,
+        issuedAt: quotation.quotationGeneratedAt,
         totalPrice,
-        items: [
-          { description: vehicleModel, amount: totalPrice },
-        ],
-      });
+      }, company);
 
       return { ok: true, data: pdfBuffer };
     } catch (error: any) {

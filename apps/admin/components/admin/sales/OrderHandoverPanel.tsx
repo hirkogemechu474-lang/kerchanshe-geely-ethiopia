@@ -3,7 +3,47 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
-import { PackageCheck } from 'lucide-react';
+import { PackageCheck, FileText } from 'lucide-react';
+
+// Fixed-membership checklist rows for the printed Delivery & Handover Note
+// (Kerchanshe Trading PLC draft) — mirrors backend/src/services/pdf/handover.pdf.ts's
+// DEFAULT_ITEMS_HANDED_OVER / DEFAULT_INSPECTION_CHECKLIST / DEFAULT_EV_GUIDANCE_CHECKLIST.
+// Duplicated here (not imported) since this admin app has no shared module
+// with the backend — same convention as pdiChecklistTemplate-style seeding
+// elsewhere in this codebase.
+interface HandoverItemRow { item: string; qty: string; remarks: string; received: boolean }
+interface InspectionRow { checkpoint: string; ok: boolean; na: boolean; remarks: string }
+interface EvGuidanceRow { topic: string; explained: boolean }
+
+const DEFAULT_ITEMS_HANDED_OVER: HandoverItemRow[] = [
+  { item: 'GEELY Vehicle', qty: '1', remarks: 'As specified above', received: false },
+  { item: 'Vehicle Keys', qty: '', remarks: '', received: false },
+  { item: 'Charging Cable / Equipment', qty: '', remarks: '', received: false },
+  { item: "Owner's Manual / User Guide", qty: '', remarks: '', received: false },
+  { item: 'Warranty Documents', qty: '', remarks: '', received: false },
+  { item: 'Registration / Related Documents', qty: '', remarks: 'If applicable', received: false },
+  { item: 'Other Accessories / Documents', qty: '', remarks: '', received: false },
+];
+
+const DEFAULT_INSPECTION_CHECKLIST: InspectionRow[] = [
+  { checkpoint: 'Exterior body & paint', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Windows / mirrors / lights', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Tyres & wheels', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Interior condition', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Dashboard / warning indicators', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Charging port & equipment', ok: false, na: false, remarks: '' },
+  { checkpoint: 'Keys / remote', ok: false, na: false, remarks: '' },
+  { checkpoint: 'VIN / chassis number & odometer', ok: false, na: false, remarks: '' },
+];
+
+const DEFAULT_EV_GUIDANCE_CHECKLIST: EvGuidanceRow[] = [
+  { topic: 'Vehicle operation', explained: false },
+  { topic: 'Charging procedure', explained: false },
+  { topic: 'Charging equipment / cable', explained: false },
+  { topic: 'Key safety features', explained: false },
+  { topic: 'Recommended maintenance', explained: false },
+  { topic: 'Warranty / service process', explained: false },
+];
 
 // Dedicated handover action — replaces the generic "Move Order" button for
 // the READY_FOR_DELIVERY -> DELIVERED transition specifically, so there's
@@ -20,6 +60,17 @@ interface OrderHandoverData {
   handoverSignedDocumentUrl: string | null;
   handoverSignedAt: string | null;
   handoverCountersignedAt: string | null;
+  // Delivery & Handover Note format fields (Kerchanshe Trading PLC draft).
+  deliveryNoteNo: string | null;
+  odometerAtDelivery: number | null;
+  customerTitle: string | null;
+  itemsHandedOver: HandoverItemRow[] | null;
+  inspectionChecklist: InspectionRow[] | null;
+  evGuidanceChecklist: EvGuidanceRow[] | null;
+  handoverDamageNotes: string | null;
+  handoverOutstandingItems: string | null;
+  handoverResponsiblePerson: string | null;
+  handoverExpectedCompletionDate: string | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -51,6 +102,18 @@ export default function OrderHandoverPanel({
   const [signOffError, setSignOffError] = useState('');
   const [signOffNotice, setSignOffNotice] = useState('');
   const [managerSignature, setManagerSignature] = useState<{ signedByName: string | null; signatureUrl: string | null } | null>(null);
+  const [itemsHandedOver, setItemsHandedOver] = useState<HandoverItemRow[]>(order.itemsHandedOver?.length ? order.itemsHandedOver : DEFAULT_ITEMS_HANDED_OVER);
+  const [inspectionChecklist, setInspectionChecklist] = useState<InspectionRow[]>(order.inspectionChecklist?.length ? order.inspectionChecklist : DEFAULT_INSPECTION_CHECKLIST);
+  const [evGuidanceChecklist, setEvGuidanceChecklist] = useState<EvGuidanceRow[]>(order.evGuidanceChecklist?.length ? order.evGuidanceChecklist : DEFAULT_EV_GUIDANCE_CHECKLIST);
+  const [odometerAtDelivery, setOdometerAtDelivery] = useState(order.odometerAtDelivery?.toString() || '');
+  const [customerTitle, setCustomerTitle] = useState(order.customerTitle || '');
+  const [handoverDamageNotes, setHandoverDamageNotes] = useState(order.handoverDamageNotes || '');
+  const [handoverOutstandingItems, setHandoverOutstandingItems] = useState(order.handoverOutstandingItems || '');
+  const [handoverResponsiblePerson, setHandoverResponsiblePerson] = useState(order.handoverResponsiblePerson || '');
+  const [handoverExpectedCompletionDate, setHandoverExpectedCompletionDate] = useState(order.handoverExpectedCompletionDate?.slice(0, 10) || '');
+  const [checklistBusy, setChecklistBusy] = useState(false);
+  const [checklistSaved, setChecklistSaved] = useState(false);
+  const [deliveryNoteBusy, setDeliveryNoteBusy] = useState(false);
 
   useEffect(() => {
     if (!order.handoverSignedDocumentUrl) return;
@@ -75,7 +138,7 @@ export default function OrderHandoverPanel({
     setSignOffError('');
     setSignOffNotice('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/send-handover-signoff`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/send-handover-signoff`, { method: 'POST' });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Unable to send the handover sign-off link.');
       setSignOffNotice(
@@ -97,7 +160,7 @@ export default function OrderHandoverPanel({
     setSignOffError('');
     setSignOffNotice('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/handover-countersign`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/handover-countersign`, { method: 'POST' });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Unable to countersign this handover.');
       onUpdated();
@@ -109,13 +172,61 @@ export default function OrderHandoverPanel({
     }
   };
 
+  const saveChecklist = async () => {
+    setChecklistBusy(true);
+    setError('');
+    setChecklistSaved(false);
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemsHandedOver,
+          inspectionChecklist,
+          evGuidanceChecklist,
+          odometerAtDelivery: odometerAtDelivery || null,
+          customerTitle,
+          handoverDamageNotes,
+          handoverOutstandingItems,
+          handoverResponsiblePerson,
+          handoverExpectedCompletionDate: handoverExpectedCompletionDate || null,
+        }),
+      });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Failed to save the handover checklist.');
+      setChecklistSaved(true);
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setChecklistBusy(false);
+    }
+  };
+
+  const generateDeliveryNote = async () => {
+    setDeliveryNoteBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/orders/${order.id}/delivery-note`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Failed to generate the delivery note number.');
+      onUpdated();
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeliveryNoteBusy(false);
+    }
+  };
+
   const completeHandover = async () => {
     setBusy(true);
     setError('');
     setNotice('');
     try {
       if (order.status !== 'DELIVERED') {
-        const statusRes = await fetch(`/api/admin/orders/${order.id}/status`, {
+        const statusRes = await fetch(`/api/orders/${order.id}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ toStatus: 'DELIVERED' }),
@@ -124,7 +235,7 @@ export default function OrderHandoverPanel({
         if (!statusRes.ok) throw new Error(statusData.error || 'Unable to mark this order delivered.');
       }
 
-      const emailRes = await fetch(`/api/admin/orders/${order.id}/handover-email`, { method: 'POST' });
+      const emailRes = await fetch(`/api/orders/${order.id}/handover-email`, { method: 'POST' });
       const emailData = await parseJsonResponse(emailRes);
       if (!emailRes.ok) throw new Error(emailData.error || 'Delivered, but the confirmation email failed to send.');
 
@@ -153,6 +264,151 @@ export default function OrderHandoverPanel({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {notice && <p className="text-sm text-blue-700">{notice}</p>}
+
+      <div className="border-b border-gray-100 pb-4 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Delivery Note No.</p>
+            <p className="text-sm text-gray-700">{order.deliveryNoteNo || 'Not yet generated'}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {canManage && !order.deliveryNoteNo && (
+              <Button variant="secondary" onClick={generateDeliveryNote} disabled={deliveryNoteBusy}>
+                {deliveryNoteBusy ? 'Generating…' : 'Generate Delivery Note No.'}
+              </Button>
+            )}
+            <a
+              href={`/api/orders/${order.id}/handover-pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"
+            >
+              <FileText className="w-4 h-4" />
+              View / Print Handover Note
+            </a>
+          </div>
+        </div>
+
+        {canManage && (
+          <div className="space-y-4">
+            {checklistSaved && <p className="text-xs text-green-600">Saved.</p>}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Odometer at delivery (km)</label>
+                <input type="number" min={0} value={odometerAtDelivery} onChange={(e) => setOdometerAtDelivery(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer title (if applicable)</label>
+                <input value={customerTitle} onChange={(e) => setCustomerTitle(e.target.value)} placeholder="e.g. Owner, Fleet Manager" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Items Handed Over</p>
+              <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                {itemsHandedOver.map((row, i) => (
+                  <li key={row.item} className="flex items-center gap-3 px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={row.received}
+                      onChange={(e) => setItemsHandedOver((rows) => rows.map((r, ri) => (ri === i ? { ...r, received: e.target.checked } : r)))}
+                      className="w-4 h-4 shrink-0"
+                    />
+                    <span className="text-sm text-gray-800 flex-1">{row.item}</span>
+                    <input
+                      value={row.qty}
+                      onChange={(e) => setItemsHandedOver((rows) => rows.map((r, ri) => (ri === i ? { ...r, qty: e.target.value } : r)))}
+                      placeholder="Qty"
+                      className="w-16 border border-gray-300 rounded px-2 py-1 text-xs"
+                    />
+                    <input
+                      value={row.remarks}
+                      onChange={(e) => setItemsHandedOver((rows) => rows.map((r, ri) => (ri === i ? { ...r, remarks: e.target.value } : r)))}
+                      placeholder="Remarks"
+                      className="w-32 border border-gray-300 rounded px-2 py-1 text-xs"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Vehicle Inspection &amp; Condition</p>
+              <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                {inspectionChecklist.map((row, i) => (
+                  <li key={row.checkpoint} className="flex items-center gap-3 px-3 py-2">
+                    <span className="text-sm text-gray-800 flex-1">{row.checkpoint}</span>
+                    <label className="flex items-center gap-1 text-xs text-gray-500">
+                      <input
+                        type="checkbox"
+                        checked={row.ok}
+                        onChange={(e) => setInspectionChecklist((rows) => rows.map((r, ri) => (ri === i ? { ...r, ok: e.target.checked, na: e.target.checked ? false : r.na } : r)))}
+                        className="w-4 h-4"
+                      />
+                      OK
+                    </label>
+                    <label className="flex items-center gap-1 text-xs text-gray-500">
+                      <input
+                        type="checkbox"
+                        checked={row.na}
+                        onChange={(e) => setInspectionChecklist((rows) => rows.map((r, ri) => (ri === i ? { ...r, na: e.target.checked, ok: e.target.checked ? false : r.ok } : r)))}
+                        className="w-4 h-4"
+                      />
+                      N/A
+                    </label>
+                    <input
+                      value={row.remarks}
+                      onChange={(e) => setInspectionChecklist((rows) => rows.map((r, ri) => (ri === i ? { ...r, remarks: e.target.value } : r)))}
+                      placeholder="Remarks"
+                      className="w-32 border border-gray-300 rounded px-2 py-1 text-xs"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">EV Handover &amp; Customer Guidance</p>
+              <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                {evGuidanceChecklist.map((row, i) => (
+                  <li key={row.topic} className="flex items-center gap-3 px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={row.explained}
+                      onChange={(e) => setEvGuidanceChecklist((rows) => rows.map((r, ri) => (ri === i ? { ...r, explained: e.target.checked } : r)))}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-800">{row.topic}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Visible damage / shortage</label>
+                <input value={handoverDamageNotes} onChange={(e) => setHandoverDamageNotes(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Outstanding item(s)</label>
+                <input value={handoverOutstandingItems} onChange={(e) => setHandoverOutstandingItems(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Action / responsible person</label>
+                <input value={handoverResponsiblePerson} onChange={(e) => setHandoverResponsiblePerson(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Expected completion date</label>
+                <input type="date" value={handoverExpectedCompletionDate} onChange={(e) => setHandoverExpectedCompletionDate(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+
+            <Button variant="secondary" onClick={saveChecklist} disabled={checklistBusy}>
+              {checklistBusy ? 'Saving…' : 'Save Handover Checklist'}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {order.status === 'DELIVERED' ? (
         <div className="text-sm text-gray-700 space-y-2">

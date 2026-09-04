@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Eye, Edit, Check, X, Phone, Mail, Calendar, Clock, User, Car, MapPin } from 'lucide-react';
+import { Eye, Edit, Check, X, Phone, Mail, Calendar, Clock, User, Car, MapPin, Send } from 'lucide-react';
 import { Card, Badge, EmptyState, Pagination, type Tone } from '@/components/admin/ui';
 
 const PAGE_SIZE = 10;
@@ -52,7 +52,28 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
   );
 
   const updateStatus = async (id: string, status: TestDrive['status']) => {
-    const response = await fetch(`/api/admin/test-drives/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    // When confirming a pending test drive, use the approve endpoint to send email
+    if (status === 'confirmed') {
+      const confirmedItem = items.find(item => item.id === id);
+      if (confirmedItem && confirmedItem.status === 'pending') {
+        const response = await fetch(`/api/test-drives/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        if (response.ok) {
+          const data = await response.json();
+          setItems((current) => current.map((item) => item.id === id ? { ...item, status: 'confirmed' } : item));
+          if (data.emailSent) {
+            alert('Test drive approved! Confirmation email sent to customer.');
+          } else {
+            alert('Test drive approved, but email failed to send.');
+          }
+          return;
+        }
+        const data = await response.json().catch(() => null);
+        alert(data?.error || 'Failed to approve test drive');
+        return;
+      }
+    }
+
+    const response = await fetch(`/api/test-drives/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     if (response.ok) {
       setItems((current) => current.map((item) => item.id === id ? { ...item, status } : item));
       return;
@@ -124,8 +145,8 @@ export default function TestDriveList({ testDrives }: { testDrives: TestDrive[] 
               {testDrive.status === 'pending' && (
                 <>
                   <button onClick={() => updateStatus(testDrive.id, 'confirmed')} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                    <Check className="w-4 h-4" />
-                    Confirm
+                    <Send className="w-4 h-4" />
+                    Approve & Email
                   </button>
                   <button onClick={() => updateStatus(testDrive.id, 'cancelled')} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
                     <X className="w-4 h-4" />

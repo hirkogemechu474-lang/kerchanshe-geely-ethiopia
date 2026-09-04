@@ -86,6 +86,39 @@ interface OrderData {
   handoverSignedDocumentUrl: string | null;
   handoverSignedAt: string | null;
   handoverCountersignedAt: string | null;
+  // New Sales Agreement / Invoice / Delivery-Handover format fields
+  // (Kerchanshe Trading PLC draft documents).
+  salesType: string | null;
+  vehicleType: string | null;
+  motorBatterySerialNo: string | null;
+  purchaserTin: string | null;
+  purchaserAddress: string | null;
+  purchaserAuthorizedRep: string | null;
+  accessoriesDescription: string | null;
+  proformaInvoiceNo: string | null;
+  proformaInvoiceDate: string | null;
+  vatAmount: number | null;
+  registrationCharge: number | null;
+  accessoriesAmount: number | null;
+  depositAmount: number | null;
+  depositDueDate: string | null;
+  otherPaymentAmount: number | null;
+  otherPaymentNote: string | null;
+  otherPaymentDueDate: string | null;
+  estimatedDeliveryDate: string | null;
+  deliveryLocation: string | null;
+  exteriorColor: string | null;
+  interiorColor: string | null;
+  deliveryNoteNo: string | null;
+  odometerAtDelivery: number | null;
+  customerTitle: string | null;
+  itemsHandedOver: { item: string; qty: string; remarks: string; received: boolean }[] | null;
+  inspectionChecklist: { checkpoint: string; ok: boolean; na: boolean; remarks: string }[] | null;
+  evGuidanceChecklist: { topic: string; explained: boolean }[] | null;
+  handoverDamageNotes: string | null;
+  handoverOutstandingItems: string | null;
+  handoverResponsiblePerson: string | null;
+  handoverExpectedCompletionDate: string | null;
 }
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -134,8 +167,8 @@ export default function OrderDetail({
   const canCountersign = permissions.canManageQuotations && permissions.canCountersignAgreements;
 
   const refresh = async () => {
-    const res = await fetch(`/api/admin/orders/${state.id}`);
-    if (res.ok) setState((await res.json()).order);
+    const res = await fetch(`/api/orders/${state.id}`);
+    if (res.ok) setState(await res.json());
     router.refresh();
   };
 
@@ -143,7 +176,7 @@ export default function OrderDetail({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${state.id}`, {
+      const res = await fetch(`/api/orders/${state.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -162,7 +195,7 @@ export default function OrderDetail({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${state.id}/status`, {
+      const res = await fetch(`/api/orders/${state.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toStatus }),
@@ -181,7 +214,7 @@ export default function OrderDetail({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${state.id}/financing-status`, {
+      const res = await fetch(`/api/orders/${state.id}/financing-status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toStatus }),
@@ -200,7 +233,7 @@ export default function OrderDetail({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${state.id}/pdi`, {
+      const res = await fetch(`/api/orders/${state.id}/pdi`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, isChecked }),
@@ -219,7 +252,7 @@ export default function OrderDetail({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${state.id}/payment/confirm`, {
+      const res = await fetch(`/api/orders/${state.id}/payment/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
@@ -365,7 +398,19 @@ export default function OrderDetail({
       </Card>
 
       <OrderApprovalPanel
-        order={{ id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt, signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt, rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason }}
+        order={{
+          id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt,
+          signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt,
+          rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason,
+          salesType: state.salesType, vehicleType: state.vehicleType, motorBatterySerialNo: state.motorBatterySerialNo,
+          purchaserTin: state.purchaserTin, purchaserAddress: state.purchaserAddress, purchaserAuthorizedRep: state.purchaserAuthorizedRep,
+          accessoriesDescription: state.accessoriesDescription, proformaInvoiceNo: state.proformaInvoiceNo, proformaInvoiceDate: state.proformaInvoiceDate,
+          vatAmount: state.vatAmount, registrationCharge: state.registrationCharge, accessoriesAmount: state.accessoriesAmount,
+          depositAmount: state.depositAmount, depositDueDate: state.depositDueDate, otherPaymentAmount: state.otherPaymentAmount,
+          otherPaymentNote: state.otherPaymentNote, otherPaymentDueDate: state.otherPaymentDueDate,
+          estimatedDeliveryDate: state.estimatedDeliveryDate, deliveryLocation: state.deliveryLocation,
+          exteriorColor: state.exteriorColor, interiorColor: state.interiorColor,
+        }}
         canManage={permissions.canManageQuotations}
         canCountersign={canCountersign}
         webAppUrl={webAppUrl}
@@ -438,6 +483,7 @@ export default function OrderDetail({
           invoiceNo: state.invoiceNo,
           invoiceAmount: state.invoiceAmount,
           invoicedAt: state.invoicedAt,
+          vehicleModel: state.vehicleModel,
         }}
         canManage={permissions.canManageQuotations}
         onUpdated={refresh}
@@ -465,6 +511,16 @@ export default function OrderDetail({
           handoverSignedDocumentUrl: state.handoverSignedDocumentUrl,
           handoverSignedAt: state.handoverSignedAt,
           handoverCountersignedAt: state.handoverCountersignedAt,
+          deliveryNoteNo: state.deliveryNoteNo,
+          odometerAtDelivery: state.odometerAtDelivery,
+          customerTitle: state.customerTitle,
+          itemsHandedOver: state.itemsHandedOver,
+          inspectionChecklist: state.inspectionChecklist,
+          evGuidanceChecklist: state.evGuidanceChecklist,
+          handoverDamageNotes: state.handoverDamageNotes,
+          handoverOutstandingItems: state.handoverOutstandingItems,
+          handoverResponsiblePerson: state.handoverResponsiblePerson,
+          handoverExpectedCompletionDate: state.handoverExpectedCompletionDate,
         }}
         canManage={permissions.canManageQuotations}
         canCountersign={canCountersign}

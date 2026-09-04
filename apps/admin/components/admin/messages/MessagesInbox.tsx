@@ -18,7 +18,7 @@ export default function MessagesInbox({ initialMessages }: { initialMessages: Ad
     return (category === 'all' || message.category === category) && text.includes(query.toLowerCase());
   });
   const markRead = async (id: string) => {
-    const response = await fetch(`/api/admin/messages/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'read' }) });
+    const response = await fetch(`/api/messages/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'read' }) });
     if (response.ok) setMessages((current) => current.map((message) => message.id === id ? { ...message, status: 'read' } : message));
   };
   const count = (status: string) => messages.filter((message) => message.status === status).length;

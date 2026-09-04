@@ -171,9 +171,9 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
         status: 'published'
       };
 
-      const url = mode === 'create' 
-        ? '/api/admin/vehicles'
-        : `/api/admin/vehicles/${initialData?.id}`;
+      const url = mode === 'create'
+        ? '/api/vehicles'
+        : `/api/vehicles/${initialData?.id}`;
       
       const method = mode === 'create' ? 'POST' : 'PUT';
       

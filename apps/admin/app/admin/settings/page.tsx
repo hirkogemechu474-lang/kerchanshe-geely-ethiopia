@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Shuffle,
   PenTool,
+  Landmark,
 } from 'lucide-react';
 
 export default async function SettingsPage() {
@@ -59,6 +60,17 @@ export default async function SettingsPage() {
       borderAccent: 'border-amber-200',
       href: '/admin/settings/about',
       badge: 'Content',
+    },
+    {
+      title: 'Bank Details',
+      description: 'Company bank name, account number, account name, and branch — printed on the Sales Agreement and Sales Invoice.',
+      icon: Landmark,
+      color: 'from-teal-500 to-cyan-600',
+      accent: 'text-teal-600',
+      bgAccent: 'bg-teal-50',
+      borderAccent: 'border-teal-200',
+      href: '/admin/settings/bank-details',
+      badge: 'Sales',
     },
     {
       title: 'Contact Information',

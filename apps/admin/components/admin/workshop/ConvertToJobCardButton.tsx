@@ -12,7 +12,7 @@ export default function ConvertToJobCardButton({ bookingId }: { bookingId: strin
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/service-bookings/${bookingId}/convert-to-job-card`, { method: 'POST' });
+      const res = await fetch(`/api/service-bookings/${bookingId}/convert-to-job-card`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to convert');
       router.push(`/admin/workshop/job-cards/${data.jobCard.id}`);

@@ -62,7 +62,7 @@ function VehicleCard({ vehicle, canEdit }: { vehicle: VehicleData; canEdit: bool
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/customer-vehicles/${vehicle.id}`, {
+      const res = await fetch(`/api/customers/customer-vehicles/${vehicle.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,7 +196,7 @@ export default function CustomerDetail({ customer, permissions }: { customer: Cu
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/customers/${state.id}`, {
+      const res = await fetch(`/api/customers/${state.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

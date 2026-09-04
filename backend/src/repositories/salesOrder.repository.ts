@@ -71,6 +71,21 @@ export const salesOrderRepository = {
     return prisma.pdiChecklistItem.update({ where: { id: itemId }, data });
   },
 
+  // Handover/Agreement/Invoice PDF data needs: VIN (via allocation), the
+  // originating Quotation's number (for cross-refs on the printed
+  // documents), and PDI completeness — see orderHandover.service.ts /
+  // orderAgreement.service.ts.
+  async findByIdWithDocumentDetail(id: string) {
+    return prisma.salesOrder.findUnique({
+      where: { id },
+      include: {
+        pdiItems: { select: { isChecked: true } },
+        quotation: { select: { quotationNo: true } },
+        vehicleAllocation: { select: { vin: true } },
+      },
+    });
+  },
+
   async findByIdWithQuotationMessage(id: string) {
     return prisma.salesOrder.findUnique({
       where: { id },

@@ -18,6 +18,7 @@ interface OrderFulfillmentData {
   invoiceNo: string | null;
   invoiceAmount: number | null;
   invoicedAt: string | null;
+  vehicleModel: string;
 }
 
 // A non-2xx response isn't guaranteed to carry a JSON body (a proxy/timeout
@@ -48,12 +49,21 @@ export default function OrderFulfillmentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [invoiceNotice, setInvoiceNotice] = useState('');
+  const [accessoriesAmount, setAccessoriesAmount] = useState('0');
+  const [otherDescription, setOtherDescription] = useState('');
+  const [otherAmount, setOtherAmount] = useState('0');
+  const [vatAmount, setVatAmount] = useState('0');
+  const [registrationCharge, setRegistrationCharge] = useState('0');
+  const [amountPaid, setAmountPaid] = useState(order.totalPrice?.toString() || '0');
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentReferenceNo, setPaymentReferenceNo] = useState('');
+  const [odometerAtDelivery, setOdometerAtDelivery] = useState('0');
 
   const saveRegistration = async () => {
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(`/api/orders/${order.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ registrationNumber }),
@@ -73,7 +83,24 @@ export default function OrderFulfillmentPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/invoice`, { method: 'POST' });
+      const lineItems = [
+        { description: `GEELY vehicle as specified above (${order.vehicleModel})`, qty: 1, unitPrice: order.totalPrice ?? 0, discount: 0 },
+        ...(Number(accessoriesAmount) > 0 ? [{ description: 'Accessories / charging equipment', qty: 1, unitPrice: Number(accessoriesAmount), discount: 0 }] : []),
+        ...(otherDescription && Number(otherAmount) > 0 ? [{ description: otherDescription, qty: 1, unitPrice: Number(otherAmount), discount: 0 }] : []),
+      ];
+      const res = await fetch(`/api/orders/${order.id}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lineItems,
+          vatAmount: Number(vatAmount) || null,
+          registrationCharge: Number(registrationCharge) || null,
+          amountPaid: Number(amountPaid) || null,
+          paymentMethod,
+          paymentReferenceNo,
+          odometerAtDelivery: Number(odometerAtDelivery) || null,
+        }),
+      });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to generate invoice');
       setInvoiceNotice(
@@ -138,7 +165,7 @@ export default function OrderFulfillmentPanel({
             </p>
             <p className="text-xs text-gray-400">Generated {new Date(order.invoicedAt).toLocaleString()}</p>
             <a
-              href={`/api/admin/orders/${order.id}/invoice`}
+              href={`/api/orders/${order.id}/invoice`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline mt-1"
@@ -149,13 +176,55 @@ export default function OrderFulfillmentPanel({
           </div>
         ) : (
           canManage && (
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Invoice amount</label>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle price (line 1)</label>
                 <p className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700">
                   {order.totalPrice != null ? `ETB ${order.totalPrice.toLocaleString('en-US')}` : 'To be confirmed'}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Set automatically from the order's agreed price.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Accessories / charging equipment (ETB)</label>
+                  <input type="number" min={0} value={accessoriesAmount} onChange={(e) => setAccessoriesAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Other item / service description</label>
+                  <input value={otherDescription} onChange={(e) => setOtherDescription(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Other item / service amount (ETB)</label>
+                  <input type="number" min={0} value={otherAmount} onChange={(e) => setOtherAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">VAT (ETB)</label>
+                  <input type="number" min={0} value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Registration / plate / other charge (ETB)</label>
+                  <input type="number" min={0} value={registrationCharge} onChange={(e) => setRegistrationCharge(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Amount already paid (ETB)</label>
+                  <input type="number" min={0} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment method</label>
+                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment reference no.</label>
+                  <input value={paymentReferenceNo} onChange={(e) => setPaymentReferenceNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Odometer at delivery (km)</label>
+                  <input type="number" min={0} value={odometerAtDelivery} onChange={(e) => setOdometerAtDelivery(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
               </div>
               <Button onClick={generateInvoice} disabled={busy}>
                 Generate Invoice

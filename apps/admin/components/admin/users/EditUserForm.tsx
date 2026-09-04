@@ -63,7 +63,7 @@ export default function EditUserForm({ id }: { id: string }) {
 
   const fetchBrands = async () => {
     try {
-      const response = await fetch('/api/admin/brands');
+      const response = await fetch('/api/vehicles/brands');
       if (response.ok) setBrands(await response.json());
     } catch {
       // Non-fatal — specialization multi-select just stays empty.

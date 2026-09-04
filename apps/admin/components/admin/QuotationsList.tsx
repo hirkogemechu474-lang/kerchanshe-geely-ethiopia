@@ -76,7 +76,7 @@ export default function QuotationsList() {
     const params = new URLSearchParams({ page: String(p) });
     if (status !== 'all') params.set('status', status);
     if (q) params.set('search', q);
-    const res = await fetch(`/api/admin/quotations?${params.toString()}`);
+    const res = await fetch(`/api/quotations?${params.toString()}`);
     if (res.ok) {
       const data = await res.json();
       setQuotations(data.quotations);
@@ -105,12 +105,12 @@ export default function QuotationsList() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this quotation?')) return;
-    const res = await fetch(`/api/admin/quotations/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/quotations/${id}`, { method: 'DELETE' });
     if (res.ok) load(filter, page, search);
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
-    const res = await fetch(`/api/admin/quotations/${id}`, {
+    const res = await fetch(`/api/quotations/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
@@ -121,7 +121,7 @@ export default function QuotationsList() {
   const handleConvertToOrder = async (id: string) => {
     setConvertingId(id);
     try {
-      const response = await fetch(`/api/admin/quotations/${id}/convert-to-order`, { method: 'POST' });
+      const response = await fetch(`/api/quotations/${id}/convert-to-order`, { method: 'POST' });
       const data = await response.json();
       if (response.ok) {
         router.push(`/admin/orders/${data.order.id}`);

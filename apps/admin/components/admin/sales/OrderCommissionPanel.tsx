@@ -54,7 +54,7 @@ export default function OrderCommissionPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(`/api/orders/${order.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ salesAgentId, commissionRate: commissionRate === '' ? null : commissionRate }),
@@ -74,7 +74,7 @@ export default function OrderCommissionPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/commission/pay`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${order.id}/commission/pay`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to mark paid');
       onUpdated();

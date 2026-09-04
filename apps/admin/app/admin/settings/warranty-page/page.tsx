@@ -179,7 +179,7 @@ export default function WarrantyPageSettings() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result.url) throw new Error(result.error || 'Failed to upload document');
 
