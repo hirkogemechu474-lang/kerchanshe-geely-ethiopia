@@ -512,7 +512,7 @@ sequenceDiagram
     Auth-->>Cust: Confirmation email (if SMTP_ENABLED)
 ```
 
-Note the fragile correlation: since `Message` has no foreign key to `Quotation`/`SalesOrder`, the payment→order link is resolved by text-matching a "Purchase reference: GEO-..." string embedded in `Quotation.message`.
+Note: The purchase→order linkage is now direct — `POST /api/public/purchases` creates a `SalesOrder` directly with an optional vehicle allocation. There is no fragile string-matching correlation.
 
 ### 7.4 Contact/lead capture flow
 
@@ -560,12 +560,19 @@ Both apps run business logic **independently against the shared tables** rather 
 - Migrating `next lint` to the ESLint CLI directly (`eslint.ignoreDuringBuilds` currently `true`)
 
 **Structural drift still present:**
-- `web`'s auth type definitions have fallen behind `admin`'s (missing workshop-specific roles/permissions) — a live divergence between two hand-duplicated files with no shared package.
-- `web` runs two parallel auth systems (custom JWT + a NextAuth instance) simultaneously; the NextAuth one appears unused by the actual login flow.
 - `web/app/api/dealers/route.ts` is dead/broken legacy code: it references field names (`isActive`, `hours`) that don't exist on the `Dealer` model and double-`JSON.parse`s columns that are already `Json`-typed — unreferenced by any frontend code (superseded by `/api/public/dealers`), deliberately left as-is rather than silently "fixed" since nothing calls it.
-- `Vehicle.stock` is only decremented by the sales pipeline when an order explicitly uses the `VehicleAllocation` flow (§5.5) — an order booked without an allocation still doesn't touch stock.
-- The purchase↔order correlation relies on string matching inside a text field (`Quotation.message`) rather than a foreign key, which is fragile.
 - The admin vehicle-allocation route authenticates via the page-level `requirePermission()` helper instead of the API-level `requireAdminApiSession()` every other `/api/admin/*` route uses (§7.2) — functionally fine today (server-rendered browser callers only) but inconsistent with the rest of the API surface.
+- Payment gateway is still mocked — no real integration (Chapa/Telebirr named as candidates).
+- In-app notifications (bell icon, unread count) are not implemented — email-only.
+
+**Resolved since original analysis:**
+- Auth types consolidated into shared `@geely/types` package (single source of truth for 17 roles, 63 permissions).
+- Vehicle stock auto-decremented on order creation (quotation conversion and direct purchase).
+- Manager emails are now dynamically resolved from the database (users with `sales_manager`/`admin`/`general_manager` roles) instead of hardcoded.
+- All 13-step workflow email notifications are now implemented and functional.
+- Assignment rules admin settings are wired to the backend scoring engine.
+- Working hours are enforced in the auto-assignment scoring.
+- Audit tables (`NotificationHistory`, `QuotationAssignmentHistory`, `QuotationEscalationHistory`) are now populated.
 
 ---
 
@@ -573,13 +580,13 @@ Both apps run business logic **independently against the shared tables** rather 
 
 | Concern | File(s) |
 |---|---|
-| Sales order state machine (status + financing) | `admin/lib/services/sales/orderStateMachine.ts` |
+| Sales order state machine (status + financing) | `admin/lib/services/sales/orderStateMachine.ts` (admin UI copy), `backend/src/services/sales/order.service.ts` (backend `orderStateMachine`) |
 | Sales order actions (agreement, invoice, PDI, status, financing, commission, payment) | `admin/lib/services/sales/order{Agreement,Detail,List,Invoice,Ops}Service.ts` |
 | Vehicle allocation | `admin/repositories/vehicleAllocationRepository.ts`, `admin/lib/services/sales/vehicleAllocationService.ts` |
 | Job card state machine | `admin/lib/services/workshop/jobCardStateMachine.ts` |
-| Admin auth config | `admin/lib/auth/config.ts`, `admin/lib/auth/types.ts`, `admin/lib/auth/rolePermissions.ts`, `admin/lib/auth/api.ts`, `admin/lib/auth/middleware.ts` |
-| Web auth (custom JWT) | `web/app/api/auth/login/route.ts`, `web/app/api/auth/register/route.ts`, `web/app/api/auth/me/route.ts` |
-| Web auth (NextAuth, parallel) | `web/app/api/auth/[...nextauth]/route.ts`, `web/lib/auth/config.ts` |
+| Auth types (single source of truth) | `packages/types/src/auth.ts` (shared), `backend/src/types/auth.types.ts` (backend-specific) |
+| Admin auth config | `admin/lib/auth/config.ts`, `admin/lib/auth/permissionGroups.ts`, `admin/lib/auth/roleDescriptions.ts`, `admin/lib/auth/middleware.ts` |
+| Web auth (custom JWT) | `web/lib/auth/middleware.ts` (getServerSession, requireCustomer) |
 | Prisma schema (source of truth) | `admin/prisma/schema.prisma` |
 | Prisma schema (mirror) | `web/prisma/schema.prisma` |
 | Schema sync script | `scripts/sync-web-prisma-schema.mjs` |

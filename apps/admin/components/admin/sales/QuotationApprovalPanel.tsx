@@ -129,12 +129,12 @@ export default function QuotationApprovalPanel({
       {quotation.managerApprovalStatus === 'PENDING' && (
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Approving this quotation records your manager signature and immediately updates the quotation form.
+            Approving this quotation records your approval and allows the sales agent to send it to the customer.
           </p>
           {!showRejectForm ? (
             <div className="flex gap-3">
               <Button onClick={approve} disabled={busy}>
-                {busy ? 'Approving…' : 'Approve & Sign'}
+                {busy ? 'Approving…' : 'Approve'}
               </Button>
               <Button variant="secondary" onClick={() => setShowRejectForm(true)} disabled={busy}>
                 Reject / Return for Correction

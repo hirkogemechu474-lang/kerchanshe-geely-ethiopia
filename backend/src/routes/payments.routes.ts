@@ -4,15 +4,18 @@ import { requireAdminApiSession } from '../middleware/auth';
 
 const router = Router();
 
-// NOTE: these routes used a `Payment` model that doesn't exist anywhere in
-// schema.prisma. There's no separate payment ledger table — a payment is
-// tracked directly on its `SalesOrder` (paymentStatus/paymentProofUrl/
-// paymentSubmittedAt/paymentConfirmedAt/paymentConfirmedById, per that
-// model's own doc comment) — same convention already used in
-// public.routes.ts and legacyPayment.service.ts. There's no `amount`/
-// `method`/`transactionId` column to persist those request fields against.
+// DEPRECATED: These legacy routes duplicate functionality now available through:
+// - POST /api/public/orders/:orderId/payment/mock-pay (public mock payment)
+// - POST /api/public/orders/:orderId/payment/proof (bank transfer proof)
+// - POST /api/orders/:id/payment/confirm (admin confirm/reject)
+//
+// Kept for backward compatibility with:
+// - apps/web/app/financing/apply/page.tsx (POST /initiate)
+// - apps/web/app/payment/mock/[paymentId]/page.tsx (GET /:paymentId, POST /:paymentId/authorize)
+//
+// New code should use the public or orders payment routes instead.
 
-// POST /api/payments/initiate (initiate payment)
+// POST /api/payments/initiate (initiate payment — used by financing flow)
 router.post('/initiate', async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;

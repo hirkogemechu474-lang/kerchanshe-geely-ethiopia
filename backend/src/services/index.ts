@@ -16,7 +16,6 @@ export { convertQuotationToOrderService } from './sales/convertQuotationToOrder.
 export { vehicleAllocationService } from './sales/vehicleAllocation.service';
 export { assignSalesRep } from './sales/assignSalesRep';
 export { generateOrderNumber, parseOrderNumber, formatOrderNumber } from './sales/orderNumber';
-export { orderStateMachineService } from './sales/orderStateMachine';
 export { getPdiChecklist, getPdiCategories, PDI_CHECKLIST_TEMPLATE } from './sales/pdiChecklist.template';
 
 export { jobCardService } from './workshop/jobCard.service';
@@ -96,6 +95,7 @@ export {
   sendJobCardStatusEmail,
   sendTestDriveConfirmationEmail,
   sendServiceBookingConfirmationEmail,
+  sendQuotationConfirmationEmail,
 } from './email/statusEmail';
 export { dispatchNotification } from './email/notifications.dispatch';
 export {

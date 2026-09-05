@@ -1,10 +1,12 @@
-import { sendEmail } from './smtp';
+import { sendEmail, type EmailAttachment } from './smtp';
+import { prisma } from '../../config/database';
 
 export interface NotificationPayload {
   type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'complaint_created' | 'upgrade_opportunity' | 'sla_breach';
   to: string[];
   subject: string;
   data: Record<string, any>;
+  attachments?: EmailAttachment[];
 }
 
 export async function dispatchNotification(payload: NotificationPayload): Promise<{ ok: boolean; error?: string }> {
@@ -14,7 +16,28 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
       to: payload.to,
       subject: payload.subject,
       html,
+      attachments: payload.attachments,
     });
+
+    // Write to audit table for each recipient
+    if (result.ok) {
+      for (const email of payload.to) {
+        try {
+          await prisma.notificationHistory.create({
+            data: {
+              recipientEmail: email,
+              notificationType: payload.type,
+              subject: payload.subject,
+              data: payload.data,
+              sentStatus: 'sent',
+            },
+          });
+        } catch {
+          // Audit write failure should not block the flow
+        }
+      }
+    }
+
     return result;
   } catch (error: any) {
     console.error('[NOTIFICATION DISPATCH ERROR]', error.message);

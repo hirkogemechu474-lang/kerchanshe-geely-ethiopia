@@ -7,7 +7,9 @@ import { orderHandoverService } from '../services/sales/orderHandover.service';
 import { orderInvoiceService } from '../services/sales/orderInvoice.service';
 import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
-import { vehicleAllocationRepository, vehicleRepository } from '../repositories';
+import { generateSalesAgreementPdf } from '../services/pdf/salesAgreement.pdf';
+import { getCompanyInfo } from '../services/pdf/companyInfo';
+import { vehicleAllocationRepository, vehicleRepository, userRepository } from '../repositories';
 import { signLinkToken } from '../utils/secureLink';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { env } from '../config/env';
@@ -136,6 +138,12 @@ router.patch('/:id/status', requireAdminApiSession, async (req: Request, res: Re
 // POST /api/orders/:id/approve (sales agent approval)
 router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    const existing = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (existing.salesAgentId && req.adminSession!.user.role === 'sales' && existing.salesAgentId !== req.adminSession!.user.id) {
+      res.status(403).json({ error: 'Only the assigned sales agent can approve this order.' });
+      return;
+    }
     const order = await prisma.salesOrder.update({
       where: { id: req.params.id },
       data: { approvedAt: new Date(), approvedById: req.adminSession!.user.id },
@@ -241,6 +249,10 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
   try {
     const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
     if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!order.signedAt || !order.signedDocumentUrl) {
+      res.status(400).json({ error: 'The customer must sign the agreement before manager countersignature.' });
+      return;
+    }
 
     const updated = await prisma.salesOrder.update({
       where: { id: req.params.id },
@@ -272,17 +284,34 @@ router.post('/:id/send-agreement', requireAdminApiSession, async (req: Request, 
   try {
     const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
     if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!order.approvedAt) {
+      res.status(400).json({ error: 'The sales agent must approve the order before the agreement can be sent.' });
+      return;
+    }
 
     const updated = await prisma.salesOrder.update({ where: { id: req.params.id }, data: { agreementSentAt: new Date() } });
 
     let notificationSent = false;
     if (order.customerEmail) {
       const link = `${env.urls.site}${orderAgreementService.generateAgreementLink(order.id)}`;
+
+      // Generate agreement PDF attachment
+      let attachments;
+      try {
+        const pdfResult = await orderAgreementService.generateAgreementPdfForStaff(order.id);
+        if (pdfResult.ok && pdfResult.data) {
+          attachments = [{ filename: `agreement-${order.orderNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+        }
+      } catch (_) {
+        // PDF generation failure should not block the email
+      }
+
       const result = await dispatchNotification({
         type: 'order_status',
         to: [order.customerEmail],
         subject: `Sales Agreement Ready to Sign — ${order.orderNo}`,
         data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
+        attachments,
       });
       notificationSent = result.ok;
     }

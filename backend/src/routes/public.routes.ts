@@ -8,6 +8,20 @@ import { convertQuotationToOrderService } from '../services/sales/convertQuotati
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
+
+let cachedManagerEmails: string[] | null = null;
+let managerEmailsCachedAt = 0;
+const MANAGER_EMAIL_CACHE_TTL = 5 * 60 * 1000;
+
+async function getManagerEmails(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedManagerEmails && now - managerEmailsCachedAt < MANAGER_EMAIL_CACHE_TTL) {
+    return cachedManagerEmails;
+  }
+  cachedManagerEmails = await userRepository.findManagerEmails();
+  managerEmailsCachedAt = now;
+  return cachedManagerEmails;
+}
 import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { chatbotService } from '../services/chatbot/chatbot.service';
 
@@ -551,7 +565,7 @@ router.get('/quotations/:reference', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
+router.post('/quotations/:reference/sign', rateLimiters.quotationSign, async (req: Request, res: Response) => {
   try {
     const signatureData = req.body?.signatureDataUrl || req.body?.photoUrl;
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
@@ -573,7 +587,8 @@ router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req:
 
     const order = conversion.data;
     const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
-    const recipients = [assignedAgent?.email, 'manager@geelyethiopia.com'].filter((email): email is string => Boolean(email));
+    const managerEmails = await getManagerEmails();
+    const recipients = [assignedAgent?.email, ...managerEmails].filter((email): email is string => Boolean(email));
     if (recipients.length > 0) {
       await dispatchNotification({
         type: 'order_status',

@@ -1,6 +1,49 @@
 import { sendEmail } from './smtp';
 import { env } from '../../config/env';
 
+export async function sendQuotationConfirmationEmail(params: {
+  to: string;
+  customerName: string;
+  reference: string;
+  vehicleModel?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #000; padding: 30px; text-align: center;">
+        <h1 style="color: #fff; margin: 0; font-size: 24px;">GEELY</h1>
+      </div>
+      <div style="padding: 30px;">
+        <h2 style="color: #1a1a2e; margin-top: 0;">Quotation Request Received</h2>
+        <p>Dear ${params.customerName},</p>
+        <p>Thank you for your interest in Geely! We have received your quotation request and our team is already working on it.</p>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 25px 0;">
+          <p style="margin: 0 0 8px;"><strong>Reference Number:</strong> ${params.reference}</p>
+          ${params.vehicleModel ? `<p style="margin: 0 0 8px;"><strong>Vehicle:</strong> ${params.vehicleModel}</p>` : ''}
+          <p style="margin: 0;"><strong>Status:</strong> Under Review</p>
+        </div>
+
+        <div style="background: #e8f4fd; border-left: 4px solid #194BFF; padding: 20px; border-radius: 0 8px 8px 0; margin: 25px 0;">
+          <p style="margin: 0 0 8px; font-weight: bold; color: #1a1a2e; font-size: 16px;">What Happens Next?</p>
+          <p style="margin: 0 0 10px; color: #333;">A dedicated sales consultant will be assigned to your request. They will contact you shortly to discuss your requirements and prepare a personalized quotation.</p>
+          <p style="margin: 0; color: #333;">Please keep your reference number (<strong>${params.reference}</strong>) handy for any future inquiries.</p>
+        </div>
+
+        <p style="color: #666;">If you have any questions, please don't hesitate to contact us.</p>
+
+        <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+        <p style="color: #999; font-size: 12px; margin: 0;">Best regards,<br/>${env.smtp.fromName}</p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({
+    to: params.to,
+    subject: `Quotation Request Received — ${params.reference}`,
+    html,
+  });
+}
+
 export async function sendOrderStatusEmail(params: {
   to: string;
   customerName: string;

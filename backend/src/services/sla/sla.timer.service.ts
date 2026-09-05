@@ -1,26 +1,36 @@
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { userRepository } from '../../repositories';
 
 export interface SLADefinition {
   stage: string;
   maxMinutes: number;
   escalateAfterMinutes?: number;
   notifyEmails?: string[];
+  /** If true, resolve notifyEmails dynamically from manager users instead of using static list */
+  useManagerRole?: boolean;
 }
 
 export const slaDefinitions: SLADefinition[] = [
-  { stage: 'LEAD_RESPONSE', maxMinutes: 60, escalateAfterMinutes: 45, notifyEmails: ['manager@geelyethiopia.com'] },
-  { stage: 'QUOTATION_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, notifyEmails: ['manager@geelyethiopia.com'] },
+  { stage: 'LEAD_RESPONSE', maxMinutes: 60, escalateAfterMinutes: 45, useManagerRole: true },
+  { stage: 'QUOTATION_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, useManagerRole: true },
   { stage: 'QUOTATION_SENT', maxMinutes: 1440, escalateAfterMinutes: 1200 }, // 24h / 20h
   { stage: 'PAYMENT_CONFIRMATION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['finance@geelyethiopia.com'] },
-  { stage: 'DISCOUNT_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, notifyEmails: ['manager@geelyethiopia.com'] },
-  { stage: 'AGREEMENT_REVIEW', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['manager@geelyethiopia.com'] },
+  { stage: 'DISCOUNT_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, useManagerRole: true },
+  { stage: 'AGREEMENT_REVIEW', maxMinutes: 480, escalateAfterMinutes: 360, useManagerRole: true },
   { stage: 'PDI_COMPLETION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['workshop@geelyethiopia.com'] },
   { stage: 'REGISTRATION', maxMinutes: 1440, escalateAfterMinutes: 1200 },
   { stage: 'INVOICE_GENERATION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['finance@geelyethiopia.com'] },
   { stage: 'DELIVERY_SCHEDULING', maxMinutes: 480, escalateAfterMinutes: 360 },
   { stage: 'FOLLOW_UP', maxMinutes: 10080, escalateAfterMinutes: 7200 }, // 7 days / 5 days
 ];
+
+async function resolveNotifyEmails(definition: SLADefinition): Promise<string[]> {
+  if (definition.useManagerRole) {
+    return userRepository.findManagerEmails();
+  }
+  return definition.notifyEmails || [];
+}
 
 export const slaTimerService = {
   /**
@@ -119,20 +129,23 @@ export const slaTimerService = {
 
         // Send escalation notification
         const definition = slaDefinitions.find(d => d.stage === timer.stage);
-        if (definition?.notifyEmails && definition.notifyEmails.length > 0) {
-          await dispatchNotification({
-            type: 'sla_breach',
-            to: definition.notifyEmails,
-            subject: `SLA Breached: ${timer.stage} on ${timer.entityType} ${timer.entityId}`,
-            data: {
-              entityType: timer.entityType,
-              entityId: timer.entityId,
-              stage: timer.stage,
-              deadline: timer.deadline,
-              assignedTo: timer.assignedTo,
-            },
-          });
-          escalatedCount++;
+        if (definition) {
+          const notifyEmails = await resolveNotifyEmails(definition);
+          if (notifyEmails.length > 0) {
+            await dispatchNotification({
+              type: 'sla_breach',
+              to: notifyEmails,
+              subject: `SLA Breached: ${timer.stage} on ${timer.entityType} ${timer.entityId}`,
+              data: {
+                entityType: timer.entityType,
+                entityId: timer.entityId,
+                stage: timer.stage,
+                deadline: timer.deadline,
+                assignedTo: timer.assignedTo,
+              },
+            });
+            escalatedCount++;
+          }
         }
       }
 

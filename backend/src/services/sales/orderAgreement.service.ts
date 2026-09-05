@@ -2,6 +2,8 @@ import { salesOrderRepository, vehicleAllocationRepository, userRepository } fro
 import { signLinkToken, verifyLinkToken } from '../../utils/secureLink';
 import { generateSalesAgreementPdf, SalesAgreementPdfData } from '../pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
+import { dispatchNotification } from '../email/notifications.dispatch';
+import { env } from '../../config/env';
 
 async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
@@ -9,6 +11,7 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     vehicleAllocationRepository.findByOrderId(order.id),
     order.approvedById ? userRepository.findById(order.approvedById) : Promise.resolve(null),
   ]);
+  const managerSigner = order.countersignedById ? await userRepository.findByIdSlim(order.countersignedById) : null;
 
   return {
     orderNo: order.orderNo,
@@ -42,6 +45,9 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     otherPaymentDueDate: order.otherPaymentDueDate,
     estimatedDeliveryDate: order.estimatedDeliveryDate,
     deliveryLocation: order.deliveryLocation,
+    customerSignatureUrl: order.signedDocumentUrl,
+    managerSignatureUrl: managerSigner?.signatureUrl,
+    countersignedByName: managerSigner?.name || sellerSigner?.name,
   };
 }
 
@@ -50,6 +56,10 @@ export const orderAgreementService = {
     try {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
+
+      if (!order.approvedAt || !order.agreementSentAt) {
+        return { ok: false, error: 'This agreement is not ready for customer review yet.' };
+      }
 
       if (!verifyLinkToken(token, 'agreement', orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };
@@ -82,6 +92,10 @@ export const orderAgreementService = {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
 
+      if (!order.approvedAt || !order.agreementSentAt) {
+        return { ok: false, error: 'This agreement is not ready for customer signing yet.' };
+      }
+
       if (!verifyLinkToken(token, 'agreement', orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };
       }
@@ -90,6 +104,24 @@ export const orderAgreementService = {
         signedDocumentUrl,
         signedAt: new Date(),
       });
+
+      const assignedAgent = order.salesAgentId ? await userRepository.findById(order.salesAgentId) : null;
+      const managerEmails = await userRepository.findManagerEmails();
+      const recipients = [assignedAgent?.email, ...managerEmails].filter((email): email is string => Boolean(email));
+      if (recipients.length > 0) {
+        await dispatchNotification({
+          type: 'order_status',
+          to: recipients,
+          subject: `Customer Signed Agreement — ${order.orderNo}`,
+          data: {
+            orderNo: order.orderNo,
+            customerName: order.customerName,
+            vehicleModel: order.vehicleModel,
+            nextStep: 'Manager review and countersignature is required before payment.',
+            adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
+          },
+        });
+      }
 
       return { ok: true, data: updated };
     } catch (error: any) {
@@ -107,6 +139,10 @@ export const orderAgreementService = {
     try {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
+
+      if (!order.approvedAt || !order.agreementSentAt) {
+        return { ok: false, error: 'This agreement is not ready for customer review yet.' };
+      }
 
       if (!verifyLinkToken(token, 'agreement', orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };

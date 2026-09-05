@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { sendQuotationConfirmationEmail } from '../services/email/statusEmail';
 import { assignSalesRep } from '../services/sales/assignSalesRep';
 import { quotationService } from '../services/sales/quotation.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
@@ -12,6 +13,20 @@ import { userRepository } from '../repositories';
 import { env } from '../config/env';
 
 const router = Router();
+
+let cachedManagerEmails: string[] | null = null;
+let managerEmailsCachedAt = 0;
+const MANAGER_EMAIL_CACHE_TTL = 5 * 60 * 1000;
+
+async function getManagerEmails(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedManagerEmails && now - managerEmailsCachedAt < MANAGER_EMAIL_CACHE_TTL) {
+    return cachedManagerEmails;
+  }
+  cachedManagerEmails = await userRepository.findManagerEmails();
+  managerEmailsCachedAt = now;
+  return cachedManagerEmails;
+}
 
 // GET /api/quotations (admin list)
 router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
@@ -160,6 +175,13 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
     let notificationSent = false;
     if (quotation.email) {
       const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
+
+      // Generate PDF attachment
+      const pdfResult = await quotationPdfService.generatePdf(quotation.id);
+      const attachments = pdfResult.ok && pdfResult.data
+        ? [{ filename: `quotation-${quotation.reference || quotation.id}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }]
+        : undefined;
+
       const result = await dispatchNotification({
         type: 'quotation',
         to: [quotation.email],
@@ -171,6 +193,7 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
           vehicleModel: quotation.vehicleModel,
           ...(link && { link }),
         },
+        attachments,
       });
       notificationSent = result.ok;
     }
@@ -200,6 +223,26 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
         managerRejectionReason: reason,
       },
     });
+
+    // Step 4: Notify the assigned sales agent that the quotation was rejected
+    const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
+    if (assignedAgent?.email) {
+      await dispatchNotification({
+        type: 'lead_assignment',
+        to: [assignedAgent.email],
+        subject: `Quotation Returned for Correction${quotation.reference ? ` (${quotation.reference})` : ''}`,
+        data: {
+          quotationId: quotation.id,
+          quotationNo: quotation.reference,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          reason,
+          nextStep: 'Please review the feedback, correct the quotation, and resubmit for approval.',
+          adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+        },
+      });
+    }
+
     res.json(quotation);
   } catch (error) {
     console.error('Reject quotation error:', error);
@@ -207,13 +250,22 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
   }
 });
 
-// GET /api/quotations/:id/quotation-pdf (view PDF) — Quotation has no stored
-// pdfUrl; the PDF is generated on demand (see quotationPdf.service.ts). The
-// closest thing to a persisted document link is signedDocumentUrl once the
-// customer has actually signed (same convention as public.routes.ts's
-// GET /quotations/:reference/pdf).
+// GET /api/quotations/:id/quotation-pdf (view PDF) — serves the stored PDF
+// if available, otherwise generates on-demand.
 router.get('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    // Check if a stored PDF exists
+    const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id }, select: { pdfUrl: true } });
+    if (quotation?.pdfUrl) {
+      const result = await quotationPdfService.generatePdf(req.params.id);
+      if (result.ok && result.data) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="quotation-${req.params.id}.pdf"`);
+        res.send(result.data);
+        return;
+      }
+    }
+
     const result = await quotationPdfService.generatePdf(req.params.id);
     if (!result.ok || !result.data) {
       res.status(404).json({ error: result.error || 'Quotation not found or not generated yet.' });
@@ -254,6 +306,9 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
     const parsedDepositAmount = depositAmount != null && depositAmount !== '' ? Number(depositAmount) : null;
     // VAT is calculated automatically at 15% of the vehicle price minus discount (per QuotationPdfPanel.tsx).
     const vatAmount = Math.max(0, parsedUnitPrice * parsedQuantity - parsedDiscount) * 0.15;
+    const assignedAgent = quotation.assignedTo
+      ? await userRepository.findById(quotation.assignedTo)
+      : null;
 
     const updated = await prisma.quotation.update({
       where: { id: req.params.id },
@@ -268,7 +323,7 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
         deliveryTerms: deliveryTerms || null,
         quotationValidUntil: quotationValidUntil ? new Date(quotationValidUntil) : null,
         salesType: salesType || null,
-        salesExecutiveName: salesExecutiveName || null,
+        salesExecutiveName: assignedAgent?.name || null,
         customerTin: customerTin || null,
         customerAddress: customerAddress || null,
         vehicleVariant: vehicleVariant || null,
@@ -293,7 +348,28 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
       },
     });
 
-    res.json({ quotation: updated, pdfUrl: null });
+    // Step 3: Notify manager that a quotation is ready for review/approval
+    const managerEmails = await getManagerEmails();
+    await dispatchNotification({
+      type: 'lead_assignment',
+      to: managerEmails,
+      subject: `Quotation Pricing Submitted — Review Required${quotation.reference ? ` (${quotation.reference})` : ''}`,
+      data: {
+        quotationId: quotation.id,
+        quotationNo: updated.quotationNo || quotation.reference,
+        customerName: quotation.customerName,
+        vehicleModel: quotation.vehicleModel,
+        totalPrice: `${parsedUnitPrice} × ${parsedQuantity} - ${parsedDiscount} + ${vatAmount}`,
+        salesAgent: assignedAgent?.name || 'Unassigned',
+        nextStep: 'Review the pricing and approve or reject the quotation.',
+        adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+      },
+    });
+
+    // Generate PDF and persist it for consistent viewing/signing
+    const pdfResult = await quotationPdfService.generatePdf(updated.id);
+
+    res.json({ quotation: updated, pdfUrl: pdfResult.ok ? `/api/quotations/${updated.id}/quotation-pdf` : null });
   } catch (error) {
     console.error('Generate quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -316,7 +392,29 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
         escalationReason: req.body.reason,
       },
     });
-    // TODO: Send email notification to new assignee and manager
+
+    // Send email notification to the new assignee and manager
+    if (quotation.assignedTo) {
+      const assignedUser = await userRepository.findById(quotation.assignedTo);
+      if (assignedUser?.email) {
+        const managerEmails = await getManagerEmails();
+        await dispatchNotification({
+          type: 'lead_assignment',
+          to: [assignedUser.email, ...managerEmails],
+          subject: `Quotation Escalated — Reassigned to You${quotation.reference ? ` (${quotation.reference})` : ''}`,
+          data: {
+            quotationId: quotation.id,
+            quotationNo: quotation.reference,
+            customerName: quotation.customerName,
+            vehicleModel: quotation.vehicleModel,
+            reason: req.body.reason || 'Escalated by manager',
+            nextStep: 'Please contact the customer as soon as possible.',
+            adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+          },
+        });
+      }
+    }
+
     res.json(quotation);
   } catch (error) {
     console.error('Escalate quotation error:', error);
@@ -371,6 +469,25 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
           managerApprovedAt: new Date(),
         },
       });
+
+      // Notify the assigned sales agent that the discount was approved
+      const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
+      if (assignedAgent?.email) {
+        await dispatchNotification({
+          type: 'lead_assignment',
+          to: [assignedAgent.email],
+          subject: `Discount Approved — Quotation Ready to Send${quotation.reference ? ` (${quotation.reference})` : ''}`,
+          data: {
+            quotationId: quotation.id,
+            quotationNo: quotation.reference,
+            customerName: quotation.customerName,
+            vehicleModel: quotation.vehicleModel,
+            nextStep: 'The discount has been approved. Please review the quotation and send it to the customer.',
+            adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+          },
+        });
+      }
+
       res.json({ quotation: updated, discountApproved: true });
       return;
     }
@@ -384,6 +501,22 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
         managerApprovedAt: new Date(),
       },
     });
+    const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
+    if (assignedAgent?.email) {
+      await dispatchNotification({
+        type: 'lead_assignment',
+        to: [assignedAgent.email],
+        subject: `Quotation Approved — Ready to Send${quotation.reference ? ` (${quotation.reference})` : ''}`,
+        data: {
+          quotationId: quotation.id,
+          quotationNo: quotation.reference,
+          customerName: quotation.customerName,
+          vehicleModel: quotation.vehicleModel,
+          nextStep: 'Review the approved quotation and send it to the customer.',
+          adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+        },
+      });
+    }
     res.json({ quotation: updated });
   } catch (error) {
     console.error('Approve quotation error:', error);
@@ -394,49 +527,46 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
 // POST /api/quotations/submit (public - submit lead quotation)
 router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { autoAssign, assignmentFactors, configuration, visitId, ...body } = req.body;
-    if (configuration !== undefined) body.configurationJson = configuration;
-    if (!body.reference) body.reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
-    const quotation = await prisma.quotation.create({ data: body });
-
-    // Auto-assign sales representative if requested
-    let assignedRep = null;
-    if (autoAssign) {
-      const assignResult = await assignSalesRep({
-        targetType: 'quotation',
-        targetId: quotation.id,
-        autoAssign: true,
-        factors: assignmentFactors,
-      });
-      if (assignResult.ok && assignResult.data) {
-        assignedRep = assignResult.data;
-        // Update the quotation with the assigned rep
-        await prisma.quotation.update({
-          where: { id: quotation.id },
-          data: { assignedTo: assignResult.data.userId },
-        });
-      }
+    const { configuration, visitId: _visitId, ...body } = req.body;
+    const result = await quotationService.create({
+      customerName: body.customerName,
+      phoneNumber: body.phoneNumber,
+      email: body.email,
+      nationalId: body.nationalId,
+      idDocumentType: body.idDocumentType,
+      idPhotoUrl: body.idPhotoUrl,
+      customerAddress: body.customerAddress,
+      vehicleModel: body.vehicleModel,
+      message: body.message,
+      financingInterest: body.financingInterest,
+      tradeInInterest: body.tradeInInterest,
+      source: body.source,
+      configurationJson: configuration,
+      autoAssign: true,
+    });
+    if (!result.ok || !result.data) {
+      res.status(400).json({ error: result.error || 'Failed to save quotation' });
+      return;
     }
 
-    let notificationSent = false;
-    if (quotation.email) {
-      const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
-      const result = await dispatchNotification({
-        type: 'quotation',
-        to: [quotation.email],
-        subject: `Your Quotation${quotation.reference ? ` (${quotation.reference})` : ''}`,
-        data: {
-          quotationId: quotation.id,
-          quotationNo: quotation.reference,
-          customerName: quotation.customerName,
-          vehicleModel: quotation.vehicleModel,
-          ...(link && { link }),
-        },
+    // Step 1: Send confirmation email to the customer
+    let confirmationEmailSent = false;
+    if (body.email) {
+      const emailResult = await sendQuotationConfirmationEmail({
+        to: body.email,
+        customerName: body.customerName,
+        reference: result.data.reference,
+        vehicleModel: body.vehicleModel,
       });
-      notificationSent = result.ok;
+      confirmationEmailSent = emailResult.ok;
     }
 
-    res.status(201).json({ success: true, reference: quotation.reference, assignedRep, notificationSent });
+    res.status(201).json({
+      success: true,
+      reference: result.data.reference,
+      salesAgentNotified: Boolean(result.assignedRep),
+      confirmationEmailSent,
+    });
   } catch (error) {
     console.error('Submit quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -466,9 +596,10 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
     // Send email notification to the assigned rep and manager
     const assignedRep = await userRepository.findById(result.data!.userId);
     if (assignedRep?.email) {
+      const managerEmails = await getManagerEmails();
       await dispatchNotification({
         type: 'lead_assignment',
-        to: [assignedRep.email, 'manager@geelyethiopia.com'],
+        to: [assignedRep.email, ...managerEmails],
         subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
         data: {
           quotationId: quotation.id,

@@ -129,4 +129,13 @@ export const userRepository = {
       orderBy: { createdAt: 'desc' },
     });
   },
+
+  async findManagerEmails(): Promise<string[]> {
+    const managers = await prisma.user.findMany({
+      where: { isActive: true, role: { in: ['sales_manager', 'admin', 'general_manager'] } },
+      select: { email: true },
+    });
+    const emails = managers.map((m) => m.email).filter((e): e is string => Boolean(e));
+    return emails.length > 0 ? emails : ['manager@geelyethiopia.com'];
+  },
 };

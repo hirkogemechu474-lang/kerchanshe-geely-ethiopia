@@ -24,16 +24,26 @@ export function getTransporter(): nodemailer.Transporter {
   return transporter;
 }
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer | string;
+  contentType?: string;
+}
+
 export async function sendEmail(options: {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!env.smtp.enabled) {
       console.log('[SMTP DISABLED] Email would have been sent:', options.subject);
+      if (options.attachments) {
+        console.log('[SMTP DISABLED] Would have attached:', options.attachments.map(a => a.filename).join(', '));
+      }
       return { ok: true };
     }
 
@@ -45,6 +55,7 @@ export async function sendEmail(options: {
       html: options.html,
       text: options.text,
       replyTo: options.replyTo,
+      attachments: options.attachments,
     });
 
     return { ok: true };

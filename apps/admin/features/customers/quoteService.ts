@@ -14,10 +14,6 @@ export const quoteService = {
     const { data } = await apiClient.patch(`/admin/quotations/${id}/status`, { status });
     return data;
   },
-  sendQuote: async (id: string, quoteData: any) => {
-    const { data } = await apiClient.post(`/admin/quotations/${id}/send`, quoteData);
-    return data;
-  },
   delete: async (id: string) => {
     await apiClient.delete(`/admin/quotations/${id}`);
   },

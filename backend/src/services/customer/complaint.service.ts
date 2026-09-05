@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { auditService } from '../audit/audit.service';
+import { userRepository } from '../../repositories';
 
 export const complaintService = {
   /**
@@ -55,9 +56,10 @@ export const complaintService = {
 
       // Notify manager if high priority
       if (data.priority === 'HIGH' || data.priority === 'CRITICAL') {
+        const managerEmails = await userRepository.findManagerEmails();
         await dispatchNotification({
           type: 'complaint_created',
-          to: ['manager@geelyethiopia.com'],
+          to: managerEmails,
           subject: `[${data.priority}] New Customer Complaint: ${data.subject}`,
           data: {
             caseNo,

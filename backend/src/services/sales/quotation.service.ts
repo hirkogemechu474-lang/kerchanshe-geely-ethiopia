@@ -5,13 +5,35 @@ import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { checkDiscountAuthorization, type DiscountAuthority } from '../../services/discount/discount.authority';
 
+let cachedManagerEmails: string[] | null = null;
+let managerEmailsCachedAt = 0;
+const MANAGER_EMAIL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getManagerEmails(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedManagerEmails && now - managerEmailsCachedAt < MANAGER_EMAIL_CACHE_TTL) {
+    return cachedManagerEmails;
+  }
+  cachedManagerEmails = await userRepository.findManagerEmails();
+  managerEmailsCachedAt = now;
+  return cachedManagerEmails;
+}
+
 export const quotationService = {
   async create(data: {
     customerName: string;
     phoneNumber: string;
     email?: string;
+    nationalId?: string;
+    idDocumentType?: string;
+    idPhotoUrl?: string;
+    customerAddress?: string;
     vehicleModel?: string;
     message?: string;
+    financingInterest?: boolean;
+    tradeInInterest?: boolean;
+    source?: string;
+    configurationJson?: any;
     assignedTo?: string;
     autoAssign?: boolean;
     assignmentFactors?: AssignmentFactors;
@@ -30,8 +52,16 @@ export const quotationService = {
         customerName: data.customerName,
         phoneNumber: data.phoneNumber,
         email: data.email,
+        nationalId: data.nationalId,
+        idDocumentType: data.idDocumentType,
+        idPhotoUrl: data.idPhotoUrl,
+        customerAddress: data.customerAddress,
         vehicleModel: data.vehicleModel,
         message: data.message,
+        financingInterest: data.financingInterest,
+        tradeInInterest: data.tradeInInterest,
+        source: data.source,
+        configurationJson: data.configurationJson,
         reference,
         status: 'new',
         managerApprovalStatus: 'PENDING',
@@ -81,9 +111,10 @@ export const quotationService = {
       if (assignedRep && assignedRep.userId) {
         const assignedUser = await userRepository.findById(assignedRep.userId);
         if (assignedUser?.email) {
+          const managerEmails = await getManagerEmails();
           await dispatchNotification({
             type: 'lead_assignment',
-            to: [assignedUser.email, 'manager@geelyethiopia.com'],
+            to: [assignedUser.email, ...managerEmails],
             subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
             data: {
               quotationId: quotation.id,
@@ -145,6 +176,41 @@ export const quotationService = {
               escalationReason: `Auto-escalation after ${timeoutMinutes} minutes without a response.`,
             },
           });
+
+          // Send email notification to the new assignee and manager
+          const newAssignee = await userRepository.findById(assignResult.data.userId);
+          if (newAssignee?.email) {
+            const managerEmails = await getManagerEmails();
+            await dispatchNotification({
+              type: 'lead_assignment',
+              to: [newAssignee.email, ...managerEmails],
+              subject: `Quotation Escalated — Reassigned to You${quotation.reference ? ` (${quotation.reference})` : ''}`,
+              data: {
+                quotationId: quotation.id,
+                quotationNo: quotation.reference,
+                customerName: quotation.customerName,
+                vehicleModel: quotation.vehicleModel,
+                reason: `Auto-escalation after ${timeoutMinutes} minutes without a response from the previous assignee.`,
+                nextStep: 'Please contact the customer as soon as possible.',
+                adminLink: `${process.env.ADMIN_URL || 'http://localhost:7500'}/admin/quotations/${quotation.id}`,
+              },
+            });
+          }
+
+          // Write escalation history
+          try {
+            await prisma.quotationEscalationHistory.create({
+              data: {
+                quotationId: quotation.id,
+                escalatedById: 'system',
+                escalationReason: `Auto-escalation after ${timeoutMinutes} minutes without a response.`,
+                previousAssignee: quotation.assignedTo,
+              },
+            });
+          } catch {
+            // Audit write failure should not block the flow
+          }
+
           escalatedCount++;
         }
       }

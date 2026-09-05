@@ -335,6 +335,11 @@ model Quotation {
   balanceDueDate             DateTime?
   deliveryLocation           String?
   expectedHandoverNote       String? // free text, e.g. a date or "2-3 weeks"
+  // Persisted PDF — set once the quotation is generated via POST /:id/quotation-pdf.
+  // Serves two purposes: (1) avoids regenerating on every view/download, and
+  // (2) captures the exact PDF the customer saw at signing time, preventing
+  // post-hoc pricing drift from changing a signed document.
+  pdfUrl                     String?
   // Sales-rep-initiated escalation to a manager (POST .../[id]/escalate) —
   // requires a reason, mirroring the managerRejected*/managerRejectionReason
   // convention above. Only the latest escalation is retained (no history

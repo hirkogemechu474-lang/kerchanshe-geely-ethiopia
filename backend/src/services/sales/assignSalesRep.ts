@@ -1,5 +1,6 @@
 import { userRepository, quotationRepository, salesOrderRepository } from '../../repositories';
 import { prisma } from '../../config/database';
+import { settingRepository } from '../../repositories/setting.repository';
 
 interface AssignmentScore {
   userId: string;
@@ -14,11 +15,41 @@ export interface AssignmentFactors {
   territoryWeight?: number;
 }
 
+interface AssignmentRules {
+  lowestWorkload: boolean;
+  availability: boolean;
+  workingHours: boolean;
+  specialization: boolean;
+  branch: boolean;
+  managersOnly: boolean;
+}
+
 const DEFAULT_FACTORS: AssignmentFactors = {
   workloadWeight: 0.4,
   availabilityWeight: 0.3,
   specializationWeight: 0.3,
 };
+
+async function getAssignmentRules(): Promise<AssignmentRules> {
+  const defaultRules: AssignmentRules = {
+    lowestWorkload: true,
+    availability: false,
+    workingHours: false,
+    specialization: false,
+    branch: true,
+    managersOnly: false,
+  };
+  try {
+    const setting = await settingRepository.findByKey('assignment_rules');
+    if (setting?.value) {
+      const parsed = JSON.parse(setting.value);
+      return { ...defaultRules, ...parsed };
+    }
+  } catch {
+    // fall through to defaults
+  }
+  return defaultRules;
+}
 
 export async function assignSalesRep(params: {
   targetType: 'quotation' | 'order';
@@ -60,6 +91,22 @@ export async function assignSalesRep(params: {
         } else {
           await salesOrderRepository.update(params.targetId, { salesAgentId: resolvedRepId });
         }
+
+        // Write assignment history
+        try {
+          if (params.targetType === 'quotation') {
+            await prisma.quotationAssignmentHistory.create({
+              data: {
+                quotationId: params.targetId,
+                assignedTo: resolvedRepId,
+                assignedById: 'system',
+                assignmentReason: autoResult.data!.reason || 'auto-assign',
+              },
+            });
+          }
+        } catch {
+          // Audit write failure should not block the flow
+        }
       }
 
       return {
@@ -83,6 +130,20 @@ export async function assignSalesRep(params: {
       const updated = await quotationRepository.update(params.targetId, {
         assignedTo: resolvedRepId,
       });
+
+      // Write assignment history for manual assignment
+      try {
+        await prisma.quotationAssignmentHistory.create({
+          data: {
+            quotationId: params.targetId,
+            assignedTo: resolvedRepId,
+            assignedById: 'admin',
+            assignmentReason: 'manual',
+          },
+        });
+      } catch {
+        // Audit write failure should not block the flow
+      }
 
       return { ok: true, data: updated };
     } else {
@@ -120,17 +181,21 @@ async function autoAssignBestRep(
   factors?: AssignmentFactors
 ): Promise<{ ok: boolean; data?: BestRepResult; error?: string }> {
   try {
+    // Load assignment rules from admin settings
+    const rules = await getAssignmentRules();
+
     const effectiveFactors = {
       workloadWeight: factors?.workloadWeight ?? DEFAULT_FACTORS.workloadWeight ?? 0,
       availabilityWeight: factors?.availabilityWeight ?? DEFAULT_FACTORS.availabilityWeight ?? 0,
       specializationWeight: factors?.specializationWeight ?? DEFAULT_FACTORS.specializationWeight ?? 0,
     };
 
-    // Get all active sales reps — userRepository.findManyActive()'s select is
-    // a plain listing projection that omits the availability/specialization
-    // columns this scoring pass needs, so query directly here instead.
+    // Get all active sales reps — if managersOnly, filter to sales_manager role
     const allReps = await prisma.user.findMany({
-      where: { isActive: true, role: 'sales' },
+      where: {
+        isActive: true,
+        role: rules.managersOnly ? 'sales_manager' : 'sales',
+      },
       select: {
         id: true,
         name: true,
@@ -172,20 +237,33 @@ async function autoAssignBestRep(
       let score = 0;
       let reasons: string[] = [];
 
+      // Filter: if availability rule is on, skip unavailable reps
+      if (rules.availability && rep.isAvailableForLeads === false) continue;
+
+      // Filter: if workingHours rule is on, skip reps outside their hours
+      if (rules.workingHours && rep.leadHoursStart !== null && rep.leadHoursEnd !== null) {
+        const hour = new Date().getHours();
+        if (hour < rep.leadHoursStart || hour > rep.leadHoursEnd) continue;
+      }
+
       // 1. Workload score (0-40%): Fewest active quotations + orders
-      const workloadScore = calculateWorkloadScore(rep.id, targetType, targetId);
-      score += workloadScore * effectiveFactors.workloadWeight;
-      if (workloadScore > 0) reasons.push(`Low workload (${workloadScore.toFixed(1)}/40)`);
+      if (rules.lowestWorkload) {
+        const workloadScore = await calculateWorkloadScore(rep.id, targetId);
+        score += workloadScore * effectiveFactors.workloadWeight;
+        if (workloadScore > 0) reasons.push(`Low workload (${workloadScore.toFixed(1)}/40)`);
+      }
 
       // 2. Availability score (0-30%): isAvailableForLeads and lead hours
-      const availabilityScore = calculateAvailabilityScore(rep);
+      const availabilityScore = calculateAvailabilityScore(rep, rules);
       score += availabilityScore * effectiveFactors.availabilityWeight;
       if (availabilityScore > 0) reasons.push(`Available${rep.leadHoursStart !== null ? ` (${rep.leadHoursStart}-${rep.leadHoursEnd}h)` : ''}`);
 
       // 3. Specialization score (0-30%): Brand match
-      const specializationScore = calculateSpecializationScore(rep, targetBrandId);
-      score += specializationScore * effectiveFactors.specializationWeight;
-      if (specializationScore > 0) reasons.push(`Specialization match`);
+      if (rules.specialization) {
+        const specializationScore = calculateSpecializationScore(rep, targetBrandId);
+        score += specializationScore * effectiveFactors.specializationWeight;
+        if (specializationScore > 0) reasons.push(`Specialization match`);
+      }
 
       if (score > 0) {
         scores.push({
@@ -218,35 +296,42 @@ async function autoAssignBestRep(
   }
 }
 
-function calculateWorkloadScore(repId: string, targetType: string, targetId: string): number {
-  // Base score for having no prior assignments
-  let base = 40;
+async function calculateWorkloadScore(repId: string, targetId: string): Promise<number> {
+  const [openQuotations, openOrders] = await Promise.all([
+    prisma.quotation.count({
+      where: {
+        assignedTo: repId,
+        id: { not: targetId },
+        status: { notIn: ['converted', 'closed'] },
+      },
+    }),
+    prisma.salesOrder.count({
+      where: {
+        salesAgentId: repId,
+        status: { notIn: ['DELIVERED', 'CANCELLED'] },
+      },
+    }),
+  ]);
 
-  if (targetType === 'quotation') {
-    // Count open quotations assigned to this rep
-    // This would need a repository method - for now use estimate
-    return Math.max(0, base - 5); // slight penalty/bonus
-  } else {
-    // Count orders in non-terminal status
-    return Math.max(0, base - 5);
-  }
+  // Forty points is the maximum workload contribution. Each active deal
+  // reduces the score, so the least-loaded available agent wins the tie.
+  return Math.max(0, 40 - (openQuotations + openOrders) * 5);
 }
 
-function calculateAvailabilityScore(rep: any): number {
-  let score = 0;
-  if (rep.isAvailableForLeads !== false) {
-    score = 30; // fully available
-    if (rep.leadHoursStart !== null && rep.leadHoursEnd !== null) {
-      // Within lead hours = full availability
-      const now = new Date();
-      const hour = now.getHours();
-      if (hour >= rep.leadHoursStart && hour <= rep.leadHoursEnd) {
-        // Within restricted hours but available - still count as available
-      }
+function calculateAvailabilityScore(rep: any, rules?: AssignmentRules): number {
+  if (rep.isAvailableForLeads === false) return 0;
+
+  let score = 30; // fully available by default
+
+  // If workingHours rule is enabled, reduce score for reps outside their hours
+  // (already filtered above, but this applies to the weighted scoring)
+  if (rules?.workingHours && rep.leadHoursStart !== null && rep.leadHoursEnd !== null) {
+    const hour = new Date().getHours();
+    if (hour < rep.leadHoursStart || hour > rep.leadHoursEnd) {
+      score = 15; // available but outside preferred hours — half credit
     }
-  } else {
-    score = 0; // not available for leads
   }
+
   return score;
 }
 
