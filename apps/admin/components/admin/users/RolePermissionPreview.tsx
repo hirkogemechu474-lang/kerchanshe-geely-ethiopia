@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ROLE_PERMISSIONS, AdminRole, type AdminPermissions } from '@/lib/auth/types';
-import { PERMISSION_GROUPS } from '@/lib/auth/permissionGroups';
+import { ROLE_PERMISSIONS, AdminRole, type AdminPermissions } from '@geely/types';
+import { PERMISSION_GROUPS } from '@geely/types';
 import { Info } from 'lucide-react';
 
 // Shown next to the role <select> on the user create/edit forms so an admin

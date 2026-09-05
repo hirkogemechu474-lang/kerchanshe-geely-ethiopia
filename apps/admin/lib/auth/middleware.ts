@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
-import type { AdminRole, AdminPermissions } from './types';
+import type { AdminRole, AdminPermissions, AdminSession as SharedAdminSession } from '@geely/types';
 import { serverApiClient } from '@/lib/serverApiClient';
 
 export interface AdminSession {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { AdminPermissions } from '@/lib/auth/types';
+import type { AdminPermissions } from '@geely/types';
 import { Card, Button } from '@/components/admin/ui';
 
 interface JobCardRow {

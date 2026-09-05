@@ -23,9 +23,12 @@
         "name": "next"
       }
     ],
-    "paths": {
+"paths": {
       "@/*": [
         "./*"
+      ],
+      "@geely/types": [
+        "../../packages/types/src"
       ]
     }
   },

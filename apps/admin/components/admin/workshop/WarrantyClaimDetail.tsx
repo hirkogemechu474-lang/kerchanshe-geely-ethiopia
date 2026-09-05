@@ -11,7 +11,7 @@ import {
   WARRANTY_CLAIM_STATUS_COLORS,
   WARRANTY_CLAIM_STATUS_LABELS,
 } from '@/lib/services/workshop/warrantyClaimStateMachine';
-import type { AdminPermissions } from '@/lib/auth/types';
+import type { AdminPermissions } from '@geely/types';
 import { Card, Button } from '@/components/admin/ui';
 
 interface StatusHistoryEntry {

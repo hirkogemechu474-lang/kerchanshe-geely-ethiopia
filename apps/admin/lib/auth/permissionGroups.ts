@@ -1,23 +1,23 @@
-import type { AdminRole } from './types';
+import type { AdminRole } from '@geely/types';
 
-export const PERMISSION_GROUPS: Record<string, { label: string; permissions: string[] }> = {
-  users: { label: 'User Management', permissions: ['canManageUsers'] },
-  vehicles: { label: 'Vehicle Management', permissions: ['canManageVehicles'] },
-  orders: { label: 'Order Management', permissions: ['canManageOrders'] },
-  customers: { label: 'Customer Management', permissions: ['canManageCustomers'] },
-  inventory: { label: 'Inventory Management', permissions: ['canManageInventory'] },
-  workshop: { label: 'Workshop Management', permissions: ['canManageWorkshop'] },
-  finance: { label: 'Finance Management', permissions: ['canManageFinance'] },
-  content: { label: 'Content Management', permissions: ['canManageContent'] },
-  analytics: { label: 'Analytics', permissions: ['canViewAnalytics'] },
-  settings: { label: 'Settings', permissions: ['canManageSettings'] },
-  dealers: { label: 'Dealer Management', permissions: ['canManageDealers'] },
-  testDrives: { label: 'Test Drive Management', permissions: ['canManageTestDrives'] },
-  serviceBookings: { label: 'Service Booking Management', permissions: ['canManageServiceBookings'] },
-  parts: { label: 'Parts Management', permissions: ['canManageParts'] },
-  reviews: { label: 'Review Management', permissions: ['canManageReviews'] },
-  news: { label: 'News Management', permissions: ['canManageNews'] },
-  promotions: { label: 'Promotion Management', permissions: ['canManagePromotions'] },
+export const PERMISSION_GROUPS = {
+  users: { label: 'User Management', permissions: ['canManageUsers', 'canViewUsers', 'canManageRoles'] },
+  vehicles: { label: 'Vehicle Management', permissions: ['canManageVehicles', 'canViewVehicles'] },
+  orders: { label: 'Order Management', permissions: ['canManageOrders', 'canManagePurchases', 'canManageQuotations', 'canViewQuotations', 'canCountersignAgreements', 'canManageShowroomVisits'] },
+  customers: { label: 'Customer Management', permissions: ['canManageCustomers', 'canViewCustomers'] },
+  inventory: { label: 'Inventory Management', permissions: ['canManageInventory', 'canManageWorkshop', 'canManageSpareParts', 'canViewSpareParts'] },
+  workshop: { label: 'Workshop Management', permissions: ['canManageWorkshop', 'canViewJobCards', 'canManageJobCards', 'canManageBays', 'canManageTechnicians', 'canPerformQC', 'canManagePartsIssue', 'canManageWarrantyClaims', 'canApproveWarrantyClaims'] },
+  finance: { label: 'Finance Management', permissions: ['canManageFinance', 'canManagePurchases'] },
+  content: { label: 'Content Management', permissions: ['canManageContent', 'canViewContent', 'canManagePromotions', 'canViewPromotions', 'canModerateReviews', 'canViewReviews', 'canManageNews', 'canViewNews'] },
+  analytics: { label: 'Analytics', permissions: ['canViewAnalytics', 'canExportReports', 'canViewReports'] },
+  settings: { label: 'Settings', permissions: ['canManageSettings', 'canViewSettings', 'canManageSiteNavigation'] },
+  dealers: { label: 'Dealer Management', permissions: ['canManageDealers', 'canViewDealers'] },
+  testDrives: { label: 'Test Drive Management', permissions: ['canManageTestDrives', 'canViewTestDrives'] },
+  serviceBookings: { label: 'Service Booking Management', permissions: ['canManageServiceBookings', 'canViewServiceBookings'] },
+  parts: { label: 'Parts Management', permissions: ['canManageParts', 'canManageSpareParts', 'canViewSpareParts'] },
+  reviews: { label: 'Review Management', permissions: ['canManageReviews', 'canViewReviews'] },
+  news: { label: 'News Management', permissions: ['canManageNews', 'canViewNews'] },
+  promotions: { label: 'Promotion Management', permissions: ['canManagePromotions', 'canViewPromotions'] },
 };
 
 export function roleLabel(role: string): string {
@@ -27,7 +27,17 @@ export function roleLabel(role: string): string {
     manager: 'Manager',
     sales: 'Sales',
     service: 'Service',
+    marketing: 'Marketing',
+    service_advisor: 'Service Advisor',
+    service_manager: 'Service Manager',
+    gm_geely: 'GM Geely',
+    sales_manager: 'Sales Manager',
+    after_sales_manager: 'After Sales Manager',
+    sales_representative: 'Sales Representative',
+    workshop_manager: 'Workshop Manager',
     viewer: 'Viewer',
+    customer: 'Customer',
+    dealer: 'Dealer',
   };
   return labels[role] || role;
 }

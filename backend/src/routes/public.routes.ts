@@ -3,9 +3,12 @@ import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository } from '../repositories';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
-import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
+import { quotationService } from '../services/sales/quotation.service';
+import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { userRepository } from '../repositories';
 import { env } from '../config/env';
+import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { chatbotService } from '../services/chatbot/chatbot.service';
 
 const router = Router();
@@ -498,27 +501,32 @@ router.post('/quotations', rateLimiters.contactForm, async (req: Request, res: R
     const data: any = { ...rest };
     if (configuration !== undefined) data.configurationJson = configuration;
 
-    const quotation = await prisma.quotation.create({ data });
-
-    let notificationSent = false;
-    if (quotation.email) {
-      const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
-      const result = await dispatchNotification({
-        type: 'quotation',
-        to: [quotation.email],
-        subject: `Your Quotation${quotation.reference ? ` (${quotation.reference})` : ''}`,
-        data: {
-          quotationId: quotation.id,
-          quotationNo: quotation.reference,
-          customerName: quotation.customerName,
-          vehicleModel: quotation.vehicleModel,
-          ...(link && { link }),
-        },
-      });
-      notificationSent = result.ok;
+    const result = await quotationService.create({
+      customerName: data.customerName,
+      phoneNumber: data.phoneNumber,
+      email: data.email,
+      nationalId: data.nationalId,
+      idDocumentType: data.idDocumentType,
+      idPhotoUrl: data.idPhotoUrl,
+      customerAddress: data.customerAddress,
+      vehicleModel: data.vehicleModel,
+      message: data.message,
+      financingInterest: data.financingInterest,
+      tradeInInterest: data.tradeInInterest,
+      source: data.source,
+      configurationJson: data.configurationJson,
+      autoAssign: true,
+    });
+    if (!result.ok || !result.data) {
+      res.status(400).json({ error: result.error || 'Failed to save quotation' });
+      return;
     }
 
-    res.status(201).json({ success: true, reference: quotation.reference, notificationSent });
+    res.status(201).json({
+      success: true,
+      reference: result.data.reference,
+      salesAgentNotified: Boolean(result.assignedRep),
+    });
   } catch (error) {
     console.error('Submit quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -532,6 +540,10 @@ router.get('/quotations/:reference', async (req: Request, res: Response) => {
     // and `assignedTo` as plain strings, not FK relations. Dropped.
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
+    if (!['sent', 'accepted'].includes(quotation.status) || quotation.managerApprovalStatus !== 'APPROVED') {
+      res.status(409).json({ error: 'This quotation is not ready for customer review yet.' });
+      return;
+    }
     res.json(quotation);
   } catch (error) {
     console.error('Get quotation error:', error);
@@ -541,15 +553,44 @@ router.get('/quotations/:reference', async (req: Request, res: Response) => {
 
 router.post('/quotations/:reference/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { signatureData } = req.body;
+    const signatureData = req.body?.signatureDataUrl || req.body?.photoUrl;
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
-    // NOTE: `signatureData`/`signerName` -> Quotation has no such fields.
-    // The real field for a customer's e-sign/attach is `signedDocumentUrl`
-    // (schema comment: "Setting this also flips status to 'accepted'").
-    // `signerName` has no equivalent column on this model — dropped.
+    if (!['sent', 'accepted'].includes(quotation.status) || quotation.managerApprovalStatus !== 'APPROVED') {
+      res.status(409).json({ error: 'This quotation must be approved and sent before it can be signed.' });
+      return;
+    }
+    if (!signatureData || typeof signatureData !== 'string') {
+      res.status(400).json({ error: 'A signature is required.' });
+      return;
+    }
     const updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { status: 'accepted', signedAt: new Date(), signedDocumentUrl: signatureData } });
-    res.json(updated);
+    const conversion = await convertQuotationToOrderService.convert(quotation.id);
+    if (!conversion.ok || !conversion.data) {
+      res.status(400).json({ error: conversion.error || 'Quotation signed, but the order could not be created.' });
+      return;
+    }
+
+    const order = conversion.data;
+    const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
+    const recipients = [assignedAgent?.email, 'manager@geelyethiopia.com'].filter((email): email is string => Boolean(email));
+    if (recipients.length > 0) {
+      await dispatchNotification({
+        type: 'order_status',
+        to: recipients,
+        subject: `Quotation Signed — Order ${order.orderNo}`,
+        data: {
+          orderNo: order.orderNo,
+          quotationNo: quotation.quotationNo || quotation.reference,
+          customerName: order.customerName,
+          vehicleModel: order.vehicleModel,
+          nextStep: 'Sales agent review and approval is required before sending the sales agreement.',
+          adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
+        },
+      });
+    }
+
+    res.json({ ...updated, order });
   } catch (error) {
     console.error('Sign quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -573,6 +614,10 @@ router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => 
 
     const quotation = await prisma.quotation.findFirst({ where: { reference: req.params.reference } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
+    if (quotation.status !== 'sent' || quotation.managerApprovalStatus !== 'APPROVED') {
+      res.status(409).json({ error: 'This quotation is not ready for customer review yet.' });
+      return;
+    }
     // No priced quotation PDF yet — if the customer already signed
     // (signedDocumentUrl is a photo/drawn-signature image, not a PDF),
     // redirect there as the next-best document; otherwise there is
@@ -819,6 +864,24 @@ router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Re
         },
       },
     });
+
+    // Auto-allocate the specific vehicle the customer selected (if in stock)
+    if (vehicle.stock > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.vehicleAllocation.create({
+          data: {
+            orderId: purchase.id,
+            vehicleId: vehicle.id,
+            allocatedAt: new Date(),
+          },
+        });
+        await tx.vehicle.update({
+          where: { id: vehicle.id },
+          data: { stock: { decrement: 1 } },
+        });
+      });
+    }
+
     await seedPdiChecklist(prisma, purchase.id);
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (error) {

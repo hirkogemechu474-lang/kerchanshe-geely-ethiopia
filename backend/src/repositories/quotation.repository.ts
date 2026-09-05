@@ -63,13 +63,6 @@ export const quotationRepository = {
     return prisma.quotation.update({ where: { reference }, data });
   },
 
-  async findFirstByMessageContainsWithSalesOrder(messageSubstring: string) {
-    return prisma.quotation.findFirst({
-      where: { message: { contains: messageSubstring } },
-      include: { salesOrder: true },
-    });
-  },
-
   async updateMessage(id: string, message: string) {
     return prisma.quotation.update({ where: { id }, data: { message }, include: { salesOrder: true } });
   },

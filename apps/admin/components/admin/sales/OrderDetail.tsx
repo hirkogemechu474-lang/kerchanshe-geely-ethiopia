@@ -9,7 +9,7 @@ import {
   ORDER_STATUS_LABELS,
   FINANCING_STATUS_LABELS,
 } from '@/lib/services/sales/orderStateMachine';
-import { AdminRole, type AdminPermissions } from '@/lib/auth/types';
+import { AdminRole, type AdminPermissions } from '@geely/types';
 import { Card, Button, Badge, type Tone } from '@/components/admin/ui';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';

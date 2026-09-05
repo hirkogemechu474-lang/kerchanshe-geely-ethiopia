@@ -6,7 +6,7 @@ import { ArrowLeft, Save, User, Mail, Lock, Shield, Building } from 'lucide-reac
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
-import { ROLE_OPTIONS } from '@/lib/auth/roleDescriptions';
+import { ROLE_OPTIONS } from '@geely/types';
 
 export default function NewUserForm() {
   const router = useRouter();

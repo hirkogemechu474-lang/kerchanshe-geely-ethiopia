@@ -64,7 +64,7 @@ import {
   BookOpen,
   MessagesSquare,
 } from 'lucide-react';
-import type { AdminPermissions } from '@/lib/auth/types';
+import type { AdminPermissions } from '@geely/types';
 import { useTheme } from './ThemeProvider';
 
 interface MenuItem {

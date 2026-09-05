@@ -1,6 +1,7 @@
-import { quotationRepository, salesOrderRepository } from '../../repositories';
+import { quotationRepository, salesOrderRepository, vehicleRepository } from '../../repositories';
 import { prisma } from '../../config/database';
 import { seedPdiChecklist } from './pdiChecklist.template';
+import { vehicleAllocationService } from './vehicleAllocation.service';
 
 export const convertQuotationToOrderService = {
   async convert(quotationId: string, assignedTo?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -14,6 +15,14 @@ export const convertQuotationToOrderService = {
 
       if (quotation.status === 'closed') {
         return { ok: false, error: 'Cannot convert a closed quotation.' };
+      }
+
+      if (quotation.managerApprovalStatus !== 'APPROVED') {
+        return { ok: false, error: 'Quotation must be approved by a manager before conversion.' };
+      }
+
+      if (quotation.status !== 'accepted' || !quotation.signedDocumentUrl) {
+        return { ok: false, error: 'Customer must sign the quotation before conversion.' };
       }
 
       // vehicleModel is optional on Quotation (UC-01: a general enquiry with
@@ -55,6 +64,12 @@ export const convertQuotationToOrderService = {
         ...(salesAgentId && { salesAgentId, commissionStatus: 'PENDING' }),
         quotation: { connect: { id: quotationId } },
       });
+
+      // Auto-allocate an available vehicle of the same model if one exists
+      const availableVehicle = await vehicleRepository.findAvailableByName(quotation.vehicleModel);
+      if (availableVehicle) {
+        await vehicleAllocationService.allocate(order.id, availableVehicle.id);
+      }
 
       await quotationRepository.update(quotationId, {
         status: 'converted',

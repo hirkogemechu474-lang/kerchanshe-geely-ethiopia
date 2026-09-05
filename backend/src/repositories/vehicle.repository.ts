@@ -276,4 +276,16 @@ export const vehicleRepository = {
     ]);
     return { colors, interiors, packages, accessories, wheels };
   },
+
+  async findAvailableByName(name: string) {
+    return prisma.vehicle.findFirst({
+      where: {
+        name,
+        isActive: true,
+        status: 'published',
+        stock: { gt: 0 },
+      },
+      orderBy: { displayOrder: 'asc' },
+    });
+  },
 };

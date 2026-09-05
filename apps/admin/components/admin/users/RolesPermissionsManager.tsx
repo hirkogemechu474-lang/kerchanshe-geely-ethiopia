@@ -3,8 +3,8 @@
 import { Fragment, useEffect, useMemo, useState, useCallback } from 'react';
 import { Check, X, Lock, RotateCcw, Search, Loader2 } from 'lucide-react';
 import { Card, Button } from '@/components/admin/ui';
-import { roleLabel } from '@/lib/auth/permissionGroups';
-import { ADMIN_ROLES } from '@/lib/auth/types';
+import { roleLabel } from '@geely/types';
+import { ADMIN_ROLES } from '@geely/types';
 
 interface PermissionGroup {
   label: string;
