@@ -12,6 +12,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     const search = req.query.search as string;
     const categoryId = req.query.categoryId as string;
     const brandId = req.query.brandId as string;
+    const featured = req.query.featured as string;
 
     const where: any = {};
     if (search) {
@@ -22,6 +23,8 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     }
     if (categoryId) where.categoryId = categoryId;
     if (brandId) where.brandId = brandId;
+    if (featured === 'true') where.isFeatured = true;
+    if (featured === 'false') where.isFeatured = false;
 
     const [items, total] = await Promise.all([
       prisma.sparePart.findMany({

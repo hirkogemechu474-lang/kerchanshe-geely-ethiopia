@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
+import apiClient from '@/lib/apiClient';
 
 type FeatureCard = { icon: string; title: string; description: string; image?: string };
 type HighlightItem = { value: string; label: string };
@@ -520,8 +521,8 @@ export default function AboutSettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/settings/about')
-      .then((r) => r.json())
+    apiClient.get('/settings/about')
+      .then(({ data: aboutContent }) => aboutContent)
       .then((d) => {
         if (d && typeof d === 'object') {
           setData({ ...DEFAULT_DATA, ...(d as Partial<AboutContent>) });
@@ -534,16 +535,10 @@ export default function AboutSettingsPage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/settings/about', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j?.error || 'Failed to save');
+      await apiClient.post('/settings/about', data);
       setSavedAt(new Date().toLocaleTimeString());
     } catch (e) {
-      setError((e as Error).message);
+      setError((e as { response?: { data?: { error?: string } }; message: string }).response?.data?.error || (e as Error).message);
     } finally {
       setSaving(false);
     }

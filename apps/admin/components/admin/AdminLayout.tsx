@@ -66,6 +66,7 @@ import {
 } from 'lucide-react';
 import type { AdminPermissions } from '@geely/types';
 import { useTheme } from './ThemeProvider';
+import BellNotification from './BellNotification';
 
 interface MenuItem {
   name: string;
@@ -109,11 +110,17 @@ interface AdminLayoutProps {
 const navSections: NavSection[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Insights',
     icon: LayoutDashboard,
     pinned: true,
     subgroups: [
-      { items: [{ name: 'Dashboard', href: '/admin/analytics', icon: LayoutDashboard, permission: 'canViewReports' }] },
+      {
+        items: [
+          { name: 'Analytics', href: '/admin/analytics', icon: LayoutDashboard, permission: 'canViewReports' },
+          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: Gauge, permission: 'canViewReports' },
+        ],
+      },
     ],
   },
   {
@@ -669,6 +676,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
             >
               {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
             </button>
+            <BellNotification />
             <Link
               href="/"
               target="_blank"

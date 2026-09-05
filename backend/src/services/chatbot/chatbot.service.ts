@@ -64,7 +64,7 @@ async function answerVehicles(normalized: string, requireNameMention: boolean): 
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
     take: 8,
-    select: { name: true, slug: true, model: true, badge: true, basePrice: true, finalPrice: true, hidePrice: true },
+    select: { name: true, slug: true, model: true, badge: true },
   });
   if (vehicles.length === 0) return null;
 
@@ -74,8 +74,7 @@ async function answerVehicles(normalized: string, requireNameMention: boolean): 
 
   const shortlist = (mentioned.length > 0 ? mentioned : vehicles).slice(0, 5);
   const lines = shortlist.map((v) => {
-    const price = v.hidePrice ? '' : ` — from ETB ${Math.round(v.finalPrice ?? v.basePrice).toLocaleString()}`;
-    return `• ${v.name}${v.badge ? ` (${v.badge})` : ''}${price} — /models/${v.slug}`;
+    return `• ${v.name}${v.badge ? ` (${v.badge})` : ''} — /models/${v.slug}`;
   });
 
   return `Here${shortlist.length === 1 ? "'s" : ' are'} our ${mentioned.length > 0 ? 'match' + (shortlist.length === 1 ? '' : 'es') : 'latest models'}:\n${lines.join('\n')}\n\nWant to book a test drive or see financing options for one of these?`;

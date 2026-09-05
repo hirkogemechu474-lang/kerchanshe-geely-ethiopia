@@ -35,7 +35,9 @@ export default function HeroSectionList() {
     try {
       const response = await fetch('/api/content/hero-sections?includeInactive=true');
       const data = await response.json();
-      setHeroSections(data.heroSections || []);
+      // GET /api/content/hero-sections returns a bare array (see
+      // backend/src/routes/content.routes.ts), not { heroSections: [...] }.
+      setHeroSections(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching hero sections:', error);
     } finally {

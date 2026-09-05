@@ -81,7 +81,7 @@ export default function NewNewsPage() {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/admin/news', {
+      const response = await fetch('/api/news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

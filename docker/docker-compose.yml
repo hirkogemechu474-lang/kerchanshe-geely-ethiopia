@@ -31,7 +31,7 @@ services:
       JWT_SECRET: dev-jwt-secret-change-in-production
       CORS_ORIGIN_WEB: http://localhost:7501
       CORS_ORIGIN_ADMIN: http://localhost:7500
-      SMTP_ENABLED: "false"
+      SMTP_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy

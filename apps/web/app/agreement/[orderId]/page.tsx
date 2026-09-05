@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle, CreditCard, Clock } from 'lucide-react';
-import { isPdfUrl } from '@/lib/fileType';
 
 interface OrderSummary {
   id: string;
@@ -203,13 +202,13 @@ export default function AgreementSigningPage() {
                     Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you — you're ready to continue.
                   </p>
                   <a
-                    href={order.signedDocumentUrl}
+                    href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-6"
                   >
                     <FileText className="w-4 h-4" />
-                    {isPdfUrl(order.signedDocumentUrl) ? 'View Your Signed Agreement' : 'View Your Signed Copy'}
+                    View Your Signed Agreement PDF
                   </a>
                   {order.paymentToken && (
                     <div>
@@ -232,13 +231,13 @@ export default function AgreementSigningPage() {
                     sales manager — we'll email you a payment link as soon as it's approved.
                   </p>
                   <a
-                    href={order.signedDocumentUrl}
+                    href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
                   >
                     <FileText className="w-4 h-4" />
-                    {isPdfUrl(order.signedDocumentUrl) ? 'View Your Signed Agreement' : 'View Your Signed Copy'}
+                    View Your Signed Agreement PDF
                   </a>
                 </div>
               )

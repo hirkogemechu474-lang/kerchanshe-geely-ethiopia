@@ -1,5 +1,7 @@
 import { sendEmail, type EmailAttachment } from './smtp';
 import { prisma } from '../../config/database';
+import { inAppNotificationRepository } from '../../repositories/inAppNotification.repository';
+import { userRepository } from '../../repositories';
 
 export interface NotificationPayload {
   type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'complaint_created' | 'upgrade_opportunity' | 'sla_breach';
@@ -7,6 +9,18 @@ export interface NotificationPayload {
   subject: string;
   data: Record<string, any>;
   attachments?: EmailAttachment[];
+  /** In-app notification — if provided, creates a bell notification for each recipient */
+  inApp?: {
+    type: string;
+    title: string;
+    body: string;
+    link?: string;
+    quotationId?: string;
+    orderId?: string;
+    relatedModel?: string;
+    relatedId?: string;
+    priority?: string;
+  };
 }
 
 export async function dispatchNotification(payload: NotificationPayload): Promise<{ ok: boolean; error?: string }> {
@@ -38,10 +52,73 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
       }
     }
 
+    // Create in-app notifications for each recipient
+    if (payload.inApp) {
+      await createInAppNotifications(payload);
+    }
+
     return result;
   } catch (error: any) {
     console.error('[NOTIFICATION DISPATCH ERROR]', error.message);
     return { ok: false, error: error.message };
+  }
+}
+
+async function createInAppNotifications(payload: NotificationPayload) {
+  if (!payload.inApp) return;
+
+  const { inApp } = payload;
+
+  // Resolve each email to a user ID
+  const notifications: Array<{
+    recipientId: string;
+    recipientEmail: string;
+    type: string;
+    title: string;
+    body: string;
+    link?: string;
+    quotationId?: string;
+    orderId?: string;
+    relatedModel?: string;
+    relatedId?: string;
+    priority?: string;
+  }> = [];
+
+  for (const email of payload.to) {
+    try {
+      const user = await userRepository.findByEmail(email);
+      if (!user) continue;
+
+      // Deduplicate — don't create the same notification type for the same user within 2 minutes
+      const existing = await inAppNotificationRepository.findRecentByRecipientAndType(
+        user.id, inApp.type, inApp.relatedId || '', 2,
+      );
+      if (existing) continue;
+
+      notifications.push({
+        recipientId: user.id,
+        recipientEmail: email,
+        type: inApp.type,
+        title: inApp.title,
+        body: inApp.body,
+        link: inApp.link,
+        quotationId: inApp.quotationId,
+        orderId: inApp.orderId,
+        relatedModel: inApp.relatedModel,
+        relatedId: inApp.relatedId,
+        priority: inApp.priority,
+      });
+    } catch {
+      // User lookup failure should not block the flow
+    }
+  }
+
+  if (notifications.length > 0) {
+    try {
+      await inAppNotificationRepository.createMany(notifications);
+    } catch (error: any) {
+      console.error('[IN-APP NOTIFICATION ERROR]', error.message);
+    }
   }
 }
 

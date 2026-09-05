@@ -20,6 +20,7 @@ interface QuoteFormData {
   lastName: string;
   email: string;
   phone: string;
+  address: string;
   nationalId: string;
   idDocumentType: string;
   vehicleId: string;
@@ -229,6 +230,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           phoneNumber: data.phone,
           email: data.email,
           nationalId: data.nationalId,
+          customerAddress: data.address,
           idDocumentType: data.idDocumentType,
           idPhotoUrl: idPhotoUrl || undefined,
           vehicleModel: selectedVehicle?.name || data.vehicleId,
@@ -249,7 +251,9 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       });
 
       const quotationResult = await quotationRequest;
-      setEmailNotificationSent(quotationResult.notificationSent ?? false);
+      // Customer delivery happens only after the sales quotation is priced and
+      // manager-approved; do not show an SMTP warning for this initial lead.
+      setEmailNotificationSent(null);
       setQuoteReference(quotationResult.reference || null);
       setQuotedVehicleId(data.vehicleId);
 
@@ -570,6 +574,21 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     {errors.phone && (
                       <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
                     )}
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      Customer Address <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      {...register("address", { required: "Address is required" })}
+                      rows={3}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
+                        errors.address ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
+                      }`}
+                      placeholder="Enter your city, area and street address"
+                    />
+                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
                   </div>
 
                   <div>

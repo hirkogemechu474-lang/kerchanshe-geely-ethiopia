@@ -1,4 +1,6 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, RGB } from 'pdf-lib';
+import { PDFDocument, PDFFont, PDFPage, PDFImage, StandardFonts, rgb, RGB } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
 import { formatCurrency, formatDate } from '../../utils/formatting';
 import type { CompanyInfo } from './companyInfo';
 
@@ -213,6 +215,37 @@ export interface SignatureEntry {
   title?: string | null;
   date?: string | null;
   showStamp?: boolean;
+  signatureImage?: PDFImage | null;
+}
+
+export async function embedSignatureImage(doc: PDFDocument, source?: string | null): Promise<PDFImage | null> {
+  if (!source) return null;
+  try {
+    let bytes: Buffer;
+    if (source.startsWith('data:image/')) {
+      bytes = Buffer.from(source.split(',')[1] || '', 'base64');
+    } else {
+      const relative = source.startsWith('/') ? source.slice(1) : source;
+      const localPath = path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', relative);
+      if (fs.existsSync(localPath)) {
+        bytes = fs.readFileSync(localPath);
+      } else if (/^https?:\/\//i.test(source)) {
+        const response = await fetch(source);
+        if (!response.ok) return null;
+        bytes = Buffer.from(await response.arrayBuffer());
+      } else {
+        return null;
+      }
+    }
+    if (!bytes.length) return null;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+      return doc.embedPng(bytes);
+    }
+    if (bytes[0] === 0xff && bytes[1] === 0xd8) return doc.embedJpg(bytes);
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // Two-column Name/Title/Signature-line/Date(/Stamp) block, used by every
@@ -238,6 +271,10 @@ export function drawSignatureBlock(ctx: PagedContext, left: SignatureEntry, righ
     ctx.page.drawText(entry.title || '____________________________', { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
     ey -= 16;
     ctx.page.drawText('Signature:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
+    if (entry.signatureImage) {
+      const scaled = entry.signatureImage.scaleToFit(colWidth - 70, 24);
+      ctx.page.drawImage(entry.signatureImage, { x: x + 64, y: ey - 10, width: scaled.width, height: scaled.height });
+    }
     ctx.page.drawLine({ start: { x: x + 62, y: ey - 2 }, end: { x: x + colWidth, y: ey - 2 }, thickness: 0.5, color: COLORS.border });
     ey -= 16;
     ctx.page.drawText('Date:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });

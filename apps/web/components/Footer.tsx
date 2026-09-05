@@ -86,7 +86,7 @@ export function Footer() {
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => d && setContact({ ...FALLBACK_CONTACT, ...d }))
         .catch(() => {}),
-      fetch('/api/settings/social-media')
+      fetch('/api/public/social-media')
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           if (d) {

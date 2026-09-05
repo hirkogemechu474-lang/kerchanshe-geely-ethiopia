@@ -240,6 +240,16 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
           nextStep: 'Please review the feedback, correct the quotation, and resubmit for approval.',
           adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
         },
+        inApp: {
+          type: 'quotation_rejected',
+          title: 'Quotation Returned for Correction',
+          body: `Hello ${assignedAgent.name}, quotation ${quotation.reference || ''} for ${quotation.customerName} has been returned for correction. Reason: ${reason}. Please review, correct, and resubmit.`,
+          link: `/admin/quotations/${quotation.id}`,
+          quotationId: quotation.id,
+          relatedModel: 'quotation',
+          relatedId: quotation.id,
+          priority: 'high',
+        },
       });
     }
 
@@ -364,6 +374,16 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
         nextStep: 'Review the pricing and approve or reject the quotation.',
         adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
       },
+      inApp: {
+        type: 'approval_required',
+        title: 'Quotation Needs Your Approval',
+        body: `A quotation for ${quotation.customerName}${quotation.vehicleModel ? ` (${quotation.vehicleModel})` : ''} has been submitted by ${assignedAgent?.name || 'a sales agent'} and requires your review and approval.`,
+        link: `/admin/quotations/${quotation.id}`,
+        quotationId: quotation.id,
+        relatedModel: 'quotation',
+        relatedId: quotation.id,
+        priority: 'high',
+      },
     });
 
     // Generate PDF and persist it for consistent viewing/signing
@@ -411,6 +431,16 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
             nextStep: 'Please contact the customer as soon as possible.',
             adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
           },
+          inApp: {
+            type: 'lead_assignment',
+            title: 'Quotation Escalated to You',
+            body: `Hello ${assignedUser.name}, quotation ${quotation.reference || ''} for ${quotation.customerName} has been escalated to you. ${req.body.reason || 'Please contact the customer as soon as possible.'}`,
+            link: `/admin/quotations/${quotation.id}`,
+            quotationId: quotation.id,
+            relatedModel: 'quotation',
+            relatedId: quotation.id,
+            priority: 'urgent',
+          },
         });
       }
     }
@@ -457,6 +487,10 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
 
+    // Look up the manager's staff signature to embed in the PDF
+    const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
+    const managerSignatureUrl = manager?.signatureUrl ?? null;
+
     // Handle discount approval if pending
     if (quotation.managerApprovalStatus === 'PENDING_DISCOUNT') {
       const discountPercent = quotation.discountAmount;
@@ -467,8 +501,12 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
           managerApprovalStatus: 'APPROVED',
           managerApprovedById: req.adminSession!.user.id,
           managerApprovedAt: new Date(),
+          managerSignatureUrl,
         },
       });
+
+      // Regenerate PDF so it includes the manager's signature
+      await quotationPdfService.generatePdf(req.params.id);
 
       // Notify the assigned sales agent that the discount was approved
       const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
@@ -485,6 +523,16 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
             nextStep: 'The discount has been approved. Please review the quotation and send it to the customer.',
             adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
           },
+          inApp: {
+            type: 'quotation_approved',
+            title: 'Discount Approved',
+            body: `Hello ${assignedAgent.name}, the discount for quotation ${quotation.reference || ''} (${quotation.customerName}) has been approved. You can now send the quotation to the customer.`,
+            link: `/admin/quotations/${quotation.id}`,
+            quotationId: quotation.id,
+            relatedModel: 'quotation',
+            relatedId: quotation.id,
+            priority: 'normal',
+          },
         });
       }
 
@@ -499,8 +547,13 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
         managerApprovalStatus: 'APPROVED',
         managerApprovedById: req.adminSession!.user.id,
         managerApprovedAt: new Date(),
+        managerSignatureUrl,
       },
     });
+
+    // Regenerate PDF so it includes the manager's signature
+    await quotationPdfService.generatePdf(req.params.id);
+
     const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
     if (assignedAgent?.email) {
       await dispatchNotification({
@@ -514,6 +567,16 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
           vehicleModel: quotation.vehicleModel,
           nextStep: 'Review the approved quotation and send it to the customer.',
           adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+        },
+        inApp: {
+          type: 'quotation_approved',
+          title: 'Quotation Approved',
+          body: `Hello ${assignedAgent.name}, quotation ${quotation.reference || ''} for ${quotation.customerName} has been approved by the manager. You can now send it to the customer.`,
+          link: `/admin/quotations/${quotation.id}`,
+          quotationId: quotation.id,
+          relatedModel: 'quotation',
+          relatedId: quotation.id,
+          priority: 'normal',
         },
       });
     }
@@ -608,6 +671,16 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
           phoneNumber: quotation.phoneNumber,
           vehicleModel: quotation.vehicleModel,
           assignedTo: assignedRep.name,
+        },
+        inApp: {
+          type: 'lead_assignment',
+          title: 'New Quotation Assigned',
+          body: `Hello ${assignedRep.name}, you have been assigned a new quotation${quotation.reference ? ` (${quotation.reference})` : ''} for ${quotation.customerName}${quotation.vehicleModel ? ` — ${quotation.vehicleModel}` : ''}. Please review and follow up.`,
+          link: `/admin/quotations/${quotation.id}`,
+          quotationId: quotation.id,
+          relatedModel: 'quotation',
+          relatedId: quotation.id,
+          priority: 'high',
         },
       });
     }

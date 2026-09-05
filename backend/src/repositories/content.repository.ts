@@ -28,8 +28,9 @@ export const contentRepository = {
     return prisma.vehicleBrand.delete({ where: { id } });
   },
 
-  async findAllCategories() {
+  async findAllCategories(includeInactive = false) {
     return prisma.vehicleCategory.findMany({
+      where: includeInactive ? {} : { isActive: true },
       include: { brand: true, _count: { select: { vehicles: true } } },
       orderBy: { displayOrder: 'asc' },
     });

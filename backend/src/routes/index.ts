@@ -46,6 +46,13 @@ import { complaintRoutes } from './complaints.routes';
 import { repeatPurchaseRoutes } from './repeat-purchase.routes';
 import { syncRoutes } from './sync.routes';
 import { chatbotRoutes } from './chatbot.routes';
+import { notificationRoutes } from './notifications.routes';
+import { partRequestRoutes } from './parts-requests.routes';
+import { categoriesRoutes } from './categories.routes';
+import { adminContentRoutes } from './admin-content.routes';
+import { rolePermissionsRoutes } from './role-permissions.routes';
+import { showroomVisitAdminRoutes } from './showroom-visits-admin.routes';
+import { vehicleConfigRoutes } from './vehicle-config.routes';
 
 const router = Router();
 
@@ -96,5 +103,12 @@ router.use('/complaints', complaintRoutes);
 router.use('/repeat-purchase', repeatPurchaseRoutes);
 router.use('/sync', syncRoutes);
 router.use('/chatbot', chatbotRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/admin/parts-requests', partRequestRoutes);
+router.use('/admin', categoriesRoutes);
+router.use('/admin', adminContentRoutes);
+router.use('/admin/role-permissions', rolePermissionsRoutes);
+router.use('/admin/showroom-visits', showroomVisitAdminRoutes);
+router.use('/admin', vehicleConfigRoutes);
 
 export { router as routes };

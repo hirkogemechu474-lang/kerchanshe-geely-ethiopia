@@ -29,9 +29,11 @@ export default function FAQList() {
     try {
       const response = await fetch('/api/content/faqs');
       const data = await response.json();
-      
-      if (data.success) {
-        setFaqs(data.faqs);
+
+      // GET /api/content/faqs returns a bare array (see
+      // backend/src/routes/content.routes.ts), not { success, faqs: [...] }.
+      if (Array.isArray(data)) {
+        setFaqs(data);
       }
     } catch (error) {
       console.error('Error fetching FAQs:', error);

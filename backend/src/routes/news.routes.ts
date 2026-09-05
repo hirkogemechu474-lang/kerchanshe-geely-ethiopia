@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { newsRepository } from '../repositories/news.repository';
 
 const router = Router();
 
@@ -23,6 +24,71 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     res.json({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error) {
     console.error('Admin list news error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/news/:id (admin: single article detail)
+router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const article = await newsRepository.findById(req.params.id);
+    if (!article) { res.status(404).json({ error: 'News article not found' }); return; }
+    res.json(article);
+  } catch (error) {
+    console.error('Get news article error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/news (admin: create article)
+router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const { title, category, content, author, image, imageUrl, excerpt, status, publishDate } = req.body;
+    const article = await newsRepository.create({
+      title,
+      category,
+      content,
+      author,
+      imageUrl: imageUrl || image || null,
+      excerpt: excerpt || null,
+      status: status || 'draft',
+      publishDate: publishDate ? new Date(publishDate) : null,
+    });
+    res.status(201).json(article);
+  } catch (error) {
+    console.error('Create news article error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/news/:id (admin: update article)
+router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const { title, category, content, author, image, imageUrl, excerpt, status, publishDate } = req.body;
+    const article = await newsRepository.update(req.params.id, {
+      ...(title !== undefined && { title }),
+      ...(category !== undefined && { category }),
+      ...(content !== undefined && { content }),
+      ...(author !== undefined && { author }),
+      ...((imageUrl !== undefined || image !== undefined) && { imageUrl: imageUrl || image || null }),
+      ...(excerpt !== undefined && { excerpt }),
+      ...(status !== undefined && { status }),
+      ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
+    });
+    res.json(article);
+  } catch (error) {
+    console.error('Update news article error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/news/:id (admin: delete article)
+router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    await newsRepository.delete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete news article error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

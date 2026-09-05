@@ -46,7 +46,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
   const fetchArticle = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/news/${id}`);
+      const response = await fetch(`/api/news/${id}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch article');
@@ -122,7 +122,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
     setSuccess(false);
 
     try {
-      const response = await fetch(`/api/admin/news/${id}`, {
+      const response = await fetch(`/api/news/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

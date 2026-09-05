@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Award, Users, Globe, TrendingUp, Factory, Shield, Zap, Heart,
+  Award, Users, Globe, TrendingUp, Factory, Shield, Zap, Heart, Target, Sparkles, Cpu, DollarSign, Star,
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -45,7 +45,7 @@ interface AboutContent {
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
-  Globe, Award, Zap, Shield, Factory, Users, TrendingUp, Heart,
+  Globe, Award, Zap, Shield, Factory, Users, TrendingUp, Heart, Target, Sparkles, Cpu, DollarSign, Star,
 };
 
 function iconFor(name: string) {
@@ -235,7 +235,7 @@ export default function AboutPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch('/api/public/about')
+    fetch('/api/public/about', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setData(mergeFallback(d)))
       .catch(() => setData(FALLBACK))
@@ -246,11 +246,11 @@ export default function AboutPage() {
     <>
         {/* 1. Hero section */}
         <section
-          className="relative overflow-hidden text-white py-20 sm:py-28"
+          className="relative min-h-[min(760px,88vh)] overflow-hidden bg-black text-white"
           style={
             data.sectionHero.backgroundImage
               ? {
-                  backgroundImage: `linear-gradient(135deg, rgba(10,26,64,0.9), rgba(30,64,175,0.85)), url(${data.sectionHero.backgroundImage})`,
+                  backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.78), rgba(0,0,0,0.16)), url(${data.sectionHero.backgroundImage})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }
@@ -261,24 +261,19 @@ export default function AboutPage() {
             className={
               data.sectionHero.backgroundImage
                 ? ''
-                : 'absolute inset-0 bg-gradient-to-br from-navy via-blue-900 to-geely-blue'
+                : 'absolute inset-0 bg-gradient-to-br from-black via-[#101318] to-[#194bff]'
             }
           />
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-gold blur-3xl" />
-            <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-blue-400 blur-3xl" />
-          </div>
 
-          <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur border border-white/15 text-gold px-4 py-1.5 text-xs font-bold tracking-widest uppercase mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+          <div className="relative flex min-h-[min(760px,88vh)] items-end max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16 pb-16 sm:pb-24">
+            <div className="max-w-5xl">
+              <div className="text-xs font-bold tracking-[0.28em] uppercase text-[#7ea2ff] mb-7">
                 {data.sectionHero.eyebrow}
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-6 tracking-tight leading-[1.05] text-balance">
+              <h1 className="text-5xl sm:text-7xl lg:text-[clamp(4.5rem,10vw,9.5rem)] font-black mb-7 tracking-[-0.04em] leading-[0.88] text-balance uppercase">
                 {data.sectionHero.title}
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 leading-relaxed max-w-2xl">
+              <p className="text-base sm:text-xl text-white/80 leading-relaxed max-w-2xl border-l-2 border-[#194bff] pl-5">
                 {data.sectionHero.subtitle}
               </p>
             </div>
@@ -286,13 +281,13 @@ export default function AboutPage() {
         </section>
 
         {/* 1b. Stats bar */}
-        <section className="bg-navy border-b border-white/10 relative">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/10">
+        <section className="bg-black text-white border-b border-white/15 relative">
+          <div className="max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16">
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/20">
               {data.statsBar.items.map((s, i) => (
-                <div key={i} className="text-center py-8 px-4">
-                  <div className="text-3xl sm:text-4xl font-extrabold text-gold tracking-tight mb-1">{s.value}</div>
-                  <div className="text-xs sm:text-sm font-medium text-blue-100 uppercase tracking-wide">{s.label}</div>
+                <div key={i} className="py-8 sm:py-10 px-4 sm:px-8 first:pl-0">
+                  <div className="text-3xl sm:text-5xl font-black tracking-tight mb-2">{s.value}</div>
+                  <div className="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-[0.16em]">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -300,11 +295,11 @@ export default function AboutPage() {
         </section>
 
         {/* 1c. Design Philosophy / Overview */}
-        <section className="py-20 bg-white dark:bg-midnight-surface transition-colors">
+        <section className="py-24 sm:py-32 bg-white dark:bg-midnight-surface transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {data.designPhilosophy.image && (
-                <div className="order-2 lg:order-1 relative rounded-3xl overflow-hidden shadow-2xl shadow-navy/15 aspect-video lg:aspect-square">
+                <div className="order-2 lg:order-1 relative overflow-hidden aspect-video lg:aspect-square bg-slate-100">
                   <img
                     src={data.designPhilosophy.image}
                     alt={data.designPhilosophy.title}
@@ -313,10 +308,10 @@ export default function AboutPage() {
                 </div>
               )}
               <div className={data.designPhilosophy.image ? 'order-1 lg:order-2' : 'lg:col-span-2 max-w-3xl mx-auto text-center'}>
-                <div className={`inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6 ${data.designPhilosophy.image ? '' : 'mx-auto'}`}>
+                <div className={`inline-block text-geely-blue text-xs font-bold tracking-[0.2em] uppercase mb-6 ${data.designPhilosophy.image ? '' : 'mx-auto'}`}>
                   {data.designPhilosophy.eyebrow}
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-6 leading-tight text-balance">
+                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-black dark:text-ice tracking-tight mb-8 leading-[0.95] text-balance">
                   {data.designPhilosophy.title}
                 </h2>
                 <div className="space-y-5">
@@ -332,12 +327,12 @@ export default function AboutPage() {
         </section>
 
         {/* 2. Partnership story */}
-        <section className="py-20 bg-white dark:bg-midnight-surface relative transition-colors">
+        <section className="py-24 sm:py-32 bg-[#f1f3f5] dark:bg-midnight-surface relative transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Text */}
               <div>
-                <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
+                <div className="inline-block text-geely-blue px-0 py-1.5 text-xs font-bold tracking-[0.2em] uppercase mb-6">
                   {data.partnership.eyebrow}
                 </div>
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-6 leading-tight text-balance">
@@ -384,7 +379,7 @@ export default function AboutPage() {
         </section>
 
         {/* 2b. Mission, Vision & Core Values */}
-        <section className="py-20 bg-ice dark:bg-midnight transition-colors">
+        <section className="py-24 sm:py-32 bg-white dark:bg-midnight transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-14 max-w-3xl mx-auto">
               <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
@@ -393,17 +388,17 @@ export default function AboutPage() {
             </div>
 
             {data.missionVisionValues.image && (
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-navy/15 aspect-[21/9] mb-14 max-w-4xl mx-auto">
-                <img
-                  src={data.missionVisionValues.image}
-                  alt={data.missionVisionValues.eyebrow}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+             <div className="relative w-full overflow-hidden mb-14">
+  <img
+    src={data.missionVisionValues.image}
+    alt={data.missionVisionValues.eyebrow}
+    className="w-full h-auto object-cover"
+  />
+</div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-14">
-              <div className="rounded-3xl p-8 sm:p-10 bg-white dark:bg-midnight-surface border border-slate-100 dark:border-midnight-line shadow-sm">
+              <div className="p-8 sm:p-10 bg-[#f1f3f5] dark:bg-midnight-surface border-t-2 border-geely-blue">
                 <h3 className="text-2xl font-extrabold text-navy dark:text-ice mb-4 tracking-tight">
                   {data.missionVisionValues.mission.title}
                 </h3>
@@ -411,7 +406,7 @@ export default function AboutPage() {
                   {data.missionVisionValues.mission.text}
                 </p>
               </div>
-              <div className="rounded-3xl p-8 sm:p-10 bg-white dark:bg-midnight-surface border border-slate-100 dark:border-midnight-line shadow-sm">
+              <div className="p-8 sm:p-10 bg-[#f1f3f5] dark:bg-midnight-surface border-t-2 border-geely-blue">
                 <h3 className="text-2xl font-extrabold text-navy dark:text-ice mb-4 tracking-tight">
                   {data.missionVisionValues.vision.title}
                 </h3>
@@ -427,7 +422,7 @@ export default function AboutPage() {
                 return (
                   <div
                     key={i}
-                    className="text-center rounded-3xl p-8 bg-white dark:bg-midnight-surface border border-slate-100 dark:border-midnight-line hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
+                    className="text-center p-8 bg-white dark:bg-midnight-surface border border-slate-200 dark:border-midnight-line hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
                   >
                     <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-geely-blue/10 text-geely-blue mb-5">
                       <Icon size={26} />
@@ -442,12 +437,7 @@ export default function AboutPage() {
         </section>
 
         {/* 3. Geely Global — dark section */}
-        <section className="py-20 sm:py-24 bg-navy text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-geely-blue blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-amber-500 blur-3xl" />
-          </div>
-
+        <section className="py-24 sm:py-32 bg-black text-white relative overflow-hidden">
           <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-14 max-w-3xl mx-auto">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight text-balance">
@@ -462,7 +452,7 @@ export default function AboutPage() {
                 return (
                   <div
                     key={i}
-                    className="group relative rounded-3xl p-8 bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 hover:-translate-y-1 transition-all text-center"
+                    className="group relative p-8 bg-white/[0.04] border border-white/15 hover:bg-white/[0.09] hover:-translate-y-1 transition-all text-center"
                   >
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-geely-blue to-blue-500 mb-6 shadow-lg shadow-blue-700/30 group-hover:scale-110 transition-transform">
                       <Icon className="w-7 h-7" />
@@ -477,7 +467,7 @@ export default function AboutPage() {
         </section>
 
         {/* 4. Kerchanshe Group */}
-        <section className="py-20 bg-ice dark:bg-midnight transition-colors">
+        <section className="py-24 sm:py-32 bg-[#f1f3f5] dark:bg-midnight transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Left: 2x2 cards */}
@@ -488,12 +478,11 @@ export default function AboutPage() {
                     return (
                       <div
                         key={i}
-                        className={`rounded-2xl p-6 text-white shadow-xl bg-gradient-to-br ${c.gradient} relative overflow-hidden group`}
+                        className="p-6 text-black bg-white border-l-4 border-geely-blue relative overflow-hidden group"
                       >
-                        <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-white/10 blur-xl" />
-                        <Icon size={30} className="mb-4 relative" />
-                        <h4 className="font-extrabold text-lg mb-2 relative">{c.title}</h4>
-                        <p className="text-sm opacity-90 leading-relaxed relative">{c.description}</p>
+                        <Icon size={30} className="mb-4 relative text-geely-blue" />
+                        <h4 className="font-extrabold text-lg text-black mb-2 relative">{c.title}</h4>
+                        <p className="text-sm text-steel leading-relaxed relative">{c.description}</p>
                       </div>
                     );
                   })}
@@ -539,10 +528,17 @@ export default function AboutPage() {
                 {data.historyTimeline.title}
               </h2>
               <p className="text-steel dark:text-steel-light text-lg text-balance">{data.historyTimeline.subtitle}</p>
+              <div className="mt-10 flex gap-6 overflow-x-auto border-y border-slate-200 dark:border-midnight-line py-4 text-left scrollbar-hide">
+                {data.historyTimeline.milestones.map((milestone, i) => (
+                  <span key={`${milestone.year}-${i}`} className="shrink-0 text-sm font-black tracking-wide text-geely-blue">
+                    {milestone.year}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="relative max-w-3xl mx-auto">
-              <div className="absolute left-4 sm:left-1/2 top-0 bottom-0 w-px bg-slate-200 dark:bg-midnight-line sm:-translate-x-1/2" />
+              <div className="absolute left-4 sm:left-1/2 top-0 bottom-0 w-px bg-geely-blue/40 sm:-translate-x-1/2" />
               <div className="space-y-10">
                 {data.historyTimeline.milestones.map((m, i) => (
                   <div
@@ -559,8 +555,8 @@ export default function AboutPage() {
                           <img src={m.image} alt={m.title} className="w-full h-full object-cover" />
                         </div>
                       )}
-                      <div className="text-sm font-bold text-gold uppercase tracking-wide mb-1">{m.year}</div>
-                      <h4 className="font-extrabold text-lg text-navy dark:text-ice mb-1.5">{m.title}</h4>
+                      <div className="text-3xl font-black text-geely-blue uppercase tracking-tight mb-2">{m.year}</div>
+                      <h4 className="font-extrabold text-lg text-black dark:text-ice mb-1.5">{m.title}</h4>
                       <p className="text-steel dark:text-steel-light leading-relaxed">{m.description}</p>
                     </div>
                   </div>
@@ -601,10 +597,7 @@ export default function AboutPage() {
         </section>
 
         {/* 6. CTA */}
-        <section className="py-20 sm:py-24 bg-gradient-to-br from-navy via-blue-900 to-geely-blue text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-25 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60rem] h-[60rem] rounded-full bg-gold blur-3xl" />
-          </div>
+        <section className="py-24 sm:py-32 bg-black text-white relative overflow-hidden">
           <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight text-balance">
               {data.cta.title}
@@ -615,14 +608,14 @@ export default function AboutPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href={data.cta.primaryButton.href}
-                className="group inline-flex items-center justify-center gap-2 bg-gold text-navy px-8 py-4 rounded-xl font-extrabold text-lg hover:bg-amber-400 transition-colors shadow-xl shadow-amber-500/30"
+                className="group inline-flex items-center justify-center gap-2 bg-[#194bff] text-white px-8 py-4 rounded-none font-extrabold text-lg hover:bg-[#476fff] transition-colors"
               >
                 {data.cta.primaryButton.label}
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href={data.cta.secondaryButton.href}
-                className="inline-flex items-center justify-center gap-2 bg-white text-navy px-8 py-4 rounded-xl font-extrabold text-lg hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-white/40 text-white px-8 py-4 rounded-none font-extrabold text-lg hover:bg-white hover:text-black transition-colors"
               >
                 {data.cta.secondaryButton.label}
               </Link>

@@ -302,6 +302,7 @@ model Quotation {
   managerApprovalStatus      QuotationApprovalStatus      @default(PENDING)
   managerApprovedById        String?
   managerApprovedAt          DateTime?
+  managerSignatureUrl        String?
   managerRejectedById        String?
   managerRejectedAt          DateTime?
   managerRejectionReason     String?                      @db.Text
@@ -702,6 +703,27 @@ model NotificationHistory {
   sentStatus       String   @default("sent")
 
   @@index([sentAt])
+}
+
+model InAppNotification {
+  id             String    @id @default(uuid())
+  recipientId    String
+  recipientEmail String
+  type           String    // 'lead_assignment', 'approval_required', 'signature_required', 'discount_approval', 'quotation_approved', 'quotation_rejected', 'agreement_ready', 'agreement_signed', 'payment_received', 'order_update', 'sla_breach', 'general'
+  title          String
+  body           String    @db.Text
+  link           String?   // e.g. '/admin/quotations/xxx' or '/admin/orders/xxx'
+  quotationId    String?
+  orderId        String?
+  relatedModel   String?   // 'quotation', 'order', 'agreement', etc.
+  relatedId      String?   // ID of the related entity
+  priority       String    @default("normal") // 'low', 'normal', 'high', 'urgent'
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([recipientId])
+  @@index([recipientId, readAt])
+  @@index([createdAt])
 }
 
 // Dealers

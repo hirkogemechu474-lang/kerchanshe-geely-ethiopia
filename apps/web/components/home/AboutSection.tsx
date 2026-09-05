@@ -27,7 +27,7 @@ export default function AboutSection() {
   const [content, setContent] = useState<AboutContent>(DEFAULT_HOME_ABOUT);
 
   useEffect(() => {
-    fetch('/api/public/about')
+    fetch('/api/public/about', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.homeAbout) {

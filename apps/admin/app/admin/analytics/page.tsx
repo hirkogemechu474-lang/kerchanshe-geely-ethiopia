@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
 import { OverviewTile, RankedBarChart, StatusBarChart } from '@/components/admin/analytics/AnalyticsCharts';
+import ReportDownloads from '@/components/admin/analytics/ReportDownloads';
 import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
 import apiClient from '@/lib/apiClient';
 
@@ -191,12 +192,44 @@ export default function AnalyticsPage() {
         title="Dashboard"
         description="Everything across the showroom, workshop, and website in one place"
         actions={
-          <Button variant="secondary" size="sm" onClick={fetchAnalytics} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <LinkButton href="/admin/crm-dashboard" variant="secondary" size="sm">
+              <BarChart3 className="w-4 h-4" /> CRM Dashboard
+            </LinkButton>
+            <LinkButton href="/admin/workshop/bi-dashboard" variant="secondary" size="sm">
+              <Gauge className="w-4 h-4" /> Workshop BI
+            </LinkButton>
+            <Button variant="secondary" size="sm" onClick={fetchAnalytics} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
+
+      <Card className="overflow-hidden border-0 bg-gradient-to-r from-navy via-[#143b82] to-geely-blue text-white shadow-xl">
+        <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Insights &amp; reporting</p>
+            <h2 className="mt-1 text-2xl font-bold">Executive Analytics Center</h2>
+            <p className="mt-2 max-w-2xl text-sm text-blue-100">
+              Review sales, CRM, and workshop performance from one place, then download the current report in the format your team needs.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <LinkButton href="/admin/crm-dashboard" className="bg-white text-navy hover:bg-blue-50" size="sm">
+              <BarChart3 className="w-4 h-4" /> Open CRM
+            </LinkButton>
+            <LinkButton href="/admin/workshop/bi-dashboard" className="bg-white/15 text-white hover:bg-white/25" size="sm">
+              <Wrench className="w-4 h-4" /> Open Workshop BI
+            </LinkButton>
+          </div>
+        </div>
+        <div className="border-t border-white/15 px-6 py-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-blue-100">Download this dashboard</p>
+          {data && <ReportDownloads data={data} />}
+        </div>
+      </Card>
 
       {/* Needs Attention */}
       <Card className={attentionItems.length > 0 ? 'border-orange-200 dark:border-orange-800' : ''}>

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import { isPdfUrl } from '@/lib/fileType';
 import { computeQuotationTotals } from '@/lib/services/sales/quotationTotals';
 
 interface QuotationSummary {
@@ -214,13 +213,13 @@ export default function QuotationSigningPage() {
                   be in touch with next steps.
                 </p>
                 <a
-                  href={quotation.signedDocumentUrl}
+                  href={`/api/public/quotations/${reference}/pdf?${tokenQs}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"
                 >
                   <FileText className="w-4 h-4" />
-                  {isPdfUrl(quotation.signedDocumentUrl) ? 'View Your Signed Quotation' : 'View Your Signed Copy'}
+                  View Your Signed Quotation PDF
                 </a>
               </div>
             ) : (

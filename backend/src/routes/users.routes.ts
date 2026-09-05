@@ -3,7 +3,6 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { staffSignatureService } from '../services/staffSignature/staffSignature.service';
-import { rolePermissionRepository } from '../repositories';
 
 const router = Router();
 
@@ -139,29 +138,9 @@ router.post('/:id/signature-link', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/admin/users/admin/role-permissions (get permissions)
-// Backed by RolePermissionOverride (one row per role+permissionKey), not a
-// single-row-per-role "rolePermission" model.
-router.get('/admin/role-permissions', async (req: Request, res: Response) => {
-  try {
-    const permissions = await rolePermissionRepository.findMany();
-    res.json(permissions);
-  } catch (error) {
-    console.error('Get permissions error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// PATCH /api/admin/users/admin/role-permissions (update permissions)
-router.patch('/admin/role-permissions', async (req: Request, res: Response) => {
-  try {
-    const { role, permissionKey, value } = req.body;
-    const updated = await rolePermissionRepository.upsert(role, permissionKey, value, req.adminSession!.user.id);
-    res.json(updated);
-  } catch (error) {
-    console.error('Update permissions error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// Role-permissions handlers used to live here (GET/PATCH '/admin/role-permissions'),
+// but since this router is mounted at /admin/users that resolved to the
+// double-nested /api/admin/users/admin/role-permissions. Relocated to
+// role-permissions.routes.ts, mounted directly at /admin/role-permissions.
 
 export { router as userRoutes };

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
-import { salesOrderRepository } from '../repositories';
+import { salesOrderRepository, vehicleRepository } from '../repositories';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { quotationService } from '../services/sales/quotation.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
@@ -39,9 +39,21 @@ router.get('/vehicles', async (req: Request, res: Response) => {
 
 router.get('/vehicles/:slug', async (req: Request, res: Response) => {
   try {
-    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { brand: true, vehicleCategory: true, colors: true, accessories: true, packages: true, interiors: true, wheels: true } });
+    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { brand: true, vehicleCategory: true, colors: true, packages: true, interiors: true } });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
-    res.json(vehicle);
+    // Wheels and accessories can be scoped to this one vehicle OR marked
+    // "available for all vehicles" (vehicleId: null in the admin UI) — a
+    // plain relation `include` only ever returns rows whose vehicleId
+    // equals this vehicle's id, so globally-scoped rows would never show up
+    // for ANY vehicle (this was a real bug: the customer-facing configurator
+    // silently dropped every global wheel/accessory). Fetch them separately
+    // with the same OR-null scoping the admin CRUD (vehicleRepository)
+    // already uses.
+    const [accessories, wheels] = await Promise.all([
+      vehicleRepository.findAccessories(vehicle.id),
+      vehicleRepository.findWheels(vehicle.id),
+    ]);
+    res.json({ ...vehicle, accessories, wheels });
   } catch (error) {
     console.error('Get public vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -50,9 +62,16 @@ router.get('/vehicles/:slug', async (req: Request, res: Response) => {
 
 router.get('/vehicles/:slug/configuration', async (req: Request, res: Response) => {
   try {
-    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { colors: true, accessories: true, packages: true, interiors: true, wheels: true } });
+    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { colors: true, packages: true, interiors: true } });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
-    res.json({ colors: vehicle.colors, accessories: vehicle.accessories, packages: vehicle.packages, interiors: vehicle.interiors, wheels: vehicle.wheels });
+    // See the matching comment on GET /vehicles/:slug above — wheels/
+    // accessories need the OR-null (global-scope) query, not a plain
+    // relation include.
+    const [accessories, wheels] = await Promise.all([
+      vehicleRepository.findAccessories(vehicle.id),
+      vehicleRepository.findWheels(vehicle.id),
+    ]);
+    res.json({ colors: vehicle.colors, accessories, packages: vehicle.packages, interiors: vehicle.interiors, wheels });
   } catch (error) {
     console.error('Get vehicle configuration error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -192,7 +211,7 @@ router.get('/cookie-banner', async (req: Request, res: Response) => {
 router.get('/social-media', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'social_media' } });
-    res.json(setting?.value || {});
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get social media error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -226,7 +245,7 @@ router.get('/settings/:key', async (req: Request, res: Response) => {
 router.get('/contact-information', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'contact_information' } });
-    res.json(setting?.value || {});
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get contact info error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -236,7 +255,7 @@ router.get('/contact-information', async (req: Request, res: Response) => {
 router.get('/business-settings', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'business_settings' } });
-    res.json(setting?.value || {});
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get business settings error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -246,7 +265,7 @@ router.get('/business-settings', async (req: Request, res: Response) => {
 router.get('/vehicle-settings', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_settings' } });
-    res.json(setting?.value || {});
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get vehicle settings error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -601,6 +620,16 @@ router.post('/quotations/:reference/sign', rateLimiters.quotationSign, async (re
           vehicleModel: order.vehicleModel,
           nextStep: 'Sales agent review and approval is required before sending the sales agreement.',
           adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
+        },
+        inApp: {
+          type: 'order_update',
+          title: 'Customer Signed — Order Created',
+          body: `Hello, customer ${order.customerName} has signed the quotation. Order ${order.orderNo} has been created for ${order.vehicleModel}. Sales agent review and approval is required before sending the sales agreement.`,
+          link: `/admin/orders/${order.id}`,
+          orderId: order.id,
+          relatedModel: 'order',
+          relatedId: order.id,
+          priority: 'high',
         },
       });
     }

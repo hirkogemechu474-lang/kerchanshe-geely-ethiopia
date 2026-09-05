@@ -35,6 +35,39 @@ function currentMonthValue() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function normalizeBiData(raw: any): BiData {
+  const kpis = raw?.kpis ?? {};
+  const revenue = raw?.revenue ?? {};
+  const csi = raw?.csi;
+
+  return {
+    period: raw?.period ?? {
+      from: '',
+      to: '',
+      label: 'Selected month',
+      monthValue: currentMonthValue(),
+    },
+    kpis: {
+      jobsClosedCount: kpis.jobsClosedCount ?? 0,
+      firstTimeFixRate: kpis.firstTimeFixRate ?? null,
+      avgTurnaroundHours: kpis.avgTurnaroundHours ?? null,
+      avgWarrantyTurnaroundDays: kpis.avgWarrantyTurnaroundDays ?? null,
+      claimsResolved: kpis.claimsResolved ?? 0,
+      claimsApproved: kpis.claimsApproved ?? 0,
+      claimsRejected: kpis.claimsRejected ?? 0,
+    },
+    revenue: {
+      standard: revenue.standard ?? 0,
+      warrantyGoodwill: revenue.warrantyGoodwill ?? 0,
+      total: revenue.total ?? 0,
+    },
+    csi: csi && typeof csi === 'object'
+      ? csi
+      : { available: false, reason: 'Customer satisfaction data is not available.' },
+    generatedAt: raw?.generatedAt ?? new Date().toISOString(),
+  };
+}
+
 export default function WorkshopBiDashboard({ canExport }: { canExport: boolean }) {
   const [month, setMonth] = useState(currentMonthValue());
   const [data, setData] = useState<BiData | null>(null);
@@ -45,9 +78,18 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
 
   const load = useCallback(async (m: string) => {
     setLoading(true);
-    const res = await fetch(`/api/admin/workshop/bi-dashboard?month=${m}`);
-    if (res.ok) setData(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/admin/workshop/bi-dashboard?month=${m}`);
+      if (res.ok) {
+        setData(normalizeBiData(await res.json()));
+      } else {
+        setData(normalizeBiData(null));
+      }
+    } catch {
+      setData(normalizeBiData(null));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -58,7 +100,8 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
     (async () => {
       setTrendLoading(true);
       const res = await fetch('/api/admin/workshop/bi-dashboard/trend?months=6');
-      if (res.ok) setTrend((await res.json()).trend);
+      if (res.ok) setTrend((await res.json()).trend ?? []);
+      else setTrend([]);
       setTrendLoading(false);
     })();
   }, []);

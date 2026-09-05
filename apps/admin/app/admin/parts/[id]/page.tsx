@@ -42,12 +42,12 @@ export default function EditSparePartPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [categoryRes, { spareParts }] = await Promise.all([
+        const [categoryRes, { items: spareParts }] = await Promise.all([
           fetch('/api/parts/admin/parts/categories'),
-          fetch('/api/parts').then((r) => r.json()),
+          fetch('/api/parts?pageSize=1000').then((r) => r.json()),
         ]);
         const catData = await categoryRes.json();
-        setCategories(catData.categories || []);
+        setCategories(catData || []);
 
         const part = (spareParts || []).find((p: any) => p.id === id);
         if (!part) {
@@ -83,11 +83,10 @@ export default function EditSparePartPage() {
     setSaving(true);
     setError('');
     try {
-      const response = await fetch('/api/admin/spare-parts', {
+      const response = await fetch(`/api/parts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id,
           ...formData,
           stock: parseInt(formData.stock) || 0,
           reorderPoint: parseInt(formData.reorderPoint) || 10,

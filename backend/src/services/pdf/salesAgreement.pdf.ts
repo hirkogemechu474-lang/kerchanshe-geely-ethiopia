@@ -2,7 +2,7 @@ import {
   openDocument, saveBuffer, addPage, drawHeaderFooter, drawSectionTitle, drawLabelValue,
   drawFieldTable, drawCheckbox, drawSignatureBlock, ensureSpace, wrapText,
   PDF_MARGIN, PDF_CONTENT_WIDTH, PDF_HEADER_CONTENT_Y, COLORS, dateValue, fillValue,
-  formatBrandModel, PagedContext,
+  formatBrandModel, PagedContext, embedSignatureImage,
 } from './pdfLayout';
 import type { CompanyInfo } from './companyInfo';
 
@@ -40,6 +40,8 @@ export interface SalesAgreementPdfData {
   deliveryLocation?: string | null;
   countersignedByName?: string | null;
   countersignedAt?: Date | string | null;
+  customerSignatureUrl?: string | null;
+  managerSignatureUrl?: string | null;
 }
 
 function paragraphs(ctx: PagedContext, texts: string[], size = 9.5): PagedContext {
@@ -60,6 +62,8 @@ function clauseHeading(ctx: PagedContext, text: string): PagedContext {
 
 export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
+  const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
+  const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE SALES AGREEMENT';
   drawHeaderFooter(ctx, title, company);
@@ -235,8 +239,19 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
   ctx.y -= 10;
   drawSignatureBlock(
     ctx,
-    { heading: `FOR ${company.legalName.toUpperCase()}`, name: data.sellerAuthorizedRep, showStamp: true },
-    { heading: 'FOR THE PURCHASER', name: data.customerName, title: data.purchaserAuthorizedRep, showStamp: true },
+    {
+      heading: `FOR ${company.legalName.toUpperCase()}`,
+      name: data.sellerAuthorizedRep,
+      showStamp: true,
+      signatureImage: managerSignatureImage,
+    },
+    {
+      heading: 'FOR THE PURCHASER',
+      name: data.customerName,
+      title: data.purchaserAuthorizedRep,
+      showStamp: true,
+      signatureImage: customerSignatureImage,
+    },
   );
   ctx.y -= 30;
   ctx = ensureSpace(ctx, 90);

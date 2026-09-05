@@ -191,10 +191,11 @@ async function autoAssignBestRep(
     };
 
     // Get all active sales reps — if managersOnly, filter to sales_manager role
+    const salesRoles = ['sales', 'sales_representative', 'sales_agent'];
     const allReps = await prisma.user.findMany({
       where: {
         isActive: true,
-        role: rules.managersOnly ? 'sales_manager' : 'sales',
+        role: rules.managersOnly ? 'sales_manager' : { in: salesRoles },
       },
       select: {
         id: true,
@@ -207,25 +208,29 @@ async function autoAssignBestRep(
       },
     });
 
+    console.log('[ASSIGN] Rules:', rules, 'Found reps:', allReps.length, allReps.map(r => r.name));
+
     if (allReps.length === 0) {
       return { ok: false, error: 'No active sales representatives found.' };
     }
 
     // Get target data to determine vehicle model/brand for specialization matching
     let targetBrandId: string | undefined;
-    if (targetType === 'quotation') {
-      const quotation = await quotationRepository.findById(targetId);
-      if (!quotation) return { ok: false, error: 'Quotation not found.' };
-      if (quotation.vehicleModel) {
-        const vehicle = await findVehicleBrandByModel(quotation.vehicleModel);
-        if (vehicle?.brandId) targetBrandId = vehicle.brandId;
-      }
-    } else {
-      const order = await salesOrderRepository.findById(targetId);
-      if (!order) return { ok: false, error: 'Order not found.' };
-      if (order.vehicleModel) {
-        const vehicle = await findVehicleBrandByModel(order.vehicleModel);
-        if (vehicle?.brandId) targetBrandId = vehicle.brandId;
+    if (targetId) {
+      if (targetType === 'quotation') {
+        const quotation = await quotationRepository.findById(targetId);
+        if (!quotation) return { ok: false, error: 'Quotation not found.' };
+        if (quotation.vehicleModel) {
+          const vehicle = await findVehicleBrandByModel(quotation.vehicleModel);
+          if (vehicle?.brandId) targetBrandId = vehicle.brandId;
+        }
+      } else {
+        const order = await salesOrderRepository.findById(targetId);
+        if (!order) return { ok: false, error: 'Order not found.' };
+        if (order.vehicleModel) {
+          const vehicle = await findVehicleBrandByModel(order.vehicleModel);
+          if (vehicle?.brandId) targetBrandId = vehicle.brandId;
+        }
       }
     }
 
@@ -275,8 +280,12 @@ async function autoAssignBestRep(
     }
 
     if (scores.length === 0) {
+      if (allReps.length === 0) {
+        return { ok: false, error: 'No active sales representatives found.' };
+      }
       // Fallback: assign to least recently logged-in rep
       const fallbackRep = allReps.sort((a, b) => (a.lastLogin?.getTime() ?? 0) - (b.lastLogin?.getTime() ?? 0))[0];
+      console.log('[ASSIGN] All scores 0, fallback to:', fallbackRep.name);
       return { ok: true, data: { userId: fallbackRep.id, score: 0, reason: 'Fallback assignment' } };
     }
 
@@ -289,6 +298,7 @@ async function autoAssignBestRep(
     });
 
     const best = scores[0];
+    console.log('[ASSIGN] Best rep:', best.userId, 'score:', best.score, 'reason:', best.reason);
     return { ok: true, data: best };
   } catch (error: any) {
     console.error('[AUTO ASSIGN BEST REP ERROR]', error.message);

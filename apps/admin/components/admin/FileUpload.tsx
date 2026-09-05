@@ -68,7 +68,7 @@ export default function FileUpload({
       formData.append('category', label.toLowerCase().replace(/\s+/g, '-'));
       const response = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await response.json();
-      if (!response.ok || !data.success) {
+      if (!response.ok || !data.url) {
         setError(data.error || 'Upload failed');
         return null;
       }

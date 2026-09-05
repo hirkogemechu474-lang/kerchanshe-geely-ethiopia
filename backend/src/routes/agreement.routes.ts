@@ -67,6 +67,12 @@ router.get('/:orderId/pdf', async (req: Request, res: Response) => {
 // POST /api/agreement/:orderId/countersign-stamp (staff countersign)
 router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    const existing = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId } });
+    if (!existing) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!existing.signedAt || !existing.signedDocumentUrl) {
+      res.status(400).json({ error: 'The customer must sign the agreement before manager countersignature.' });
+      return;
+    }
     const order = await prisma.salesOrder.update({
       where: { id: req.params.orderId },
       data: {

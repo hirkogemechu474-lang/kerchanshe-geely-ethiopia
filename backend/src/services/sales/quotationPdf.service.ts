@@ -1,5 +1,5 @@
 import { generateSalesQuotationPdf } from '../pdf/salesQuotation.pdf';
-import { quotationRepository } from '../../repositories';
+import { quotationRepository, userRepository } from '../../repositories';
 import { getCompanyInfo } from '../pdf/companyInfo';
 
 // Quotation has no `totalPrice` column — the structured price lives across
@@ -21,6 +21,10 @@ export const quotationPdfService = {
       const totalPrice = computeQuotationTotal(quotation);
       const vehicleModel = quotation.vehicleModel || 'General enquiry';
       const company = await getCompanyInfo();
+      // Prefer the signature URL stored on the Quotation at approval time,
+      // falling back to the manager's staff profile signature.
+      const manager = quotation.managerApprovedById ? await userRepository.findByIdSlim(quotation.managerApprovedById) : null;
+      console.log('[QUOTATION PDF] managerApprovedById:', quotation.managerApprovedById, 'managerSignatureUrl:', (quotation as any).managerSignatureUrl, 'profileSignatureUrl:', manager?.signatureUrl);
 
       const pdfBuffer = await generateSalesQuotationPdf({
         quotationNo: quotation.quotationNo,
@@ -55,6 +59,9 @@ export const quotationPdfService = {
         validUntil: quotation.quotationValidUntil,
         issuedAt: quotation.quotationGeneratedAt,
         totalPrice,
+        customerSignatureUrl: quotation.signedDocumentUrl,
+        managerSignatureUrl: (quotation as any).managerSignatureUrl || manager?.signatureUrl,
+        managerSignerName: manager?.name,
       }, company);
 
       return { ok: true, data: pdfBuffer };

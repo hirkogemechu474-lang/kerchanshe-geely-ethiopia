@@ -84,6 +84,7 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 
 export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   const { t } = useTranslation();
+  const [hiddenOnScroll, setHiddenOnScroll] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
   const [linkGroupOpen, setLinkGroupOpen]   = useState<keyof typeof LINK_GROUPS | null>(null);
@@ -119,6 +120,24 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   useEffect(() => {
     fetchJSON<{ items: SiteNavItem[] }>('/api/public/site-nav?placement=TOP_NAV')
       .then((data) => { if (data?.items?.length) setSiteNavItems(data.items); });
+  }, []);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY <= 24) {
+        setHiddenOnScroll(false);
+      } else if (currentScrollY > lastScrollY + 4) {
+        setHiddenOnScroll(true);
+      } else if (currentScrollY < lastScrollY - 4) {
+        setHiddenOnScroll(false);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const mainNavItems = React.useMemo(
@@ -158,7 +177,7 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md transition-colors dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none">
+    <header className={`sticky top-0 z-50 border-b border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md transition-transform duration-300 dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none ${hiddenOnScroll ? '-translate-y-full' : 'translate-y-0'}`}>
       <div className="page-container">
         <div className="flex min-h-[64px] flex-wrap items-center justify-between gap-2 py-2 sm:min-h-[84px] sm:gap-4 sm:py-3 lg:flex-nowrap lg:gap-8">
           {/* Logo */}

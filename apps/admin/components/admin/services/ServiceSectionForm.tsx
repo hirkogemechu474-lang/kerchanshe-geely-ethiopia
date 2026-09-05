@@ -57,9 +57,9 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
     setError('');
 
     try {
-      const url = isEdit 
-        ? `/api/admin/services/sections/${section?.id}` 
-        : `/api/admin/services/sections`;
+      const url = isEdit
+        ? `/api/services-menu/sections/${section?.id}`
+        : `/api/services-menu/sections`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -75,12 +75,11 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
         }),
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.ok) {
         router.push('/admin/services-menu');
         router.refresh();
       } else {
+        const data = await response.json();
         setError(data.error || 'Failed to save section');
       }
     } catch (err) {
@@ -98,7 +97,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/services/sections/${section?.id}`, {
+      const response = await fetch(`/api/services-menu/sections/${section?.id}`, {
         method: 'DELETE',
       });
 

@@ -68,6 +68,15 @@ export const complaintService = {
             priority: data.priority,
             subject: data.subject,
           },
+          inApp: {
+            type: 'complaint_created',
+            title: `[${data.priority}] New Customer Complaint`,
+            body: `A new ${data.priority.toLowerCase()} priority complaint has been created by ${data.customerName}: "${data.subject}" (${data.category}). Case No: ${caseNo}. Please review and assign action.`,
+            link: `/admin/customers/complaints`,
+            relatedModel: 'complaint',
+            relatedId: caseRecord.id,
+            priority: data.priority === 'CRITICAL' ? 'urgent' : 'high',
+          },
         });
       }
 

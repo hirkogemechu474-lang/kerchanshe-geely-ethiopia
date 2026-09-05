@@ -52,7 +52,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/admin/news/${id}`);
+      const response = await fetch(`/api/news/${id}`);
       
       if (response.status === 404) {
         setError("News article not found");
@@ -135,7 +135,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
       setSaving(true);
       setError('');
 
-      const response = await fetch(`/api/admin/news/${id}`, {
+      const response = await fetch(`/api/news/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -168,7 +168,7 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       setDeleting(true);
-      const response = await fetch(`/api/admin/news/${id}`, {
+      const response = await fetch(`/api/news/${id}`, {
         method: "DELETE",
       });
 

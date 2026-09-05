@@ -25,9 +25,9 @@ export default function FeaturedPartsPage() {
 
   const fetchParts = async () => {
     try {
-      const response = await fetch('/api/parts');
+      const response = await fetch('/api/parts?pageSize=1000');
       const data = await response.json();
-      if (data.spareParts) setParts(data.spareParts);
+      if (data.items) setParts(data.items);
     } catch (error) {
       console.error('Error fetching parts:', error);
     } finally {
@@ -41,10 +41,10 @@ export default function FeaturedPartsPage() {
     setTogglingId(part.id);
     setMessage(null);
     try {
-      const response = await fetch('/api/admin/spare-parts', {
+      const response = await fetch(`/api/parts/${part.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: part.id, isFeatured: !part.isFeatured }),
+        body: JSON.stringify({ isFeatured: !part.isFeatured }),
       });
 
       if (response.ok) {
@@ -64,10 +64,10 @@ export default function FeaturedPartsPage() {
   const updateOrder = async (id: string, displayOrder: number) => {
     setMessage(null);
     try {
-      const response = await fetch('/api/admin/spare-parts', {
+      const response = await fetch(`/api/parts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, displayOrder }),
+        body: JSON.stringify({ displayOrder }),
       });
       if (response.ok) fetchParts();
     } catch (error) {

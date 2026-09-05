@@ -40,7 +40,7 @@ export async function sendEmail(options: {
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!env.smtp.enabled) {
-      console.log('[SMTP DISABLED] Email would have been sent:', options.subject);
+      console.log('[SMTP DISABLED] Email would have been sent:', options.subject, 'to:', Array.isArray(options.to) ? options.to.join(', ') : options.to);
       if (options.attachments) {
         console.log('[SMTP DISABLED] Would have attached:', options.attachments.map(a => a.filename).join(', '));
       }

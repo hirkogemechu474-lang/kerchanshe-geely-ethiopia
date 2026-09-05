@@ -198,7 +198,7 @@ export default async function QuotationDetailPage({
           managerApprovalStatus: quotation.managerApprovalStatus,
           managerApprovedAt: quotation.managerApprovedAt || null,
           managerApprovedByName: managerApprover?.name ?? null,
-          managerSignatureUrl: managerApprover?.signatureUrl ?? null,
+          managerSignatureUrl: quotation.managerSignatureUrl || (managerApprover?.signatureUrl ?? null),
           managerRejectedAt: quotation.managerRejectedAt || null,
           managerRejectionReason: quotation.managerRejectionReason,
         }}

@@ -342,6 +342,33 @@ router.post('/financing-page-content', requireAdminApiSession, async (req: Reque
   }
 });
 
+// The About editor works with the JSON content directly rather than the
+// database setting wrapper returned by the generic route below.
+router.get('/about', requireAdminApiSession, async (_req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'about_page' } });
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
+  } catch (error) {
+    console.error('Get about settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/about', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'about_page' },
+      update: { value },
+      create: { key: 'about_page', value, type: 'general' },
+    });
+    res.json(JSON.parse(setting.value));
+  } catch (error) {
+    console.error('Update about settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/settings/:key (get setting)
 router.get('/:key', requireAdminApiSession, async (req: Request, res: Response) => {
   try {

@@ -8,7 +8,6 @@ import { getBreadcrumbSchema } from "@/lib/schema";
 import { Metadata } from "next";
 import { getAvailabilityBadge } from "@/lib/vehicleData";
 import { Model360Section } from "@/components/Model360Section";
-import { StickyCTABar } from "@/components/StickyCTABar";
 import { ModelPageTabs } from "@/components/ModelPageTabs";
 import { VehicleOptionsShowcase } from "@/components/VehicleOptionsShowcase";
 import { QuickRequestCallback } from "@/components/QuickRequestCallback";
@@ -407,13 +406,11 @@ export default async function VehicleDetailPage({
         <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-6">Exteriors</h2>
           {galleries.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-6">
               {galleries.map((img: string, index: number) => (
                 <div
                   key={`${img}-${index}`}
-                  className={`rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 ${
-                    index === 0 ? "col-span-2 row-span-2 h-[400px]" : "h-[190px]"
-                  }`}
+                  className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
                 >
                   <img
                     src={img}
@@ -612,14 +609,6 @@ export default async function VehicleDetailPage({
         </section>
       )}
 
-      {/* ── STICKY CTA BAR (client component) ────────────────────────── */}
-      <StickyCTABar
-        vehicleSlug={vehicle.slug}
-        vehicleName={vehicle.name}
-        brochureUrl={brochureUrl}
-        visitId={visitId}
-        contactPhone={contactPhone}
-      />
     </MainLayout>
   );
 }

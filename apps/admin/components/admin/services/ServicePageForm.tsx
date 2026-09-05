@@ -59,8 +59,8 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
 
     try {
       const url = mode === 'create'
-        ? '/api/admin/services/pages'
-        : `/api/admin/services/pages/${page?.id}`;
+        ? '/api/services-menu/pages'
+        : `/api/services-menu/pages/${page?.id}`;
 
       const method = mode === 'create' ? 'POST' : 'PUT';
 
@@ -90,7 +90,7 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/services/pages/${page?.id}`, {
+      const response = await fetch(`/api/services-menu/pages/${page?.id}`, {
         method: 'DELETE',
       });
 

@@ -120,6 +120,16 @@ export const orderAgreementService = {
             nextStep: 'Manager review and countersignature is required before payment.',
             adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
           },
+          inApp: {
+            type: 'signature_required',
+            title: 'Customer Signed — Countersignature Required',
+            body: `Hello, customer ${order.customerName} has signed the agreement for order ${order.orderNo} (${order.vehicleModel}). Manager countersignature is required before payment can proceed.`,
+            link: `/admin/orders/${order.id}`,
+            orderId: order.id,
+            relatedModel: 'order',
+            relatedId: order.id,
+            priority: 'high',
+          },
         });
       }
 

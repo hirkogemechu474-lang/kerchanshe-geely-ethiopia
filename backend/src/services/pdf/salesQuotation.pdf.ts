@@ -2,7 +2,7 @@ import {
   openDocument, saveBuffer, addPage, drawHeaderFooter, drawSectionTitle, drawTable,
   drawLabelValue, drawRightText, drawCheckbox, drawSignatureBlock, ensureSpace, wrapText,
   PDF_MARGIN, PDF_CONTENT_WIDTH, PDF_HEADER_CONTENT_Y, COLORS, dateValue, fillValue,
-  formatBrandModel, PagedContext,
+  formatBrandModel, PagedContext, embedSignatureImage,
 } from './pdfLayout';
 import type { CompanyInfo } from './companyInfo';
 
@@ -39,6 +39,9 @@ export interface QuotationPdfData {
   deliveryTerms?: string | null;
   validUntil?: Date | string | null;
   issuedAt?: Date | string | null;
+  customerSignatureUrl?: string | null;
+  managerSignatureUrl?: string | null;
+  managerSignerName?: string | null;
 }
 
 function salesTypeLabel(salesType?: string | null): string {
@@ -94,6 +97,8 @@ const QUOTATION_CONDITIONS = [
 
 export async function generateSalesQuotationPdf(data: QuotationPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
+  const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
+  const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
   let ctx = addPage(doc);
   drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
 
@@ -212,8 +217,13 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   ctx = ensureSpace(ctx, 100);
   drawSignatureBlock(
     ctx,
-    { heading: 'CUSTOMER', name: data.customerName },
-    { heading: company.legalName.toUpperCase(), name: data.salesExecutiveName, showStamp: true },
+    { heading: 'CUSTOMER', name: data.customerName, signatureImage: customerSignatureImage },
+    {
+      heading: company.legalName.toUpperCase(),
+      name: data.managerSignerName || data.salesExecutiveName,
+      showStamp: true,
+      signatureImage: managerSignatureImage,
+    },
   );
 
   return saveBuffer(doc);

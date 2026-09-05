@@ -43,12 +43,12 @@ export default function ServicesMenuList() {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('/api/admin/services/sections');
-      const data = await response.json();
-      if (data.success) {
-        setSections(data.sections || []);
+      const response = await fetch('/api/services-menu/sections');
+      if (response.ok) {
+        const data = await response.json();
+        setSections(data || []);
         // Expand all sections by default
-        setExpandedSections(new Set(data.sections.map((s: ServiceSection) => s.id)));
+        setExpandedSections(new Set((data || []).map((s: ServiceSection) => s.id)));
       }
     } catch (error) {
       console.error('Error fetching sections:', error);
@@ -73,7 +73,7 @@ export default function ServicesMenuList() {
     }
 
     try {
-      const response = await fetch(`/api/admin/services/sections/${id}`, {
+      const response = await fetch(`/api/services-menu/sections/${id}`, {
         method: 'DELETE',
       });
 
@@ -95,7 +95,7 @@ export default function ServicesMenuList() {
     }
 
     try {
-      const response = await fetch(`/api/admin/services/items/${id}`, {
+      const response = await fetch(`/api/services-menu/items/${id}`, {
         method: 'DELETE',
       });
 

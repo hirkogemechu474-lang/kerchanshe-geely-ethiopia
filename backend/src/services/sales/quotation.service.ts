@@ -110,9 +110,11 @@ export const quotationService = {
       // Send lead assignment notification if auto-assigned
       if (assignedRep && assignedRep.userId) {
         const assignedUser = await userRepository.findById(assignedRep.userId);
+        console.log('[QUOTATION CREATE] Assigned rep:', assignedRep.userId, 'email:', assignedUser?.email);
         if (assignedUser?.email) {
           const managerEmails = await getManagerEmails();
-          await dispatchNotification({
+          console.log('[QUOTATION CREATE] Sending notification to:', [assignedUser.email, ...managerEmails]);
+          const notificationResult = await dispatchNotification({
             type: 'lead_assignment',
             to: [assignedUser.email, ...managerEmails],
             subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
@@ -124,8 +126,23 @@ export const quotationService = {
               vehicleModel: quotation.vehicleModel,
               assignedTo: assignedUser.name,
             },
+            inApp: {
+              type: 'lead_assignment',
+              title: 'New Quotation Assigned',
+              body: `Hello ${assignedUser.name}, you have been assigned a new quotation${quotation.reference ? ` (${quotation.reference})` : ''} for ${quotation.customerName}${quotation.vehicleModel ? ` — ${quotation.vehicleModel}` : ''}. Please review and follow up.`,
+              link: `/admin/quotations/${quotation.id}`,
+              quotationId: quotation.id,
+              relatedModel: 'quotation',
+              relatedId: quotation.id,
+              priority: 'high',
+            },
           });
+          console.log('[QUOTATION CREATE] Notification result:', notificationResult);
+        } else {
+          console.log('[QUOTATION CREATE] No email found for assigned rep:', assignedRep.userId);
         }
+      } else {
+        console.log('[QUOTATION CREATE] No rep assigned. assignedRep:', assignedRep);
       }
 
       return { ok: true, data: quotation, assignedRep, discountAuthorized, discountRequiresManager };
@@ -193,6 +210,16 @@ export const quotationService = {
                 reason: `Auto-escalation after ${timeoutMinutes} minutes without a response from the previous assignee.`,
                 nextStep: 'Please contact the customer as soon as possible.',
                 adminLink: `${process.env.ADMIN_URL || 'http://localhost:7500'}/admin/quotations/${quotation.id}`,
+              },
+              inApp: {
+                type: 'lead_assignment',
+                title: 'Quotation Escalated to You',
+                body: `Hello ${newAssignee.name}, quotation ${quotation.reference || ''} for ${quotation.customerName} has been escalated to you after ${timeoutMinutes} minutes without response. Please contact the customer as soon as possible.`,
+                link: `/admin/quotations/${quotation.id}`,
+                quotationId: quotation.id,
+                relatedModel: 'quotation',
+                relatedId: quotation.id,
+                priority: 'urgent',
               },
             });
           }

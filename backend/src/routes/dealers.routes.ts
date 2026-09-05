@@ -9,7 +9,9 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
-    const search = req.query.search as string;
+    const search = (req.query.q as string) || (req.query.search as string);
+    const city = req.query.city as string;
+    const type = req.query.type as string;
 
     const where: any = {};
     if (search) {
@@ -18,6 +20,8 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
         { city: { contains: search, mode: 'insensitive' } },
       ];
     }
+    if (city && city !== 'all') where.city = city;
+    if (type && type !== 'all') where.type = type;
 
     const [items, total] = await Promise.all([
       prisma.dealer.findMany({
@@ -29,7 +33,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       prisma.dealer.count({ where }),
     ]);
 
-    res.json({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+    res.json({ success: true, dealers: items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error) {
     console.error('List dealers error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -40,7 +44,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const dealer = await prisma.dealer.create({ data: req.body });
-    res.status(201).json(dealer);
+    res.status(201).json({ success: true, dealer });
   } catch (error) {
     console.error('Create dealer error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -63,7 +67,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const dealer = await prisma.dealer.update({ where: { id: req.params.id }, data: req.body });
-    res.json(dealer);
+    res.json({ success: true, dealer });
   } catch (error) {
     console.error('Update dealer error:', error);
     res.status(500).json({ error: 'Internal server error' });

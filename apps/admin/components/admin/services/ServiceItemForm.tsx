@@ -53,10 +53,10 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('/api/admin/services/sections');
+      const response = await fetch('/api/services-menu/sections');
       if (response.ok) {
         const data = await response.json();
-        setSections(data.sections || []);
+        setSections(data || []);
       }
     } catch (error) {
       console.error('Error fetching sections:', error);
@@ -71,8 +71,8 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
 
     try {
       const url = mode === 'create'
-        ? '/api/admin/services/items'
-        : `/api/admin/services/items/${item?.id}`;
+        ? '/api/services-menu/items'
+        : `/api/services-menu/items/${item?.id}`;
 
       const method = mode === 'create' ? 'POST' : 'PUT';
 
@@ -106,7 +106,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/services/items/${item?.id}`, {
+      const response = await fetch(`/api/services-menu/items/${item?.id}`, {
         method: 'DELETE',
       });
 

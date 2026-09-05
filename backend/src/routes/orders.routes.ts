@@ -30,6 +30,13 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     const pageSize = parseInt(req.query.pageSize as string) || 20;
     const search = req.query.search as string;
     const status = req.query.status as string;
+    // "direct" = orders placed straight from the public /purchases flow
+    // (see public.routes.ts POST /purchases), as opposed to orders created
+    // by staff converting a Quotation. quotationId is only ever set on the
+    // latter (see admin/app/api/admin/quotations/[id]/convert-to-order),
+    // so it doubles as the discriminator — there's no separate `source`
+    // column on SalesOrder. Used by the admin "Purchases" screen.
+    const direct = req.query.direct as string;
 
     const where: any = {};
     if (search) {
@@ -40,6 +47,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       ];
     }
     if (status) where.status = status;
+    if (direct === 'true') where.quotationId = null;
 
     const result = await orderService.list({ where, page, pageSize });
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
