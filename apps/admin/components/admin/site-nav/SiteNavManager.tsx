@@ -218,6 +218,29 @@ export default function SiteNavManager({ topNav }: { topNav: SiteNavItem[] }) {
               </label>
             </div>
 
+            <Field label="Publication Status" hint="Independent of &quot;Active&quot; above — both must allow it for the item to show in the header">
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as FormState['status'] }))}
+                className="input"
+              >
+                <option value="DRAFT">Draft</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="PUBLISHED">Published</option>
+              </select>
+            </Field>
+
+            {form.status === 'SCHEDULED' && (
+              <Field label="Publish At">
+                <input
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  className="input"
+                />
+              </Field>
+            )}
+
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <ModalActions>

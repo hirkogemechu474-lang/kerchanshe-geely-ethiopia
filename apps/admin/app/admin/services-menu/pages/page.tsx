@@ -110,21 +110,26 @@ export default async function ServicePagesPage() {
                   </div>
                 </Td>
                 <Td>
-                  {page.isPublished ? (
-                    <Badge tone="green">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        Published
-                      </span>
+                  <div className="flex flex-col items-start gap-1">
+                    {page.isPublished ? (
+                      <Badge tone="green">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          Published
+                        </span>
+                      </Badge>
+                    ) : (
+                      <Badge tone="gray">
+                        <span className="flex items-center gap-1">
+                          <EyeOff className="w-3 h-3" />
+                          Draft
+                        </span>
+                      </Badge>
+                    )}
+                    <Badge tone={page.status === 'PUBLISHED' ? 'green' : page.status === 'SCHEDULED' ? 'orange' : 'gray'}>
+                      {page.status === 'PUBLISHED' ? 'Published' : page.status === 'SCHEDULED' ? 'Scheduled' : 'Draft'}
                     </Badge>
-                  ) : (
-                    <Badge tone="gray">
-                      <span className="flex items-center gap-1">
-                        <EyeOff className="w-3 h-3" />
-                        Draft
-                      </span>
-                    </Badge>
-                  )}
+                  </div>
                 </Td>
                 <Td className="text-gray-500">
                   {new Date(page.updatedAt).toLocaleDateString('en-US', {

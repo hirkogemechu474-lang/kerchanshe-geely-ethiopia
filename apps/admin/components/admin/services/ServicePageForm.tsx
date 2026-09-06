@@ -17,6 +17,8 @@ interface ServicePageFormProps {
     metaTitle: string | null;
     metaDescription: string | null;
     isPublished: boolean;
+    status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+    scheduledAt: string | null;
   };
   mode: 'create' | 'edit';
 }
@@ -35,6 +37,8 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
     metaTitle: page?.metaTitle || '',
     metaDescription: page?.metaDescription || '',
     isPublished: page?.isPublished !== undefined ? page.isPublished : false,
+    status: page?.status || 'PUBLISHED',
+    scheduledAt: page?.scheduledAt ? new Date(page.scheduledAt).toISOString().slice(0, 16) : '',
   });
 
   const generateSlug = (title: string) => {
@@ -300,6 +304,39 @@ export default function ServicePageForm({ page, mode }: ServicePageFormProps) {
             />
           </button>
         </div>
+      </div>
+
+      {/* Publication Status */}
+      <div className="border-t pt-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Publication Status
+        </label>
+        <select
+          value={formData.status}
+          onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="PUBLISHED">Published</option>
+        </select>
+        <p className="mt-1 text-sm text-gray-500">
+          Independent of "Published" above — both must allow it for the page to be reachable.
+        </p>
+
+        {formData.status === 'SCHEDULED' && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Publish At
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.scheduledAt || ''}
+              onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+            />
+          </div>
+        )}
       </div>
 
       {/* Submit Buttons */}

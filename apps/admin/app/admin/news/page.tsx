@@ -7,6 +7,7 @@ import { PageHeader, LinkButton, StatTile, TableCard, THead, TBody, Tr, Th, Td, 
 function articleStatusTone(status: string): Tone {
   if (status === 'published') return 'green';
   if (status === 'draft') return 'gray';
+  if (status === 'scheduled') return 'orange';
   return 'blue';
 }
 

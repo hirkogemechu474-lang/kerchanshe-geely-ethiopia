@@ -340,6 +340,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               >
                 <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
                 <option value="published">Published</option>
               </select>
             </div>
@@ -357,7 +358,11 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
-              <p className="mt-1 text-xs text-gray-500">Leave empty to use current date</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.status === 'scheduled'
+                  ? 'Article goes live automatically once this date/time passes.'
+                  : 'Leave empty to use current date'}
+              </p>
             </div>
           </div>
         </div>
