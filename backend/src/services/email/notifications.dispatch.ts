@@ -124,7 +124,7 @@ async function createInAppNotifications(payload: NotificationPayload) {
 
 function buildNotificationHtml(payload: NotificationPayload): string {
   const dataEntries = Object.entries(payload.data)
-    .map(([key, value]) => `<p style="margin: 4px 0;"><strong>${formatKey(key)}:</strong> ${value}</p>`)
+    .map(([key, value]) => `<p style="margin: 4px 0;"><strong>${formatKey(key)}:</strong> ${formatValue(value)}</p>`)
     .join('');
 
   return `
@@ -135,6 +135,13 @@ function buildNotificationHtml(payload: NotificationPayload): string {
       </div>
     </div>
   `;
+}
+
+function formatValue(value: unknown): string {
+  if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
+    return `<a href="${value}" style="color: #194BFF;">${value}</a>`;
+  }
+  return String(value);
 }
 
 function formatKey(key: string): string {

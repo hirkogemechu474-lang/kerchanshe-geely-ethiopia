@@ -671,6 +671,7 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
           phoneNumber: quotation.phoneNumber,
           vehicleModel: quotation.vehicleModel,
           assignedTo: assignedRep.name,
+          adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
         },
         inApp: {
           type: 'lead_assignment',

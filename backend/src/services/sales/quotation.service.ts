@@ -4,6 +4,7 @@ import { assignSalesRep, type AssignmentFactors } from './assignSalesRep';
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { checkDiscountAuthorization, type DiscountAuthority } from '../../services/discount/discount.authority';
+import { env } from '../../config/env';
 
 let cachedManagerEmails: string[] | null = null;
 let managerEmailsCachedAt = 0;
@@ -125,6 +126,7 @@ export const quotationService = {
               phoneNumber: quotation.phoneNumber,
               vehicleModel: quotation.vehicleModel,
               assignedTo: assignedUser.name,
+              adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
             },
             inApp: {
               type: 'lead_assignment',

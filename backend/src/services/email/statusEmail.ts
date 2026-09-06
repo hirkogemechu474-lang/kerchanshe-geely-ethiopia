@@ -7,6 +7,8 @@ export async function sendQuotationConfirmationEmail(params: {
   reference: string;
   vehicleModel?: string;
 }): Promise<{ ok: boolean; error?: string }> {
+  const trackingLink = `${env.urls.site}/status?ref=${encodeURIComponent(params.reference)}`;
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #000; padding: 30px; text-align: center;">
@@ -27,6 +29,10 @@ export async function sendQuotationConfirmationEmail(params: {
           <p style="margin: 0 0 8px; font-weight: bold; color: #1a1a2e; font-size: 16px;">What Happens Next?</p>
           <p style="margin: 0 0 10px; color: #333;">A dedicated sales consultant will be assigned to your request. They will contact you shortly to discuss your requirements and prepare a personalized quotation.</p>
           <p style="margin: 0; color: #333;">Please keep your reference number (<strong>${params.reference}</strong>) handy for any future inquiries.</p>
+        </div>
+
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${trackingLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Track Your Request</a>
         </div>
 
         <p style="color: #666;">If you have any questions, please don't hesitate to contact us.</p>
