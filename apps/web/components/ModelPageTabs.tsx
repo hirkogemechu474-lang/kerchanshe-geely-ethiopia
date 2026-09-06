@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Camera, Settings, RotateCw, Star, ShieldCheck, Menu, X } from 'lucide-react';
+import { Camera, Settings, RotateCw, Star, ShieldCheck, Menu, X, Monitor, Heart, Zap } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 // Ordered to match the anchor-nav pattern on Geely's regional model pages
@@ -11,8 +11,10 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: Star, href: '#section-overview' },
   { id: '360', label: '360°', icon: RotateCw, href: '#section-360' },
   { id: 'exteriors', label: 'Exteriors', icon: Camera, href: '#section-exteriors' },
-  { id: 'interiors', label: 'Interiors', icon: Camera, href: '#section-options' },
-  { id: 'safety', label: 'Safety', icon: ShieldCheck, href: '#section-safety' },
+  { id: 'interior-gallery', label: 'Interior', icon: Camera, href: '#section-interior-gallery' },
+  { id: 'comfort', label: 'Comfort', icon: Heart, href: '#section-comfort' },
+  { id: 'technology', label: 'Technology', icon: Monitor, href: '#section-technology' },
+  { id: 'safety-adas', label: 'Safety', icon: ShieldCheck, href: '#section-safety-adas' },
   { id: 'specs', label: 'Technical Specs', icon: Settings, href: '#section-specs' },
 ];
 

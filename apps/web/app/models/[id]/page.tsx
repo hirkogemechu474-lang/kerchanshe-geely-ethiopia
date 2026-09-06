@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
 import apiClient from "@/lib/apiClient";
-import { Check, Phone, MessageCircle, Download } from "lucide-react";
+import { Check, Phone, MessageCircle, Download, ShieldCheck } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { getBreadcrumbSchema } from "@/lib/schema";
 import { Metadata } from "next";
@@ -402,6 +402,180 @@ export default async function VehicleDetailPage({
         vehicleName={vehicle.name}
         testDriveHref={`/test-drive?model=${vehicle.slug}${visitParam}`}
       />
+
+      {/* ── INTERIOR GALLERY SECTION ──────────────────────────────────── */}
+      <section id="section-interior-gallery" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <div className="page-container">
+          <div className="mb-10 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+              Interior
+            </div>
+            <h2 className="disp text-3xl text-navy font-bold mb-4">Interior Design</h2>
+            <p className="text-steel text-base max-w-2xl">
+              Where intuitive technology meets refined comfort, the {vehicle.name} transforms every journey into a seamless, rewarding experience.
+            </p>
+          </div>
+          {(() => {
+            const interiorImages = publicImageList.slice(1, 5);
+            if (interiorImages.length === 0) {
+              return (
+                <div className="text-center text-steel py-12 border border-dashed border-line rounded-xl">
+                  Interior images are managed from the admin panel.
+                </div>
+              );
+            }
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {interiorImages.map((img: string, index: number) => (
+                  <div
+                    key={`interior-${index}`}
+                    className="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
+                  >
+                    <ImageWithFallback
+                      src={img}
+                      alt={`${vehicle.name} interior ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      iconClassName="h-10 w-10"
+                    />
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── COMFORT & EXPERIENCE SECTION ───────────────────────────────── */}
+      <section id="section-comfort" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <div className="page-container">
+          <div className="mb-10 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+              Comfort & Experience
+            </div>
+            <h2 className="disp text-3xl text-navy font-bold mb-4">Comfort & Experience</h2>
+            <p className="text-steel text-base max-w-2xl">
+              Step inside the {vehicle.name} and discover a cabin where comfort meets intelligence. Every detail is thoughtfully designed to make every journey effortless.
+            </p>
+          </div>
+          {(() => {
+            const comfortFeatures = [
+              { title: "Spacious Cabin", description: "Ample legroom and thoughtful design ensure every passenger travels in comfort." },
+              { title: "Premium Seating", description: "Generous front seating with refined finishes for a premium ride experience." },
+              { title: "Smart Storage", description: "Smart storage solutions throughout to keep your essentials neatly organised." },
+              { title: "Ambient Lighting", description: "Customisable ambient lighting changes color to match your style or mood." },
+            ];
+            const comfortImages = publicImageList.slice(2, 6);
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                <div className="space-y-6">
+                  {comfortFeatures.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-active-blue/10 flex items-center justify-center shrink-0">
+                        <Check size={18} className="text-active-blue" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-navy mb-1">{feature.title}</h3>
+                        <p className="text-sm text-steel">{feature.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {comfortImages.slice(0, 2).map((img: string, index: number) => (
+                    <div
+                      key={`comfort-${index}`}
+                      className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
+                    >
+                      <ImageWithFallback
+                        src={img}
+                        alt={`${vehicle.name} comfort ${index + 1}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        iconClassName="h-8 w-8"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── TECHNOLOGY SECTION ──────────────────────────────────────────── */}
+      <section id="section-technology" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <div className="page-container">
+          <div className="mb-10 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+              Technology
+            </div>
+            <h2 className="disp text-3xl text-navy font-bold mb-4">Next Generation Tech</h2>
+            <p className="text-steel text-base max-w-2xl">
+              At the core of the {vehicle.name} lies advanced technology, engineered for exceptional efficiency, uncompromising safety, and seamless everyday practicality.
+            </p>
+          </div>
+          {(() => {
+            const techFeatures = [
+              { title: "Advanced Powertrain", description: "Smooth, efficient, and responsive performance for every drive.", icon: "⚡" },
+              { title: "Battery Protection", description: "Reinforced underbody shielding safeguards the battery against impact.", icon: "🔋" },
+              { title: "Smart Infotainment", description: "Large touchscreen with Apple CarPlay & Android Auto connectivity.", icon: "📱" },
+              { title: "Connectivity", description: "Bluetooth, 4G LTE, Wi-Fi, and multiple USB-C ports.", icon: "📡" },
+            ];
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {techFeatures.map((feature, index) => (
+                  <div key={index} className="text-center p-6 rounded-xl bg-ice hover:shadow-lg transition-shadow duration-300">
+                    <div className="text-4xl mb-4">{feature.icon}</div>
+                    <h3 className="font-bold text-navy mb-2">{feature.title}</h3>
+                    <p className="text-sm text-steel">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── SAFETY/ADAS SECTION ────────────────────────────────────────── */}
+      <section id="section-safety-adas" className="scroll-mt-[108px] bg-ink text-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <div className="page-container">
+          <div className="mb-10 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 bg-active-blue/20 text-active-blue-80 px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+              Safety
+            </div>
+            <h2 className="disp text-3xl font-bold mb-4">Smart Driving, Enhanced Safety</h2>
+            <p className="text-white/70 text-base max-w-2xl">
+              Drive with greater confidence, thanks to the {vehicle.name}'s intelligent advanced driver assistance systems.
+            </p>
+          </div>
+          {(() => {
+            const safetyFeatures = [
+              { title: "Adaptive Cruise Control", description: "Maintains a safe distance from the car in front by automatically adjusting your speed." },
+              { title: "Automatic Emergency Braking", description: "Applies the brakes if vehicles or obstacles are detected helping reduce the risk of collisions." },
+              { title: "Blind Spot Detection", description: "Alerts you to vehicles in your blind spots for safer lane changes." },
+              { title: "Lane Departure Warning", description: "Warns you if you unintentionally drift out of your lane." },
+              { title: "Rear Cross Traffic Alert", description: "Warns of vehicles, cyclists, or pedestrians approaching from the side while reversing." },
+              { title: "Door Open Warning", description: "Warns the driver if a moving obstacle is detected when opening the door." },
+            ];
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {safetyFeatures.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-4 p-5 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors duration-300">
+                    <div className="w-10 h-10 rounded-full bg-active-blue/20 flex items-center justify-center shrink-0">
+                      <ShieldCheck size={18} className="text-active-blue-80" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white mb-1">{feature.title}</h3>
+                      <p className="text-sm text-white/70">{feature.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
 
       {/* ── GALLERY SECTION ───────────────────────────────────────────── */}
       <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
