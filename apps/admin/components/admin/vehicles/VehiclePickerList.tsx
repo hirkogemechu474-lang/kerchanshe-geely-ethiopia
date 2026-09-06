@@ -36,10 +36,10 @@ export default function VehiclePickerList({
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/vehicles?limit=200&page=1');
+        const res = await fetch('/api/vehicles?pageSize=200&page=1');
         if (res.ok) {
           const data = await res.json();
-          setVehicles(data.vehicles || []);
+          setVehicles(data.items || []);
         }
       } finally {
         setLoading(false);

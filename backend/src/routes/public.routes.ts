@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import type { SiteNavPlacement } from '@prisma/client';
 import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository, vehicleRepository } from '../repositories';
@@ -12,6 +13,34 @@ import { env } from '../config/env';
 let cachedManagerEmails: string[] | null = null;
 let managerEmailsCachedAt = 0;
 const MANAGER_EMAIL_CACHE_TTL = 5 * 60 * 1000;
+
+// Combined draft/scheduled/published visibility gate (see `ContentStatus` in
+// prisma/schema.prisma) for HeroSection, FAQ, VehicleShowcase, SiteNavItem,
+// and ServicePage. This is ADDITIONAL to each model's own isActive/
+// isPublished kill-switch below, not a replacement — spread both into the
+// same `where`. PUBLISHED rows are always visible; SCHEDULED rows become
+// visible once `scheduledAt` has passed.
+function publishedOrDue() {
+  return {
+    OR: [
+      { status: 'PUBLISHED' as const },
+      { status: 'SCHEDULED' as const, scheduledAt: { lte: new Date() } },
+    ],
+  };
+}
+
+// Same gate for NewsArticle, which predates ContentStatus and keeps its own
+// `status: String` ('draft'/'scheduled'/'published') + `publishDate` fields
+// instead (see the note on that model in schema.prisma) — reusing them here
+// rather than adding a second, colliding `status` field.
+function newsPublishedOrDue() {
+  return {
+    OR: [
+      { status: 'published' as const },
+      { status: 'scheduled' as const, publishDate: { lte: new Date() } },
+    ],
+  };
+}
 
 async function getManagerEmails(): Promise<string[]> {
   const now = Date.now();
@@ -142,7 +171,7 @@ router.get('/categories/:slug', async (req: Request, res: Response) => {
 router.get('/hero', async (req: Request, res: Response) => {
   try {
     const heroSections = await prisma.heroSection.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...publishedOrDue() },
       orderBy: { sortOrder: 'asc' },
     });
     res.json(heroSections);
@@ -175,7 +204,7 @@ router.get('/about', async (req: Request, res: Response) => {
 router.get('/faq', async (req: Request, res: Response) => {
   try {
     const faqs = await prisma.fAQ.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...publishedOrDue() },
       orderBy: { displayOrder: 'asc' },
     });
     res.json(faqs);
@@ -188,7 +217,7 @@ router.get('/faq', async (req: Request, res: Response) => {
 router.get('/showcase', async (req: Request, res: Response) => {
   try {
     const showcases = await prisma.vehicleShowcase.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...publishedOrDue() },
       orderBy: { sortOrder: 'asc' },
     });
     res.json(showcases);
@@ -201,7 +230,7 @@ router.get('/showcase', async (req: Request, res: Response) => {
 router.get('/cookie-banner', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'cookie_banner' } });
-    res.json(setting?.value || { enabled: true, message: '' });
+    res.json(setting?.value ? JSON.parse(setting.value) : { enabled: true, message: '' });
   } catch (error) {
     console.error('Get cookie banner error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -218,10 +247,75 @@ router.get('/social-media', async (req: Request, res: Response) => {
   }
 });
 
+// Public read for the footer's 4 link columns + legal links row, edited at
+// Settings > Footer Content (admin: GET/PUT /api/admin/content/footer, same
+// `footer_content` Setting key). Default below matches the literal arrays
+// that used to be hardcoded in apps/web/components/Footer.tsx so a fresh
+// install renders identically until an admin edits it. The "Models" column's
+// `links` are intentionally empty — Footer.tsx renders that column from the
+// live GET /api/public/vehicles list instead, using only this column's
+// heading; likewise the "Support" column only carries "Contact Us" here —
+// phone/email/address come from the separate contact-information endpoint.
+router.get('/footer', async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'footer_content' } });
+    res.json(setting?.value ? JSON.parse(setting.value) : {
+      columns: [
+        {
+          heading: 'Company',
+          links: [
+            { label: 'Home', href: '/' },
+            { label: 'About Geely Ethiopia', href: '/about' },
+            { label: 'News & Media', href: '/news' },
+            { label: 'Customer Reviews', href: '/testimonials' },
+          ],
+        },
+        { heading: 'Models', links: [] },
+        {
+          heading: 'After-Sales Services',
+          links: [
+            { label: 'Service Booking', href: '/service' },
+            { label: 'Warranty', href: '/warranty' },
+            { label: 'Spare Parts', href: '/parts' },
+            { label: 'Roadside Assistance', href: '/roadside' },
+          ],
+        },
+        { heading: 'Support', links: [{ label: 'Contact Us', href: '/contact' }] },
+      ],
+      legalLinks: [
+        { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Cookie Policy', href: '/cookies' },
+      ],
+    });
+  } catch (error) {
+    console.error('Get footer content error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/public/site-nav?placement=TOP_NAV — read by apps/web Header.tsx
+// for the header's main nav / mobile drawer (expects `{ items: [...] }`).
+// NOTE: this used to read a `Setting['site_navigation']` JSON blob that
+// nothing in the codebase ever writes to (grep confirms zero writers) — it
+// always resolved to `[]`/null, so Header.tsx silently fell back to its own
+// hardcoded DEFAULT_NAV_ITEMS on every load and admin edits to SiteNavItem
+// (via SiteNavManager) never actually reached the public site. Fixed to
+// query the real SiteNavItem model instead — found while wiring the
+// draft/scheduled/published gate below, since there was no real query here
+// to add it to.
 router.get('/site-nav', async (req: Request, res: Response) => {
   try {
-    const setting = await prisma.setting.findUnique({ where: { key: 'site_navigation' } });
-    res.json(setting?.value || []);
+    const placement = req.query.placement as SiteNavPlacement | undefined;
+    const items = await prisma.siteNavItem.findMany({
+      where: {
+        isActive: true,
+        ...publishedOrDue(),
+        ...(placement ? { placement } : {}),
+      },
+      orderBy: { displayOrder: 'asc' },
+    });
+    res.json({ items });
   } catch (error) {
     console.error('Get site nav error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -272,6 +366,23 @@ router.get('/vehicle-settings', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/public/seo-settings — default meta title/description, OG image,
+// Twitter handle, keywords, GA4 ID, Search Console verification code,
+// Facebook/Meta Pixel ID, and optional extra robots.txt text. Read by
+// apps/web for site-wide page metadata (app/layout.tsx's generateMetadata),
+// conditional GA4/Pixel script injection, and app/robots.ts. Same
+// Setting['seo_settings'] key the admin-only GET/POST pair in
+// settings.routes.ts reads/writes.
+router.get('/seo-settings', async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'seo_settings' } });
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
+  } catch (error) {
+    console.error('Get SEO settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/warranty-page', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'warranty_page' } });
@@ -285,7 +396,7 @@ router.get('/warranty-page', async (req: Request, res: Response) => {
 router.get('/ev-savings-calculator', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'ev_calculator' } });
-    res.json(setting?.value || {});
+    res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get EV calculator error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -420,8 +531,8 @@ router.get('/news', async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const [items, total] = await Promise.all([
-      prisma.newsArticle.findMany({ where: { status: 'published' }, orderBy: { publishDate: 'desc' }, skip: (page - 1) * pageSize, take: pageSize, select: { id: true, title: true, author: true, excerpt: true, imageUrl: true, publishDate: true, createdAt: true, category: true } }),
-      prisma.newsArticle.count({ where: { status: 'published' } }),
+      prisma.newsArticle.findMany({ where: newsPublishedOrDue(), orderBy: { publishDate: 'desc' }, skip: (page - 1) * pageSize, take: pageSize, select: { id: true, title: true, author: true, excerpt: true, imageUrl: true, publishDate: true, createdAt: true, category: true } }),
+      prisma.newsArticle.count({ where: newsPublishedOrDue() }),
     ]);
     res.json({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error) {
@@ -433,10 +544,14 @@ router.get('/news', async (req: Request, res: Response) => {
 router.get('/news/:id', async (req: Request, res: Response) => {
   try {
     const article = await prisma.newsArticle.findUnique({ where: { id: req.params.id } });
-    if (!article || article.status !== 'published') { res.status(404).json({ error: 'Article not found' }); return; }
+    const isVisible = !!article && (
+      article.status === 'published' ||
+      (article.status === 'scheduled' && !!article.publishDate && article.publishDate <= new Date())
+    );
+    if (!article || !isVisible) { res.status(404).json({ error: 'Article not found' }); return; }
     await prisma.newsArticle.update({ where: { id: article.id }, data: { views: { increment: 1 } } });
     const related = await prisma.newsArticle.findMany({
-      where: { id: { not: article.id }, category: article.category, status: 'published' },
+      where: { id: { not: article.id }, category: article.category, ...newsPublishedOrDue() },
       take: 3,
       orderBy: { publishDate: 'desc' },
     });
@@ -801,7 +916,7 @@ router.get('/services/menu', async (req: Request, res: Response) => {
 
 router.get('/services/pages/:slug', async (req: Request, res: Response) => {
   try {
-    const page = await prisma.servicePage.findFirst({ where: { slug: req.params.slug, isPublished: true } });
+    const page = await prisma.servicePage.findFirst({ where: { slug: req.params.slug, isPublished: true, ...publishedOrDue() } });
     if (!page) { res.status(404).json({ error: 'Service page not found' }); return; }
     res.json(page);
   } catch (error) {

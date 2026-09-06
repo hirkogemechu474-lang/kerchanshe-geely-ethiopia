@@ -16,10 +16,17 @@ interface HeroSection {
   posterUrl: string | null;
   buttonText: string | null;
   buttonLink: string | null;
-  status: string;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+  scheduledAt: string | null;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
+}
+
+function contentStatusTone(status: string): 'gray' | 'orange' | 'green' {
+  if (status === 'PUBLISHED') return 'green';
+  if (status === 'SCHEDULED') return 'orange';
+  return 'gray';
 }
 
 export default function HeroSectionList() {
@@ -170,17 +177,22 @@ export default function HeroSectionList() {
               </Badge>
             </Td>
             <Td>
-              <button
-                onClick={() => handleToggleActive(hero.id, hero.isActive)}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                  hero.isActive
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {hero.isActive ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                {hero.isActive ? 'Active' : 'Inactive'}
-              </button>
+              <div className="flex flex-col items-start gap-1">
+                <button
+                  onClick={() => handleToggleActive(hero.id, hero.isActive)}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                    hero.isActive
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {hero.isActive ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                  {hero.isActive ? 'Active' : 'Inactive'}
+                </button>
+                <Badge tone={contentStatusTone(hero.status)}>
+                  {hero.status === 'PUBLISHED' ? 'Published' : hero.status === 'SCHEDULED' ? 'Scheduled' : 'Draft'}
+                </Badge>
+              </div>
             </Td>
             <Td className="text-right">
               <div className="flex items-center justify-end gap-2">

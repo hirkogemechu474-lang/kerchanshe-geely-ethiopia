@@ -1,4 +1,4 @@
-import { salesOrderRepository, userRepository } from '../../repositories';
+import { salesOrderRepository, userRepository, documentSignatureRepository } from '../../repositories';
 import { signLinkToken, verifyLinkToken } from '../../utils/secureLink';
 import { generateHandoverPdf, HandoverPdfData, HandoverItemRow, InspectionRow, EvGuidanceRow } from '../pdf/handover.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
@@ -92,6 +92,15 @@ export const orderHandoverService = {
         handoverSignedDocumentUrl,
         handoverSignedAt: new Date(),
       });
+
+      try {
+        await documentSignatureRepository.upsert('HANDOVER', orderId, 'customer', {
+          signedByName: order.customerName,
+          signatureUrl: handoverSignedDocumentUrl,
+        });
+      } catch {
+        // Signature-log write failure should not block the customer sign flow.
+      }
 
       return { ok: true, data: updated };
     } catch (error: any) {

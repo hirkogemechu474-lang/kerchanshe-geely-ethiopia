@@ -11,6 +11,38 @@ import Script from "next/script";
 import { inter, manrope, notoSansEthiopic } from "@/lib/fonts";
 import { env } from "@/lib/env";
 import { BASE_PATH, withBasePath, withBasePathUrl } from "@/lib/basePath";
+import apiClient from "@/lib/apiClient";
+
+// Site-wide SEO defaults (default meta title/description, OG image, Twitter
+// handle, keywords, GA4 ID, Search Console verification, Facebook/Meta Pixel
+// ID, extra robots.txt rules) — admin-managed at /admin/settings/seo, backed
+// by Setting['seo_settings']. Read here both for generateMetadata()'s
+// site-wide fallback (individual pages that set their own metadata still
+// take precedence — Next.js merges child metadata over these parent
+// defaults) and for the conditional GA4/Pixel script injection below.
+// Fetched with a bare object fallback so a down backend never breaks page
+// rendering, just falls back to the previous hardcoded copy.
+type SeoSettings = {
+  defaultMetaTitle?: string;
+  defaultMetaTitleTemplate?: string;
+  defaultMetaDescription?: string;
+  ogImageUrl?: string;
+  twitterHandle?: string;
+  defaultKeywords?: string;
+  googleAnalyticsId?: string;
+  googleSiteVerification?: string;
+  facebookPixelId?: string;
+  robotsExtra?: string;
+};
+
+async function getSeoSettings(): Promise<SeoSettings> {
+  try {
+    const { data } = await apiClient.get("/public/seo-settings");
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -21,51 +53,86 @@ export const viewport: Viewport = {
 
 const BASE_URL = withBasePathUrl(env.app.url);
 
-export const metadata: Metadata = {
-  title: "Geely Ethiopia | Official Distributor by Kerchanshe Group Geely",
-  description: "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads.",
-  keywords: "Geely Ethiopia, Geely cars, SUV Ethiopia, Electric vehicles Ethiopia, Kerchanshe Group Geely, Coolray, Emgrand, Monjaro",
-  manifest: withBasePath("/manifest.json"),
-  metadataBase: new URL(BASE_URL),
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Geely Ethiopia",
-  },
-  openGraph: {
-    title: "Geely Ethiopia | Official Distributor",
-    description: "Explore the full Geely range in Ethiopia backed by nationwide dealer support and genuine parts.",
-    type: "website",
-    locale: "en_ET",
-    url: BASE_URL,
-    siteName: "Geely Ethiopia",
-  },
-  alternates: {
-    canonical: BASE_URL,
-    languages: {
-      "en-ET": BASE_URL,
-      "am-ET": `${BASE_URL}?lang=am`,
-      "x-default": BASE_URL,
+const FALLBACK_TITLE = "Geely Ethiopia | Official Distributor by Kerchanshe Group Geely";
+const FALLBACK_OG_TITLE = "Geely Ethiopia | Official Distributor";
+const FALLBACK_DESCRIPTION = "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads.";
+const FALLBACK_OG_DESCRIPTION = "Explore the full Geely range in Ethiopia backed by nationwide dealer support and genuine parts.";
+const FALLBACK_KEYWORDS = "Geely Ethiopia, Geely cars, SUV Ethiopia, Electric vehicles Ethiopia, Kerchanshe Group Geely, Coolray, Emgrand, Monjaro";
+
+// Was a static `export const metadata` — now computed per-request from
+// admin-managed Setting['seo_settings'] (see getSeoSettings above), with the
+// previous hardcoded copy as the fallback when nothing's configured yet or
+// the backend is unreachable. Everything else here (manifest, icons,
+// alternates, appleWebApp) is unchanged. Per-page metadata exports/
+// generateMetadata calls elsewhere in the app (e.g. models/[id], services/
+// [slug]) still take precedence over this root layout for the fields they
+// set themselves — that's standard Next.js parent/child metadata merging,
+// unaffected by switching this from an object to a function.
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeoSettings();
+
+  const title = seo.defaultMetaTitle || FALLBACK_TITLE;
+  const description = seo.defaultMetaDescription || FALLBACK_DESCRIPTION;
+
+  return {
+    title: seo.defaultMetaTitleTemplate
+      ? { default: title, template: seo.defaultMetaTitleTemplate }
+      : title,
+    description,
+    keywords: seo.defaultKeywords || FALLBACK_KEYWORDS,
+    manifest: withBasePath("/manifest.json"),
+    metadataBase: new URL(BASE_URL),
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Geely Ethiopia",
     },
-  },
-  icons: {
-    icon: [
-      { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
-      { url: withBasePath('/icons/icon-512x512.png'), sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: withBasePath('/icons/icon-152x152.png'), sizes: '152x152', type: 'image/png' },
-      { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
-    ],
-  },
-};
+    openGraph: {
+      title: seo.defaultMetaTitle || FALLBACK_OG_TITLE,
+      description: seo.defaultMetaDescription || FALLBACK_OG_DESCRIPTION,
+      type: "website",
+      locale: "en_ET",
+      url: BASE_URL,
+      siteName: "Geely Ethiopia",
+      ...(seo.ogImageUrl ? { images: [{ url: seo.ogImageUrl }] } : {}),
+    },
+    ...(seo.twitterHandle
+      ? { twitter: { card: "summary_large_image" as const, site: seo.twitterHandle, creator: seo.twitterHandle } }
+      : {}),
+    alternates: {
+      canonical: BASE_URL,
+      languages: {
+        "en-ET": BASE_URL,
+        "am-ET": `${BASE_URL}?lang=am`,
+        "x-default": BASE_URL,
+      },
+    },
+    icons: {
+      icon: [
+        { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
+        { url: withBasePath('/icons/icon-512x512.png'), sizes: '512x512', type: 'image/png' },
+      ],
+      apple: [
+        { url: withBasePath('/icons/icon-152x152.png'), sizes: '152x152', type: 'image/png' },
+        { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
+      ],
+    },
+    // Google Search Console's "HTML tag" ownership verification method —
+    // admin enters just the token (Setting['seo_settings'].googleSiteVerification),
+    // Next renders it as <meta name="google-site-verification" content="...">.
+    ...(seo.googleSiteVerification ? { verification: { google: seo.googleSiteVerification } } : {}),
+  };
+}
 
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const seo = await getSeoSettings();
+  const gaId = seo.googleAnalyticsId?.trim();
+  const pixelId = seo.facebookPixelId?.trim();
+
   return (
     <html lang="en" className={`${inter.variable} ${manrope.variable} ${notoSansEthiopic.variable}`}>
       <head>
@@ -138,7 +205,52 @@ export default function RootLayout({
         <CookieBanner />
         <ChatbotWidget />
         <WebVitals />
-        
+
+        {/* Google Analytics 4 — only loaded when an ID is configured at
+            /admin/settings/seo (Setting['seo_settings'].googleAnalyticsId).
+            Standard gtag.js snippet, loaded after the page is interactive so
+            it never blocks first render. */}
+        {gaId && (
+          <>
+            <Script
+              id="ga4-lib"
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`}
+            />
+            <Script
+              id="ga4-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});`,
+              }}
+            />
+          </>
+        )}
+
+        {/* Facebook / Meta Pixel — only loaded when an ID is configured at
+            /admin/settings/seo (Setting['seo_settings'].facebookPixelId).
+            Standard fbevents.js snippet plus the no-JS fallback pixel. */}
+        {pixelId && (
+          <>
+            <Script
+              id="meta-pixel-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',${JSON.stringify(pixelId)});fbq('track','PageView');`,
+              }}
+            />
+            <noscript>
+              <img
+                height="1"
+                width="1"
+                style={{ display: "none" }}
+                src={`https://www.facebook.com/tr?id=${encodeURIComponent(pixelId)}&ev=PageView&noscript=1`}
+                alt=""
+              />
+            </noscript>
+          </>
+        )}
+
         {/* Service Worker Registration */}
         <Script
           id="sw-register"

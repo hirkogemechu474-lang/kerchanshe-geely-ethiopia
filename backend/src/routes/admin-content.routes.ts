@@ -18,6 +18,21 @@ import { contentRepository } from '../repositories/content.repository';
 
 const router = Router();
 
+// Hero/FAQ/Showcase/SiteNav create+update below all pass `req.body` straight
+// through to the repository/Prisma call, so the draft/scheduled/published
+// `status` field needs no extra handling here — but `scheduledAt` arrives as
+// a `<input type="datetime-local">` string (e.g. "2026-09-10T14:30", no
+// seconds/timezone) which Prisma's DateTime scalar can't parse directly, and
+// an empty string (status switched back to Draft/Published in the same form
+// submit) must become `null`, not "". Normalize just that one field before
+// forwarding the rest of the body untouched.
+function withNormalizedScheduledAt(body: any) {
+  if (body && typeof body === 'object' && 'scheduledAt' in body) {
+    return { ...body, scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null };
+  }
+  return body;
+}
+
 /* ------------------------------------------------------------------ */
 /* Hero Sections                                                       */
 /* ------------------------------------------------------------------ */
@@ -41,7 +56,7 @@ router.post('/hero', requireAdminApiSession, async (req: Request, res: Response)
       res.status(400).json({ error: 'title and mediaType are required' });
       return;
     }
-    const heroSection = await contentRepository.createHeroSection(req.body);
+    const heroSection = await contentRepository.createHeroSection(withNormalizedScheduledAt(req.body));
     res.status(201).json({ heroSection });
   } catch (error) {
     console.error('Create hero section error:', error);
@@ -52,7 +67,7 @@ router.post('/hero', requireAdminApiSession, async (req: Request, res: Response)
 // PUT /api/admin/hero/:id (update — also used by HeroSectionList to toggle isActive)
 router.put('/hero/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const heroSection = await contentRepository.updateHeroSection(req.params.id, req.body);
+    const heroSection = await contentRepository.updateHeroSection(req.params.id, withNormalizedScheduledAt(req.body));
     res.json({ heroSection });
   } catch (error) {
     console.error('Update hero section error:', error);
@@ -82,7 +97,7 @@ router.post('/faq', requireAdminApiSession, async (req: Request, res: Response) 
       res.status(400).json({ error: 'question and answer are required' });
       return;
     }
-    const faq = await contentRepository.createFaq(req.body);
+    const faq = await contentRepository.createFaq(withNormalizedScheduledAt(req.body));
     res.status(201).json(faq);
   } catch (error) {
     console.error('Create FAQ error:', error);
@@ -93,7 +108,7 @@ router.post('/faq', requireAdminApiSession, async (req: Request, res: Response) 
 // PUT /api/admin/faq/:id (update)
 router.put('/faq/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const faq = await contentRepository.updateFaq(req.params.id, req.body);
+    const faq = await contentRepository.updateFaq(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(faq);
   } catch (error) {
     console.error('Update FAQ error:', error);
@@ -123,7 +138,7 @@ router.post('/site-nav', requireAdminApiSession, async (req: Request, res: Respo
       res.status(400).json({ error: 'placement, label, and href are required' });
       return;
     }
-    const item = await contentRepository.createSiteNavItem(req.body);
+    const item = await contentRepository.createSiteNavItem(withNormalizedScheduledAt(req.body));
     res.status(201).json(item);
   } catch (error) {
     console.error('Create site nav item error:', error);
@@ -134,7 +149,7 @@ router.post('/site-nav', requireAdminApiSession, async (req: Request, res: Respo
 // PUT /api/admin/site-nav/:id (update)
 router.put('/site-nav/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const item = await contentRepository.updateSiteNavItem(req.params.id, req.body);
+    const item = await contentRepository.updateSiteNavItem(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(item);
   } catch (error) {
     console.error('Update site nav item error:', error);
@@ -164,7 +179,7 @@ router.post('/showcase', requireAdminApiSession, async (req: Request, res: Respo
       res.status(400).json({ error: 'vehicleId, vehicleName, and title are required' });
       return;
     }
-    const showcase = await contentRepository.createShowcase(req.body);
+    const showcase = await contentRepository.createShowcase(withNormalizedScheduledAt(req.body));
     res.status(201).json(showcase);
   } catch (error) {
     console.error('Create showcase error:', error);
@@ -175,7 +190,7 @@ router.post('/showcase', requireAdminApiSession, async (req: Request, res: Respo
 // PUT /api/admin/showcase/:id (update)
 router.put('/showcase/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const showcase = await contentRepository.updateShowcase(req.params.id, req.body);
+    const showcase = await contentRepository.updateShowcase(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(showcase);
   } catch (error) {
     console.error('Update showcase error:', error);
@@ -228,6 +243,95 @@ router.put('/content/geely-team', requireAdminApiSession, async (req: Request, r
     res.json({ members: saved.members || [] });
   } catch (error) {
     console.error('Save Geely Team error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* Footer (apps/web/components/Footer.tsx)                              */
+/* Same convention as Geely Team above — JSON blob in Setting, upsert-  */
+/* on-save, parse-on-load. The public counterpart is GET /api/public/   */
+/* footer in public.routes.ts (same setting key, same default, no auth).*/
+/*                                                                       */
+/* Shape mirrors what Footer.tsx actually renders, NOT a naive "4       */
+/* identical columns" — the "Models" column is intentionally driven by  */
+/* the live vehicle list (GET /api/public/vehicles), not by admin-typed  */
+/* links, so its own `links` array is always empty here and ignored by   */
+/* the public site; only its heading is editable. The "Support" column   */
+/* only carries the "Contact Us" link — the phone/email/address lines    */
+/* under it come from the separate `contact_information` Setting        */
+/* (Settings > Contact Information) and are untouched by this endpoint.  */
+/* ------------------------------------------------------------------ */
+
+const FOOTER_SETTING_KEY = 'footer_content';
+
+// Matches the literal arrays hardcoded in Footer.tsx before this CMS
+// existed, so a fresh install (no Setting row yet) renders identically to
+// what was live before.
+const DEFAULT_FOOTER_CONTENT = {
+  columns: [
+    {
+      heading: 'Company',
+      links: [
+        { label: 'Home', href: '/' },
+        { label: 'About Geely Ethiopia', href: '/about' },
+        { label: 'News & Media', href: '/news' },
+        { label: 'Customer Reviews', href: '/testimonials' },
+      ],
+    },
+    {
+      // Links intentionally empty — see comment above.
+      heading: 'Models',
+      links: [] as { label: string; href: string }[],
+    },
+    {
+      heading: 'After-Sales Services',
+      links: [
+        { label: 'Service Booking', href: '/service' },
+        { label: 'Warranty', href: '/warranty' },
+        { label: 'Spare Parts', href: '/parts' },
+        { label: 'Roadside Assistance', href: '/roadside' },
+      ],
+    },
+    {
+      heading: 'Support',
+      links: [
+        { label: 'Contact Us', href: '/contact' },
+      ],
+    },
+  ],
+  legalLinks: [
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Cookie Policy', href: '/cookies' },
+  ],
+};
+
+// GET /api/admin/content/footer
+router.get('/content/footer', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: FOOTER_SETTING_KEY } });
+    res.json(setting?.value ? JSON.parse(setting.value) : DEFAULT_FOOTER_CONTENT);
+  } catch (error) {
+    console.error('Get footer content error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/admin/content/footer
+router.put('/content/footer', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const columns = Array.isArray(req.body.columns) ? req.body.columns : DEFAULT_FOOTER_CONTENT.columns;
+    const legalLinks = Array.isArray(req.body.legalLinks) ? req.body.legalLinks : DEFAULT_FOOTER_CONTENT.legalLinks;
+    const data = { columns, legalLinks };
+    const setting = await prisma.setting.upsert({
+      where: { key: FOOTER_SETTING_KEY },
+      update: { value: JSON.stringify(data) },
+      create: { key: FOOTER_SETTING_KEY, value: JSON.stringify(data), type: 'content' },
+    });
+    res.json(JSON.parse(setting.value));
+  } catch (error) {
+    console.error('Save footer content error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

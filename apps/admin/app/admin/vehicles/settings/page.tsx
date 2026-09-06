@@ -59,6 +59,8 @@ interface Showcase {
   ctaLink: string | null;
   sortOrder: number;
   isActive: boolean;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+  scheduledAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -100,6 +102,8 @@ export default function VehicleSettingsPage() {
     ctaLink: '',
     sortOrder: 0,
     isActive: false,
+    status: 'PUBLISHED' as 'DRAFT' | 'SCHEDULED' | 'PUBLISHED',
+    scheduledAt: '',
   });
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -173,6 +177,8 @@ export default function VehicleSettingsPage() {
       ctaLink: '',
       sortOrder: 0,
       isActive: false,
+      status: 'PUBLISHED',
+      scheduledAt: '',
     });
     setEditingId(null);
   }
@@ -189,6 +195,8 @@ export default function VehicleSettingsPage() {
       ctaLink: showcase.ctaLink || '',
       sortOrder: showcase.sortOrder,
       isActive: showcase.isActive,
+      status: showcase.status || 'PUBLISHED',
+      scheduledAt: showcase.scheduledAt ? new Date(showcase.scheduledAt).toISOString().slice(0, 16) : '',
     });
     setEditingId(showcase.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -836,6 +844,35 @@ export default function VehicleSettingsPage() {
                       <span className="text-sm font-medium text-gray-700">Show on homepage</span>
                     </label>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Publication Status
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
+                    >
+                      <option value="DRAFT">Draft</option>
+                      <option value="SCHEDULED">Scheduled</option>
+                      <option value="PUBLISHED">Published</option>
+                    </select>
+                  </div>
+
+                  {formData.status === 'SCHEDULED' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Publish At
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={formData.scheduledAt}
+                        onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -890,6 +927,17 @@ export default function VehicleSettingsPage() {
                                 Inactive
                               </span>
                             )}
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${
+                                showcase.status === 'PUBLISHED'
+                                  ? 'bg-green-100 text-green-700'
+                                  : showcase.status === 'SCHEDULED'
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {showcase.status === 'PUBLISHED' ? 'Published' : showcase.status === 'SCHEDULED' ? 'Scheduled' : 'Draft'}
+                            </span>
                           </div>
                           <p className="text-gray-700 font-medium mb-1">{showcase.title}</p>
                           {showcase.subtitle && (

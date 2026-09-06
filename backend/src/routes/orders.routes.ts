@@ -9,7 +9,7 @@ import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { generateSalesAgreementPdf } from '../services/pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
-import { vehicleAllocationRepository, vehicleRepository, userRepository } from '../repositories';
+import { vehicleAllocationRepository, vehicleRepository, userRepository, documentSignatureRepository } from '../repositories';
 import { signLinkToken } from '../utils/secureLink';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { env } from '../config/env';
@@ -266,6 +266,17 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
       where: { id: req.params.id },
       data: { countersignedAt: new Date(), countersignedById: req.adminSession!.user.id },
     });
+
+    try {
+      const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
+      await documentSignatureRepository.upsert('SALES_AGREEMENT', order.id, 'manager', {
+        signedByName: manager?.name ?? req.adminSession!.user.name,
+        signatureUrl: manager?.signatureUrl ?? null,
+        signedByUserId: req.adminSession!.user.id,
+      });
+    } catch {
+      // Signature-log write failure should not block countersigning.
+    }
 
     let notificationSent = false;
     if (order.customerEmail) {
@@ -547,6 +558,18 @@ router.post('/:id/handover-countersign', requireAdminApiSession, async (req: Req
       where: { id: req.params.id },
       data: { handoverCountersignedAt: new Date(), handoverCountersignedById: req.adminSession!.user.id },
     });
+
+    try {
+      const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
+      await documentSignatureRepository.upsert('HANDOVER', order.id, 'manager', {
+        signedByName: manager?.name ?? req.adminSession!.user.name,
+        signatureUrl: manager?.signatureUrl ?? null,
+        signedByUserId: req.adminSession!.user.id,
+      });
+    } catch {
+      // Signature-log write failure should not block countersigning.
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Handover countersign error:', error);

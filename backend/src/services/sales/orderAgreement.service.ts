@@ -1,4 +1,4 @@
-import { salesOrderRepository, vehicleAllocationRepository, userRepository } from '../../repositories';
+import { salesOrderRepository, vehicleAllocationRepository, userRepository, documentSignatureRepository } from '../../repositories';
 import { signLinkToken, verifyLinkToken } from '../../utils/secureLink';
 import { generateSalesAgreementPdf, SalesAgreementPdfData } from '../pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
@@ -104,6 +104,15 @@ export const orderAgreementService = {
         signedDocumentUrl,
         signedAt: new Date(),
       });
+
+      try {
+        await documentSignatureRepository.upsert('SALES_AGREEMENT', orderId, 'customer', {
+          signedByName: order.customerName,
+          signatureUrl: signedDocumentUrl,
+        });
+      } catch {
+        // Signature-log write failure should not block the customer sign flow.
+      }
 
       const assignedAgent = order.salesAgentId ? await userRepository.findById(order.salesAgentId) : null;
       const managerEmails = await userRepository.findManagerEmails();

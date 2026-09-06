@@ -12,8 +12,15 @@ interface FAQ {
   displayOrder: number;
   isActive: boolean;
   isFeatured: boolean;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
   createdAt: string;
   updatedAt: string;
+}
+
+function contentStatusBadgeClasses(status: string) {
+  if (status === 'PUBLISHED') return 'bg-green-100 text-green-700';
+  if (status === 'SCHEDULED') return 'bg-orange-100 text-orange-700';
+  return 'bg-gray-100 text-gray-600';
 }
 
 export default function FAQList() {
@@ -178,6 +185,10 @@ export default function FAQList() {
                       {faq.category}
                     </span>
                   )}
+
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${contentStatusBadgeClasses(faq.status)}`}>
+                    {faq.status === 'PUBLISHED' ? 'Published' : faq.status === 'SCHEDULED' ? 'Scheduled' : 'Draft'}
+                  </span>
                 </div>
                 
                 <p className="text-gray-600 text-sm line-clamp-2 mb-2">

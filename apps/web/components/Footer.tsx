@@ -24,6 +24,54 @@ interface FooterVehicle {
   slug: string;
 }
 
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+interface FooterColumn {
+  heading: string;
+  links: FooterLink[];
+}
+
+interface FooterContent {
+  columns: FooterColumn[];
+  legalLinks: FooterLink[];
+}
+
+// Matches the arrays that used to be hardcoded here — used as the initial
+// render (before /api/public/footer resolves) and as a fallback if that
+// request fails, so the footer never flashes empty.
+const FALLBACK_FOOTER_CONTENT: FooterContent = {
+  columns: [
+    {
+      heading: 'Company',
+      links: [
+        { label: 'Home', href: '/' },
+        { label: 'About Geely Ethiopia', href: '/about' },
+        { label: 'News & Media', href: '/news' },
+        { label: 'Customer Reviews', href: '/testimonials' },
+      ],
+    },
+    { heading: 'Models', links: [] },
+    {
+      heading: 'After-Sales Services',
+      links: [
+        { label: 'Service Booking', href: '/service' },
+        { label: 'Warranty', href: '/warranty' },
+        { label: 'Spare Parts', href: '/parts' },
+        { label: 'Roadside Assistance', href: '/roadside' },
+      ],
+    },
+    { heading: 'Support', links: [{ label: 'Contact Us', href: '/contact' }] },
+  ],
+  legalLinks: [
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Cookie Policy', href: '/cookies' },
+  ],
+};
+
 interface ContactInfo {
   headquarters: {
     name: string;
@@ -73,6 +121,7 @@ export function Footer() {
   const [socialMedia, setSocialMedia] = useState<SocialMediaLinks>({});
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
   const [vehicles, setVehicles] = useState<FooterVehicle[]>([]);
+  const [footerContent, setFooterContent] = useState<FooterContent>(FALLBACK_FOOTER_CONTENT);
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
   const [emailDraft, setEmailDraft] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -109,30 +158,37 @@ export function Footer() {
           setVehicles(list.slice(0, 5));
         })
         .catch(() => {}),
+      // Column headings/links (Company, After-Sales Services, Support's
+      // "Contact Us" link) and the legal links row — admin-editable at
+      // Settings > Footer Content. Falls back to the same values that used
+      // to be hardcoded here if the request fails or hasn't resolved yet.
+      fetch('/api/public/footer')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d && Array.isArray(d.columns) && Array.isArray(d.legalLinks)) {
+            setFooterContent(d);
+          }
+        })
+        .catch(() => {}),
     ]);
   }, []);
 
-  const companyLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'About Geely Ethiopia', href: '/about' },
-    { name: 'News & Media', href: '/news' },
-    { name: 'Customer Reviews', href: '/testimonials' },
-  ];
+  const companyLinks = (footerContent.columns[0]?.links || []).map((l) => ({ name: l.label, href: l.href }));
+  const modelsHeading = footerContent.columns[1]?.heading || 'Models';
 
   // Sourced from /api/public/vehicles (active + published models, DB-driven)
   // rather than a fixed list, so this stays correct as models are added,
-  // renamed, or retired in admin.
+  // renamed, or retired in admin. (The "Models" column's own `links` in
+  // footer_content are always empty and ignored here — only its heading is
+  // admin-editable — see the comment in backend/src/routes/public.routes.ts.)
   const vehicleLinks = vehicles.map((v) => ({
     name: v.name.replace(/^Geely\s+/i, '').trim() || v.name,
     href: `/models/${v.slug}`,
   }));
 
-  const afterSalesLinks = [
-    { name: 'Service Booking', href: '/service' },
-    { name: 'Warranty', href: '/warranty' },
-    { name: 'Spare Parts', href: '/parts' },
-    { name: 'Roadside Assistance', href: '/roadside' },
-  ];
+  const afterSalesLinks = (footerContent.columns[2]?.links || []).map((l) => ({ name: l.label, href: l.href }));
+  const supportHeading = footerContent.columns[3]?.heading || 'Support';
+  const supportLinks = (footerContent.columns[3]?.links || []).map((l) => ({ name: l.label, href: l.href }));
 
   const socials: { key: keyof Required<SocialMediaLinks>; Icon: typeof Facebook; label: string; hover: string }[] = [
     { key: 'facebook', Icon: Facebook, label: 'Facebook', hover: 'hover:bg-blue-600' },
@@ -164,7 +220,7 @@ export function Footer() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div>
-            <FooterColTitle>Company</FooterColTitle>
+            <FooterColTitle>{footerContent.columns[0]?.heading || 'Company'}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
               {companyLinks.map((l) => (
                 <li key={l.name}>
@@ -177,7 +233,7 @@ export function Footer() {
           </div>
 
           <div>
-            <FooterColTitle>Models</FooterColTitle>
+            <FooterColTitle>{modelsHeading}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
               {vehicleLinks.map((l) => (
                 <li key={l.name}>
@@ -190,7 +246,7 @@ export function Footer() {
           </div>
 
           <div>
-            <FooterColTitle>After-Sales Services</FooterColTitle>
+            <FooterColTitle>{footerContent.columns[2]?.heading || 'After-Sales Services'}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
               {afterSalesLinks.map((l) => (
                 <li key={l.name}>
@@ -203,13 +259,15 @@ export function Footer() {
           </div>
 
           <div>
-            <FooterColTitle>Support</FooterColTitle>
+            <FooterColTitle>{supportHeading}</FooterColTitle>
             <ul className="mt-5 space-y-2.5">
-              <li>
-                <Link href="/contact" className="text-sm text-white/70 hover:text-white transition-colors">
-                  Contact Us
-                </Link>
-              </li>
+              {supportLinks.map((l) => (
+                <li key={l.name}>
+                  <Link href={l.href} className="text-sm text-white/70 hover:text-white transition-colors">
+                    {l.name}
+                  </Link>
+                </li>
+              ))}
               <li>
                 <a href={`tel:${contact.phone.sales}`} className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors">
                   <Phone size={13} /> {contact.phone.sales}
@@ -305,9 +363,9 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/60 order-1 sm:order-2">
-            <Link href="/privacy" className="hover:text-white transition">{t('footer.privacyPolicy')}</Link>
-            <Link href="/terms" className="hover:text-white transition">{t('footer.termsOfService')}</Link>
-            <Link href="/cookies" className="hover:text-white transition">{t('footer.cookiePolicy')}</Link>
+            {footerContent.legalLinks.map((l) => (
+              <Link key={l.label} href={l.href} className="hover:text-white transition">{l.label}</Link>
+            ))}
           </div>
         </div>
 

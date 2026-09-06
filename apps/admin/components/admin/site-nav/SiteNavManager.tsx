@@ -18,6 +18,8 @@ interface SiteNavItem {
   isHighlighted: boolean;
   isActive: boolean;
   displayOrder: number;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+  scheduledAt: string | null;
 }
 
 type FormState = {
@@ -26,6 +28,8 @@ type FormState = {
   displayOrder: string;
   isActive: boolean;
   openInNewTab: boolean;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+  scheduledAt: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -34,6 +38,8 @@ const EMPTY_FORM: FormState = {
   displayOrder: '0',
   isActive: true,
   openInNewTab: false,
+  status: 'PUBLISHED',
+  scheduledAt: '',
 };
 
 // Only manages TOP_NAV — the header's main nav bar and the mobile drawer both
@@ -61,6 +67,8 @@ export default function SiteNavManager({ topNav }: { topNav: SiteNavItem[] }) {
       displayOrder: String(item.displayOrder),
       isActive: item.isActive,
       openInNewTab: item.openInNewTab,
+      status: item.status || 'PUBLISHED',
+      scheduledAt: item.scheduledAt ? new Date(item.scheduledAt).toISOString().slice(0, 16) : '',
     });
     setModal({ editing: item });
     setError('');
@@ -81,6 +89,8 @@ export default function SiteNavManager({ topNav }: { topNav: SiteNavItem[] }) {
         isActive: form.isActive,
         isHighlighted: false,
         openInNewTab: form.openInNewTab,
+        status: form.status,
+        scheduledAt: form.scheduledAt || null,
       };
       const url = modal.editing ? `/api/admin/site-nav/${modal.editing.id}` : '/api/admin/site-nav';
       const res = await fetch(url, {
@@ -137,7 +147,12 @@ export default function SiteNavManager({ topNav }: { topNav: SiteNavItem[] }) {
               <Td className="font-medium text-gray-900">{item.label}</Td>
               <Td className="text-gray-500">{item.href}</Td>
               <Td>
-                <Badge tone={item.isActive ? 'green' : 'red'}>{item.isActive ? 'Active' : 'Hidden'}</Badge>
+                <div className="flex flex-col items-start gap-1">
+                  <Badge tone={item.isActive ? 'green' : 'red'}>{item.isActive ? 'Active' : 'Hidden'}</Badge>
+                  <Badge tone={item.status === 'PUBLISHED' ? 'green' : item.status === 'SCHEDULED' ? 'orange' : 'gray'}>
+                    {item.status === 'PUBLISHED' ? 'Published' : item.status === 'SCHEDULED' ? 'Scheduled' : 'Draft'}
+                  </Badge>
+                </div>
               </Td>
               <Td className="text-right">
                 <div className="flex justify-end gap-3">

@@ -13,6 +13,8 @@ interface FAQFormProps {
     displayOrder: number;
     isActive: boolean;
     isFeatured: boolean;
+    status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+    scheduledAt: string | null;
   };
   mode: 'create' | 'edit';
 }
@@ -28,6 +30,8 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
     displayOrder: faq?.displayOrder || 0,
     isActive: faq?.isActive !== undefined ? faq.isActive : true,
     isFeatured: faq?.isFeatured !== undefined ? faq.isFeatured : false,
+    status: faq?.status || 'PUBLISHED',
+    scheduledAt: faq?.scheduledAt ? new Date(faq.scheduledAt).toISOString().slice(0, 16) : '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -214,6 +218,39 @@ export default function FAQForm({ faq, mode }: FAQFormProps) {
             />
           </button>
         </div>
+
+        {/* Publication Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Publication Status
+          </label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+          >
+            <option value="DRAFT">Draft</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="PUBLISHED">Published</option>
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Independent of "Active" above — both must allow it for the FAQ to show on the site.
+          </p>
+        </div>
+
+        {formData.status === 'SCHEDULED' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Publish At
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.scheduledAt}
+              onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+            />
+          </div>
+        )}
       </div>
 
       {/* Submit Buttons */}

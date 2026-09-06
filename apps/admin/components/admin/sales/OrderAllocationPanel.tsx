@@ -14,9 +14,9 @@ export default function OrderAllocationPanel({ orderId, allocation, canManage }:
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
-    fetch('/api/vehicles?limit=200&status=published')
+    fetch('/api/vehicles?pageSize=200&status=published')
       .then((response) => response.json())
-      .then((data) => setVehicles(Array.isArray(data?.vehicles) ? data.vehicles : []))
+      .then((data) => setVehicles(Array.isArray(data?.items) ? data.items : []))
       .catch(() => setVehicles([]));
   }, []);
 

@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
+import { documentSignatureRepository, userRepository } from '../repositories';
 
 const router = Router();
 
@@ -74,6 +75,18 @@ router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: R
         handoverCountersignedById: req.adminSession!.user.id,
       },
     });
+
+    try {
+      const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
+      await documentSignatureRepository.upsert('HANDOVER', order.id, 'manager', {
+        signedByName: manager?.name ?? req.adminSession!.user.name,
+        signatureUrl: manager?.signatureUrl ?? null,
+        signedByUserId: req.adminSession!.user.id,
+      });
+    } catch {
+      // Signature-log write failure should not block countersigning.
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Countersign handover error:', error);

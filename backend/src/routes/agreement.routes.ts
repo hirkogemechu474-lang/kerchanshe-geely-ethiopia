@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
+import { documentSignatureRepository, userRepository } from '../repositories';
 
 const router = Router();
 
@@ -80,6 +81,18 @@ router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: R
         countersignedById: req.adminSession!.user.id,
       },
     });
+
+    try {
+      const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
+      await documentSignatureRepository.upsert('SALES_AGREEMENT', order.id, 'manager', {
+        signedByName: manager?.name ?? req.adminSession!.user.name,
+        signatureUrl: manager?.signatureUrl ?? null,
+        signedByUserId: req.adminSession!.user.id,
+      });
+    } catch {
+      // Signature-log write failure should not block countersigning.
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Countersign agreement error:', error);

@@ -22,6 +22,8 @@ import {
   Shuffle,
   PenTool,
   Landmark,
+  Search,
+  PanelBottom,
 } from 'lucide-react';
 
 export default async function SettingsPage() {
@@ -172,6 +174,17 @@ export default async function SettingsPage() {
       badge: 'General',
     },
     {
+      title: 'SEO Settings',
+      description: 'Default meta title/description, OG image, Twitter handle, keywords, Google Analytics 4, Search Console verification, and Facebook/Meta Pixel — applied site-wide on the public site.',
+      icon: Search,
+      color: 'from-cyan-500 to-blue-600',
+      accent: 'text-cyan-600',
+      bgAccent: 'bg-cyan-50',
+      borderAccent: 'border-cyan-200',
+      href: '/admin/settings/seo',
+      badge: 'Marketing',
+    },
+    {
       title: 'Warranty Page',
       description: 'Hero copy, what\'s covered / not covered lists, claim CTA, and downloadable warranty PDFs for the /warranty page.',
       icon: ShieldCheck,
@@ -180,6 +193,17 @@ export default async function SettingsPage() {
       bgAccent: 'bg-emerald-50',
       borderAccent: 'border-emerald-200',
       href: '/admin/settings/warranty-page',
+      badge: 'Content',
+    },
+    {
+      title: 'Footer Content',
+      description: 'Edit the 4 footer link columns (headings and links) and the legal links row (Privacy Policy, Terms of Service, Cookie Policy) shown on every public page.',
+      icon: PanelBottom,
+      color: 'from-gray-700 to-gray-900',
+      accent: 'text-gray-700',
+      bgAccent: 'bg-gray-100',
+      borderAccent: 'border-gray-300',
+      href: '/admin/settings/footer',
       badge: 'Content',
     },
   ];

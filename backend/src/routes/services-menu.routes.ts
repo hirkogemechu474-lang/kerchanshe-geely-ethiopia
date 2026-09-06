@@ -102,7 +102,7 @@ router.delete('/sections/:id', requireAdminApiSession, async (req: Request, res:
 // POST /api/services-menu/pages (admin: create service page)
 router.post('/pages', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { title, slug, content, excerpt, heroImage, heroVideo, metaTitle, metaDescription, isPublished } = req.body;
+    const { title, slug, content, excerpt, heroImage, heroVideo, metaTitle, metaDescription, isPublished, status, scheduledAt } = req.body;
     const page = await serviceCmsRepository.createPage({
       title,
       slug,
@@ -113,6 +113,8 @@ router.post('/pages', requireAdminApiSession, async (req: Request, res: Response
       metaTitle: metaTitle || null,
       metaDescription: metaDescription || null,
       isPublished: isPublished || false,
+      ...(status !== undefined && { status }),
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
     });
     res.status(201).json(page);
   } catch (error) {
@@ -124,7 +126,7 @@ router.post('/pages', requireAdminApiSession, async (req: Request, res: Response
 // PUT /api/services-menu/pages/:id (admin: update service page)
 router.put('/pages/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { title, slug, content, excerpt, heroImage, heroVideo, metaTitle, metaDescription, isPublished } = req.body;
+    const { title, slug, content, excerpt, heroImage, heroVideo, metaTitle, metaDescription, isPublished, status, scheduledAt } = req.body;
     const page = await serviceCmsRepository.updatePage(req.params.id, {
       ...(title !== undefined && { title }),
       ...(slug !== undefined && { slug }),
@@ -135,6 +137,8 @@ router.put('/pages/:id', requireAdminApiSession, async (req: Request, res: Respo
       ...(metaTitle !== undefined && { metaTitle }),
       ...(metaDescription !== undefined && { metaDescription }),
       ...(isPublished !== undefined && { isPublished }),
+      ...(status !== undefined && { status }),
+      ...(scheduledAt !== undefined && { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }),
     });
     res.json(page);
   } catch (error) {

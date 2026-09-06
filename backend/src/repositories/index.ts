@@ -34,3 +34,4 @@ export { customerVehicleRepository } from './customerVehicle.repository';
 export { csiSurveyRepository } from './csiSurvey.repository';
 export { counterRepository } from './counter.repository';
 export { inAppNotificationRepository } from './inAppNotification.repository';
+export { documentSignatureRepository } from './documentSignature.repository';

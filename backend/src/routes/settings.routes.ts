@@ -369,6 +369,348 @@ router.post('/about', requireAdminApiSession, async (req: Request, res: Response
   }
 });
 
+// GET/POST /api/settings/vehicle-settings, vehicle-specifications,
+// vehicle-features, document-signatures, warranty-page, cookie-banner,
+// notification-rules, assignment-rules, and ev-savings-calculator below —
+// registered before the generic '/:key' routes for the same reason as
+// social-media/policies/business-settings/contact-information/bank-details
+// above: the admin pages for these all POST the raw settings object
+// directly and read the GET response as that same raw object, but the
+// generic '/:key' handler expects a `{ value: "..." }` body and returns the
+// raw Setting row (value still JSON-stringified) — so before these existed,
+// saves here were silently writing an empty string and reads never saw real
+// data. Same JSON.stringify(req.body)/JSON.parse(setting.value) convention,
+// keyed to match what public.routes.ts / assignSalesRep.ts already read.
+
+router.get('/vehicle-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_settings' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get vehicle settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/vehicle-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'vehicle_settings' },
+      update: { value },
+      create: { key: 'vehicle_settings', value, type: 'vehicle' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update vehicle settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/vehicle-specifications', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_specifications' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get vehicle specifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/vehicle-specifications', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'vehicle_specifications' },
+      update: { value },
+      create: { key: 'vehicle_specifications', value, type: 'vehicle' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update vehicle specifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/vehicle-features', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_features' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get vehicle features error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/vehicle-features', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'vehicle_features' },
+      update: { value },
+      create: { key: 'vehicle_features', value, type: 'vehicle' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update vehicle features error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/document-signatures', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'document_signatures' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get document signatures error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/document-signatures', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'document_signatures' },
+      update: { value },
+      create: { key: 'document_signatures', value, type: 'sales' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update document signatures error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/warranty-page', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'warranty_page' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get warranty page error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/warranty-page', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'warranty_page' },
+      update: { value },
+      create: { key: 'warranty_page', value, type: 'content' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update warranty page error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/cookie-banner', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'cookie_banner' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get cookie banner error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/cookie-banner', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'cookie_banner' },
+      update: { value },
+      create: { key: 'cookie_banner', value, type: 'general' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update cookie banner error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/notification-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'notification_rules' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get notification rules error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/notification-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'notification_rules' },
+      update: { value },
+      create: { key: 'notification_rules', value, type: 'sales' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update notification rules error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Key is 'assignment_rules', matching backend/src/services/sales/assignSalesRep.ts's
+// getAssignmentRules(), which reads this setting to weight auto-assignment —
+// this was previously unreachable/unsaveable via the generic '/:key' route.
+router.get('/assignment-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'assignment_rules' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get assignment rules error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/assignment-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'assignment_rules' },
+      update: { value },
+      create: { key: 'assignment_rules', value, type: 'sales' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update assignment rules error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Key is 'ev_calculator' (not 'ev_savings_calculator'), matching the existing
+// key public.routes.ts's GET /ev-savings-calculator already reads.
+router.get('/ev-savings-calculator', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'ev_calculator' } });
+    if (!setting?.value) { res.json({}); return; }
+    try {
+      res.json(JSON.parse(setting.value));
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    console.error('Get EV savings calculator error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/ev-savings-calculator', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'ev_calculator' },
+      update: { value },
+      create: { key: 'ev_calculator', value, type: 'content' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update EV savings calculator error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET/POST /api/settings/seo-settings — default meta title/description, OG
+// image URL, Twitter handle, default keywords, Google Analytics 4 ID, Google
+// Search Console verification code, Facebook/Meta Pixel ID, and optional
+// extra robots.txt text, consumed by apps/web (generateMetadata in
+// app/layout.tsx, GA4/Pixel <Script> injection, and app/robots.ts) via the
+// public GET /api/public/seo-settings below. Registered before the generic
+// '/:key' route for the same shadowing reason as the settings pairs above.
+// Distinct from the decorative, non-functional "Third-Party API Keys" quick
+// card on /admin/settings (id="apikeys") — that card's "Save API Keys"
+// button has no onClick handler and is intentionally left untouched; this is
+// the real, working home for the GA4/Pixel values it only visually mocks up.
+const DEFAULT_SEO_SETTINGS = {
+  defaultMetaTitle: '',
+  defaultMetaTitleTemplate: '',
+  defaultMetaDescription: '',
+  ogImageUrl: '',
+  twitterHandle: '',
+  defaultKeywords: '',
+  googleAnalyticsId: '',
+  googleSiteVerification: '',
+  facebookPixelId: '',
+  robotsExtra: '',
+};
+
+router.get('/seo-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'seo_settings' } });
+    if (!setting?.value) { res.json(DEFAULT_SEO_SETTINGS); return; }
+    try {
+      res.json({ ...DEFAULT_SEO_SETTINGS, ...JSON.parse(setting.value) });
+    } catch {
+      res.json(DEFAULT_SEO_SETTINGS);
+    }
+  } catch (error) {
+    console.error('Get SEO settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/seo-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const value = JSON.stringify(req.body ?? {});
+    const setting = await prisma.setting.upsert({
+      where: { key: 'seo_settings' },
+      update: { value },
+      create: { key: 'seo_settings', value, type: 'general' },
+    });
+    res.json(setting);
+  } catch (error) {
+    console.error('Update SEO settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/settings/:key (get setting)
 router.get('/:key', requireAdminApiSession, async (req: Request, res: Response) => {
   try {

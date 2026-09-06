@@ -1327,6 +1327,19 @@ model FinancingApplication {
 }
 
 // News Articles
+// NOTE on the draft/scheduled/published workflow (see ContentStatus below,
+// used by HeroSection/FAQ/VehicleShowcase/SiteNavItem/ServicePage): this
+// model is deliberately NOT given a `status ContentStatus` + `scheduledAt`
+// pair. It already has its own `status: String` ("draft"/"scheduled"/
+// "published" — the admin news list already has stat tiles and a badge for
+// all three) and `publishDate: DateTime?`, predating this change and doing
+// the same job. A second field can't share the `status` name, and converting
+// this column to the enum would require rewriting live data — every existing
+// row's lowercase string value — with no safe automatic mapping, and risks
+// silently flipping real drafts to published. So the combined-visibility gate
+// for this model is implemented against these existing fields instead (see
+// GET /api/public/news in public.routes.ts): visible when status='published'
+// OR (status='scheduled' AND publishDate<=now).
 model NewsArticle {
   id          String    @id @default(uuid())
   title       String
@@ -1445,9 +1458,23 @@ model ChatbotMessage {
   @@index([conversationId])
 }
 
+// Draft/Scheduled/Published workflow, shared by the 6 CMS-ish content models
+// below (HeroSection, FAQ, VehicleShowcase, SiteNavItem, ServicePage — plus
+// NewsArticle, which keeps its own pre-existing `status: String` +
+// `publishDate` pair instead, see the note on that model). This is an
+// ADDITIONAL, independent layer on top of each model's existing `isActive` /
+// `isPublished` kill-switch, not a replacement — a row is only actually
+// visible on the public site when BOTH the kill-switch is on AND this status
+// is PUBLISHED (or SCHEDULED with scheduledAt in the past).
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
 // Hero Sections (Homepage Banner Management)
 model HeroSection {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   title       String
   subtitle    String?
   description String?
@@ -1457,11 +1484,20 @@ model HeroSection {
   posterUrl   String? // Poster image for video (shows before video loads)
   buttonText  String?
   buttonLink  String?
-  status      String   @default("draft") // draft, active, inactive
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Pre-existing `status String @default("draft") // draft, active,
+  // inactive` column — confirmed dead (never read or written by any admin UI
+  // or public query in the codebase; only `isActive` below actually gates
+  // visibility). Its physical column was renamed status -> legacy_status
+  // (plain SQL rename, no data loss) so the real ContentStatus gate below
+  // could use the clean field name `status` for a fresh column, instead of
+  // dropping/recreating the old one to change its type.
+  legacyStatus String        @default("draft") @map("legacy_status")
+  status       ContentStatus @default(PUBLISHED)
+  scheduledAt DateTime?
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 // Media Library (Uploaded Files)
@@ -1486,7 +1522,7 @@ model MediaAsset {
 
 // 360° Viewer Showcase (Explore Every Angle Section)
 model VehicleShowcase {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   vehicleId   String
   vehicleName String
   title       String // e.g., "Explore Every Angle"
@@ -1495,10 +1531,12 @@ model VehicleShowcase {
   videoUrl    String? // Optional uploaded 360° showcase video
   ctaText     String? // Call to action button text
   ctaLink     String? // Call to action button link
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(false)
+  status      ContentStatus @default(PUBLISHED)
+  scheduledAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 // Vehicle Colors
@@ -1666,18 +1704,20 @@ model ServiceItem {
 }
 
 model ServicePage {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   title           String
-  slug            String   @unique
+  slug            String        @unique
   excerpt         String? // Short summary
-  content         String?  @db.Text // Rich text content
+  content         String?       @db.Text // Rich text content
   heroImage       String?
   heroVideo       String?
   metaTitle       String?
   metaDescription String?
-  isPublished     Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isPublished     Boolean       @default(false)
+  status          ContentStatus @default(PUBLISHED)
+  scheduledAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 // Electric Menu System (identical to Services Menu)
@@ -1731,15 +1771,17 @@ model ElectricMenuPage {
 
 // FAQ Management
 model FAQ {
-  id           String   @id @default(uuid())
+  id           String        @id @default(uuid())
   question     String
-  answer       String   @db.Text
+  answer       String        @db.Text
   category     String? // Optional category for grouping
-  displayOrder Int      @default(0)
-  isActive     Boolean  @default(true)
-  isFeatured   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  displayOrder Int           @default(0)
+  isActive     Boolean       @default(true)
+  isFeatured   Boolean       @default(false)
+  status       ContentStatus @default(PUBLISHED)
+  scheduledAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 // URL Redirect Management
@@ -1867,6 +1909,8 @@ model SiteNavItem {
   openInNewTab  Boolean          @default(false)
   isHighlighted Boolean          @default(false) // Quick Actions: renders as the dark CTA tile
   isActive      Boolean          @default(true)
+  status        ContentStatus    @default(PUBLISHED)
+  scheduledAt   DateTime?
   displayOrder  Int              @default(0)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt

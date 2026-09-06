@@ -54,7 +54,7 @@ export default function MediaBrowser({
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setMediaAssets(data);
+        setMediaAssets(data.items || []);
       }
     } catch (error) {
       console.error('Error fetching media assets:', error);
@@ -89,17 +89,39 @@ export default function MediaBrowser({
         throw new Error(errorBody.error || errorBody.details || `Upload failed (${response.status})`);
       }
 
-      const result = await response.json();
-      if (!result.file?.url) {
+      const { url: uploadedUrl } = await response.json();
+      if (!uploadedUrl) {
         throw new Error('Upload completed but the server did not return a media URL.');
       }
-      
+
+      // /api/upload only saves the file to disk and returns its URL — register
+      // it as a MediaAsset too, so it shows up in this browser's list on
+      // future opens (fetchMediaAssets() reads from /api/media, not the disk).
+      const registerResponse = await fetch('/api/media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: uploadedUrl.split('/').pop(),
+          originalName: file.name,
+          fileType: isVideo ? 'video' : 'image',
+          mimeType: file.type,
+          fileSize: file.size,
+          url: uploadedUrl,
+          altText: file.name,
+          category: 'vehicle',
+        }),
+      });
+      if (!registerResponse.ok) {
+        throw new Error('File uploaded but could not be registered in the media library.');
+      }
+      const asset: MediaAsset = await registerResponse.json();
+
       // Refresh media list
       await fetchMediaAssets();
-      
+
       // Auto-select the newly uploaded file
-      setSelectedAsset(result.file);
-      
+      setSelectedAsset(asset);
+
       alert('File uploaded successfully!');
     } catch (error) {
       console.error('Error uploading file:', error);

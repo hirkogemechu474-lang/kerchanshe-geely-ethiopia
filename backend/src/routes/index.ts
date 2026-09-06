@@ -53,6 +53,7 @@ import { adminContentRoutes } from './admin-content.routes';
 import { rolePermissionsRoutes } from './role-permissions.routes';
 import { showroomVisitAdminRoutes } from './showroom-visits-admin.routes';
 import { vehicleConfigRoutes } from './vehicle-config.routes';
+import { documentsRoutes } from './documents.routes';
 
 const router = Router();
 
@@ -110,5 +111,6 @@ router.use('/admin', adminContentRoutes);
 router.use('/admin/role-permissions', rolePermissionsRoutes);
 router.use('/admin/showroom-visits', showroomVisitAdminRoutes);
 router.use('/admin', vehicleConfigRoutes);
+router.use('/admin/documents', documentsRoutes);
 
 export { router as routes };

@@ -22,6 +22,8 @@ interface FormData {
   buttonLink: string;
   sortOrder: number;
   isActive: boolean;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+  scheduledAt: string;
 }
 
 export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
@@ -41,6 +43,8 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
     buttonLink: '',
     sortOrder: 0,
     isActive: false,
+    status: 'PUBLISHED',
+    scheduledAt: '',
   });
 
   useEffect(() => {
@@ -68,6 +72,10 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
           buttonLink: data.heroSection.buttonLink || '',
           sortOrder: data.heroSection.sortOrder || 0,
           isActive: data.heroSection.isActive || false,
+          status: data.heroSection.status || 'PUBLISHED',
+          scheduledAt: data.heroSection.scheduledAt
+            ? new Date(data.heroSection.scheduledAt).toISOString().slice(0, 16)
+            : '',
         });
       }
     } catch (error) {
@@ -554,6 +562,38 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
               Show on homepage (active)
             </label>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Publication Status
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as FormData['status'] }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+            >
+              <option value="DRAFT">Draft</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="PUBLISHED">Published</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Independent of &quot;Show on homepage&quot; above — both must allow it for the hero to appear.
+            </p>
+          </div>
+
+          {formData.status === 'SCHEDULED' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Publish At
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.scheduledAt}
+                onChange={(e) => setFormData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              />
+            </div>
+          )}
         </div>
       </Card>
 

@@ -42,9 +42,18 @@ export default function OrderCommissionPanel({
   const [reps, setReps] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin/sales-reps')
-      .then((res) => (res.ok ? res.json() : { reps: [] }))
-      .then((data) => setReps(data.reps || []))
+    // /api/admin/sales-reps doesn't exist — apps/admin/lib/assignSalesRep.ts's
+    // listSalesReps() (used server-side for AssignedToPanel) hits this same
+    // /api/admin/users?role=sales endpoint instead.
+    fetch('/api/admin/users?role=sales&pageSize=100')
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data) =>
+        setReps(
+          (data.items || [])
+            .filter((user: { isActive?: boolean }) => user.isActive !== false)
+            .map((user: { id: string; name: string }) => ({ id: user.id, name: user.name }))
+        )
+      )
       .catch(() => setReps([]));
   }, []);
 
