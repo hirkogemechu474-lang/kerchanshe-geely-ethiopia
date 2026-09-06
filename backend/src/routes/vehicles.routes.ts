@@ -54,7 +54,12 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
   try {
     const vehicle = await prisma.vehicle.create({ data: req.body });
     res.status(201).json(vehicle);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
+      const field = Array.isArray(error?.meta?.target) ? error.meta.target.join(', ') : 'slug or SKU';
+      res.status(400).json({ error: `A vehicle with that ${field} already exists.` });
+      return;
+    }
     console.error('Create vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -155,7 +160,16 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   try {
     const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: req.body });
     res.json(vehicle);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      res.status(404).json({ error: 'Vehicle not found' });
+      return;
+    }
+    if (error?.code === 'P2002') {
+      const field = Array.isArray(error?.meta?.target) ? error.meta.target.join(', ') : 'slug or SKU';
+      res.status(400).json({ error: `A vehicle with that ${field} already exists.` });
+      return;
+    }
     console.error('Update vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }

@@ -154,16 +154,6 @@ export default async function ServicePagesPage() {
           </TBody>
         </TableCard>
       )}
-
-      {/* Back Link */}
-      <div className="flex justify-center">
-        <Link
-          href="/admin/services-menu"
-          className="text-geely-blue hover:text-navy text-sm font-medium"
-        >
-          ← Back to Services Menu
-        </Link>
-      </div>
     </div>
   );
 }

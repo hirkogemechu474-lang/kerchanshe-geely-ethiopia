@@ -87,7 +87,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
       });
 
       if (response.ok) {
-        router.push('/admin/services-menu');
+        router.push('/admin/services-menu/pages');
         router.refresh();
       } else {
         const error = await response.json();
@@ -111,7 +111,7 @@ export default function ServiceItemForm({ item, mode }: ServiceItemFormProps) {
       });
 
       if (response.ok) {
-        router.push('/admin/services-menu');
+        router.push('/admin/services-menu/pages');
         router.refresh();
       } else {
         alert('Failed to delete item');

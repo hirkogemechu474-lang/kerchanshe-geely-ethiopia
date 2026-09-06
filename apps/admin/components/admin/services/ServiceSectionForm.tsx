@@ -76,7 +76,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
       });
 
       if (response.ok) {
-        router.push('/admin/services-menu');
+        router.push('/admin/services-menu/pages');
         router.refresh();
       } else {
         const data = await response.json();
@@ -102,7 +102,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
       });
 
       if (response.ok) {
-        router.push('/admin/services-menu');
+        router.push('/admin/services-menu/pages');
         router.refresh();
       } else {
         const data = await response.json();
@@ -118,7 +118,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/services-menu" className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
+        <Link href="/admin/services-menu/pages" className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
@@ -255,7 +255,7 @@ export default function ServiceSectionForm({ section, isEdit = false }: ServiceS
           </button>
 
           <Link
-            href="/admin/services-menu"
+            href="/admin/services-menu/pages"
             className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
           >
             Cancel

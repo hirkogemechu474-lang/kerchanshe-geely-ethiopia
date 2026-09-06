@@ -48,6 +48,16 @@ function numberValue(value: unknown, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+// Same convention as CategoryForm.tsx / ServicePageForm.tsx / the News "new"
+// page's generateSlug — lowercase, non-alphanumeric runs become a single
+// hyphen, trim leading/trailing hyphens.
+function generateSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 function normalizePricing(vehicle: any) {
   const pricing = vehicle?.pricing ?? {};
   return {
@@ -165,18 +175,55 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     }
 
     try {
-      // Auto-publish: set status to 'published'
-      const dataToSave = {
-        ...formData,
-        status: 'published'
+      // The `Vehicle` model stores pricing/inventory as flat scalar columns
+      // (basePrice, discountAmount, stock, sku, warehouse, ...), not as
+      // nested `pricing`/`inventory` objects — those only exist here for
+      // PricingEditor/InventoryManager's own UI convenience. Flatten before
+      // sending, and drop the sub-fields (currency, includesTax,
+      // financingAvailable, minDownPayment, dealerIncentive, lowStockThreshold,
+      // maxStock, reservedStock, availableStock, incomingStock, expectedDate)
+      // that have no matching column at all — Prisma rejects unknown fields.
+      const dataToSave: Record<string, unknown> = {
+        name: formData.name,
+        model: formData.model,
+        year: formData.year,
+        categoryId: formData.categoryId || null,
+        category: formData.category,
+        description: formData.description || null,
+        images: formData.images,
+        heroImageUrl: formData.heroImageUrl || null,
+        heroVideoUrl: formData.heroVideoUrl || null,
+        specifications: formData.specifications,
+        basePrice: formData.pricing.basePrice,
+        discountAmount: formData.pricing.discount || null,
+        discountType: formData.pricing.discountType,
+        taxRate: formData.pricing.taxRate,
+        hidePrice: formData.pricing.hidePrice,
+        stock: formData.inventory.stock,
+        sku: formData.inventory.sku || null,
+        reorderPoint: formData.inventory.reorderPoint,
+        warehouse: formData.inventory.warehouseLocation || null,
+        location: formData.inventory.location || null,
+        isFeatured: formData.featured,
+        // Auto-publish: set status to 'published'
+        status: 'published',
       };
+
+      // `slug` is required and unique on Vehicle but this form never
+      // collects one — generate it from the name, same as every other admin
+      // form in this codebase. Only on create: changing an existing
+      // vehicle's slug on every edit would break already-shared/bookmarked
+      // URLs, so edits leave it untouched.
+      if (mode === 'create') {
+        dataToSave.slug = generateSlug(formData.name);
+      }
 
       const url = mode === 'create'
         ? '/api/vehicles'
         : `/api/vehicles/${initialData?.id}`;
-      
+
       const method = mode === 'create' ? 'POST' : 'PUT';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -186,16 +233,17 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save vehicle');
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || 'Failed to save vehicle');
       }
 
       const savedVehicle = await response.json();
-      
+
       // Redirect to vehicle detail page (not list)
       window.location.href = withBasePath(`/admin/vehicles/${savedVehicle.id}`);
     } catch (error) {
       console.error('Error saving vehicle:', error);
-      alert('Failed to save vehicle. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to save vehicle. Please try again.');
     }
   };
 

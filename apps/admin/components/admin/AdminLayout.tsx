@@ -169,7 +169,7 @@ const navSections: NavSection[] = [
       {
         label: 'Services',
         items: [
-          { name: 'Services Menu', href: '/admin/services-menu', icon: UtensilsCrossed, permission: 'canManageContent' },
+          { name: 'Services Menu', href: '/admin/services-menu/pages', icon: UtensilsCrossed, permission: 'canManageContent' },
         ],
       },
       {
