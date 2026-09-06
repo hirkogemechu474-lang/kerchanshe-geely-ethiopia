@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 interface Vehicle {
   id: string;
@@ -118,7 +119,7 @@ export default function FeaturedVehicles() {
                   {/* Vehicle Image */}
                   <div className="h-[170px] bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 flex items-center justify-center text-[11px] text-navy/70 text-center px-4 overflow-hidden">
                     {imageUrl ? (
-                      <img
+                      <ImageWithFallback
                         src={imageUrl}
                         alt=""
                         className="w-full h-full object-cover"

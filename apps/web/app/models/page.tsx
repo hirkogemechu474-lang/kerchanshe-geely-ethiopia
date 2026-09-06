@@ -14,6 +14,7 @@ import {
 import { withBasePath } from "@/lib/publicPath";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 function publicMediaUrl(url: string | null | undefined) {
   return withBasePath(url);
@@ -276,7 +277,7 @@ export default function ModelsPage() {
                         className="relative aspect-[4/3] bg-[#eef2f7] overflow-hidden block"
                       >
                         {imageUrl ? (
-                          <img
+                          <ImageWithFallback
                             src={imageUrl}
                             alt=""
                             loading="lazy"

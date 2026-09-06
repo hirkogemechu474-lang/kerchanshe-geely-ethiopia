@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ModelSpotlightSimple } from './ModelSpotlightSimple';
 import { ModelSpotlight360 } from './ModelSpotlight360';
 import { RotateCw, Camera } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ViewEntry {
   angle: string;
@@ -159,7 +160,7 @@ export function Model360Section({
                         : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
                     }`}
                   >
-                    <img src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" />
+                    <ImageWithFallback src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" iconClassName="h-4 w-4" />
                   </span>
                   <span className="text-[11px] text-steel dark:text-steel-light font-semibold whitespace-nowrap">{color.name}</span>
                 </button>

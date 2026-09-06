@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Upload, X, Plus, Save } from 'lucide-react';
+import { Upload, X, Plus, Save, Check } from 'lucide-react';
 import Link from 'next/link';
 import ImageUpload from './ImageUpload';
 import SpecificationsEditor from './SpecificationsEditor';
@@ -200,46 +200,106 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Step Navigation */}
-      <div className="lg:col-span-1">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Progress</h3>
-          <nav className="space-y-2">
-            {steps.map((step) => (
+    <div className="space-y-4">
+      {/*
+        Compact step strip — `lg`-and-below only. The full vertical "Progress" list further
+        down is a `lg:col-span-1` sidebar meant to sit alongside the form; below `lg` the grid
+        collapses to one column, which used to stack that entire button list ABOVE the form
+        (5 full-width rows ~350-400px tall) on every tablet/phone. This horizontal, scrollable
+        strip replaces it below `lg`: numbered circles + short labels, connected by a progress
+        line, current step highlighted, earlier steps shown with a check. Every circle/label is
+        still a button wired to setCurrentStep, so jumping to any step (including steps ahead of
+        the current one) works exactly as it does in the sidebar — nothing became strictly linear.
+      */}
+      <div className="bg-white rounded-lg border border-gray-200 p-3 lg:hidden">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <span className="text-sm font-semibold text-gray-900">
+            Step {currentStep} of {steps.length}
+          </span>
+          <span className="truncate text-sm text-gray-500">
+            {steps.find((s) => s.id === currentStep)?.name}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
               <button
-                key={step.id}
+                type="button"
                 onClick={() => setCurrentStep(step.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  currentStep === step.id
-                    ? 'bg-geely-blue/10 border-2 border-geely-blue text-geely-blue'
-                    : 'border border-gray-200 hover:bg-gray-50'
-                }`}
+                className="flex shrink-0 flex-col items-center gap-1 px-1.5"
+                aria-current={currentStep === step.id ? 'step' : undefined}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                      currentStep === step.id
-                        ? 'bg-geely-blue text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {step.id}
-                  </div>
-                  <div>
-                    <div className="font-medium">{step.name}</div>
-                    <div className="text-xs text-gray-500">{step.description}</div>
-                  </div>
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                    currentStep === step.id
+                      ? 'bg-geely-blue text-white'
+                      : currentStep > step.id
+                      ? 'bg-geely-blue/15 text-geely-blue'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
                 </div>
+                <span
+                  className={`whitespace-nowrap text-[11px] font-medium ${
+                    currentStep === step.id ? 'text-geely-blue' : 'text-gray-500'
+                  }`}
+                >
+                  {step.name}
+                </span>
               </button>
-            ))}
-          </nav>
+              {index < steps.length - 1 && (
+                <div
+                  className={`h-0.5 w-4 shrink-0 sm:w-6 ${
+                    currentStep > step.id ? 'bg-geely-blue/40' : 'bg-gray-200'
+                  }`}
+                />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Form Content */}
-      <div className="lg:col-span-3">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Step Navigation — full vertical list, `lg`-and-up only (see compact strip above for smaller screens) */}
+        <div className="hidden lg:block lg:col-span-1">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Progress</h3>
+            <nav className="space-y-2">
+              {steps.map((step) => (
+                <button
+                  key={step.id}
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                    currentStep === step.id
+                      ? 'bg-geely-blue/10 border-2 border-geely-blue text-geely-blue'
+                      : 'border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                        currentStep === step.id
+                          ? 'bg-geely-blue text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {step.id}
+                    </div>
+                    <div>
+                      <div className="font-medium">{step.name}</div>
+                      <div className="text-xs text-gray-500">{step.description}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="lg:col-span-3">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -428,6 +488,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

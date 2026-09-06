@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Play, Pause } from 'lucide-react';
 import { withBasePath } from '@/lib/publicPath';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ModelSpotlightSimpleProps {
   modelName: string;
@@ -62,7 +63,7 @@ export function ModelSpotlightSimple({
     <div ref={containerRef} className={`relative bg-mesh-blue rounded-xl overflow-hidden ${className}`}>
       {/* Main Image */}
       <div className="relative aspect-[16/9]">
-        <img
+        <ImageWithFallback
           src={withBasePath(views[currentView].image)}
           alt={`${modelName} - ${views[currentView].label}`}
           className="w-full h-full object-contain"
@@ -132,11 +133,12 @@ export function ModelSpotlightSimple({
                   : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
-              <img
+              <ImageWithFallback
                 src={withBasePath(view.image)}
                 alt={view.label}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                iconClassName="h-5 w-5"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                 <span className="text-white text-xs font-semibold p-2 w-full text-center">

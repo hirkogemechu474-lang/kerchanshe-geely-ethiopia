@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import { withBasePath } from "@/lib/publicPath";
 import { X, AlertCircle } from "lucide-react";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 interface Vehicle {
   id: string;
@@ -250,7 +251,7 @@ export default function ComparePage() {
                   >
                     <div className="mb-2 flex h-32 items-center justify-center overflow-hidden rounded bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       {imageUrl ? (
-                        <img src={withBasePath(imageUrl)} alt="" className="h-full w-full object-cover" />
+                        <ImageWithFallback src={withBasePath(imageUrl)} alt="" className="h-full w-full object-cover" iconClassName="h-6 w-6" />
                       ) : (
                         <span className="px-2 text-center text-xs text-steel dark:text-steel-light">{vehicle.name}</span>
                       )}
@@ -310,10 +311,11 @@ export default function ComparePage() {
                         <div className="flex flex-col items-center gap-2">
                           <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded bg-white dark:bg-midnight-surface bg-opacity-10 text-xs">
                             {getImageUrl(vehicle) ? (
-                              <img
+                              <ImageWithFallback
                                 src={getImageUrl(vehicle) || ""}
                                 alt=""
                                 className="h-full w-full object-cover"
+                                iconClassName="h-6 w-6"
                               />
                             ) : (
                               vehicle.name

@@ -15,6 +15,7 @@ import { withBasePath } from "@/lib/publicPath";
 import { env } from "@/lib/env";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 const BASE_URL = env.app.url;
 
@@ -285,10 +286,11 @@ export default async function VehicleDetailPage({
               aria-label={`${vehicle.name} hero video`}
             />
           ) : publicHeroImageUrl ? (
-            <img
+            <ImageWithFallback
               src={publicHeroImageUrl}
               alt={vehicle.name}
               className="absolute inset-0 h-full w-full object-cover"
+              iconClassName="h-12 w-12"
             />
           ) : (
             <div className="absolute inset-0 bg-mesh-blue" />
@@ -387,7 +389,7 @@ export default async function VehicleDetailPage({
           </div>
           <div className="order-1 overflow-hidden bg-brand-neutral-3 lg:order-2">
             {overviewImageUrl ? (
-              <img src={overviewImageUrl} alt={`${vehicle.name} overview`} className="aspect-[4/3] h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+              <ImageWithFallback src={overviewImageUrl} alt={`${vehicle.name} overview`} className="aspect-[4/3] h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
             ) : (
               <div className="flex aspect-[4/3] items-center justify-center bg-navy text-sm text-white/60">{vehicle.name}</div>
             )}
@@ -412,11 +414,12 @@ export default async function VehicleDetailPage({
                   key={`${img}-${index}`}
                   className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
                 >
-                  <img
+                  <ImageWithFallback
                     src={img}
                     alt={`${vehicle.name} gallery ${index + 1}`}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                     loading={index === 0 ? "eager" : "lazy"}
+                    iconClassName="h-10 w-10"
                   />
                 </div>
               ))}
@@ -586,11 +589,12 @@ export default async function VehicleDetailPage({
                 <Card key={rv.id} href={detailsHrefFor(rv.slug)} variant="boxed" className="group">
                   <div className="h-[160px] bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 flex items-center justify-center text-xs text-steel overflow-hidden">
                     {rv.heroImageUrl || (Array.isArray(rv.images) && rv.images[0]) ? (
-                      <img
+                      <ImageWithFallback
                         src={rv.heroImageUrl || (Array.isArray(rv.images) && typeof rv.images[0] === "string" ? rv.images[0] : "")}
                         alt={rv.name}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        iconClassName="h-7 w-7"
                       />
                     ) : (
                       rv.name

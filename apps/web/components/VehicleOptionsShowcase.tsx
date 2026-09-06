@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ColorOption {
   id: string;
@@ -110,7 +111,7 @@ export function VehicleOptionsShowcase({
           <div className="lg:col-span-5 space-y-6">
             <div className="relative h-[300px] md:h-[360px] bg-mesh-blue rounded-2xl overflow-hidden shadow-2xl border border-line">
               {previewImage ? (
-                <img
+                <ImageWithFallback
                   src={previewImage}
                   alt={activeColor ? `${vehicleName} in ${activeColor.name}` : vehicleName}
                   className="w-full h-full object-cover transition-all duration-500"

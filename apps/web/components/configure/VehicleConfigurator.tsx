@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Check, ArrowLeft } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface Vehicle {
   id: string;
@@ -125,7 +126,7 @@ export default function VehicleConfigurator({
               <h3 className="text-xl font-bold text-navy dark:text-ice mb-4">Preview</h3>
               <div className="aspect-video bg-gradient-to-br from-ice to-line rounded-lg flex items-center justify-center overflow-hidden">
                 {displayImage ? (
-                  <img
+                  <ImageWithFallback
                     src={displayImage}
                     alt={vehicle.name}
                     className="w-full h-full object-cover"

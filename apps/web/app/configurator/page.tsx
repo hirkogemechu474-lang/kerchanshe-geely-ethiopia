@@ -6,6 +6,7 @@ import { MainLayout } from '@/components/MainLayout';
 import { type VehicleRecord } from '@/services/vehicleService';
 import { Check, Share2, Download, Mail, ArrowLeft, CarFront, FileText } from 'lucide-react';
 import { withBasePath } from '@/lib/basePath';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface TrimOption {
   id: string;
@@ -285,7 +286,7 @@ export default function ConfiguratorPage() {
           </div>
           <div className="relative flex min-h-[220px] items-center justify-center rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur-sm lg:min-h-[280px]">
             {previewImage ? (
-              <img src={previewImage} alt={selectedVehicle?.name || 'Geely'} className="max-h-[260px] w-full object-contain" />
+              <ImageWithFallback src={previewImage} alt={selectedVehicle?.name || 'Geely'} className="max-h-[260px] w-full object-contain" iconClassName="h-14 w-14" />
             ) : (
               <CarFront size={110} className="text-white/30" />
             )}
@@ -316,7 +317,7 @@ export default function ConfiguratorPage() {
                     >
                       <div className="h-24 bg-gradient-to-br from-[#edf4fb] to-white dark:from-midnight dark:to-midnight-surface flex items-center justify-center p-2">
                         {image ? (
-                          <img src={image} alt={vehicle.name} className="h-full w-full object-contain transition duration-300 group-hover:scale-105" />
+                          <ImageWithFallback src={image} alt={vehicle.name} className="h-full w-full object-contain transition duration-300 group-hover:scale-105" iconClassName="h-6 w-6" />
                         ) : (
                           <CarFront size={32} className="text-geely-blue/30" />
                         )}
@@ -396,7 +397,7 @@ export default function ConfiguratorPage() {
                         style={{ backgroundColor: color.hex }}
                       >
                         {color.image && (
-                          <img src={withBasePath(color.image)} alt={color.name} className="absolute inset-0 w-full h-full object-cover" />
+                          <ImageWithFallback src={withBasePath(color.image)} alt={color.name} className="absolute inset-0 w-full h-full object-cover" iconClassName="h-5 w-5" />
                         )}
                       </div>
                       <div className="text-xs font-semibold text-navy dark:text-ice mb-1 text-center">
@@ -432,7 +433,7 @@ export default function ConfiguratorPage() {
                     >
                       <div className="h-24 w-24 mx-auto rounded-full mb-3 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                         {wheel.image ? (
-                          <img src={withBasePath(wheel.image)} alt={wheel.name} className="h-full w-full object-cover" />
+                          <ImageWithFallback src={withBasePath(wheel.image)} alt={wheel.name} className="h-full w-full object-cover" iconClassName="h-7 w-7" />
                         ) : (
                           <span className="text-2xl font-bold text-navy dark:text-ice">{wheel.size}</span>
                         )}
@@ -469,10 +470,11 @@ export default function ConfiguratorPage() {
                     >
                       <div className="flex items-start gap-4">
                         {interior.imageUrl && (
-                          <img
+                          <ImageWithFallback
                             src={withBasePath(interior.imageUrl)}
                             alt={interior.name}
                             className="w-20 h-20 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
+                            iconClassName="h-6 w-6"
                           />
                         )}
                         <div className="flex flex-1 items-start justify-between">
@@ -515,10 +517,11 @@ export default function ConfiguratorPage() {
                       >
                         <div className="flex items-start gap-3">
                           {accessory.imageUrl && (
-                            <img
+                            <ImageWithFallback
                               src={withBasePath(accessory.imageUrl)}
                               alt={accessory.name}
                               className="w-14 h-14 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
+                              iconClassName="h-5 w-5"
                             />
                           )}
                           <div className="flex flex-1 items-start justify-between">
@@ -557,7 +560,7 @@ export default function ConfiguratorPage() {
                   style={!previewImage ? { backgroundColor: selectedColor?.hex || '#F8F9FA' } : { backgroundColor: '#F8F9FA' }}
                 >
                   {previewImage ? (
-                    <img src={previewImage} alt={selectedVehicle?.name || ''} className="w-full h-full object-contain p-2" />
+                    <ImageWithFallback src={previewImage} alt={selectedVehicle?.name || ''} className="w-full h-full object-contain p-2" iconClassName="h-8 w-8" />
                   ) : (
                     <div className="text-center">
                       <CarFront size={40} className="mx-auto mb-2 text-navy/40 dark:text-ice/40" />

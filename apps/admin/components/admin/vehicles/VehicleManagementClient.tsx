@@ -27,6 +27,34 @@ interface Props {
   totalCount: number;
 }
 
+/**
+ * Vehicle thumbnail with a shared fallback: shows the "IMG" placeholder both
+ * when there's no image URL at all, and when the given URL fails to load
+ * (broken/expired link) — tracked via local state so each instance recovers
+ * independently.
+ */
+function VehicleThumb({ src, alt, sizeClass }: { src: string | null; alt: string; sizeClass: string }) {
+  const [imgError, setImgError] = useState(false);
+  const showFallback = !src || imgError;
+
+  return (
+    <div className={`${sizeClass} rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden`}>
+      {showFallback ? (
+        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+          IMG
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function VehicleManagementClient({ initialVehicles, totalCount }: Props) {
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +71,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: pageSize.toString(),
+        pageSize: pageSize.toString(),
       });
 
       if (searchQuery) params.append('search', searchQuery);
@@ -53,8 +81,8 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
       const response = await fetch(`/api/vehicles?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setVehicles(data.vehicles || data);
-        if (data.total) setTotal(data.total);
+        setVehicles(data.items || []);
+        setTotal(data.total ?? 0);
       }
     } catch (error) {
       console.error('Error fetching vehicles:', error);
@@ -183,96 +211,160 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
         </Card>
       ) : (
         <>
-          <TableCard>
-            <THead>
-              <tr>
-                <Th>Vehicle</Th>
-                <Th>Model / SKU</Th>
-                <Th>Category</Th>
-                <Th>Price</Th>
-                <Th>Stock</Th>
-                <Th>Status</Th>
-                <Th className="text-right">Actions</Th>
-              </tr>
-            </THead>
-            <TBody>
-              {vehicles.map((vehicle) => {
-                const stockStatus = getStockStatus(vehicle.stock);
-                const displayPrice = vehicle.finalPrice || vehicle.basePrice;
-                const imageUrl = vehicle.heroImageUrl ||
-                                (Array.isArray(vehicle.images) && vehicle.images[0]) ||
-                                null;
+          {/* Desktop / tablet: full table — unchanged at md+ widths */}
+          <div className="hidden md:block">
+            <TableCard>
+              <THead>
+                <tr>
+                  <Th>Vehicle</Th>
+                  <Th>Model / SKU</Th>
+                  <Th>Category</Th>
+                  <Th>Price</Th>
+                  <Th>Stock</Th>
+                  <Th>Status</Th>
+                  <Th className="text-right">Actions</Th>
+                </tr>
+              </THead>
+              <TBody>
+                {vehicles.map((vehicle) => {
+                  const stockStatus = getStockStatus(vehicle.stock);
+                  const displayPrice = vehicle.finalPrice || vehicle.basePrice;
+                  const imageUrl = vehicle.heroImageUrl ||
+                                  (Array.isArray(vehicle.images) && vehicle.images[0]) ||
+                                  null;
 
-                return (
-                  <Tr key={vehicle.id}>
-                    <Td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={vehicle.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                              IMG
-                            </div>
-                          )}
+                  return (
+                    <Tr key={vehicle.id}>
+                      <Td>
+                        <div className="flex items-center gap-3">
+                          <VehicleThumb src={imageUrl} alt={vehicle.name} sizeClass="w-12 h-12" />
+                          <div>
+                            <div className="font-medium text-gray-900">{vehicle.name}</div>
+                            <div className="text-sm text-gray-500">{vehicle.year}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{vehicle.name}</div>
-                          <div className="text-sm text-gray-500">{vehicle.year}</div>
+                      </Td>
+                      <Td>
+                        <div className="text-gray-900">{vehicle.model}</div>
+                        {vehicle.sku && (
+                          <div className="text-xs text-gray-500">{vehicle.sku}</div>
+                        )}
+                      </Td>
+                      <Td className="text-gray-500">{vehicle.category}</Td>
+                      <Td className="font-medium text-gray-900">
+                        <div>{formatPrice(displayPrice)}</div>
+                        {vehicle.hidePrice && (
+                          <div className="text-xs font-normal text-amber-600">Hidden on website</div>
+                        )}
+                      </Td>
+                      <Td>{vehicle.stock} units</Td>
+                      <Td>
+                        <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
+                      </Td>
+                      <Td className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/admin/vehicles/${vehicle.id}`}
+                            className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            href={`/admin/vehicles/${vehicle.id}/edit`}
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(vehicle.id, vehicle.name)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                      </div>
-                    </Td>
-                    <Td>
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </TBody>
+            </TableCard>
+          </div>
+
+          {/* Phone: vertical stack of cards, one per vehicle */}
+          <div className="md:hidden space-y-3">
+            {vehicles.map((vehicle) => {
+              const stockStatus = getStockStatus(vehicle.stock);
+              const displayPrice = vehicle.finalPrice || vehicle.basePrice;
+              const imageUrl = vehicle.heroImageUrl ||
+                              (Array.isArray(vehicle.images) && vehicle.images[0]) ||
+                              null;
+
+              return (
+                <Card key={vehicle.id} padding="sm">
+                  <div className="flex items-center gap-3">
+                    <VehicleThumb src={imageUrl} alt={vehicle.name} sizeClass="w-16 h-16" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-gray-900 truncate">{vehicle.name}</div>
+                      <div className="text-sm text-gray-500">{vehicle.year}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-400">Model / SKU</div>
                       <div className="text-gray-900">{vehicle.model}</div>
-                      {vehicle.sku && (
-                        <div className="text-xs text-gray-500">{vehicle.sku}</div>
-                      )}
-                    </Td>
-                    <Td className="text-gray-500">{vehicle.category}</Td>
-                    <Td className="font-medium text-gray-900">
-                      <div>{formatPrice(displayPrice)}</div>
+                      {vehicle.sku && <div className="text-xs text-gray-500">{vehicle.sku}</div>}
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-400">Category</div>
+                      <div className="text-gray-500">{vehicle.category}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-400">Price</div>
+                      <div className="font-medium text-gray-900">{formatPrice(displayPrice)}</div>
                       {vehicle.hidePrice && (
                         <div className="text-xs font-normal text-amber-600">Hidden on website</div>
                       )}
-                    </Td>
-                    <Td>{vehicle.stock} units</Td>
-                    <Td>
-                      <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
-                    </Td>
-                    <Td className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/vehicles/${vehicle.id}`}
-                          className="p-2 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <Link
-                          href={`/admin/vehicles/${vehicle.id}/edit`}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(vehicle.id, vehicle.name)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-400">Stock</div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-gray-700">{vehicle.stock} units</span>
+                        <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
                       </div>
-                    </Td>
-                  </Tr>
-                );
-              })}
-            </TBody>
-          </TableCard>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-3">
+                    <Link
+                      href={`/admin/vehicles/${vehicle.id}`}
+                      className="p-3 text-geely-blue hover:bg-blue-50 rounded-lg transition-colors"
+                      title="View"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </Link>
+                    <Link
+                      href={`/admin/vehicles/${vehicle.id}/edit`}
+                      className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(vehicle.id, vehicle.name)}
+                      className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
 
           {/* Pagination */}
           <Card className="flex items-center justify-between">

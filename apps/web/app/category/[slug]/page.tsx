@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import { Battery, Zap, MapPin, Clock, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 interface Vehicle {
   id: string;
@@ -116,8 +117,8 @@ export default function CategoryPage() {
       <div className="relative bg-navy text-white py-20">
         {category.heroImageUrl && (
           <div className="absolute inset-0 opacity-20">
-            <img 
-              src={category.heroImageUrl} 
+            <ImageWithFallback
+              src={category.heroImageUrl}
               alt={category.name}
               className="w-full h-full object-cover"
             />
@@ -217,7 +218,7 @@ export default function CategoryPage() {
                   >
                     {/* Image */}
                     <div className="relative h-56 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
-                      <img
+                      <ImageWithFallback
                         src={mainImage}
                         alt=""
                         className="w-full h-full object-cover"

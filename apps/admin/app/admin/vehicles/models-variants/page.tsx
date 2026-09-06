@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, Image as ImageIcon } from 'lucide-react';
-import { PageHeader, Card, Button, TableCard, THead, TBody, Tr, Th, Td, Badge, EmptyTableRow, Modal, ModalActions } from '@/components/admin/ui';
+import { PageHeader, Card, Button, TableCard, THead, TBody, Tr, Th, Td, Badge, EmptyState, EmptyTableRow, Modal, ModalActions } from '@/components/admin/ui';
 import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
@@ -35,6 +35,26 @@ const EMPTY_TRIM_FORM = { name: '', description: '', features: [] as string[], p
 const EMPTY_ACCESSORY_FORM = { name: '', description: '', category: '', price: 0, imageUrl: '', inStock: true, global: false, sortOrder: 0 };
 
 type Resource = 'trims' | 'accessories';
+
+/**
+ * Image preview with a shared fallback (matches the "IMG" placeholder pattern
+ * used for vehicle thumbnails in VehicleManagementClient.tsx): shows a neutral
+ * placeholder box when the URL fails to load instead of a broken-image icon.
+ */
+function ImagePreview({ src, alt, sizeClass }: { src: string; alt: string; sizeClass: string }) {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => setImgError(false), [src]);
+
+  return (
+    <div className={`${sizeClass} rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center`}>
+      {imgError ? (
+        <span className="text-gray-400 dark:text-gray-500 text-xs">IMG</span>
+      ) : (
+        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+      )}
+    </div>
+  );
+}
 
 export default function ModelsAndVariantsPage() {
   const [resource, setResource] = useState<Resource>('trims');
@@ -175,16 +195,21 @@ export default function ModelsAndVariantsPage() {
         <VehiclePickerList onSelect={setVehicleId} />
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Button variant="secondary" onClick={() => setVehicleId(null)}>Change vehicle</Button>
-            <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
+            {/* min-w-0 lets this shrink inside the flex-wrap row; overflow-x-auto + the
+                scrollbar-hiding utilities below scroll rather than clip long labels on
+                very narrow phones (mirrors the scrollbar-hide convention in
+                apps/web/components/ModelPageTabs.tsx, done here via Tailwind arbitrary
+                variants since this app's globals.css doesn't define that utility). */}
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 onClick={() => setResource('trims')}
-                className={`px-4 py-2 text-sm font-medium ${resource === 'trims' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium ${resource === 'trims' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
               >Trims</button>
               <button
                 onClick={() => setResource('accessories')}
-                className={`px-4 py-2 text-sm font-medium ${resource === 'accessories' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium ${resource === 'accessories' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
               >Accessories</button>
             </div>
           </div>
@@ -199,44 +224,88 @@ export default function ModelsAndVariantsPage() {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Trim Levels</h3>
                 <Button onClick={openCreate}><Plus className="w-4 h-4" />Add Trim</Button>
               </div>
-              <TableCard>
-                <THead>
-                  <tr>
-                    <Th>Name</Th>
-                    <Th>Features</Th>
-                    <Th>Price</Th>
-                    <Th>Status</Th>
-                    <Th className="text-right">Actions</Th>
-                  </tr>
-                </THead>
-                <TBody>
-                  {loading ? (
-                    <EmptyTableRow colSpan={5} message="Loading trims..." />
-                  ) : packages.length === 0 ? (
-                    <EmptyTableRow colSpan={5} message="No trims yet for this vehicle" />
-                  ) : (
-                    packages.map((pkg) => (
-                      <Tr key={pkg.id}>
-                        <Td className="font-medium text-gray-900 dark:text-gray-100">
-                          {pkg.name}
-                          {pkg.isDefault && <span className="ml-2"><Badge tone="blue">Default</Badge></span>}
-                        </Td>
-                        <Td className="text-gray-500 dark:text-gray-400">
-                          {Array.isArray(pkg.features) ? pkg.features.length : 0} feature{(pkg.features?.length ?? 0) === 1 ? '' : 's'}
-                        </Td>
-                        <Td className="text-gray-500 dark:text-gray-400">{pkg.price ? `+${pkg.price}` : '—'}</Td>
-                        <Td><Badge tone="gray">Trim</Badge></Td>
-                        <Td className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditPackage(pkg)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => removeTrim(pkg)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+              {/* Tablet/desktop: dense table */}
+              <div className="hidden md:block">
+                <TableCard>
+                  <THead>
+                    <tr>
+                      <Th>Name</Th>
+                      <Th>Features</Th>
+                      <Th>Price</Th>
+                      <Th>Status</Th>
+                      <Th className="text-right">Actions</Th>
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {loading ? (
+                      <EmptyTableRow colSpan={5} message="Loading trims..." />
+                    ) : packages.length === 0 ? (
+                      <EmptyTableRow colSpan={5} message="No trims yet for this vehicle" />
+                    ) : (
+                      packages.map((pkg) => (
+                        <Tr key={pkg.id}>
+                          <Td className="font-medium text-gray-900 dark:text-gray-100">
+                            {pkg.name}
+                            {pkg.isDefault && <span className="ml-2"><Badge tone="blue">Default</Badge></span>}
+                          </Td>
+                          <Td className="text-gray-500 dark:text-gray-400">
+                            {Array.isArray(pkg.features) ? pkg.features.length : 0} feature{(pkg.features?.length ?? 0) === 1 ? '' : 's'}
+                          </Td>
+                          <Td className="text-gray-500 dark:text-gray-400">{pkg.price ? `+${pkg.price}` : '—'}</Td>
+                          <Td><Badge tone="gray">Trim</Badge></Td>
+                          <Td className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => openEditPackage(pkg)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                              <button onClick={() => removeTrim(pkg)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </Td>
+                        </Tr>
+                      ))
+                    )}
+                  </TBody>
+                </TableCard>
+              </div>
+
+              {/* Phone: vertical card stack with larger tap targets */}
+              <div className="md:hidden space-y-3">
+                {loading ? (
+                  <EmptyState title="Loading trims..." />
+                ) : packages.length === 0 ? (
+                  <EmptyState title="No trims yet for this vehicle" />
+                ) : (
+                  packages.map((pkg) => (
+                    <Card key={pkg.id} padding="sm" className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{pkg.name}</p>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <Badge tone="gray">Trim</Badge>
+                            {pkg.isDefault && <Badge tone="blue">Default</Badge>}
                           </div>
-                        </Td>
-                      </Tr>
-                    ))
-                  )}
-                </TBody>
-              </TableCard>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">{pkg.price ? `+${pkg.price}` : '—'}</p>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {Array.isArray(pkg.features) ? pkg.features.length : 0} feature{(pkg.features?.length ?? 0) === 1 ? '' : 's'}
+                      </p>
+                      <div className="flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
+                        <button
+                          onClick={() => openEditPackage(pkg)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        >
+                          <Edit2 className="w-4 h-4" />Edit
+                        </button>
+                        <button
+                          onClick={() => removeTrim(pkg)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                        >
+                          <Trash2 className="w-4 h-4" />Delete
+                        </button>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
             </Card>
           ) : (
             <Card>
@@ -247,41 +316,83 @@ export default function ModelsAndVariantsPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                 Shows this vehicle&apos;s own accessories plus any marked &quot;available for all vehicles&quot;.
               </p>
-              <TableCard>
-                <THead>
-                  <tr>
-                    <Th>Name</Th>
-                    <Th>Category</Th>
-                    <Th>Price</Th>
-                    <Th>Scope</Th>
-                    <Th>Status</Th>
-                    <Th className="text-right">Actions</Th>
-                  </tr>
-                </THead>
-                <TBody>
-                  {loading ? (
-                    <EmptyTableRow colSpan={6} message="Loading accessories..." />
-                  ) : accessories.length === 0 ? (
-                    <EmptyTableRow colSpan={6} message="No accessories yet for this vehicle" />
-                  ) : (
-                    accessories.map((acc) => (
-                      <Tr key={acc.id}>
-                        <Td className="font-medium text-gray-900 dark:text-gray-100">{acc.name}</Td>
-                        <Td className="text-gray-500 dark:text-gray-400">{acc.category}</Td>
-                        <Td className="text-gray-500 dark:text-gray-400">{acc.price ? `+${acc.price}` : '—'}</Td>
-                        <Td><Badge tone={acc.vehicleId === null ? 'purple' : 'gray'}>{acc.vehicleId === null ? 'All vehicles' : 'This vehicle'}</Badge></Td>
-                        <Td><Badge tone={acc.inStock ? 'green' : 'red'}>{acc.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
-                        <Td className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => openEditAccessory(acc)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => removeAccessory(acc)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </Td>
-                      </Tr>
-                    ))
-                  )}
-                </TBody>
-              </TableCard>
+              {/* Tablet/desktop: dense table */}
+              <div className="hidden md:block">
+                <TableCard>
+                  <THead>
+                    <tr>
+                      <Th>Name</Th>
+                      <Th>Category</Th>
+                      <Th>Price</Th>
+                      <Th>Scope</Th>
+                      <Th>Status</Th>
+                      <Th className="text-right">Actions</Th>
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {loading ? (
+                      <EmptyTableRow colSpan={6} message="Loading accessories..." />
+                    ) : accessories.length === 0 ? (
+                      <EmptyTableRow colSpan={6} message="No accessories yet for this vehicle" />
+                    ) : (
+                      accessories.map((acc) => (
+                        <Tr key={acc.id}>
+                          <Td className="font-medium text-gray-900 dark:text-gray-100">{acc.name}</Td>
+                          <Td className="text-gray-500 dark:text-gray-400">{acc.category}</Td>
+                          <Td className="text-gray-500 dark:text-gray-400">{acc.price ? `+${acc.price}` : '—'}</Td>
+                          <Td><Badge tone={acc.vehicleId === null ? 'purple' : 'gray'}>{acc.vehicleId === null ? 'All vehicles' : 'This vehicle'}</Badge></Td>
+                          <Td><Badge tone={acc.inStock ? 'green' : 'red'}>{acc.inStock ? 'In Stock' : 'Out of Stock'}</Badge></Td>
+                          <Td className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => openEditAccessory(acc)} className="p-2 text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                              <button onClick={() => removeAccessory(acc)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </Td>
+                        </Tr>
+                      ))
+                    )}
+                  </TBody>
+                </TableCard>
+              </div>
+
+              {/* Phone: vertical card stack with larger tap targets */}
+              <div className="md:hidden space-y-3">
+                {loading ? (
+                  <EmptyState title="Loading accessories..." />
+                ) : accessories.length === 0 ? (
+                  <EmptyState title="No accessories yet for this vehicle" />
+                ) : (
+                  accessories.map((acc) => (
+                    <Card key={acc.id} padding="sm" className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{acc.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{acc.category}</p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">{acc.price ? `+${acc.price}` : '—'}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone={acc.vehicleId === null ? 'purple' : 'gray'}>{acc.vehicleId === null ? 'All vehicles' : 'This vehicle'}</Badge>
+                        <Badge tone={acc.inStock ? 'green' : 'red'}>{acc.inStock ? 'In Stock' : 'Out of Stock'}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
+                        <button
+                          onClick={() => openEditAccessory(acc)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-geely-blue hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        >
+                          <Edit2 className="w-4 h-4" />Edit
+                        </button>
+                        <button
+                          onClick={() => removeAccessory(acc)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                        >
+                          <Trash2 className="w-4 h-4" />Delete
+                        </button>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
             </Card>
           )}
         </div>
@@ -313,7 +424,7 @@ export default function ModelsAndVariantsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image</label>
               <div className="flex items-center gap-3">
-                {trimForm.imageUrl && <img src={trimForm.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />}
+                {trimForm.imageUrl && <ImagePreview src={trimForm.imageUrl} alt="" sizeClass="w-12 h-12" />}
                 <Button variant="secondary" onClick={() => setShowMediaBrowser(true)} type="button">
                   <ImageIcon className="w-4 h-4" />{trimForm.imageUrl ? 'Change' : 'Choose'} Image
                 </Button>
@@ -367,7 +478,7 @@ export default function ModelsAndVariantsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image</label>
               <div className="flex items-center gap-3">
-                {accessoryForm.imageUrl && <img src={accessoryForm.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />}
+                {accessoryForm.imageUrl && <ImagePreview src={accessoryForm.imageUrl} alt="" sizeClass="w-12 h-12" />}
                 <Button variant="secondary" onClick={() => setShowMediaBrowser(true)} type="button">
                   <ImageIcon className="w-4 h-4" />{accessoryForm.imageUrl ? 'Change' : 'Choose'} Image
                 </Button>
