@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { MobileDrawer } from './MobileDrawer';
@@ -12,10 +13,11 @@ import { SearchModal } from './SearchModal';
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="min-h-screen flex flex-col bg-ice dark:bg-midnight transition-colors">
-      <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
+      <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} overlay={pathname === '/'} />
       <MobileDrawer
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}

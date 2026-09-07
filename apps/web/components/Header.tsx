@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Car } from 'lucide-react';
+import { ChevronDown, Car, Menu } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import type { VehicleRecord } from '@/services/vehicleService';
@@ -12,6 +12,11 @@ import { useTranslation } from '@/lib/i18n';
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
+  // True only on the home page, where a full-bleed hero sits directly under
+  // the header (see HeroSection). The header floats transparent/white over
+  // it and turns solid on scroll or once a menu opens, matching
+  // geelyauto.co.za. Every other page keeps the plain sticky solid header.
+  overlay?: boolean;
 }
 
 // A simple, static list of links shown in a compact dropdown card — for nav
@@ -82,9 +87,9 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
+export function Header({ onMobileMenuToggle = () => {}, overlay = false }: HeaderProps) {
   const { t } = useTranslation();
-  const [hiddenOnScroll, setHiddenOnScroll] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
   const [linkGroupOpen, setLinkGroupOpen]   = useState<keyof typeof LINK_GROUPS | null>(null);
@@ -123,22 +128,16 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
   }, []);
 
   useEffect(() => {
-    let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY <= 24) {
-        setHiddenOnScroll(false);
-      } else if (currentScrollY > lastScrollY + 4) {
-        setHiddenOnScroll(true);
-      } else if (currentScrollY < lastScrollY - 4) {
-        setHiddenOnScroll(false);
-      }
-      lastScrollY = currentScrollY;
-    };
-
+    const handleScroll = () => setScrolled(window.scrollY > 24);
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Transparent-over-hero only while the overlay page is at rest, unscrolled
+  // and with no menu open — a solid bar reads better under an open dropdown.
+  const transparent = overlay && !scrolled && !modelsDropdownOpen && !megaMenuOpen && !linkGroupOpen;
+  const tone = transparent ? 'text-white' : 'text-ink dark:text-ice';
 
   const mainNavItems = React.useMemo(
     () =>
@@ -176,121 +175,151 @@ export function Header({ onMobileMenuToggle = () => {} }: HeaderProps) {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
   };
 
+  // Split evenly so the logo sits as the true center column on desktop —
+  // matches geelyauto.co.za's centered-logo, split-nav header.
+  const half = Math.ceil(mainNavItems.length / 2);
+  const leftNavItems = mainNavItems.slice(0, half);
+  const rightNavItems = mainNavItems.slice(half);
+
+  const renderNavItem = (item: (typeof mainNavItems)[number]) => (
+    <div
+      key={item.label}
+      className="relative"
+      onMouseEnter={() => {
+        cancelClose();
+        if (item.hasDropdown) {
+          loadMenuData();
+          setModelsDropdownOpen(true);
+          setMegaMenuOpen(null);
+          setLinkGroupOpen(null);
+        } else if (item.hasSubmenu) {
+          loadMenuData();
+          setMegaMenuOpen(item.category!);
+          setModelsDropdownOpen(false);
+          setLinkGroupOpen(null);
+        } else if (item.hasLinkGroup) {
+          setLinkGroupOpen(item.hasLinkGroup);
+          setModelsDropdownOpen(false);
+          setMegaMenuOpen(null);
+        } else {
+          closeAllMenus();
+        }
+      }}
+      onMouseLeave={scheduleClose}
+    >
+      {item.hasDropdown ? (
+        <button
+          className={`nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[16px] font-medium transition-colors whitespace-nowrap ${tone}`}
+          onClick={() => {
+            loadMenuData();
+            setModelsDropdownOpen(!modelsDropdownOpen);
+            setMegaMenuOpen(null);
+            setLinkGroupOpen(null);
+          }}
+        >
+          <Car size={15} />
+          {item.label}
+          <ChevronDown
+            size={15}
+            className={`transform transition-transform ${modelsDropdownOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      ) : item.hasLinkGroup ? (
+        <button
+          className={`nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[16px] font-medium transition-colors whitespace-nowrap ${tone}`}
+          onClick={() => {
+            setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
+            setModelsDropdownOpen(false);
+            setMegaMenuOpen(null);
+          }}
+        >
+          {item.label}
+          <ChevronDown
+            size={15}
+            className={`transform transition-transform ${linkGroupOpen === item.hasLinkGroup ? 'rotate-180' : ''}`}
+          />
+        </button>
+      ) : (
+        <Link
+          href={item.href}
+          target={item.openInNewTab ? '_blank' : undefined}
+          rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+          className={`nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[16px] font-medium transition-colors whitespace-nowrap ${tone}`}
+          onClick={closeAllMenus}
+        >
+          {item.icon}
+          {item.label}
+        </Link>
+      )}
+
+      {/* Compact static link-group dropdown (Shopping Tools / Owners) */}
+      {item.hasLinkGroup && linkGroupOpen === item.hasLinkGroup && (
+        <div
+          className="absolute left-0 top-full mt-0 min-w-[220px] bg-white dark:bg-midnight-surface shadow-lg border border-line dark:border-midnight-line rounded-lg py-2 z-40"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
+          {LINK_GROUPS[item.hasLinkGroup].links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block px-4 py-2.5 text-sm font-medium text-ink dark:text-ice hover:bg-cloud dark:hover:bg-midnight hover:text-active-blue transition-colors"
+              onClick={closeAllMenus}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <header className={`sticky top-0 z-50 border-b border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md transition-transform duration-300 dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none ${hiddenOnScroll ? '-translate-y-full' : 'translate-y-0'}`}>
+    <header
+      className={`${overlay ? 'fixed' : 'sticky'} top-0 z-50 w-full border-b transition-[background-color,border-color,box-shadow] duration-300 ${
+        transparent
+          ? 'border-transparent bg-transparent shadow-none'
+          : 'border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none'
+      }`}
+    >
       <div className="page-container">
-        <div className="flex min-h-[64px] flex-wrap items-center justify-between gap-2 py-2 sm:min-h-[84px] sm:gap-4 sm:py-3 lg:flex-nowrap lg:gap-8">
-          {/* Logo */}
-          <Link href="/" className="group flex shrink-0 items-center gap-3" onClick={closeAllMenus}>
-            <span className="relative h-7 w-14 overflow-hidden sm:h-8 sm:w-[4.5rem]" aria-hidden="true">
+        <div className="flex min-h-[64px] flex-wrap items-center justify-between gap-2 py-2 sm:min-h-[84px] sm:gap-4 sm:py-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:flex-nowrap lg:items-center lg:gap-8">
+          {/* Left nav — desktop only; centers the logo as the middle column,
+              matching geelyauto.co.za's split-nav layout. */}
+          <nav className="hidden items-center gap-1 lg:flex lg:gap-2 lg:justify-self-start">
+            {leftNavItems.map(renderNavItem)}
+          </nav>
+
+          {/* Logo — centered column on desktop, left-aligned on mobile */}
+          <Link href="/" className="group flex shrink-0 items-center gap-3 lg:justify-self-center" onClick={closeAllMenus}>
+            <span className="relative h-8 w-16 overflow-hidden sm:h-9 sm:w-[5rem]" aria-hidden="true">
               <img
                 src={withBasePath('/assets/logos/geely-logo.png')}
                 alt=""
-                className="absolute inset-0 h-full w-full scale-[4] object-contain transition-opacity group-hover:opacity-70 dark:brightness-0 dark:invert"
+                className={`absolute inset-0 h-full w-full scale-[4] object-contain transition-opacity group-hover:opacity-70 ${transparent ? 'brightness-0 invert' : 'dark:brightness-0 dark:invert'}`}
               />
             </span>
-            <span className="font-display text-[1.25rem] font-bold leading-none tracking-[0.08em] text-black transition-opacity group-hover:opacity-70 dark:text-white sm:text-[1.7rem]">
+            <span className={`font-display text-[1.4rem] font-bold leading-none tracking-[0.08em] transition-opacity group-hover:opacity-70 sm:text-[1.9rem] ${transparent ? 'text-white' : 'text-black dark:text-white'}`}>
               GEELY
             </span>
             <span className="sr-only">Geely Ethiopia</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="order-last flex basis-full flex-1 items-center justify-start gap-1 overflow-x-auto whitespace-nowrap pb-1 sm:gap-2 sm:pb-0 lg:order-none lg:basis-auto lg:justify-center lg:overflow-visible">
-            {mainNavItems.map((item) => (
-              <div
-                key={item.label}
-                className="relative"
-                onMouseEnter={() => {
-                  cancelClose();
-                  if (item.hasDropdown) {
-                    loadMenuData();
-                    setModelsDropdownOpen(true);
-                    setMegaMenuOpen(null);
-                    setLinkGroupOpen(null);
-                  } else if (item.hasSubmenu) {
-                    loadMenuData();
-                    setMegaMenuOpen(item.category!);
-                    setModelsDropdownOpen(false);
-                    setLinkGroupOpen(null);
-                  } else if (item.hasLinkGroup) {
-                    setLinkGroupOpen(item.hasLinkGroup);
-                    setModelsDropdownOpen(false);
-                    setMegaMenuOpen(null);
-                  } else {
-                    closeAllMenus();
-                  }
-                }}
-                onMouseLeave={scheduleClose}
-              >
-                {item.hasDropdown ? (
-                  <button
-                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
-                    onClick={() => {
-                      loadMenuData();
-                      setModelsDropdownOpen(!modelsDropdownOpen);
-                      setMegaMenuOpen(null);
-                      setLinkGroupOpen(null);
-                    }}
-                  >
-                    <Car size={15} />
-                    {item.label}
-                    <ChevronDown
-                      size={15}
-                      className={`transform transition-transform ${modelsDropdownOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                ) : item.hasLinkGroup ? (
-                  <button
-                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
-                    onClick={() => {
-                      setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
-                      setModelsDropdownOpen(false);
-                      setMegaMenuOpen(null);
-                    }}
-                  >
-                    {item.label}
-                    <ChevronDown
-                      size={15}
-                      className={`transform transition-transform ${linkGroupOpen === item.hasLinkGroup ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                ) : (
-                  <Link
-                    href={item.href}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="nav-link flex items-center gap-1.5 px-3 py-3 font-display text-[12.5px] font-medium uppercase tracking-[0.1em] text-ink transition-colors hover:text-active-blue dark:text-ice whitespace-nowrap"
-                    onClick={closeAllMenus}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </Link>
-                )}
-
-                {/* Compact static link-group dropdown (Shopping Tools / Owners) */}
-                {item.hasLinkGroup && linkGroupOpen === item.hasLinkGroup && (
-                  <div
-                    className="absolute left-0 top-full mt-0 min-w-[220px] bg-white dark:bg-midnight-surface shadow-lg border border-line dark:border-midnight-line rounded-lg py-2 z-40"
-                    onMouseEnter={cancelClose}
-                    onMouseLeave={scheduleClose}
-                  >
-                    {LINK_GROUPS[item.hasLinkGroup].links.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="block px-4 py-2.5 text-sm font-medium text-ink dark:text-ice hover:bg-cloud dark:hover:bg-midnight hover:text-active-blue transition-colors"
-                        onClick={closeAllMenus}
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </nav>
-
+          {/* Right nav + hamburger — hamburger opens MobileDrawer below lg,
+              where the desktop nav is hidden so nothing scrolls horizontally. */}
+          <div className="flex items-center gap-2 lg:justify-self-end lg:gap-8">
+            <nav className="hidden items-center gap-1 lg:flex lg:gap-2">
+              {rightNavItems.map(renderNavItem)}
+            </nav>
+            <button
+              type="button"
+              onClick={onMobileMenuToggle}
+              aria-label="Open menu"
+              className={`flex shrink-0 items-center justify-center p-2 lg:hidden ${tone}`}
+            >
+              <Menu size={26} />
+            </button>
+          </div>
         </div>
 
         {/* Vehicle Dropdown — data already loaded, no spinner */}

@@ -47,12 +47,14 @@
     background: var(--geely-neutral-50);
     color: var(--geely-black);
     font-family: var(--font-inter), Arial, sans-serif;
+    overflow-x: hidden;
   }
 
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -369,27 +371,18 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
 }
 
-/* Primary nav link — centered underline that grows from the middle on
-   hover, matching the understated automotive-brand nav treatment. */
+/* Primary nav link — a 1px underline that solidifies on hover/active,
+   matching geelyauto.co.za's understated header treatment (their
+   .menu-item uses the same transparent-to-solid border-bottom). */
 .nav-link {
   position: relative;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
 }
 
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  width: 0;
-  height: 1.5px;
-  background: currentColor;
-  transform: translateX(-50%);
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.nav-link:hover::after,
-.nav-link[data-active='true']::after {
-  width: calc(100% - 4px);
+.nav-link:hover,
+.nav-link[data-active='true'] {
+  border-bottom-color: currentColor;
 }
 
 /* Button ripple container */
