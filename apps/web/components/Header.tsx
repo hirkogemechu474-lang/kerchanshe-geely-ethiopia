@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Car, Menu } from 'lucide-react';
+import { ChevronDown, Menu } from 'lucide-react';
 import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import type { VehicleRecord } from '@/services/vehicleService';
@@ -217,7 +217,6 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false }: Heade
             setLinkGroupOpen(null);
           }}
         >
-          <Car size={15} />
           {item.label}
           <ChevronDown
             size={15}

@@ -85,6 +85,16 @@ async function getVehicle(id: string) {
   }
 }
 
+async function getShowcase(vehicleId: string) {
+  try {
+    const { data } = await apiClient.get(`/public/showcase?vehicleId=${encodeURIComponent(vehicleId)}`);
+    const showcases = Array.isArray(data) ? data : [];
+    return showcases[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function getBrochureSetting() {
   try {
     const { data } = await apiClient.get("/public/vehicle-settings");
@@ -245,11 +255,16 @@ export default async function VehicleDetailPage({
   const { id } = await params;
   const { visitId } = await searchParams;
   const vehicle = await getVehicle(id);
-  const [brochure, contactPhone] = await Promise.all([getBrochureSetting(), getContactPhone()]);
 
   if (!vehicle) {
     notFound();
   }
+
+  const [brochure, contactPhone, showcase] = await Promise.all([
+    getBrochureSetting(),
+    getContactPhone(),
+    getShowcase(vehicle.slug || id),
+  ]);
 
   // Showroom QR walk-in flow: a visitor arriving from /models carries their
   // visit id so the downstream quote/test-drive/purchase pages can prefill
@@ -260,11 +275,14 @@ export default async function VehicleDetailPage({
   const brochureUrl = publicBrochureUrl(brochure?.url, `/api/vehicles/${vehicle.slug}/brochure`);
   const contactPhoneHref = `tel:${contactPhone.replace(/[^0-9+]/g, "")}`;
   const whatsappNumber = contactPhone.replace(/[^0-9]/g, "");
-  // No public backend endpoint exposes VehicleShowcase yet (it's an
-  // admin-only concern today) — the 360 section already falls back to plain
-  // gallery images when there's no showcase data, so this just stays empty.
-  const showcaseViews: Array<{ angle: string; imageUrl: string; label: string }> = [];
-  const showcaseVideoUrl: string | null = null;
+  // Uploaded in Admin → Vehicles → Settings → 360° Showcase for this
+  // vehicle's slug — the 360 section falls back to plain gallery images
+  // when there's no showcase data.
+  const rawShowcaseViews: Array<{ angle?: string; imageUrl?: string; label?: string }> = Array.isArray(showcase?.views) ? showcase.views : [];
+  const showcaseViews = rawShowcaseViews
+    .filter((v): v is { angle: string; imageUrl: string; label: string } => typeof v?.imageUrl === "string" && !!v.imageUrl)
+    .map((v) => ({ angle: v.angle ?? "", imageUrl: publicMediaUrl(v.imageUrl), label: v.label ?? "" }));
+  const showcaseVideoUrl: string | null = publicMediaUrl(showcase?.videoUrl) || null;
 
   const imageList: string[] = Array.isArray(vehicle.images)
     ? vehicle.images.filter((image: unknown): image is string => typeof image === "string")

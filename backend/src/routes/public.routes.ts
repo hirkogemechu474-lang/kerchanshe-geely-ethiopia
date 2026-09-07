@@ -216,8 +216,13 @@ router.get('/faq', async (req: Request, res: Response) => {
 
 router.get('/showcase', async (req: Request, res: Response) => {
   try {
+    const { vehicleId } = req.query;
     const showcases = await prisma.vehicleShowcase.findMany({
-      where: { isActive: true, ...publishedOrDue() },
+      where: {
+        isActive: true,
+        ...(typeof vehicleId === 'string' ? { vehicleId } : {}),
+        ...publishedOrDue(),
+      },
       orderBy: { sortOrder: 'asc' },
     });
     res.json(showcases);
@@ -1137,11 +1142,17 @@ router.get('/chatbot/config', async (req: Request, res: Response) => {
   }
 });
 
+const CHATBOT_MAX_MESSAGE_LENGTH = 1000;
+
 router.post('/chatbot/message', rateLimiters.chatbotMessage, async (req: Request, res: Response) => {
   try {
     const { sessionId, message } = req.body;
     if (!sessionId || typeof message !== 'string' || !message.trim()) {
       res.status(400).json({ error: 'sessionId and message are required' });
+      return;
+    }
+    if (message.length > CHATBOT_MAX_MESSAGE_LENGTH) {
+      res.status(400).json({ error: `Message is too long (max ${CHATBOT_MAX_MESSAGE_LENGTH} characters).` });
       return;
     }
     const reply = await chatbotService.handleMessage(sessionId, message.trim());
