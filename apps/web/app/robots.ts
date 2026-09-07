@@ -3,6 +3,12 @@ import { env } from '@/lib/env';
 import { BASE_PATH, withBasePathUrl } from '@/lib/basePath';
 import apiClient from '@/lib/apiClient';
 
+// Revalidate periodically instead of hitting the backend on every crawler
+// request — apiClient's default timeout is 30s, which previously made
+// /robots.txt hang (and time out for Lighthouse/other fetchers) whenever the
+// backend was slow or unreachable.
+export const revalidate = 3600;
+
 // Admin-managed extra robots.txt rules (Setting['seo_settings'].robotsExtra,
 // edited at /admin/settings/seo) — freeform text, one `Allow:`/`Disallow:`
 // directive per line, merged into the wildcard rule below. next-generated
@@ -14,7 +20,7 @@ async function getExtraRobotsRules(): Promise<{ allow: string[]; disallow: strin
   const allow: string[] = [];
   const disallow: string[] = [];
   try {
-    const { data } = await apiClient.get('/public/seo-settings');
+    const { data } = await apiClient.get('/public/seo-settings', { timeout: 3000 });
     const raw = typeof data?.robotsExtra === 'string' ? data.robotsExtra : '';
     for (const line of raw.split('\n')) {
       const match = line.match(/^\s*(allow|disallow)\s*:\s*(.+?)\s*$/i);

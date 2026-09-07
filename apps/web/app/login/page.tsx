@@ -179,9 +179,9 @@ export default function LoginPage() {
           </div>
 
           {/* Staff sign-in */}
-          <div className="mt-3 text-center text-xs text-gray-400">
+          <div className="mt-3 text-center text-xs text-gray-600">
             Geely staff member?{' '}
-            <Link href="/admin/login" className="text-gray-500 hover:text-blue-600 underline">
+            <Link href="/admin/login" className="text-gray-600 hover:text-blue-600 underline">
               Sign in here
             </Link>
           </div>

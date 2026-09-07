@@ -47,7 +47,7 @@ function DynamicMenuSections({ sections, iconClass = 'text-geely-blue' }: { sect
   if (sections.length === 0) {
     return (
       <div className="max-w-[1280px] mx-auto px-4 py-8">
-        <div className="text-center text-gray-400 text-sm">No content available</div>
+        <div className="text-center text-gray-600 text-sm">No content available</div>
       </div>
     );
   }
@@ -115,7 +115,7 @@ function DynamicModelsMenu({ vehicles }: { vehicles: VehicleRecord[] }) {
     <div className="max-h-[calc(100vh-7rem)] overflow-y-auto px-3 py-5 sm:px-4 sm:py-8">
     <div className="max-w-[1280px] mx-auto">
       {!hasVehicles ? (
-        <div className="text-center text-gray-400 text-sm py-4">Loading models…</div>
+        <div className="text-center text-gray-600 text-sm py-4">Loading models…</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {/* Category columns */}

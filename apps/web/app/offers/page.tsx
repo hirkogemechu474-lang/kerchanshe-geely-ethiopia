@@ -3,6 +3,7 @@
 import { MainLayout } from "@/components/MainLayout";
 import { Calendar, Tag, Car, Gift, Percent } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 interface Promotion {
@@ -85,11 +86,13 @@ export default function OffersPage() {
                 <div key={promo.id} className="bg-white dark:bg-midnight-surface border-2 border-gold rounded-lg overflow-hidden shadow-lg">
                   {/* Image */}
                   {promo.bannerImage ? (
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={promo.bannerImage} 
+                    <div className="relative h-48 overflow-hidden">
+                      <Image
+                        src={promo.bannerImage}
                         alt={promo.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                        className="object-cover"
                       />
                     </div>
                   ) : (
@@ -160,11 +163,13 @@ export default function OffersPage() {
                 }`}>
                   {/* Image */}
                   {promo.bannerImage ? (
-                    <div className="h-32 overflow-hidden">
-                      <img 
-                        src={promo.bannerImage} 
+                    <div className="relative h-32 overflow-hidden">
+                      <Image
+                        src={promo.bannerImage}
                         alt={promo.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                        className="object-cover"
                       />
                     </div>
                   ) : (

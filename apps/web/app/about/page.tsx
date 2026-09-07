@@ -6,6 +6,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type FeatureCard = { icon: string; title: string; description: string };
 type HighlightItem = { value: string; label: string };
@@ -300,10 +301,12 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {data.designPhilosophy.image && (
                 <div className="order-2 lg:order-1 relative overflow-hidden aspect-video lg:aspect-square bg-slate-100">
-                  <img
+                  <Image
                     src={data.designPhilosophy.image}
                     alt={data.designPhilosophy.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="object-cover"
                   />
                 </div>
               )}
@@ -350,10 +353,12 @@ export default function AboutPage() {
               {/* Right: 2x2 stat grid OR image */}
               {data.partnership.rightImage ? (
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-navy/15 aspect-square">
-                  <img
+                  <Image
                     src={data.partnership.rightImage}
                     alt={data.partnership.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="object-cover"
                   />
                 </div>
               ) : (
@@ -388,11 +393,13 @@ export default function AboutPage() {
             </div>
 
             {data.missionVisionValues.image && (
-             <div className="relative w-full overflow-hidden mb-14">
-  <img
+             <div className="relative w-full aspect-[21/9] overflow-hidden mb-14">
+  <Image
     src={data.missionVisionValues.image}
     alt={data.missionVisionValues.eyebrow}
-    className="w-full h-auto object-cover"
+    fill
+    sizes="100vw"
+    className="object-cover"
   />
 </div>
             )}
@@ -551,8 +558,8 @@ export default function AboutPage() {
                     <div className="flex-1 pl-10 sm:pl-0" />
                     <div className="flex-1 pl-10 sm:pl-0">
                       {m.image && (
-                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-navy/10 aspect-video mb-3">
-                          <img src={m.image} alt={m.title} className="w-full h-full object-cover" />
+                        <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-navy/10 aspect-video mb-3">
+                          <Image src={m.image} alt={m.title} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover" />
                         </div>
                       )}
                       <div className="text-3xl font-black text-geely-blue uppercase tracking-tight mb-2">{m.year}</div>

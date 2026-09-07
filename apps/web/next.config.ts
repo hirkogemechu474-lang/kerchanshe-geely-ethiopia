@@ -14,8 +14,12 @@ const nextConfig: NextConfig = {
   devIndicators: false,
 
   images: {
-    loader: "custom",
-    loaderFile: "./lib/imageLoader.ts",
+    // The custom loader only exists to work around Next's built-in optimizer
+    // 400ing on local /public files once basePath is set (see lib/imageLoader.ts).
+    // That bug doesn't exist without a basePath (e.g. local dev, or any
+    // deployment at the domain root), so only opt out of real AVIF/WebP
+    // conversion + resizing when a basePath actually forces it.
+    ...(basePath ? { loader: "custom" as const, loaderFile: "./lib/imageLoader.ts" } : {}),
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "placehold.co" },
@@ -23,6 +27,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "geelyethiopia.com" },
       { protocol: "https", hostname: "www.geelyethiopia.com" },
       { protocol: "https", hostname: "www.geely-ethiopia.com" },
+      // Admin-managed CMS fields (hero/about/promotions/offers banners, etc.)
+      // accept arbitrary external image URLs, not just the domains above —
+      // widen to any https host so those go through the optimizer too.
+      { protocol: "https", hostname: "**" },
     ],
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -81,6 +89,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/:all*(svg|jpg|png|webp|avif)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:all*(mp4|webm|vtt)',
         headers: [
           {
             key: 'Cache-Control',

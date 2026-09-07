@@ -251,7 +251,7 @@ export default function ComparePage() {
                   >
                     <div className="mb-2 flex h-32 items-center justify-center overflow-hidden rounded bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       {imageUrl ? (
-                        <ImageWithFallback src={withBasePath(imageUrl)} alt="" className="h-full w-full object-cover" iconClassName="h-6 w-6" />
+                        <ImageWithFallback src={withBasePath(imageUrl)} alt={`${vehicle.name} thumbnail`} className="h-full w-full object-cover" iconClassName="h-6 w-6" />
                       ) : (
                         <span className="px-2 text-center text-xs text-steel dark:text-steel-light">{vehicle.name}</span>
                       )}

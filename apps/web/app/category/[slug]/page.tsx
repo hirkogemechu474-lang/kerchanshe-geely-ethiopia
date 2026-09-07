@@ -220,7 +220,7 @@ export default function CategoryPage() {
                     <div className="relative h-56 bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
                       <ImageWithFallback
                         src={mainImage}
-                        alt=""
+                        alt={`${vehicle.name} exterior`}
                         className="w-full h-full object-cover"
                       />
                       {vehicle.badge && (

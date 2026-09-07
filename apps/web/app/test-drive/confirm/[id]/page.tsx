@@ -103,7 +103,7 @@ export default function TestDriveConfirmPage() {
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {testDrive.customerName} · {testDrive.vehicleName}
-              {testDrive.reference && <span className="block text-xs text-gray-400 mt-1">Ref: {testDrive.reference}</span>}
+              {testDrive.reference && <span className="block text-xs text-gray-600 dark:text-steel-light mt-1">Ref: {testDrive.reference}</span>}
             </p>
 
             <div className="space-y-3 mb-8">

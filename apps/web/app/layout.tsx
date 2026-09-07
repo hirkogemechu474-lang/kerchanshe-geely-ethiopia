@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 // @ts-ignore: CSS module declarations may be missing in this project setup
 import "./globals.css";
+import dynamic from "next/dynamic";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { WebVitals } from "@/components/WebVitals";
 import CookieBanner from "@/components/CookieBanner";
-import ChatbotWidget from "@/components/ChatbotWidget";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import Script from "next/script";
@@ -12,6 +12,13 @@ import { inter, manrope, notoSansEthiopic } from "@/lib/fonts";
 import { env } from "@/lib/env";
 import { BASE_PATH, withBasePath, withBasePathUrl } from "@/lib/basePath";
 import apiClient from "@/lib/apiClient";
+import { unstable_cache } from "next/cache";
+
+// Code-split into its own chunk instead of the shared bundle every route
+// pays for — it self-gates on a client fetch anyway (renders null until
+// /admin/settings has a chatbot configured), so it doesn't need to be part
+// of the initial JS every page ships.
+const ChatbotWidget = dynamic(() => import("@/components/ChatbotWidget"));
 
 // Site-wide SEO defaults (default meta title/description, OG image, Twitter
 // handle, keywords, GA4 ID, Search Console verification, Facebook/Meta Pixel
@@ -35,14 +42,22 @@ type SeoSettings = {
   robotsExtra?: string;
 };
 
-async function getSeoSettings(): Promise<SeoSettings> {
-  try {
-    const { data } = await apiClient.get("/public/seo-settings");
-    return data && typeof data === "object" ? data : {};
-  } catch {
-    return {};
-  }
-}
+// Cached across requests (5 min) so every page's <head> doesn't pay a
+// backend round trip on every SSR — previously uncached with a 30s axios
+// timeout, which stalled the whole document response (and its <head>/meta
+// tags) whenever the backend was slow or unreachable.
+const getSeoSettings = unstable_cache(
+  async (): Promise<SeoSettings> => {
+    try {
+      const { data } = await apiClient.get("/public/seo-settings", { timeout: 3000 });
+      return data && typeof data === "object" ? data : {};
+    } catch {
+      return {};
+    }
+  },
+  ["seo-settings"],
+  { revalidate: 300 }
+);
 
 export const viewport: Viewport = {
   themeColor: [
@@ -185,6 +200,11 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" sizes="152x152" href={withBasePath('/icons/icon-152x152.png')} />
         <link rel="apple-touch-icon" sizes="180x180" href={withBasePath('/icons/icon-192x192.png')} />
         <link rel="apple-touch-icon" sizes="192x192" href={withBasePath('/icons/icon-192x192.png')} />
+
+        {/* Warm up the connection for the afterInteractive 3rd-party scripts
+            below, so they don't pay full DNS+TLS setup cost once triggered. */}
+        {gaId && <link rel="preconnect" href="https://www.googletagmanager.com" />}
+        {pixelId && <link rel="preconnect" href="https://connect.facebook.net" />}
 
         {/* Sets the dark/light class on <html> before hydration so the page
             never flashes the wrong theme — ThemeProvider re-derives the same

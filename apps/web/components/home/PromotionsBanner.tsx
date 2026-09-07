@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -63,10 +64,12 @@ export default function PromotionsBanner({ initialPromotions = [] }: PromotionsB
           <div className="flex-1 relative">
             <div className="relative h-32 md:h-40 rounded-lg overflow-hidden bg-black/20">
               {currentPromo.bannerImage ? (
-                <img
+                <Image
                   src={currentPromo.bannerImage}
                   alt=""
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 768px) 100vw, 100vw"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

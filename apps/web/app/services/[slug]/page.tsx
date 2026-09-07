@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 
 interface PageProps {
@@ -75,10 +76,13 @@ export default async function ServicePage({ params }: PageProps) {
               allowFullScreen
             />
           ) : page.heroImage ? (
-            <img
+            <Image
               src={page.heroImage}
               alt={page.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
             />
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

@@ -113,13 +113,14 @@ export default async function AccountPage() {
                     <p className="font-semibold text-gray-900 text-sm mb-1">{promo.title}</p>
                     <p className="text-xs text-gray-500 line-clamp-2 flex-1">{promo.description}</p>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <span className="text-xs text-gray-600 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         Ends {new Date(promo.endDate).toLocaleDateString('en-ET', { day: 'numeric', month: 'short' })}
                       </span>
                       {promo.ctaButtonLink && (
                         <Link
                           href={promo.ctaButtonLink}
+                          aria-label={`${promo.ctaButtonText || 'Learn more'}: ${promo.title}`}
                           className="text-xs font-semibold text-geely-blue hover:underline"
                         >
                           {promo.ctaButtonText || 'Learn more'}
@@ -145,8 +146,8 @@ export default async function AccountPage() {
           </div>
 
           {news.length === 0 ? (
-            <div className="bg-white dark:bg-midnight-surface rounded-xl border border-gray-100 p-8 text-center text-gray-400">
-              No updates yet — check back soon.
+            <div className="bg-white dark:bg-midnight-surface rounded-xl border border-gray-100 p-8 text-center text-gray-600">
+              No updates yet. Check back soon.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -178,7 +179,7 @@ export default async function AccountPage() {
                       <p className="text-xs text-gray-500 line-clamp-2 mt-1">{article.excerpt}</p>
                     )}
                     {article.publishDate && (
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-xs text-gray-600 mt-2">
                         {new Date(article.publishDate).toLocaleDateString('en-ET', {
                           day: 'numeric', month: 'short', year: 'numeric',
                         })}

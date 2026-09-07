@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 
 interface AboutContent {
@@ -46,11 +47,12 @@ export default function AboutSection() {
           card layout. */}
       <div className="absolute inset-0">
         {content.image ? (
-          <img
+          <Image
             src={content.image}
             alt=""
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            sizes="100vw"
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full bg-navy" />

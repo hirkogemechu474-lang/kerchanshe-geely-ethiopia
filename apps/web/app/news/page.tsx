@@ -1,6 +1,7 @@
 import { MainLayout } from "@/components/MainLayout";
 import { Calendar, Tag, Users } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { serverApiClient } from "@/lib/serverApiClient";
 import { withBasePath } from "@/lib/publicPath";
 import { settingRepository } from "@/repositories/settingRepository";
@@ -60,7 +61,7 @@ export default async function NewsPage() {
           {articles.length === 0 ? (
             <div className="py-12 text-center">
               <p className="mb-4 text-gray-500">No news articles published yet</p>
-              <p className="text-sm text-gray-400">Check back soon for updates</p>
+              <p className="text-sm text-gray-600">Check back soon for updates</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -143,7 +144,7 @@ export default async function NewsPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {team.map((member) => (
               <div key={member.id} className="overflow-hidden rounded-xl border border-line bg-ice dark:border-midnight-line dark:bg-midnight">
-                {member.imageUrl ? <img src={teamImageUrl(member.imageUrl)} alt={member.name} className="h-48 w-full object-cover" /> : <div className="flex h-48 items-center justify-center bg-gradient-to-br from-navy to-geely-blue text-white"><Users size={42} strokeWidth={1.4} /></div>}
+                {member.imageUrl ? <div className="relative h-48 w-full"><Image src={teamImageUrl(member.imageUrl)} alt={member.name} fill sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" /></div> : <div className="flex h-48 items-center justify-center bg-gradient-to-br from-navy to-geely-blue text-white"><Users size={42} strokeWidth={1.4} /></div>}
                 <div className="p-6">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-geely-blue/10 text-geely-blue"><Users size={21} strokeWidth={1.8} />
                   </div>

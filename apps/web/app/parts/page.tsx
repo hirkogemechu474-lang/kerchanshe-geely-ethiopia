@@ -5,6 +5,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { getAvailabilityBadge } from "@/lib/partsData";
 import { Search, Filter, ShoppingCart, Shield, Truck, Store, Star, X, Loader2, Plus, Minus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { withBasePath } from "@/lib/publicPath";
 
 const benefitIcons: Record<string, any> = {
@@ -258,8 +259,8 @@ export default function PartsPage() {
           />
         )}
         {content?.heroBannerImage && (
-          <div className="absolute right-10 top-1/2 hidden lg:block w-64 opacity-40 -translate-y-1/2">
-            <img src={withBasePath(content.heroBannerImage)} alt="" className="w-full rounded-2xl shadow-2xl" />
+          <div className="absolute right-10 top-1/2 hidden lg:block w-64 aspect-square opacity-40 -translate-y-1/2">
+            <Image src={withBasePath(content.heroBannerImage)} alt="" fill sizes="256px" className="rounded-2xl shadow-2xl object-cover" />
           </div>
         )}
         <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">

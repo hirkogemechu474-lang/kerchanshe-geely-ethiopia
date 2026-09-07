@@ -369,7 +369,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-4 text-xs text-white/40">
+        <div className="mt-4 text-xs text-white/70">
           © {currentYear} Geely Ethiopia · Official distributor: Kerchanshe Group Geely. All rights reserved.
         </div>
       </div>
