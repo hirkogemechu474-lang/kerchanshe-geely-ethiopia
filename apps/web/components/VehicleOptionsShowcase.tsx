@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Camera } from 'lucide-react';
+import { Check, Camera, ChevronDown, ChevronUp, Car } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
@@ -39,6 +39,8 @@ interface PackageOption {
   description: string | null;
   features: string[];
   isDefault: boolean;
+  /** Per-trim photo — falls back to a placeholder (matching ImageWithFallback's own broken-image treatment) when not set, which is the common case today. */
+  imageUrl?: string | null;
 }
 
 interface AccessoryOption {
@@ -58,7 +60,56 @@ interface VehicleOptionsShowcaseProps {
   wheels: WheelOption[];
   packages: PackageOption[];
   accessories: AccessoryOption[];
+  /**
+   * The vehicle's own `specifications` JSON blob (engine/performance +
+   * safety, in whichever of the legacy or canonical shapes it was saved in
+   * — see apps/admin/lib/vehicle-specifications.ts). VehiclePackage rows
+   * don't carry their own per-trim specs, so the same vehicle-level stats
+   * and safety list are shown identically on every trim card — that's
+   * expected, not a bug.
+   */
+  specifications?: Record<string, any>;
   visitId?: string;
+}
+
+/** One "label: value" row rendered inside a trim card's mini spec table or expandable safety list. */
+type SpecEntry = [string, string];
+
+/**
+ * Small expand/collapse toggle for a trim card's safety features list,
+ * matching the site's established accordion pattern (see FAQSection.tsx:
+ * a button with a chevron that flips between ChevronDown/ChevronUp,
+ * revealing content underneath) rather than inventing a new interaction.
+ */
+function TrimFeatureToggle({ label, entries }: { label: string; entries: SpecEntry[] }) {
+  const [open, setOpen] = useState(false);
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-line">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between text-xs font-bold text-navy uppercase tracking-wider"
+      >
+        <span>{label}</span>
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {entries.map(([itemLabel, value]) => (
+            <div key={itemLabel} className="flex items-start gap-2 text-xs text-steel">
+              <Check size={12} className="text-active-blue flex-shrink-0 mt-0.5" />
+              <span>
+                <span className="font-semibold text-navy">{itemLabel}:</span> {value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -75,6 +126,7 @@ export function VehicleOptionsShowcase({
   wheels,
   packages,
   accessories,
+  specifications,
   visitId,
 }: VehicleOptionsShowcaseProps) {
   const [selectedColor, setSelectedColor] = useState(
@@ -82,6 +134,45 @@ export function VehicleOptionsShowcase({
   );
   const [lightbox, setLightbox] = useState<{ title: string; images: string[] } | null>(null);
   const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : '';
+
+  // Trim cards don't have their own per-trim specs (VehiclePackage carries no
+  // range/battery/0-100 fields) — reuse the real vehicle-level performance
+  // numbers instead, same 2-3 stats on every card. `specifications` can be in
+  // either the legacy (`engine`) or canonical (`performance`) shape (see
+  // apps/admin/lib/vehicle-specifications.ts), so read both and prefer
+  // whichever is populated field-by-field.
+  const perfCanonical = (specifications?.performance || {}) as Record<string, string>;
+  const perfLegacy = (specifications?.engine || {}) as Record<string, string>;
+  const perfField = (key: string) => perfCanonical[key] || perfLegacy[key] || '';
+
+  const statEntries: SpecEntry[] = (
+    [
+      ['Range', perfField('range')],
+      ['0-100 km/h', perfField('acceleration')],
+      ['Battery', perfField('batteryCapacity')],
+      ['Power', perfField('power')],
+      ['Fuel Economy', perfField('fuelEconomy')],
+    ] as SpecEntry[]
+  )
+    .filter(([, value]) => Boolean(value))
+    .slice(0, 3);
+  const statsGridClass =
+    statEntries.length >= 3 ? 'grid-cols-3' : statEntries.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
+
+  const safety = (specifications?.safety || {}) as Record<string, string>;
+  const safetyEntries: SpecEntry[] = (
+    [
+      ['airbags', 'Airbags'],
+      ['abs', 'ABS'],
+      ['esc', 'Stability Control'],
+      ['tpms', 'Tire Pressure Monitoring'],
+      ['cameras', 'Cameras'],
+      ['sensors', 'Parking Sensors'],
+      ['adas', 'Driver Assistance (ADAS)'],
+    ] as [string, string][]
+  )
+    .map(([key, label]) => [label, safety[key]] as SpecEntry)
+    .filter(([, value]) => Boolean(value));
 
   const hasAnything =
     colors.length > 0 ||
@@ -206,9 +297,24 @@ export function VehicleOptionsShowcase({
                 <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-3">
                   Trim Levels
                 </label>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {packages.map((p) => (
                     <div key={p.id} className="p-4 rounded-xl border border-line bg-white">
+                      {p.imageUrl ? (
+                        <div className="w-full aspect-[16/9] rounded-lg overflow-hidden mb-3 bg-mesh-blue">
+                          <ImageWithFallback
+                            src={p.imageUrl}
+                            alt={`${vehicleName} ${p.name} trim`}
+                            className="w-full h-full object-cover"
+                            iconClassName="h-8 w-8"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full aspect-[16/9] rounded-lg mb-3 bg-mesh-blue flex items-center justify-center text-white/40">
+                          <Car className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-navy text-sm">{p.name}</span>
                         {p.isDefault && (
@@ -220,6 +326,22 @@ export function VehicleOptionsShowcase({
                       {p.description && (
                         <div className="text-xs text-steel mb-2">{p.description}</div>
                       )}
+
+                      {statEntries.length > 0 && (
+                        <div className={`grid ${statsGridClass} gap-2 mb-3 py-3 border-y border-line`}>
+                          {statEntries.map(([label, value]) => (
+                            <div key={label} className="text-center">
+                              <div className="text-xs font-bold text-navy truncate" title={value}>
+                                {value}
+                              </div>
+                              <div className="text-[10px] text-steel uppercase tracking-wide mt-0.5">
+                                {label}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {p.features.length > 0 && (
                         <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-navy">
                           {p.features.map((feat) => (
@@ -230,6 +352,8 @@ export function VehicleOptionsShowcase({
                           ))}
                         </div>
                       )}
+
+                      <TrimFeatureToggle label="Safety Features" entries={safetyEntries} />
                     </div>
                   ))}
                 </div>

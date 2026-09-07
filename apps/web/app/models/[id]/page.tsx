@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import Link from "next/link";
 import apiClient from "@/lib/apiClient";
-import { Check, Phone, MessageCircle, Download, ShieldCheck } from "lucide-react";
+import { Check, Phone, MessageCircle, Download, ShieldCheck, ChevronDown } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { getBreadcrumbSchema } from "@/lib/schema";
 import { Metadata } from "next";
@@ -39,6 +39,25 @@ const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.m4v'];
 function isVideoUrl(url: string): boolean {
   const path = url.split('?')[0].toLowerCase();
   return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
+
+// One "feature story" entry (specs.interior.highlights / specs.exterior.highlights
+// — see apps/admin/lib/vehicle-specifications.ts for the authoring shape). Brand
+// new field, so values are treated as string-safe-but-possibly-missing/empty.
+type SpecHighlight = { title: string; description: string; imageUrl: string };
+
+function normalizeHighlights(raw: unknown): SpecHighlight[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((h): h is Record<string, unknown> => Boolean(h) && typeof h === "object")
+    .map((h) => ({
+      title: typeof h.title === "string" ? h.title.trim() : "",
+      description: typeof h.description === "string" ? h.description.trim() : "",
+      imageUrl: typeof h.imageUrl === "string" && h.imageUrl ? publicMediaUrl(h.imageUrl) : "",
+    }))
+    // A highlight without both a headline and a paragraph has nothing to
+    // show — skip it rather than rendering a half-empty story block.
+    .filter((h) => h.title && h.description);
 }
 
 // Settings are stored as a JSON-or-plain-text string column (backend
@@ -88,6 +107,75 @@ async function getContactPhone() {
   } catch {
     return FALLBACK_CONTACT_PHONE;
   }
+}
+
+// Shared alternating image+text "feature story" block — used by both the
+// Exterior Highlights and Interior Highlights sections (specs.exterior/
+// interior.highlights), one block per admin-authored highlight, alternating
+// image-left/text-right then image-right/text-left.
+function FeatureStorySection({
+  id,
+  eyebrow,
+  heading,
+  intro,
+  highlights,
+  vehicleName,
+  tone = "light",
+}: {
+  id: string;
+  eyebrow: string;
+  heading: string;
+  intro: string;
+  highlights: SpecHighlight[];
+  vehicleName: string;
+  tone?: "light" | "ice";
+}) {
+  return (
+    <section
+      id={id}
+      className={`scroll-mt-[108px] ${tone === "ice" ? "bg-ice" : "bg-white"} py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]`}
+    >
+      <div className="page-container">
+        <div className="mb-12 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+            {eyebrow}
+          </div>
+          <h2 className="disp text-3xl text-navy font-bold mb-4">{heading}</h2>
+          <p className="text-steel text-base max-w-2xl">{intro}</p>
+        </div>
+        <div className="space-y-14 md:space-y-20">
+          {highlights.map((highlight, index) => {
+            const reversed = index % 2 === 1;
+            return (
+              <div key={index} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+                <div className={reversed ? "lg:order-2" : ""}>
+                  {highlight.imageUrl ? (
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4">
+                      <ImageWithFallback
+                        src={highlight.imageUrl}
+                        alt={`${vehicleName} — ${highlight.title}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        iconClassName="h-10 w-10"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-[4/3] rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 text-steel text-sm">
+                      {vehicleName}
+                    </div>
+                  )}
+                </div>
+                <div className={reversed ? "lg:order-1" : ""}>
+                  <h3 className="disp text-2xl md:text-3xl text-navy font-bold mb-4">{highlight.title}</h3>
+                  <p className="text-steel text-base leading-relaxed max-w-lg">{highlight.description}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export const revalidate = 60
@@ -300,6 +388,62 @@ export default async function VehicleDetailPage({
     ["Maintenance", specs?.warranty?.maintenance],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
 
+  // Real, per-vehicle "feature story" content (admin: Vehicle Sections →
+  // Interior/Exterior tabs → Highlights) — brand new field, so most vehicles
+  // will have [] for a while; both sections render nothing when empty.
+  const exteriorHighlights = normalizeHighlights(specs?.exterior?.highlights);
+  const interiorHighlights = normalizeHighlights(specs?.interior?.highlights);
+
+  // Comfort & Experience, Technology, and Safety/ADAS used to render a
+  // hardcoded, identical-for-every-vehicle feature list. These now read the
+  // real per-vehicle strings already captured in Vehicle Sections (admin)
+  // but never previously surfaced here — only fields that are actually
+  // filled in become cards, and a section with zero filled fields renders
+  // nothing at all.
+  const comfortCards = (
+    [
+      ["Climate Control", specs?.interior?.climate],
+      ["Seating", specs?.interior?.seats],
+      ["Seating Capacity", specs?.interior?.seatingCapacity],
+      ["Cargo Volume", specs?.interior?.cargoVolume],
+    ] as [string, string | undefined][]
+  ).filter(([, value]) => Boolean(value && String(value).trim())) as [string, string][];
+
+  const technologyCards = (
+    [
+      ["Smart Infotainment", specs?.technology?.infotainment, "📱"],
+      ["Connectivity", specs?.technology?.connectivity, "📡"],
+    ] as [string, string | undefined, string][]
+  ).filter(([, value]) => Boolean(value && String(value).trim())) as [string, string, string][];
+
+  const safetyCards = (
+    [
+      ["Airbags", specs?.safety?.airbags],
+      ["Anti-lock Braking System (ABS)", specs?.safety?.abs],
+      ["Electronic Stability Control (ESC)", specs?.safety?.esc],
+      ["Tire Pressure Monitoring (TPMS)", specs?.safety?.tpms],
+      ["Camera System", specs?.safety?.cameras],
+      ["Parking Sensors", specs?.safety?.sensors],
+      ["Driver Assistance (ADAS)", specs?.safety?.adas],
+    ] as [string, string | undefined][]
+  ).filter(([, value]) => Boolean(value && String(value).trim())) as [string, string][];
+
+  // Dimension diagram (Specifications section) — canonical `specs.exterior.*`
+  // with a fallback to the legacy dual-written `specs.dimensions.*` for
+  // vehicles saved before the Vehicle Sections rework.
+  const dimLength = specs?.exterior?.length || specs?.dimensions?.length || "";
+  const dimWidth = specs?.exterior?.width || specs?.dimensions?.width || "";
+  const dimHeight = specs?.exterior?.height || specs?.dimensions?.height || "";
+  const dimWheelbase = specs?.exterior?.wheelbase || specs?.dimensions?.wheelbase || "";
+  const hasDimensionDiagram = Boolean(dimLength || dimWidth || dimHeight || dimWheelbase);
+
+  // A photo for the new Download Brochure section — reuse a real gallery
+  // photo (never a walkthrough video from the same gallery array), but not
+  // the same one already shown as the sole hero image right above the fold,
+  // so the same picture doesn't repeat back-to-back.
+  const brochurePhotoCandidates = publicImageList.filter((img) => img && !isVideoUrl(img));
+  const brochureImageUrl = brochurePhotoCandidates.find((img) => img !== publicHeroImageUrl) || brochurePhotoCandidates[0] || publicHeroImageUrl || "";
+
   return (
     <MainLayout>
       <script
@@ -491,10 +635,29 @@ export default async function VehicleDetailPage({
         packages={optionPackages.map((p: any) => ({
           ...p,
           features: Array.isArray(p.features) ? (p.features as string[]) : [],
+          imageUrl: publicMediaUrl(p.imageUrl),
         }))}
         accessories={optionAccessories.map((a: any) => ({ ...a, imageUrl: publicMediaUrl(a.imageUrl) }))}
+        specifications={specs}
         visitId={visitId}
       />
+
+      {/* ── EXTERIOR HIGHLIGHTS — real, per-vehicle feature-story blocks
+           (admin: Vehicle Sections → Exterior tab → Highlights). Brand new
+           field; renders nothing until a vehicle has at least one entry —
+           the plain Exterior gallery section above already covers the
+           "no exterior content yet" case, so no placeholder here. ── */}
+      {exteriorHighlights.length > 0 && (
+        <FeatureStorySection
+          id="section-exterior-highlights"
+          eyebrow="Exterior"
+          heading="Exterior Highlights"
+          intro={`A closer look at what makes the ${vehicle.name}'s design stand out.`}
+          highlights={exteriorHighlights}
+          vehicleName={vehicle.name}
+          tone="light"
+        />
+      )}
 
       {/* ── INTERIOR GALLERY SECTION ──────────────────────────────────── */}
       <section id="section-interior-gallery" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
@@ -542,136 +705,135 @@ export default async function VehicleDetailPage({
         </div>
       </section>
 
-      {/* ── COMFORT & EXPERIENCE SECTION ───────────────────────────────── */}
-      <section id="section-comfort" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
-        <div className="page-container">
-          <div className="mb-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
-              Comfort & Experience
-            </div>
-            <h2 className="disp text-3xl text-navy font-bold mb-4">Comfort & Experience</h2>
-            <p className="text-steel text-base max-w-2xl">
-              Step inside the {vehicle.name} and discover a cabin where comfort meets intelligence. Every detail is thoughtfully designed to make every journey effortless.
-            </p>
-          </div>
-          {(() => {
-            const comfortFeatures = [
-              { title: "Spacious Cabin", description: "Ample legroom and thoughtful design ensure every passenger travels in comfort." },
-              { title: "Premium Seating", description: "Generous front seating with refined finishes for a premium ride experience." },
-              { title: "Smart Storage", description: "Smart storage solutions throughout to keep your essentials neatly organised." },
-              { title: "Ambient Lighting", description: "Customisable ambient lighting changes color to match your style or mood." },
-            ];
-            const comfortImages = publicImageList.slice(2, 6);
-            return (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                <div className="space-y-6">
-                  {comfortFeatures.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow-sm">
-                      <div className="w-10 h-10 rounded-full bg-active-blue/10 flex items-center justify-center shrink-0">
-                        <Check size={18} className="text-active-blue" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-navy mb-1">{feature.title}</h3>
-                        <p className="text-sm text-steel">{feature.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {comfortImages.slice(0, 2).map((img: string, index: number) => (
-                    <div
-                      key={`comfort-${index}`}
-                      className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
-                    >
-                      <ImageWithFallback
-                        src={img}
-                        alt={`${vehicle.name} comfort ${index + 1}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        iconClassName="h-8 w-8"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </section>
+      {/* ── INTERIOR HIGHLIGHTS — real, per-vehicle feature-story blocks
+           (admin: Vehicle Sections → Interior tab → Highlights). Brand new
+           field; renders nothing until a vehicle has at least one entry. ── */}
+      {interiorHighlights.length > 0 && (
+        <FeatureStorySection
+          id="section-interior-highlights"
+          eyebrow="Interior"
+          heading="Interior Highlights"
+          intro={`The details that shape everyday life inside the ${vehicle.name}.`}
+          highlights={interiorHighlights}
+          vehicleName={vehicle.name}
+          tone="ice"
+        />
+      )}
 
-      {/* ── TECHNOLOGY SECTION ──────────────────────────────────────────── */}
-      <section id="section-technology" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
-        <div className="page-container">
-          <div className="mb-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
-              Technology
-            </div>
-            <h2 className="disp text-3xl text-navy font-bold mb-4">Next Generation Tech</h2>
-            <p className="text-steel text-base max-w-2xl">
-              At the core of the {vehicle.name} lies advanced technology, engineered for exceptional efficiency, uncompromising safety, and seamless everyday practicality.
-            </p>
-          </div>
-          {(() => {
-            const techFeatures = [
-              { title: "Advanced Powertrain", description: "Smooth, efficient, and responsive performance for every drive.", icon: "⚡" },
-              { title: "Battery Protection", description: "Reinforced underbody shielding safeguards the battery against impact.", icon: "🔋" },
-              { title: "Smart Infotainment", description: "Large touchscreen with Apple CarPlay & Android Auto connectivity.", icon: "📱" },
-              { title: "Connectivity", description: "Bluetooth, 4G LTE, Wi-Fi, and multiple USB-C ports.", icon: "📡" },
-            ];
-            return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {techFeatures.map((feature, index) => (
-                  <div key={index} className="text-center p-6 rounded-xl bg-ice hover:shadow-lg transition-shadow duration-300">
-                    <div className="text-4xl mb-4">{feature.icon}</div>
-                    <h3 className="font-bold text-navy mb-2">{feature.title}</h3>
-                    <p className="text-sm text-steel">{feature.description}</p>
-                  </div>
-                ))}
+      {/* ── COMFORT & EXPERIENCE SECTION — real per-vehicle data (admin:
+           Vehicle Sections → Interior tab: climate/seats/seatingCapacity/
+           cargoVolume). Only fields that are actually filled in become a
+           card; if nothing is filled in for this vehicle, the section
+           doesn't render at all. ── */}
+      {comfortCards.length > 0 && (
+        <section id="section-comfort" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+          <div className="page-container">
+            <div className="mb-10 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+                Comfort & Experience
               </div>
-            );
-          })()}
-        </div>
-      </section>
+              <h2 className="disp text-3xl text-navy font-bold mb-4">Comfort & Experience</h2>
+              <p className="text-steel text-base max-w-2xl">
+                Step inside the {vehicle.name} and discover a cabin where comfort meets intelligence. Every detail is thoughtfully designed to make every journey effortless.
+              </p>
+            </div>
+            {(() => {
+              const comfortImages = publicImageList.slice(2, 6);
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                  <div className="space-y-6">
+                    {comfortCards.map(([label, value], index) => (
+                      <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow-sm">
+                        <div className="w-10 h-10 rounded-full bg-active-blue/10 flex items-center justify-center shrink-0">
+                          <Check size={18} className="text-active-blue" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-navy mb-1">{label}</h3>
+                          <p className="text-sm text-steel">{value}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {comfortImages.slice(0, 2).map((img: string, index: number) => (
+                      <div
+                        key={`comfort-${index}`}
+                        className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
+                      >
+                        <ImageWithFallback
+                          src={img}
+                          alt={`${vehicle.name} comfort ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          iconClassName="h-8 w-8"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
 
-      {/* ── SAFETY/ADAS SECTION ────────────────────────────────────────── */}
-      <section id="section-safety-adas" className="scroll-mt-[108px] bg-ink text-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
-        <div className="page-container">
-          <div className="mb-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 bg-active-blue/20 text-active-blue-80 px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
-              Safety
-            </div>
-            <h2 className="disp text-3xl font-bold mb-4">Smart Driving, Enhanced Safety</h2>
-            <p className="text-white/70 text-base max-w-2xl">
-              Drive with greater confidence, thanks to the {vehicle.name}'s intelligent advanced driver assistance systems.
-            </p>
-          </div>
-          {(() => {
-            const safetyFeatures = [
-              { title: "Adaptive Cruise Control", description: "Maintains a safe distance from the car in front by automatically adjusting your speed." },
-              { title: "Automatic Emergency Braking", description: "Applies the brakes if vehicles or obstacles are detected helping reduce the risk of collisions." },
-              { title: "Blind Spot Detection", description: "Alerts you to vehicles in your blind spots for safer lane changes." },
-              { title: "Lane Departure Warning", description: "Warns you if you unintentionally drift out of your lane." },
-              { title: "Rear Cross Traffic Alert", description: "Warns of vehicles, cyclists, or pedestrians approaching from the side while reversing." },
-              { title: "Door Open Warning", description: "Warns the driver if a moving obstacle is detected when opening the door." },
-            ];
-            return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {safetyFeatures.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-4 p-5 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors duration-300">
-                    <div className="w-10 h-10 rounded-full bg-active-blue/20 flex items-center justify-center shrink-0">
-                      <ShieldCheck size={18} className="text-active-blue-80" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white mb-1">{feature.title}</h3>
-                      <p className="text-sm text-white/70">{feature.description}</p>
-                    </div>
-                  </div>
-                ))}
+      {/* ── TECHNOLOGY SECTION — real per-vehicle data (admin: Vehicle
+           Sections → Technology tab: infotainment/connectivity). ── */}
+      {technologyCards.length > 0 && (
+        <section id="section-technology" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+          <div className="page-container">
+            <div className="mb-10 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+                Technology
               </div>
-            );
-          })()}
-        </div>
-      </section>
+              <h2 className="disp text-3xl text-navy font-bold mb-4">Next Generation Tech</h2>
+              <p className="text-steel text-base max-w-2xl">
+                At the core of the {vehicle.name} lies advanced technology, engineered for exceptional efficiency, uncompromising safety, and seamless everyday practicality.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {technologyCards.map(([label, value, icon], index) => (
+                <div key={index} className="text-center p-6 rounded-xl bg-ice hover:shadow-lg transition-shadow duration-300">
+                  <div className="text-4xl mb-4">{icon}</div>
+                  <h3 className="font-bold text-navy mb-2">{label}</h3>
+                  <p className="text-sm text-steel">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── SAFETY/ADAS SECTION — real per-vehicle data (admin: Vehicle
+           Sections → Safety tab: airbags/abs/esc/tpms/cameras/sensors/adas). ── */}
+      {safetyCards.length > 0 && (
+        <section id="section-safety-adas" className="scroll-mt-[108px] bg-ink text-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+          <div className="page-container">
+            <div className="mb-10 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-active-blue/20 text-active-blue-80 px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+                Safety
+              </div>
+              <h2 className="disp text-3xl font-bold mb-4">Smart Driving, Enhanced Safety</h2>
+              <p className="text-white/70 text-base max-w-2xl">
+                Drive with greater confidence, thanks to the {vehicle.name}'s intelligent advanced driver assistance systems.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {safetyCards.map(([label, value], index) => (
+                <div key={index} className="flex items-start gap-4 p-5 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors duration-300">
+                  <div className="w-10 h-10 rounded-full bg-active-blue/20 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={18} className="text-active-blue-80" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white mb-1">{label}</h3>
+                    <p className="text-sm text-white/70">{value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── 360° SPOTLIGHT SECTION — color swatches (from the same admin-managed
            Vehicle Colors used above) let a visitor swap the displayed color,
@@ -738,6 +900,81 @@ export default async function VehicleDetailPage({
               );
             })}
           </div>
+          {hasDimensionDiagram && (
+            <details className="group mt-12 rounded-xl border border-line">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 text-sm font-bold uppercase tracking-wider text-navy">
+                <span>Dimension Diagram</span>
+                <ChevronDown size={18} className="shrink-0 text-steel transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <div className="border-t border-line px-6 py-8">
+                <svg
+                  viewBox="0 0 640 330"
+                  className="mx-auto w-full max-w-2xl"
+                  role="img"
+                  aria-label={`${vehicle.name} dimension diagram`}
+                >
+                  {/* Ground line */}
+                  <line x1="20" y1="256" x2="500" y2="256" stroke="#AEB5BE" strokeWidth="1.5" strokeDasharray="4 4" />
+
+                  {/* Stylized, brand-neutral car side silhouette (not vehicle-specific) */}
+                  <rect x="40" y="176" width="440" height="58" rx="16" fill="#F6F3F5" stroke="#E8E7E7" strokeWidth="2" />
+                  <rect x="170" y="124" width="180" height="60" rx="20" fill="#F6F3F5" stroke="#E8E7E7" strokeWidth="2" />
+                  <circle cx="110" cy="230" r="26" fill="#111318" />
+                  <circle cx="110" cy="230" r="9" fill="#F6F3F5" />
+                  <circle cx="410" cy="230" r="26" fill="#111318" />
+                  <circle cx="410" cy="230" r="9" fill="#F6F3F5" />
+
+                  {/* Height (C) */}
+                  <line x1="20" y1="124" x2="20" y2="256" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="14" y1="124" x2="26" y2="124" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="14" y1="256" x2="26" y2="256" stroke="#194BFF" strokeWidth="1.5" />
+                  <circle cx="20" cy="190" r="11" fill="#194BFF" />
+                  <text x="20" y="194" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">C</text>
+
+                  {/* Wheelbase (D) */}
+                  <line x1="110" y1="278" x2="410" y2="278" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="110" y1="272" x2="110" y2="284" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="410" y1="272" x2="410" y2="284" stroke="#194BFF" strokeWidth="1.5" />
+                  <circle cx="260" cy="278" r="11" fill="#194BFF" />
+                  <text x="260" y="282" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">D</text>
+
+                  {/* Length (A) */}
+                  <line x1="40" y1="304" x2="480" y2="304" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="40" y1="298" x2="40" y2="310" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="480" y1="298" x2="480" y2="310" stroke="#194BFF" strokeWidth="1.5" />
+                  <circle cx="260" cy="304" r="11" fill="#194BFF" />
+                  <text x="260" y="308" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">A</text>
+
+                  {/* Width (B) — a side profile can't show width, so a small top-view inset stands in */}
+                  <rect x="480" y="44" width="130" height="46" rx="10" fill="#F6F3F5" stroke="#E8E7E7" strokeWidth="2" />
+                  <line x1="480" y1="34" x2="610" y2="34" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="480" y1="28" x2="480" y2="40" stroke="#194BFF" strokeWidth="1.5" />
+                  <line x1="610" y1="28" x2="610" y2="40" stroke="#194BFF" strokeWidth="1.5" />
+                  <circle cx="545" cy="34" r="11" fill="#194BFF" />
+                  <text x="545" y="38" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">B</text>
+                  <text x="545" y="106" textAnchor="middle" fontSize="10" fill="#69717B">Top view</text>
+                </svg>
+
+                <div className="mx-auto mt-6 grid max-w-2xl grid-cols-2 gap-4 text-center sm:grid-cols-4">
+                  {(
+                    [
+                      ["A", "Length", dimLength],
+                      ["B", "Width", dimWidth],
+                      ["C", "Height", dimHeight],
+                      ["D", "Wheelbase", dimWheelbase],
+                    ] as [string, string, string][]
+                  )
+                    .filter(([, , value]) => Boolean(value))
+                    .map(([letter, label, value]) => (
+                      <div key={letter}>
+                        <div className="mb-1 text-xs font-bold text-active-blue">{letter} · {label}</div>
+                        <div className="text-sm font-semibold text-navy">{value}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </details>
+          )}
           {publicHeroVideoUrl && (
             <a
               href={publicHeroVideoUrl}
@@ -794,6 +1031,45 @@ export default async function VehicleDetailPage({
                   <div className="text-lg font-bold text-navy">{value}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── DOWNLOAD BROCHURE — the Overview section already has a small inline
+           text link (kept as-is); this is a more prominent, dedicated section
+           with a real lifestyle photo (deliberately not the same photo as the
+           hero, so the same image doesn't repeat back-to-back). No price, no
+           financing/promo callout — this is a browsing page. ── */}
+      {brochureImageUrl && (
+        <section className="bg-ice py-16">
+          <div className="page-container">
+            <div className="grid grid-cols-1 items-stretch overflow-hidden rounded-2xl bg-white shadow-sm lg:grid-cols-2">
+              <div className="aspect-[16/10] lg:aspect-auto">
+                <ImageWithFallback
+                  src={brochureImageUrl}
+                  alt={`${vehicle.name} brochure`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  iconClassName="h-10 w-10"
+                />
+              </div>
+              <div className="flex flex-col justify-center p-8 lg:p-14">
+                <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full bg-active-blue/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-active-blue">
+                  Brochure
+                </div>
+                <h2 className="disp mb-4 text-3xl font-bold text-navy">Explore Every Detail</h2>
+                <p className="mb-8 max-w-md text-base text-steel">
+                  Download the full {vehicle.name} brochure for complete specifications, features, and imagery you can browse anytime, anywhere.
+                </p>
+                <a
+                  href={brochureUrl}
+                  download
+                  className="inline-flex w-fit items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-black px-8 py-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-active-blue md:text-base"
+                >
+                  <Download size={18} /> Download Brochure
+                </a>
+              </div>
             </div>
           </div>
         </section>

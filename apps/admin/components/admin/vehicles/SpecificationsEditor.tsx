@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import { Image as ImageIcon, Trash2 } from 'lucide-react';
 import {
   normalizeToSections,
   toSpecificationsPayload,
   type CanonicalSpecSections,
+  type SpecHighlight,
 } from '@/lib/vehicle-specifications';
 import type { VehicleSpecificationLists } from '@/lib/vehicle-settings-types';
 import ImageUpload from './ImageUpload';
+import MediaBrowser from './MediaBrowser';
 
 /** Sections with a dedicated photo/video gallery, shown on the public model page beyond the generic text fields. */
 const IMAGE_GALLERY_TABS = new Set(['interior', 'exterior']);
@@ -42,11 +45,35 @@ const PERFORMANCE_SUGGESTION_FIELDS: Record<string, keyof VehicleSpecificationLi
   drivetrain: 'driveType',
 };
 
+/**
+ * Shared image thumbnail with a neutral fallback: shows a plain "IMG" placeholder
+ * both when there's no URL at all and when the given URL fails to load
+ * (broken/expired link) — tracked via local state so each instance recovers
+ * independently. Mirrors the same convention in app/admin/vehicles/colors/page.tsx.
+ */
+function ImageThumb({ src, alt, sizeClass }: { src: string | null; alt: string; sizeClass: string }) {
+  const [imgError, setImgError] = useState(false);
+  const showFallback = !src || imgError;
+
+  return (
+    <div className={`${sizeClass} rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex-shrink-0 overflow-hidden flex items-center justify-center`}>
+      {showFallback ? (
+        <span className="text-gray-400 dark:text-gray-500 text-[10px] font-medium">IMG</span>
+      ) : (
+        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+      )}
+    </div>
+  );
+}
+
 export default function SpecificationsEditor({ specifications, onChange }: SpecificationsEditorProps) {
   const [selectedTab, setSelectedTab] = useState<string>('performance');
   const [sections, setSections] = useState<CanonicalSpecSections>(() => normalizeToSections(specifications));
   const [suggestions, setSuggestions] = useState<VehicleSpecificationLists | null>(null);
   const datalistBaseId = useId();
+  // Which highlight card's image picker is open — there can be many highlight
+  // cards across the two tabs, all sharing this one MediaBrowser modal instance.
+  const [activeHighlightImageIndex, setActiveHighlightImageIndex] = useState<{ tab: 'interior' | 'exterior'; index: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -69,6 +96,24 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
     const next = { ...sections, [tab]: { ...sections[tab], images } };
     setSections(next);
     onChange(toSpecificationsPayload(next));
+  };
+
+  const updateHighlights = (tab: 'interior' | 'exterior', highlights: SpecHighlight[]) => {
+    const next = { ...sections, [tab]: { ...sections[tab], highlights } };
+    setSections(next);
+    onChange(toSpecificationsPayload(next));
+  };
+
+  const addHighlight = (tab: 'interior' | 'exterior') => {
+    updateHighlights(tab, [...sections[tab].highlights, { title: '', description: '', imageUrl: '' }]);
+  };
+
+  const updateHighlightField = (tab: 'interior' | 'exterior', index: number, field: 'title' | 'description', value: string) => {
+    updateHighlights(tab, sections[tab].highlights.map((h, i) => (i === index ? { ...h, [field]: value } : h)));
+  };
+
+  const removeHighlight = (tab: 'interior' | 'exterior', index: number) => {
+    updateHighlights(tab, sections[tab].highlights.filter((_, i) => i !== index));
   };
 
   const applyTemplate = (raw: Record<string, any>) => {
@@ -156,6 +201,71 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
         </div>
       )}
 
+      {IMAGE_GALLERY_TABS.has(selectedTab) && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 capitalize">
+            {selectedTab} Feature Highlights
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Real, per-vehicle feature stories — each becomes an alternating photo + headline + description
+            block on the public model page&apos;s {selectedTab === 'interior' ? 'Comfort & Experience' : 'Exteriors'} section.
+          </p>
+          <div className="space-y-4">
+            {(sections[selectedTab as 'interior' | 'exterior'].highlights as SpecHighlight[]).map((highlight, index) => (
+              <div key={index} className="flex flex-col sm:flex-row gap-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <ImageThumb src={highlight.imageUrl || null} alt={highlight.title || 'Highlight'} sizeClass="w-16 h-16" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={highlight.title}
+                      onChange={(e) => updateHighlightField(selectedTab as 'interior' | 'exterior', index, 'title', e.target.value)}
+                      placeholder="e.g. Bold Front Grille"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <textarea
+                      value={highlight.description}
+                      onChange={(e) => updateHighlightField(selectedTab as 'interior' | 'exterior', index, 'description', e.target.value)}
+                      rows={2}
+                      placeholder="e.g. A striking front fascia with chrome accents and signature LED lighting."
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveHighlightImageIndex({ tab: selectedTab as 'interior' | 'exterior', index })}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ImageIcon className="w-4 h-4" />{highlight.imageUrl ? 'Change' : 'Choose'} Image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeHighlight(selectedTab as 'interior' | 'exterior', index)}
+                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                      aria-label="Remove highlight"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => addHighlight(selectedTab as 'interior' | 'exterior')}
+            className="mt-4 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:text-gray-200 rounded-lg text-sm hover:bg-geely-blue/10 dark:hover:bg-geely-blue/20 hover:border-geely-blue transition-colors"
+          >
+            + Add Highlight
+          </button>
+        </div>
+      )}
+
       <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Quick Fill Templates</h4>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
@@ -174,6 +284,19 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
           ))}
         </div>
       </div>
+
+      <MediaBrowser
+        isOpen={activeHighlightImageIndex !== null}
+        onClose={() => setActiveHighlightImageIndex(null)}
+        onSelect={(url) => {
+          if (!activeHighlightImageIndex) return;
+          const { tab, index } = activeHighlightImageIndex;
+          updateHighlights(tab, sections[tab].highlights.map((h, i) => (i === index ? { ...h, imageUrl: url } : h)));
+          setActiveHighlightImageIndex(null);
+        }}
+        fileType="image"
+        title="Select Highlight Image"
+      />
     </div>
   );
 }
