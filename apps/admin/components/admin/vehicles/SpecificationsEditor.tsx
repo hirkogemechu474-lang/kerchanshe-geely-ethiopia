@@ -7,6 +7,10 @@ import {
   type CanonicalSpecSections,
 } from '@/lib/vehicle-specifications';
 import type { VehicleSpecificationLists } from '@/lib/vehicle-settings-types';
+import ImageUpload from './ImageUpload';
+
+/** Sections with a dedicated photo/video gallery, shown on the public model page beyond the generic text fields. */
+const IMAGE_GALLERY_TABS = new Set(['interior', 'exterior']);
 
 interface SpecificationsEditorProps {
   specifications: any;
@@ -61,6 +65,12 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
     onChange(toSpecificationsPayload(next));
   };
 
+  const updateImages = (tab: 'interior' | 'exterior', images: string[]) => {
+    const next = { ...sections, [tab]: { ...sections[tab], images } };
+    setSections(next);
+    onChange(toSpecificationsPayload(next));
+  };
+
   const applyTemplate = (raw: Record<string, any>) => {
     const next = normalizeToSections(raw);
     setSections(next);
@@ -70,7 +80,8 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
   const renderFields = (tabId: string) => {
     const values = (sections as Record<string, any>)[tabId] as Record<string, string>;
     const suggestionFields = tabId === 'performance' ? PERFORMANCE_SUGGESTION_FIELDS : {};
-    return Object.entries(values).map(([key, value]) => {
+    // `images` (interior/exterior only) is a string[] gallery, rendered separately below — not a text field.
+    return Object.entries(values).filter(([key]) => key !== 'images').map(([key, value]) => {
       const label = key.replace(/([A-Z])/g, ' $1').trim();
       const suggestionKey = suggestionFields[key as keyof typeof suggestionFields];
       const options = suggestionKey ? suggestions?.[suggestionKey] : undefined;
@@ -128,6 +139,22 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {renderFields(selectedTab)}
       </div>
+
+      {IMAGE_GALLERY_TABS.has(selectedTab) && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 capitalize">
+            {selectedTab} Photos & Videos
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Dedicated {selectedTab} media shown in the {selectedTab === 'interior' ? 'Interior Gallery' : 'Exteriors'} section
+            on the vehicle detail page — add photos from multiple angles/sides, or a walkthrough video.
+          </p>
+          <ImageUpload
+            images={(sections[selectedTab as 'interior' | 'exterior'].images as string[]) || []}
+            onChange={(images) => updateImages(selectedTab as 'interior' | 'exterior', images)}
+          />
+        </div>
+      )}
 
       <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Quick Fill Templates</h4>

@@ -53,6 +53,8 @@ export interface CanonicalSpecSections {
     seats: string;
     seatingCapacity: string;
     cargoVolume: string;
+    /** Dedicated interior photos/videos (multiple angles) — shown on the public model page's Interior Gallery section, distinct from the vehicle's general gallery. */
+    images: string[];
   };
   exterior: {
     lighting: string;
@@ -63,6 +65,8 @@ export interface CanonicalSpecSections {
     wheelbase: string;
     groundClearance: string;
     curbWeight: string;
+    /** Dedicated exterior photos/videos (multiple angles) — shown on the public model page's Exteriors section, distinct from the vehicle's general gallery. */
+    images: string[];
   };
   warranty: {
     basic: string;
@@ -77,8 +81,8 @@ export const EMPTY_CANONICAL_SECTIONS: CanonicalSpecSections = {
   performance: { type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '', range: '', batteryCapacity: '', acceleration: '' },
   safety: { airbags: '', abs: '', esc: '', tpms: '', cameras: '', sensors: '', adas: '' },
   technology: { infotainment: '', connectivity: '' },
-  interior: { climate: '', seats: '', seatingCapacity: '', cargoVolume: '' },
-  exterior: { lighting: '', wheels: '', length: '', width: '', height: '', wheelbase: '', groundClearance: '', curbWeight: '' },
+  interior: { climate: '', seats: '', seatingCapacity: '', cargoVolume: '', images: [] },
+  exterior: { lighting: '', wheels: '', length: '', width: '', height: '', wheelbase: '', groundClearance: '', curbWeight: '', images: [] },
   warranty: { basic: '', powertrain: '', corrosion: '', roadside: '', maintenance: '' },
 };
 
@@ -108,6 +112,7 @@ export function normalizeToSections(raw: any): CanonicalSpecSections {
       seats: r.interior?.seats ?? legacyFeatures.seats ?? '',
       seatingCapacity: r.interior?.seatingCapacity ?? legacyDimensions.seatingCapacity ?? '',
       cargoVolume: r.interior?.cargoVolume ?? legacyDimensions.cargoVolume ?? '',
+      images: Array.isArray(r.interior?.images) ? r.interior.images : [],
     },
     exterior: {
       lighting: r.exterior?.lighting ?? legacyFeatures.lighting ?? '',
@@ -118,6 +123,7 @@ export function normalizeToSections(raw: any): CanonicalSpecSections {
       wheelbase: r.exterior?.wheelbase ?? legacyDimensions.wheelbase ?? '',
       groundClearance: r.exterior?.groundClearance ?? legacyDimensions.groundClearance ?? '',
       curbWeight: r.exterior?.curbWeight ?? legacyDimensions.curbWeight ?? '',
+      images: Array.isArray(r.exterior?.images) ? r.exterior.images : [],
     },
     warranty: {
       ...EMPTY_CANONICAL_SECTIONS.warranty,

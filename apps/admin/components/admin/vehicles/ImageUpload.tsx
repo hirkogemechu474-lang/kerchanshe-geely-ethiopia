@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { Upload, X, Image as ImageIcon, Video, FolderOpen } from 'lucide-react';
 import MediaBrowser from './MediaBrowser';
 
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.m4v'];
+function isVideoUrl(url: string): boolean {
+  const path = url.split('?')[0].toLowerCase();
+  return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
+
 interface ImageUploadProps {
   images: string[];
   onChange: (images: string[]) => void;
@@ -13,14 +19,20 @@ interface ImageUploadProps {
   onHeroVideoChange?: (url: string) => void;
 }
 
-export default function ImageUpload({ 
-  images, 
+export default function ImageUpload({
+  images,
   onChange,
   heroImageUrl,
   heroVideoUrl,
   onHeroImageChange,
   onHeroVideoChange
 }: ImageUploadProps) {
+  // Hero media only applies to the vehicle's own detail-page hero — callers
+  // that just want a plain photo/video gallery (e.g. the Interior/Exterior
+  // section galleries in SpecificationsEditor.tsx) omit these handlers
+  // entirely, so this block (and its mention in the intro copy) is skipped
+  // rather than showing hero controls that would silently no-op on click.
+  const showHero = Boolean(onHeroImageChange || onHeroVideoChange);
   const [uploading, setUploading] = useState(false);
   const [showImageBrowser, setShowImageBrowser] = useState(false);
   const [showHeroImageBrowser, setShowHeroImageBrowser] = useState(false);
@@ -81,11 +93,14 @@ export default function ImageUpload({
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Vehicle Images & Media</h2>
         <p className="text-sm text-gray-500">
-          Upload high-quality images and set hero media for the vehicle detail page.
+          {showHero
+            ? 'Upload high-quality images and set hero media for the vehicle detail page.'
+            : 'Upload high-quality images and videos.'}
         </p>
       </div>
 
       {/* Hero Media Section */}
+      {showHero && (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
         <h3 className="font-semibold text-gray-900">Hero Media (Vehicle Detail Page)</h3>
         <p className="text-sm text-gray-600">
@@ -160,10 +175,11 @@ export default function ImageUpload({
           </div>
         </div>
       </div>
+      )}
 
       {/* Gallery Images */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-4">Gallery Images</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Gallery Images & Videos</h3>
         
         {/* Upload Area */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -172,7 +188,7 @@ export default function ImageUpload({
               type="file"
               id="image-upload"
               multiple
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleFileUpload}
               className="hidden"
               disabled={uploading}
@@ -184,10 +200,10 @@ export default function ImageUpload({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    Upload New Images
+                    Upload New Images or Videos
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    PNG, JPG, WebP up to 10MB
+                    PNG, JPG, WebP, MP4, WebM up to 25MB
                   </p>
                 </div>
               </div>
@@ -222,12 +238,16 @@ export default function ImageUpload({
                 key={index}
                 className="relative aspect-square rounded-lg border-2 border-gray-200 overflow-hidden group"
               >
-                <img
-                  src={image}
-                  alt={`Vehicle ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                
+                {isVideoUrl(image) ? (
+                  <video src={image} className="w-full h-full object-cover" muted />
+                ) : (
+                  <img
+                    src={image}
+                    alt={`Vehicle ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+
                 {/* Primary Badge */}
                 {index === 0 && (
                   <div className="absolute top-2 left-2 px-2 py-1 bg-geely-blue text-white text-xs font-medium rounded">
@@ -260,7 +280,7 @@ export default function ImageUpload({
         {images.length === 0 && (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No images uploaded yet</p>
+            <p className="text-sm text-gray-500">No images or videos uploaded yet</p>
           </div>
         )}
       </div>
@@ -282,8 +302,8 @@ export default function ImageUpload({
         isOpen={showImageBrowser}
         onClose={() => setShowImageBrowser(false)}
         onSelect={(url) => onChange([...images, url])}
-        fileType="image"
-        title="Select Image from Library"
+        fileType="all"
+        title="Select Media from Library"
       />
 
       <MediaBrowser

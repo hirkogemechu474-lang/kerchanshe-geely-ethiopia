@@ -33,6 +33,14 @@ function publicMediaUrl(url: string | null | undefined) {
   return withBasePath(url);
 }
 
+// Matches the admin ImageUpload component's own convention (apps/admin/components/admin/vehicles/ImageUpload.tsx)
+// so a walkthrough video added to the Interior/Exterior galleries renders as a video here too, not a broken image.
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.m4v'];
+function isVideoUrl(url: string): boolean {
+  const path = url.split('?')[0].toLowerCase();
+  return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
+
 // Settings are stored as a JSON-or-plain-text string column (backend
 // `Setting.value`), so the public settings endpoints hand back that raw
 // string rather than a parsed object — parse defensively either way.
@@ -249,6 +257,18 @@ export default async function VehicleDetailPage({
   const publicOptionColors = optionColors.map((c: any) => ({ ...c, imageUrl: publicMediaUrl(c.imageUrl) }));
 
   const galleries = publicImageList.slice(0, 8);
+
+  // Dedicated per-section media (admin: Vehicle Sections → Interior/Exterior
+  // tabs) — falls back to the general gallery/first few photos when a
+  // vehicle hasn't had these set yet, so nothing goes blank mid-rollout.
+  const dedicatedInteriorImages: string[] = Array.isArray(specs?.interior?.images) ? specs.interior.images : [];
+  const dedicatedExteriorImages: string[] = Array.isArray(specs?.exterior?.images) ? specs.exterior.images : [];
+  const interiorMedia = dedicatedInteriorImages.length > 0
+    ? dedicatedInteriorImages.map((url: string) => publicMediaUrl(url))
+    : publicImageList.slice(1, 5);
+  const exteriorMedia = dedicatedExteriorImages.length > 0
+    ? dedicatedExteriorImages.map((url: string) => publicMediaUrl(url))
+    : galleries;
   const featuredFeatures: string[] = (() => {
     if (specs?.features) {
       return Object.values(specs.features)
@@ -416,8 +436,7 @@ export default async function VehicleDetailPage({
             </p>
           </div>
           {(() => {
-            const interiorImages = publicImageList.slice(1, 5);
-            if (interiorImages.length === 0) {
+            if (interiorMedia.length === 0) {
               return (
                 <div className="text-center text-steel py-12 border border-dashed border-line rounded-xl">
                   Interior images are managed from the admin panel.
@@ -426,18 +445,22 @@ export default async function VehicleDetailPage({
             }
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {interiorImages.map((img: string, index: number) => (
+                {interiorMedia.map((media: string, index: number) => (
                   <div
                     key={`interior-${index}`}
                     className="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
                   >
-                    <ImageWithFallback
-                      src={img}
-                      alt={`${vehicle.name} interior ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      iconClassName="h-10 w-10"
-                    />
+                    {isVideoUrl(media) ? (
+                      <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
+                    ) : (
+                      <ImageWithFallback
+                        src={media}
+                        alt={`${vehicle.name} interior ${index + 1}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        iconClassName="h-10 w-10"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -581,20 +604,24 @@ export default async function VehicleDetailPage({
       <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
         <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-6">Exteriors</h2>
-          {galleries.length > 0 ? (
+          {exteriorMedia.length > 0 ? (
             <div className="space-y-6">
-              {galleries.map((img: string, index: number) => (
+              {exteriorMedia.map((media: string, index: number) => (
                 <div
-                  key={`${img}-${index}`}
+                  key={`${media}-${index}`}
                   className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
                 >
-                  <ImageWithFallback
-                    src={img}
-                    alt={`${vehicle.name} gallery ${index + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                    loading={index === 0 ? "eager" : "lazy"}
-                    iconClassName="h-10 w-10"
-                  />
+                  {isVideoUrl(media) ? (
+                    <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
+                  ) : (
+                    <ImageWithFallback
+                      src={media}
+                      alt={`${vehicle.name} gallery ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      iconClassName="h-10 w-10"
+                    />
+                  )}
                 </div>
               ))}
             </div>

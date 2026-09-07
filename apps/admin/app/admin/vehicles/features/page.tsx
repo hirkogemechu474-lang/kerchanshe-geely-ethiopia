@@ -19,7 +19,7 @@ export default function VehicleFeaturesPage() {
     (async () => {
       try {
         const res = await fetch('/api/settings/vehicle-features');
-        if (res.ok) setData(await res.json());
+        if (res.ok) setData({ ...EMPTY, ...(await res.json()) });
       } finally {
         setLoading(false);
       }
