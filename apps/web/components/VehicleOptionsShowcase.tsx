@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Camera } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 interface ColorOption {
   id: string;
@@ -11,6 +12,8 @@ interface ColorOption {
   colorCode: string;
   imageUrl: string;
   isDefault: boolean;
+  /** Additional photos from other angles/sides — null/empty for most colors today. */
+  images?: string[] | null;
 }
 
 interface InteriorOption {
@@ -77,6 +80,7 @@ export function VehicleOptionsShowcase({
   const [selectedColor, setSelectedColor] = useState(
     colors.findIndex((c) => c.isDefault) >= 0 ? colors.findIndex((c) => c.isDefault) : 0
   );
+  const [lightbox, setLightbox] = useState<{ title: string; images: string[] } | null>(null);
   const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : '';
 
   const hasAnything =
@@ -92,6 +96,7 @@ export function VehicleOptionsShowcase({
   const previewImage = activeColor?.imageUrl || heroImage || '';
 
   return (
+    <>
     <section id="section-options" className="py-16 bg-white dark:bg-midnight-surface border-t border-b border-line dark:border-midnight-line scroll-mt-[108px] sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
       <div className="max-w-[1280px] mx-auto px-4 md:px-10">
         <div className="mb-10 text-center md:text-left">
@@ -129,6 +134,21 @@ export function VehicleOptionsShowcase({
                   />
                   {activeColor.name}
                 </div>
+              )}
+              {activeColor && Array.isArray(activeColor.images) && activeColor.images.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLightbox({
+                      title: `${vehicleName} in ${activeColor.name}`,
+                      images: [activeColor.imageUrl, ...activeColor.images!].filter(Boolean) as string[],
+                    })
+                  }
+                  aria-label={`View more photos of ${activeColor.name}`}
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md hover:bg-black/80 transition-colors"
+                >
+                  <Camera size={13} /> View Photos
+                </button>
               )}
             </div>
 
@@ -268,5 +288,9 @@ export function VehicleOptionsShowcase({
         </div>
       </div>
     </section>
+    {lightbox && (
+      <ImageLightbox images={lightbox.images} title={lightbox.title} onClose={() => setLightbox(null)} />
+    )}
+    </>
   );
 }

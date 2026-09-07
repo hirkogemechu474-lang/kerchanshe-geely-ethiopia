@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MainLayout } from '@/components/MainLayout';
 import { type VehicleRecord } from '@/services/vehicleService';
-import { Check, Share2, Download, Mail, ArrowLeft, CarFront, FileText } from 'lucide-react';
+import { Check, Share2, Download, Mail, ArrowLeft, CarFront, FileText, Camera } from 'lucide-react';
 import { withBasePath } from '@/lib/basePath';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 interface TrimOption {
   id: string;
@@ -21,6 +22,8 @@ interface ColorOption {
   hex: string;
   price: number;
   image?: string;
+  /** Additional photos from other angles/sides — null/empty for most colors today. */
+  images?: string[] | null;
 }
 
 interface WheelOption {
@@ -29,6 +32,8 @@ interface WheelOption {
   size: string;
   price: number;
   image?: string;
+  /** Additional photos from other angles/sides — null/empty for most wheels today. */
+  images?: string[] | null;
 }
 
 interface InteriorOption {
@@ -39,6 +44,8 @@ interface InteriorOption {
   imageUrl: string | null;
   price: number;
   inStock: boolean;
+  /** Additional photos from other angles/sides — null/empty for most interiors today. */
+  images?: string[] | null;
 }
 
 interface AccessoryOption {
@@ -49,6 +56,15 @@ interface AccessoryOption {
   price: number;
   imageUrl: string | null;
   inStock: boolean;
+  /** Additional photos from other angles/sides — null/empty for most accessories today. */
+  images?: string[] | null;
+}
+
+/** Opens the shared lightbox for an option's primary photo + its extra `images`, resolving each URL the same way every other image on this page already is. Returns the setter call, or does nothing if there's nothing extra to show. */
+function buildGalleryImages(primary: string | null | undefined, extra: string[] | null | undefined): string[] {
+  return [primary, ...(extra || [])]
+    .filter((url): url is string => Boolean(url))
+    .map((url) => withBasePath(url));
 }
 
 // Prefers the admin-managed hero image, falling back to the first gallery
@@ -86,6 +102,7 @@ export default function ConfiguratorPage() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [apiOptions, setApiOptions] = useState<{ trims: TrimOption[]; colors: ColorOption[]; wheels: WheelOption[]; interiors: InteriorOption[]; accessories: AccessoryOption[] } | null>(null);
   const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
+  const [lightbox, setLightbox] = useState<{ title: string; images: string[] } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -126,19 +143,21 @@ export default function ConfiguratorPage() {
         if (!active) return;
         setApiOptions(data ? {
           trims: Array.isArray(data.packages) ? data.packages.map((item: { id: string; name: string; price: number; features?: unknown }) => ({ id: item.id, name: item.name, price: item.price, features: Array.isArray(item.features) ? item.features.filter((feature): feature is string => typeof feature === 'string') : [] })) : [],
-          colors: Array.isArray(data.colors) ? data.colors.map((item: { id: string; name: string; colorCode?: string; price: number; imageUrl?: string | null }) => ({
+          colors: Array.isArray(data.colors) ? data.colors.map((item: { id: string; name: string; colorCode?: string; price: number; imageUrl?: string | null; images?: unknown }) => ({
             id: item.id,
             name: item.name,
             hex: item.colorCode || '#E5E7EB',
             price: item.price,
             image: item.imageUrl || undefined,
+            images: Array.isArray(item.images) ? item.images.filter((url: unknown): url is string => typeof url === 'string') : null,
           })) : [],
-          wheels: Array.isArray(data.wheels) ? data.wheels.map((item: { id: string; name: string; size: string; price: number; imageUrl?: string | null }) => ({
+          wheels: Array.isArray(data.wheels) ? data.wheels.map((item: { id: string; name: string; size: string; price: number; imageUrl?: string | null; images?: unknown }) => ({
             id: item.id,
             name: item.name,
             size: item.size,
             price: item.price,
             image: item.imageUrl || undefined,
+            images: Array.isArray(item.images) ? item.images.filter((url: unknown): url is string => typeof url === 'string') : null,
           })) : [],
           interiors: Array.isArray(data.interiors) ? data.interiors.filter((item: InteriorOption) => item.inStock) : [],
           accessories: Array.isArray(data.accessories) ? data.accessories.filter((item: AccessoryOption) => item.inStock) : [],
@@ -383,34 +402,48 @@ export default function ConfiguratorPage() {
                 <StepHeading step={3} title="Select Exterior Color" />
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                   {activeColorOptions.map((color) => (
-                    <button
-                      key={color.id}
-                      onClick={() => setSelectedColor(color)}
-                      className={`p-4 rounded-2xl border-2 transition-all ${
-                        selectedColor?.id === color.id
-                          ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
-                          : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
-                      }`}
-                    >
-                      <div
-                        className="relative w-full h-16 rounded-lg mb-2 border border-line dark:border-midnight-line overflow-hidden"
-                        style={{ backgroundColor: color.hex }}
+                    <div key={color.id} className="relative">
+                      <button
+                        onClick={() => setSelectedColor(color)}
+                        className={`w-full p-4 rounded-2xl border-2 transition-all ${
+                          selectedColor?.id === color.id
+                            ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                            : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
+                        }`}
                       >
-                        {color.image && (
-                          <ImageWithFallback src={withBasePath(color.image)} alt={color.name} className="absolute inset-0 w-full h-full object-cover" iconClassName="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="text-xs font-semibold text-navy dark:text-ice mb-1 text-center">
-                        {color.name}
-                      </div>
-                      {selectedColor?.id === color.id && (
-                        <div className="mt-2 flex justify-center">
-                          <div className="w-5 h-5 bg-geely-blue rounded-full flex items-center justify-center">
-                            <Check size={12} className="text-white" />
-                          </div>
+                        <div
+                          className="relative w-full h-16 rounded-lg mb-2 border border-line dark:border-midnight-line overflow-hidden"
+                          style={{ backgroundColor: color.hex }}
+                        >
+                          {color.image && (
+                            <ImageWithFallback src={withBasePath(color.image)} alt={color.name} className="absolute inset-0 w-full h-full object-cover" iconClassName="h-5 w-5" />
+                          )}
                         </div>
+                        <div className="text-xs font-semibold text-navy dark:text-ice mb-1 text-center">
+                          {color.name}
+                        </div>
+                        {selectedColor?.id === color.id && (
+                          <div className="mt-2 flex justify-center">
+                            <div className="w-5 h-5 bg-geely-blue rounded-full flex items-center justify-center">
+                              <Check size={12} className="text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                      {color.images && color.images.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setLightbox({ title: color.name, images: buildGalleryImages(color.image, color.images) });
+                          }}
+                          aria-label={`View ${color.name} photos`}
+                          className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        >
+                          <Camera size={12} />
+                        </button>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -422,32 +455,46 @@ export default function ConfiguratorPage() {
                 <StepHeading step={4} title="Choose Wheels" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {activeWheelOptions.map((wheel) => (
-                    <button
-                      key={wheel.id}
-                      onClick={() => setSelectedWheels(wheel)}
-                      className={`p-6 rounded-2xl border-2 transition-all ${
-                        selectedWheels?.id === wheel.id
-                          ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
-                          : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
-                      }`}
-                    >
-                      <div className="h-24 w-24 mx-auto rounded-full mb-3 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
-                        {wheel.image ? (
-                          <ImageWithFallback src={withBasePath(wheel.image)} alt={wheel.name} className="h-full w-full object-cover" iconClassName="h-7 w-7" />
-                        ) : (
-                          <span className="text-2xl font-bold text-navy dark:text-ice">{wheel.size}</span>
-                        )}
-                      </div>
-                      <h3 className="font-bold text-navy dark:text-ice mb-1 text-center">{wheel.name}</h3>
-                      <p className="text-sm text-steel dark:text-steel-light mb-2 text-center">{wheel.size} Wheels</p>
-                      {selectedWheels?.id === wheel.id && (
-                        <div className="mt-3 flex justify-center">
-                          <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center">
-                            <Check size={14} className="text-white" />
-                          </div>
+                    <div key={wheel.id} className="relative">
+                      <button
+                        onClick={() => setSelectedWheels(wheel)}
+                        className={`w-full p-6 rounded-2xl border-2 transition-all ${
+                          selectedWheels?.id === wheel.id
+                            ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                            : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
+                        }`}
+                      >
+                        <div className="h-24 w-24 mx-auto rounded-full mb-3 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#dfe8f5] to-[#c7d6ec]">
+                          {wheel.image ? (
+                            <ImageWithFallback src={withBasePath(wheel.image)} alt={wheel.name} className="h-full w-full object-cover" iconClassName="h-7 w-7" />
+                          ) : (
+                            <span className="text-2xl font-bold text-navy dark:text-ice">{wheel.size}</span>
+                          )}
                         </div>
+                        <h3 className="font-bold text-navy dark:text-ice mb-1 text-center">{wheel.name}</h3>
+                        <p className="text-sm text-steel dark:text-steel-light mb-2 text-center">{wheel.size} Wheels</p>
+                        {selectedWheels?.id === wheel.id && (
+                          <div className="mt-3 flex justify-center">
+                            <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center">
+                              <Check size={14} className="text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                      {wheel.images && wheel.images.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setLightbox({ title: wheel.name, images: buildGalleryImages(wheel.image, wheel.images) });
+                          }}
+                          aria-label={`View ${wheel.name} photos`}
+                          className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        >
+                          <Camera size={12} />
+                        </button>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -459,40 +506,54 @@ export default function ConfiguratorPage() {
                 <StepHeading step={5} title="Choose Interior" />
                 <div className="space-y-3">
                   {activeInteriorOptions.map((interior) => (
-                    <button
-                      key={interior.id}
-                      onClick={() => setSelectedInterior(interior)}
-                      className={`w-full text-left p-6 rounded-2xl border-2 transition-all ${
-                        selectedInterior?.id === interior.id
-                          ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
-                          : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        {interior.imageUrl && (
-                          <ImageWithFallback
-                            src={withBasePath(interior.imageUrl)}
-                            alt={interior.name}
-                            className="w-20 h-20 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
-                            iconClassName="h-6 w-6"
-                          />
-                        )}
-                        <div className="flex flex-1 items-start justify-between">
-                          <div>
-                            <h3 className="font-bold text-navy dark:text-ice mb-1">{interior.name}</h3>
-                            <p className="text-sm text-steel dark:text-steel-light">{interior.materialType}</p>
-                            {interior.description && (
-                              <p className="text-xs text-steel dark:text-steel-light mt-1">{interior.description}</p>
+                    <div key={interior.id} className="relative">
+                      <button
+                        onClick={() => setSelectedInterior(interior)}
+                        className={`w-full text-left p-6 rounded-2xl border-2 transition-all ${
+                          selectedInterior?.id === interior.id
+                            ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                            : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {interior.imageUrl && (
+                            <ImageWithFallback
+                              src={withBasePath(interior.imageUrl)}
+                              alt={interior.name}
+                              className="w-20 h-20 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
+                              iconClassName="h-6 w-6"
+                            />
+                          )}
+                          <div className="flex flex-1 items-start justify-between">
+                            <div>
+                              <h3 className="font-bold text-navy dark:text-ice mb-1">{interior.name}</h3>
+                              <p className="text-sm text-steel dark:text-steel-light">{interior.materialType}</p>
+                              {interior.description && (
+                                <p className="text-xs text-steel dark:text-steel-light mt-1">{interior.description}</p>
+                              )}
+                            </div>
+                            {selectedInterior?.id === interior.id && (
+                              <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
+                                <Check size={14} className="text-white" />
+                              </div>
                             )}
                           </div>
-                          {selectedInterior?.id === interior.id && (
-                            <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
-                              <Check size={14} className="text-white" />
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                      {interior.imageUrl && interior.images && interior.images.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setLightbox({ title: interior.name, images: buildGalleryImages(interior.imageUrl, interior.images) });
+                          }}
+                          aria-label={`View ${interior.name} photos`}
+                          className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        >
+                          <Camera size={12} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </section>
@@ -506,40 +567,54 @@ export default function ConfiguratorPage() {
                   {activeAccessoryOptions.map((accessory) => {
                     const isSelected = selectedAccessories.some((a) => a.id === accessory.id);
                     return (
-                      <button
-                        key={accessory.id}
-                        onClick={() => toggleAccessory(accessory)}
-                        className={`text-left p-4 rounded-2xl border-2 transition-all ${
-                          isSelected
-                            ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
-                            : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          {accessory.imageUrl && (
-                            <ImageWithFallback
-                              src={withBasePath(accessory.imageUrl)}
-                              alt={accessory.name}
-                              className="w-14 h-14 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
-                              iconClassName="h-5 w-5"
-                            />
-                          )}
-                          <div className="flex flex-1 items-start justify-between">
-                            <div>
-                              <div className="text-xs text-gold font-bold mb-1">{accessory.category}</div>
-                              <h3 className="font-bold text-navy dark:text-ice">{accessory.name}</h3>
-                              {accessory.description && (
-                                <p className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</p>
+                      <div key={accessory.id} className="relative">
+                        <button
+                          onClick={() => toggleAccessory(accessory)}
+                          className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
+                            isSelected
+                              ? 'border-geely-blue bg-ice dark:bg-midnight shadow-lg'
+                              : 'border-line dark:border-midnight-line bg-white dark:bg-midnight-surface hover:border-geely-blue'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {accessory.imageUrl && (
+                              <ImageWithFallback
+                                src={withBasePath(accessory.imageUrl)}
+                                alt={accessory.name}
+                                className="w-14 h-14 rounded-lg object-cover shrink-0 border border-line dark:border-midnight-line"
+                                iconClassName="h-5 w-5"
+                              />
+                            )}
+                            <div className="flex flex-1 items-start justify-between">
+                              <div>
+                                <div className="text-xs text-gold font-bold mb-1">{accessory.category}</div>
+                                <h3 className="font-bold text-navy dark:text-ice">{accessory.name}</h3>
+                                {accessory.description && (
+                                  <p className="text-xs text-steel dark:text-steel-light mt-1">{accessory.description}</p>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
+                                  <Check size={14} className="text-white" />
+                                </div>
                               )}
                             </div>
-                            {isSelected && (
-                              <div className="w-6 h-6 bg-geely-blue rounded-full flex items-center justify-center shrink-0">
-                                <Check size={14} className="text-white" />
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                        {accessory.imageUrl && accessory.images && accessory.images.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setLightbox({ title: accessory.name, images: buildGalleryImages(accessory.imageUrl, accessory.images) });
+                            }}
+                            aria-label={`View ${accessory.name} photos`}
+                            className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                          >
+                            <Camera size={12} />
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -666,6 +741,9 @@ export default function ConfiguratorPage() {
           </div>
         </div>
       </div>
+      {lightbox && (
+        <ImageLightbox images={lightbox.images} title={lightbox.title} onClose={() => setLightbox(null)} />
+      )}
     </MainLayout>
   );
 }

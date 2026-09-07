@@ -6,6 +6,7 @@ import { PageHeader, Card, Button, TableCard, THead, TBody, Tr, Th, Td, Badge, E
 import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
+import ImageUpload from '@/components/admin/vehicles/ImageUpload';
 
 interface VehiclePackage {
   id: string;
@@ -27,12 +28,13 @@ interface VehicleAccessory {
   category: string;
   price: number;
   imageUrl: string | null;
+  images: string[] | null;
   inStock: boolean;
   sortOrder: number;
 }
 
 const EMPTY_TRIM_FORM = { name: '', description: '', features: [] as string[], price: 0, imageUrl: '', isDefault: false, sortOrder: 0 };
-const EMPTY_ACCESSORY_FORM = { name: '', description: '', category: '', price: 0, imageUrl: '', inStock: true, global: false, sortOrder: 0 };
+const EMPTY_ACCESSORY_FORM = { name: '', description: '', category: '', price: 0, imageUrl: '', images: [] as string[], inStock: true, global: false, sortOrder: 0 };
 
 type Resource = 'trims' | 'accessories';
 
@@ -121,8 +123,8 @@ export default function ModelsAndVariantsPage() {
     setEditingAccessory(acc);
     setAccessoryForm({
       name: acc.name, description: acc.description || '', category: acc.category,
-      price: acc.price, imageUrl: acc.imageUrl || '', inStock: acc.inStock,
-      global: acc.vehicleId === null, sortOrder: acc.sortOrder,
+      price: acc.price, imageUrl: acc.imageUrl || '', images: Array.isArray(acc.images) ? acc.images : [],
+      inStock: acc.inStock, global: acc.vehicleId === null, sortOrder: acc.sortOrder,
     });
     setShowForm(true);
   }
@@ -483,6 +485,10 @@ export default function ModelsAndVariantsPage() {
                   <ImageIcon className="w-4 h-4" />{accessoryForm.imageUrl ? 'Change' : 'Choose'} Image
                 </Button>
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Photos</label>
+              <ImageUpload images={accessoryForm.images} onChange={(images) => setAccessoryForm({ ...accessoryForm, images })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

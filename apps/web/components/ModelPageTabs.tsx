@@ -1,21 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Camera, Settings, RotateCw, Star, ShieldCheck, Menu, X, Monitor, Heart, Zap } from 'lucide-react';
+import { Camera, Settings, RotateCw, Star, ShieldCheck, Menu, X, Monitor, Heart, Zap, Palette } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
-// Ordered to match the anchor-nav pattern on Geely's regional model pages
-// (e.g. geely.com.eg/models/gx3-pro): Overview → 360° → Gallery → Specs,
-// with our own Build & Price configurator kept at the end as an addition.
+// Ordered to match the reference site's flow (geelyauto.co.za/models/geely-
+// e5-electric-suv): Overview → Exterior gallery → Colors/Trims → Interior →
+// Comfort → Technology → Safety → 360° → Specs. "Configure" (Colors/Trims/
+// Wheels/Accessories, #section-options) sits right after the exterior
+// gallery on the actual page now, matching where the reference site puts
+// its color/variant picker — this tab was missing an entry entirely before.
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Star, href: '#section-overview' },
-  { id: '360', label: '360°', icon: RotateCw, href: '#section-360' },
-  { id: 'exteriors', label: 'Exteriors', icon: Camera, href: '#section-exteriors' },
+  { id: 'exteriors', label: 'Exterior', icon: Camera, href: '#section-exteriors' },
+  { id: 'configure', label: 'Configure', icon: Palette, href: '#section-options' },
   { id: 'interior-gallery', label: 'Interior', icon: Camera, href: '#section-interior-gallery' },
   { id: 'comfort', label: 'Comfort', icon: Heart, href: '#section-comfort' },
   { id: 'technology', label: 'Technology', icon: Monitor, href: '#section-technology' },
   { id: 'safety-adas', label: 'Safety', icon: ShieldCheck, href: '#section-safety-adas' },
-  { id: 'specs', label: 'Technical Specs', icon: Settings, href: '#section-specs' },
+  { id: '360', label: '360°', icon: RotateCw, href: '#section-360' },
+  { id: 'specs', label: 'Specs', icon: Settings, href: '#section-specs' },
 ];
 
 export function ModelPageTabs({ vehicleName, testDriveHref }: { vehicleName: string; testDriveHref: string }) {
@@ -94,8 +98,11 @@ export function ModelPageTabs({ vehicleName, testDriveHref }: { vehicleName: str
           {vehicleName}
         </a>
 
-        {/* lg+: original horizontal tab row */}
-        <div className="hidden min-w-0 flex-1 items-center gap-0 lg:flex">
+        {/* lg+: original horizontal tab row. Scrolls horizontally (no visible
+            scrollbar) rather than overflowing/wrapping now that there are
+            9 tabs — comfortably fits most desktop widths, but a 4K-narrow-
+            window or extra-long vehicle name could still push it tight. */}
+        <div className="hidden min-w-0 flex-1 items-center gap-0 overflow-x-auto lg:flex [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id || activeTab === tab.href.replace('#section-', '');

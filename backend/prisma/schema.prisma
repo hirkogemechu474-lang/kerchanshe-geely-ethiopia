@@ -1546,7 +1546,8 @@ model VehicleColor {
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   name      String // e.g., "Pearl White", "Midnight Black"
   colorCode String // Hex code e.g., "#FFFFFF"
-  imageUrl  String? // Image showing this color
+  imageUrl  String? // Primary/cover image showing this color — unchanged, every existing reader keeps working
+  images    Json? // Additional photos from other angles/sides — additive, admin-only until a consumer reads it
   price     Float    @default(0) // Additional price for this color
   inStock   Boolean  @default(true)
   isDefault Boolean  @default(false)
@@ -1566,7 +1567,8 @@ model VehicleAccessory {
   description String?
   category    String // e.g., "Interior", "Exterior", "Technology", "Safety"
   price       Float
-  imageUrl    String?
+  imageUrl    String? // Primary/cover image — unchanged, every existing reader keeps working
+  images      Json? // Additional photos from other angles/sides — additive, admin-only until a consumer reads it
   inStock     Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -1644,7 +1646,8 @@ model VehicleInterior {
   name         String // e.g., "Black Leather", "Beige Fabric"
   description  String?
   materialType String // e.g., "Leather", "Fabric", "Synthetic"
-  imageUrl     String?
+  imageUrl     String? // Primary/cover image — unchanged, every existing reader keeps working
+  images       Json? // Additional photos from other angles/sides — additive, admin-only until a consumer reads it
   price        Float    @default(0)
   isDefault    Boolean  @default(false)
   inStock      Boolean  @default(true)
@@ -1662,7 +1665,8 @@ model VehicleWheel {
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   name      String // e.g., "Standard Alloy", "Sport Alloy"
   size      String // e.g., "16\"", "17\"", "18\""
-  imageUrl  String?
+  imageUrl  String? // Primary/cover image — unchanged, every existing reader keeps working
+  images    Json? // Additional photos from other angles/sides — additive, admin-only until a consumer reads it
   price     Float    @default(0)
   isDefault Boolean  @default(false)
   inStock   Boolean  @default(true)

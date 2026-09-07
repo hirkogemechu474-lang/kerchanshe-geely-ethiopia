@@ -254,7 +254,16 @@ export default async function VehicleDetailPage({
     { name: vehicle.name, url: `${BASE_URL}/models/${vehicle.slug}` },
   ]);
 
-  const publicOptionColors = optionColors.map((c: any) => ({ ...c, imageUrl: publicMediaUrl(c.imageUrl) }));
+  const publicOptionColors = optionColors.map((c: any) => ({
+    ...c,
+    imageUrl: publicMediaUrl(c.imageUrl),
+    // Additional photos from other angles/sides (admin-managed, still mostly
+    // empty while this is brand new) — resolved the same way the primary
+    // imageUrl is, so a relative upload path renders correctly in the lightbox.
+    images: Array.isArray(c.images)
+      ? c.images.filter((img: unknown): img is string => typeof img === "string").map((img: string) => publicMediaUrl(img))
+      : null,
+  }));
 
   const galleries = publicImageList.slice(0, 8);
 
@@ -279,6 +288,17 @@ export default async function VehicleDetailPage({
     }
     return [];
   })();
+
+  // Warranty & Service (admin: Vehicle Sections → Warranty tab) — captured
+  // for a long time but never actually rendered anywhere on the public site
+  // until now. Mirrors the reference site's "Warranty Promise" section.
+  const warrantyRows: [string, string][] = [
+    ["Vehicle Warranty", specs?.warranty?.basic],
+    ["Powertrain Warranty", specs?.warranty?.powertrain],
+    ["Corrosion Warranty", specs?.warranty?.corrosion],
+    ["Roadside Assistance", specs?.warranty?.roadside],
+    ["Maintenance", specs?.warranty?.maintenance],
+  ].filter(([, value]) => Boolean(value)) as [string, string][];
 
   return (
     <MainLayout>
@@ -421,6 +441,59 @@ export default async function VehicleDetailPage({
       <ModelPageTabs
         vehicleName={vehicle.name}
         testDriveHref={`/test-drive?model=${vehicle.slug}${visitParam}`}
+      />
+
+      {/* ── GALLERY SECTION — moved up to follow the reference site's flow
+           (geelyauto.co.za/models/geely-e5-electric-suv): a showroom photo
+           grid and the color/variant picker both come right after the tab
+           nav, before the Interior/Comfort/Technology/Safety storytelling
+           sections, not after them ── */}
+      <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <div className="page-container">
+          <h2 className="disp text-3xl text-navy font-bold mb-6">Exterior</h2>
+          {exteriorMedia.length > 0 ? (
+            <div className="space-y-6">
+              {exteriorMedia.map((media: string, index: number) => (
+                <div
+                  key={`${media}-${index}`}
+                  className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
+                >
+                  {isVideoUrl(media) ? (
+                    <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
+                  ) : (
+                    <ImageWithFallback
+                      src={media}
+                      alt={`${vehicle.name} gallery ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      iconClassName="h-10 w-10"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-steel py-12 border border-dashed border-line rounded-xl">
+              Gallery images are managed from the admin panel.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── COLORS, TRIMS & ACCESSORIES (no price — see convention note above) ── */}
+      <VehicleOptionsShowcase
+        vehicleSlug={vehicle.slug}
+        vehicleName={vehicle.name}
+        heroImage={publicHeroImageUrl || undefined}
+        colors={publicOptionColors}
+        interiors={optionInteriors.map((i: any) => ({ ...i, imageUrl: publicMediaUrl(i.imageUrl) }))}
+        wheels={optionWheels.map((w: any) => ({ ...w, imageUrl: publicMediaUrl(w.imageUrl) }))}
+        packages={optionPackages.map((p: any) => ({
+          ...p,
+          features: Array.isArray(p.features) ? (p.features as string[]) : [],
+        }))}
+        accessories={optionAccessories.map((a: any) => ({ ...a, imageUrl: publicMediaUrl(a.imageUrl) }))}
+        visitId={visitId}
       />
 
       {/* ── INTERIOR GALLERY SECTION ──────────────────────────────────── */}
@@ -600,55 +673,6 @@ export default async function VehicleDetailPage({
         </div>
       </section>
 
-      {/* ── GALLERY SECTION ───────────────────────────────────────────── */}
-      <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
-        <div className="page-container">
-          <h2 className="disp text-3xl text-navy font-bold mb-6">Exteriors</h2>
-          {exteriorMedia.length > 0 ? (
-            <div className="space-y-6">
-              {exteriorMedia.map((media: string, index: number) => (
-                <div
-                  key={`${media}-${index}`}
-                  className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
-                >
-                  {isVideoUrl(media) ? (
-                    <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
-                  ) : (
-                    <ImageWithFallback
-                      src={media}
-                      alt={`${vehicle.name} gallery ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                      loading={index === 0 ? "eager" : "lazy"}
-                      iconClassName="h-10 w-10"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-steel py-12 border border-dashed border-line rounded-xl">
-              Gallery images are managed from the admin panel.
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── COLORS, TRIMS & ACCESSORIES (no price — see convention note above) ── */}
-      <VehicleOptionsShowcase
-        vehicleSlug={vehicle.slug}
-        vehicleName={vehicle.name}
-        heroImage={publicHeroImageUrl || undefined}
-        colors={publicOptionColors}
-        interiors={optionInteriors.map((i: any) => ({ ...i, imageUrl: publicMediaUrl(i.imageUrl) }))}
-        wheels={optionWheels.map((w: any) => ({ ...w, imageUrl: publicMediaUrl(w.imageUrl) }))}
-        packages={optionPackages.map((p: any) => ({
-          ...p,
-          features: Array.isArray(p.features) ? (p.features as string[]) : [],
-        }))}
-        accessories={optionAccessories.map((a: any) => ({ ...a, imageUrl: publicMediaUrl(a.imageUrl) }))}
-        visitId={visitId}
-      />
-
       {/* ── 360° SPOTLIGHT SECTION — color swatches (from the same admin-managed
            Vehicle Colors used above) let a visitor swap the displayed color,
            mirroring geely.com.eg/models/gx3-pro#360's "Discover Every Angle" ── */}
@@ -727,9 +751,12 @@ export default async function VehicleDetailPage({
         </div>
       </section>
 
-      {/* ── FEATURES SECTION ──────────────────────────────────────────── */}
+      {/* ── FEATURES SECTION (id fixed — used to collide with the Safety/ADAS
+           section's #section-safety-adas... actually with the OLD #section-safety
+           id, which meant the tab-scroll IntersectionObserver could only ever
+           find whichever of the two rendered first in the DOM) ── */}
       {featuredFeatures.length > 0 && (
-        <section id="section-safety" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-features-list" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
           <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-8">Vehicle Features</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
@@ -737,6 +764,34 @@ export default async function VehicleDetailPage({
                 <div key={index} className="flex items-start gap-3 py-1">
                   <Check size={18} className="text-active-blue flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-navy">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── WARRANTY PROMISE — admin-captured (Vehicle Sections → Warranty tab)
+           since early in this project but never actually rendered anywhere on
+           the public site until now; mirrors the reference site's own
+           "Warranty Promise" section, placed right after Specifications ── */}
+      {warrantyRows.length > 0 && (
+        <section id="section-warranty" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px] border-t border-line">
+          <div className="page-container">
+            <div className="mb-8 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
+                Peace of Mind
+              </div>
+              <h2 className="disp text-3xl text-navy font-bold mb-4">Warranty Promise</h2>
+              <p className="text-steel text-base max-w-2xl">
+                Every {vehicle.name} is backed by Geely Ethiopia's comprehensive warranty coverage.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {warrantyRows.map(([label, value]) => (
+                <div key={label} className="p-5 rounded-xl bg-ice">
+                  <div className="text-xs font-bold uppercase tracking-wider text-active-blue mb-2">{label}</div>
+                  <div className="text-lg font-bold text-navy">{value}</div>
                 </div>
               ))}
             </div>

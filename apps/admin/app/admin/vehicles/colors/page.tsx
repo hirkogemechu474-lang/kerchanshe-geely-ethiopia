@@ -5,6 +5,7 @@ import { Plus, Trash2, Edit2, Image as ImageIcon } from 'lucide-react';
 import { PageHeader, Card, Button, TableCard, THead, TBody, Tr, Th, Td, Badge, EmptyTableRow, EmptyState, Modal, ModalActions } from '@/components/admin/ui';
 import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
+import ImageUpload from '@/components/admin/vehicles/ImageUpload';
 
 interface VehicleColor {
   id: string;
@@ -12,6 +13,7 @@ interface VehicleColor {
   name: string;
   colorCode: string;
   imageUrl: string | null;
+  images: string[] | null;
   price: number;
   inStock: boolean;
   isDefault: boolean;
@@ -25,6 +27,7 @@ interface VehicleInterior {
   description: string | null;
   materialType: string;
   imageUrl: string | null;
+  images: string[] | null;
   price: number;
   isDefault: boolean;
   inStock: boolean;
@@ -37,15 +40,16 @@ interface VehicleWheel {
   name: string;
   size: string;
   imageUrl: string | null;
+  images: string[] | null;
   price: number;
   isDefault: boolean;
   inStock: boolean;
   sortOrder: number;
 }
 
-const EMPTY_COLOR_FORM = { name: '', colorCode: '#FFFFFF', imageUrl: '', price: 0, inStock: true, isDefault: false, sortOrder: 0 };
-const EMPTY_INTERIOR_FORM = { name: '', description: '', materialType: '', imageUrl: '', price: 0, inStock: true, isDefault: false, sortOrder: 0 };
-const EMPTY_WHEEL_FORM = { name: '', size: '', imageUrl: '', price: 0, inStock: true, isDefault: false, global: false, sortOrder: 0 };
+const EMPTY_COLOR_FORM = { name: '', colorCode: '#FFFFFF', imageUrl: '', images: [] as string[], price: 0, inStock: true, isDefault: false, sortOrder: 0 };
+const EMPTY_INTERIOR_FORM = { name: '', description: '', materialType: '', imageUrl: '', images: [] as string[], price: 0, inStock: true, isDefault: false, sortOrder: 0 };
+const EMPTY_WHEEL_FORM = { name: '', size: '', imageUrl: '', images: [] as string[], price: 0, inStock: true, isDefault: false, global: false, sortOrder: 0 };
 
 type Resource = 'colors' | 'interiors' | 'wheels';
 
@@ -164,6 +168,7 @@ export default function VehicleColorsPage() {
     setEditingColor(color);
     setColorForm({
       name: color.name, colorCode: color.colorCode, imageUrl: color.imageUrl || '',
+      images: Array.isArray(color.images) ? color.images : [],
       price: color.price, inStock: color.inStock, isDefault: color.isDefault, sortOrder: color.sortOrder,
     });
     setShowForm(true);
@@ -173,7 +178,8 @@ export default function VehicleColorsPage() {
     setEditingInterior(interior);
     setInteriorForm({
       name: interior.name, description: interior.description || '', materialType: interior.materialType,
-      imageUrl: interior.imageUrl || '', price: interior.price, inStock: interior.inStock,
+      imageUrl: interior.imageUrl || '', images: Array.isArray(interior.images) ? interior.images : [],
+      price: interior.price, inStock: interior.inStock,
       isDefault: interior.isDefault, sortOrder: interior.sortOrder,
     });
     setShowForm(true);
@@ -182,7 +188,8 @@ export default function VehicleColorsPage() {
   function openEditWheel(wheel: VehicleWheel) {
     setEditingWheel(wheel);
     setWheelForm({
-      name: wheel.name, size: wheel.size, imageUrl: wheel.imageUrl || '', price: wheel.price,
+      name: wheel.name, size: wheel.size, imageUrl: wheel.imageUrl || '', images: Array.isArray(wheel.images) ? wheel.images : [],
+      price: wheel.price,
       inStock: wheel.inStock, isDefault: wheel.isDefault, global: wheel.vehicleId === null, sortOrder: wheel.sortOrder,
     });
     setShowForm(true);
@@ -629,6 +636,10 @@ export default function VehicleColorsPage() {
                 A shot of the vehicle in this color. Used as the swatch thumbnail and swapped into the model page&apos;s 360° viewer when selected.
               </p>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Photos</label>
+              <ImageUpload images={colorForm.images} onChange={(images) => setColorForm({ ...colorForm, images })} />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Extra Price</label>
@@ -689,6 +700,10 @@ export default function VehicleColorsPage() {
                 </Button>
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Photos</label>
+              <ImageUpload images={interiorForm.images} onChange={(images) => setInteriorForm({ ...interiorForm, images })} />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Extra Price</label>
@@ -742,6 +757,10 @@ export default function VehicleColorsPage() {
                   <ImageIcon className="w-4 h-4" />{wheelForm.imageUrl ? 'Change' : 'Choose'} Image
                 </Button>
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Photos</label>
+              <ImageUpload images={wheelForm.images} onChange={(images) => setWheelForm({ ...wheelForm, images })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

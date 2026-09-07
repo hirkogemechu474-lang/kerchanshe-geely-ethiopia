@@ -5,6 +5,7 @@ import { ModelSpotlightSimple } from './ModelSpotlightSimple';
 import { ModelSpotlight360 } from './ModelSpotlight360';
 import { RotateCw, Camera } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 interface ViewEntry {
   angle: string;
@@ -24,6 +25,8 @@ interface VehicleColorOption {
   colorCode: string;
   imageUrl: string | null;
   isDefault?: boolean;
+  /** Additional photos from other angles/sides — null/empty for most colors today. */
+  images?: string[] | null;
 }
 
 interface Model360SectionProps {
@@ -63,6 +66,7 @@ export function Model360Section({
   colors = [],
 }: Model360SectionProps) {
   const [activeTab, setActiveTab] = useState<'video' | '360' | 'angles'>(showcaseVideoUrl ? 'video' : '360');
+  const [lightbox, setLightbox] = useState<{ title: string; images: string[] } | null>(null);
   const colorsWithImages = colors.filter((c) => c.imageUrl);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(
     colorsWithImages.find((c) => c.isDefault)?.id ?? colorsWithImages[0]?.id ?? null
@@ -148,22 +152,39 @@ export function Model360Section({
           {colorsWithImages.length > 0 && (
             <div className="flex items-start gap-3 self-start md:self-auto overflow-x-auto pb-1">
               {colorsWithImages.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColorId(color.id)}
-                  className="flex flex-col items-center gap-1.5 shrink-0 group"
-                >
-                  <span
-                    className={`w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedColorId === color.id
-                        ? 'border-active-blue'
-                        : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
-                    }`}
+                <div key={color.id} className="relative shrink-0">
+                  <button
+                    onClick={() => setSelectedColorId(color.id)}
+                    className="flex flex-col items-center gap-1.5 group"
                   >
-                    <ImageWithFallback src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" iconClassName="h-4 w-4" />
-                  </span>
-                  <span className="text-[11px] text-steel dark:text-steel-light font-semibold whitespace-nowrap">{color.name}</span>
-                </button>
+                    <span
+                      className={`w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors ${
+                        selectedColorId === color.id
+                          ? 'border-active-blue'
+                          : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
+                      }`}
+                    >
+                      <ImageWithFallback src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" iconClassName="h-4 w-4" />
+                    </span>
+                    <span className="text-[11px] text-steel dark:text-steel-light font-semibold whitespace-nowrap">{color.name}</span>
+                  </button>
+                  {Array.isArray(color.images) && color.images.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setLightbox({
+                          title: color.name,
+                          images: [color.imageUrl, ...color.images!].filter(Boolean) as string[],
+                        });
+                      }}
+                      aria-label={`View more photos of ${color.name}`}
+                      className="absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                    >
+                      <Camera size={10} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -257,6 +278,9 @@ export function Model360Section({
           </div>
         </div>
       </div>
+      {lightbox && (
+        <ImageLightbox images={lightbox.images} title={lightbox.title} onClose={() => setLightbox(null)} />
+      )}
     </section>
   );
 }
