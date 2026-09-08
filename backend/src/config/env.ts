@@ -21,7 +21,7 @@ export const env = {
   },
 
   cors: {
-    originWeb: process.env.CORS_ORIGIN_WEB || 'http://localhost:7501',
+    originWeb: process.env.CORS_ORIGIN_WEB || 'https://www.geelyauto.co.za',
     originAdmin: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:7500',
   },
 
@@ -47,7 +47,7 @@ export const env = {
   },
 
   urls: {
-    site: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:7501',
+    site: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.geelyauto.co.za',
     admin: process.env.ADMIN_URL || 'http://localhost:7500',
   },
 };

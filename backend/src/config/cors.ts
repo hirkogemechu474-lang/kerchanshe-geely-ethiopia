@@ -8,6 +8,7 @@ export const corsOptions: cors.CorsOptions = {
       env.cors.originAdmin,
       'http://localhost:7500',
       'http://localhost:7501',
+      'https://www.geelyauto.co.za',
       'http://localhost:4000',
     ];
 

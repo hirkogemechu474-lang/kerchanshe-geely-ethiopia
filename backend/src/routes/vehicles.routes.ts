@@ -175,21 +175,41 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   }
 });
 
-// DELETE /api/vehicles/:id (soft delete)
+// DELETE /api/vehicles/:id (permanent delete)
 router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    await prisma.vehicle.update({ where: { id: req.params.id }, data: { isActive: false, status: 'archived' } });
+    await prisma.vehicle.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      res.status(404).json({ error: 'Vehicle not found' });
+      return;
+    }
+    if (error?.code === 'P2003') {
+      // TestDrive and VehicleAllocation FKs are RESTRICT (real business
+      // history we never want silently wiped) — everything else on Vehicle
+      // (colors/interiors/packages) is CASCADE and accessories/wheels are
+      // SET NULL, so this is the only way delete can be blocked.
+      res.status(409).json({
+        error: 'This vehicle has test drive requests or stock allocations linked to it, so it can’t be permanently deleted. Remove/reassign those records first.',
+      });
+      return;
+    }
     console.error('Delete vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // GET /api/vehicles/:id/brochure
+// Public pages only ever have the vehicle's slug on hand (not its DB id), so
+// this has to match either — a findUnique on `id` alone 404s for every real
+// caller since slug and id are different values.
 router.get('/:id/brochure', async (req: Request, res: Response) => {
   try {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: req.params.id }, include: { brand: true, colors: true, accessories: true, packages: true, interiors: true, wheels: true } });
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { OR: [{ id: req.params.id }, { slug: req.params.id }] },
+      include: { brand: true, colors: true, accessories: true, packages: true, interiors: true, wheels: true },
+    });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
 
     const specsRaw = (vehicle.specifications as Record<string, any> | null) || {};

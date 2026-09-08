@@ -52,13 +52,20 @@ const nextConfig: NextConfig = {
     const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
 
     return {
-      beforeFiles: [
+      // Everything under /api/* is normally proxied straight to the backend.
+      // Uploads are the one exception — they're handled locally by this
+      // app's own app/api/upload* route handlers (see lib/localUpload.ts for
+      // why: Next's rewrite proxy fails on large multipart bodies). Using
+      // `afterFiles` (checked after the filesystem) rather than `beforeFiles`
+      // lets those local routes win for their exact paths while every other
+      // /api/* request still falls through to this same backend proxy.
+      afterFiles: [
         {
           source: "/api/:path*",
           destination: `${backendUrl}/api/:path*`,
         },
       ],
-      afterFiles: [],
+      beforeFiles: [],
       fallback: [],
     };
   },

@@ -39,10 +39,36 @@ function sanitizeSegment(name: unknown): string {
 // parsed by the time we resolve the destination subfolder. diskStorage's
 // `destination` callback runs before the text fields are guaranteed to be
 // populated on `req.body`, which silently dropped the category.
+// 100MB covers the largest thing admins upload here today (showcase videos,
+// promised "up to 50 MB" in the admin UI, and 3D model files) with headroom —
+// previously this was capped at 25MB, well under what the UI told admins was
+// allowed, so anything bigger silently failed.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
 });
+
+// multer emits a MulterError (e.g. LIMIT_FILE_SIZE) through Express's error-
+// handling path, not the normal req/res flow — without this, an oversized
+// file fell through to Express's default HTML error page, which the admin
+// panel's `response.json()` couldn't parse, surfacing as a generic "Failed to
+// upload" with no indication of why.
+function handleMulterError(err: any, req: any, res: any, next: any): void {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      res.status(413).json({ error: 'File is too large. Maximum upload size is 100MB.' });
+      return;
+    }
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  if (err) {
+    console.error('[UPLOAD ERROR]', err?.message);
+    res.status(500).json({ error: 'Failed to upload file.' });
+    return;
+  }
+  next();
+}
 
 function handleUpload(req: any, res: any): void {
   const file: Express.Multer.File | undefined = req.file;
@@ -68,8 +94,8 @@ function handleUpload(req: any, res: any): void {
   }
 }
 
-router.post('/', upload.single('file') as any, handleUpload);
-router.post('/image', upload.single('file') as any, handleUpload);
-router.post('/document', upload.single('file') as any, handleUpload);
+router.post('/', upload.single('file') as any, handleMulterError, handleUpload);
+router.post('/image', upload.single('file') as any, handleMulterError, handleUpload);
+router.post('/document', upload.single('file') as any, handleMulterError, handleUpload);
 
 export { router as uploadRoutes, UPLOAD_ROOT };

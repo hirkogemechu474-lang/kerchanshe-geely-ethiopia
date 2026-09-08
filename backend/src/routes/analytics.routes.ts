@@ -22,7 +22,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
     const [
       totalVehicles, totalTestDrives, totalQuotations, totalServiceBookings, totalReviews, avgRatingAgg,
       recentTestDrives, recentQuotations, recentReviews,
-      vehiclesByCategory, testDrivesByVehicle,
+      testDriveVehicles, testDrivesByVehicle,
       pendingQuotations, pendingReviews, unreadMessages, overdueJobCards, partsForReorderCheck,
       baysBusy, baysTotal, jobsToday, closedJobCardDurations, pendingApproval, warrantyClaimsByStatusRaw, bays,
       paymentUnpaid, paymentPendingReview, paymentPaid, paymentCollectedAgg,
@@ -38,7 +38,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       prisma.testDrive.count({ where: { createdAt: { gte: startDate } } }),
       prisma.quotation.count({ where: { createdAt: { gte: startDate } } }),
       prisma.review.count({ where: { createdAt: { gte: startDate } } }),
-      prisma.vehicle.groupBy({ by: ['category'], _count: true, where: { isActive: true } }),
+      prisma.testDrive.findMany({ select: { vehicle: { select: { category: true, categoryId: true } } } }),
       prisma.testDrive.groupBy({ by: ['vehicleId'], _count: true, orderBy: { _count: { vehicleId: 'desc' } }, take: 5 }),
       prisma.quotation.count({ where: { status: { notIn: ['converted', 'closed'] } } }),
       prisma.review.count({ where: { status: 'pending' } }),
@@ -65,6 +65,25 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       prisma.salesOrder.count({ where: { handoverCountersignedAt: { not: null } } }),
       prisma.testDrive.count({ where: { salesOrderId: { not: null } } }),
     ]);
+
+    // Group test drives by vehicle category. Vehicle.category is free text
+    // and can carry inconsistent casing/pluralization for the same real
+    // category (e.g. "Sedan" vs "sedans"), so group by categoryId (the
+    // actual FK) and label each group with its most common category text.
+    const categoryGroups = new Map<string, { count: number; labels: Map<string, number> }>();
+    for (const { vehicle } of testDriveVehicles) {
+      const key = vehicle.categoryId || vehicle.category;
+      const group = categoryGroups.get(key) || { count: 0, labels: new Map<string, number>() };
+      group.count += 1;
+      group.labels.set(vehicle.category, (group.labels.get(vehicle.category) || 0) + 1);
+      categoryGroups.set(key, group);
+    }
+    const testDrivesByCategory = [...categoryGroups.values()]
+      .map((group) => ({
+        category: [...group.labels.entries()].sort((a, b) => b[1] - a[1])[0][0],
+        count: group.count,
+      }))
+      .sort((a, b) => b.count - a.count);
 
     const topVehicleIds = testDrivesByVehicle.map((v) => v.vehicleId);
     const topVehicleRows = topVehicleIds.length
@@ -97,11 +116,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
         quotations: recentQuotations,
         reviews: recentReviews,
       },
-      // Vehicle catalog distribution by category — Quotation/SalesOrder store
-      // vehicleModel as free text (no real FK to Vehicle), so a true
-      // "quotes/orders by category" breakdown isn't reliable; this shows
-      // what's in the active catalog instead.
-      salesByCategory: vehiclesByCategory.map((v) => ({ category: v.category, count: v._count })),
+      salesByCategory: testDrivesByCategory,
       topVehicles,
       needsAttention: {
         pendingQuotations,
