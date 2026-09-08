@@ -1058,7 +1058,25 @@ router.get('/purchases/:purchaseId', async (req: Request, res: Response) => {
   try {
     const purchase = await prisma.salesOrder.findUnique({ where: { id: req.params.purchaseId } });
     if (!purchase) { res.status(404).json({ error: 'Purchase not found' }); return; }
-    res.json(purchase);
+    // SalesOrder has no dedicated transactionId/bank/paymentReference columns —
+    // a "purchase" here just is the order, so surface its real fields under
+    // the names the payment-success page displays (orderNo doubles as the
+    // reference, and the configurationJson.bankId captured at submission
+    // time, if present, is resolved to its bank name).
+    const config = (purchase.configurationJson as Record<string, unknown> | null) || {};
+    const bankId = typeof config.bankId === 'string' ? config.bankId : null;
+    const bank = bankId ? await prisma.financingBank.findUnique({ where: { id: bankId } }) : null;
+    res.json({
+      purchase: {
+        vehicle: purchase.vehicleModel,
+        amount: purchase.totalPrice != null ? purchase.totalPrice.toLocaleString() : '',
+        bank: bank?.name || (typeof config.paymentMethod === 'string' ? config.paymentMethod : 'N/A'),
+        transactionId: purchase.id,
+        paymentReference: purchase.orderNo,
+        paymentStatus: purchase.paymentStatus,
+        purchaseStatus: purchase.status,
+      },
+    });
   } catch (error) {
     console.error('Get purchase error:', error);
     res.status(500).json({ error: 'Internal server error' });

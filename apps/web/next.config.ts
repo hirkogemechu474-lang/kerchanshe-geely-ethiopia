@@ -70,15 +70,22 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         {
-          source: "/api/:path*",
-          destination: `${backendUrl}/api/:path*`,
-        },
-        {
           source: "/uploads/:path*",
           destination: `${adminUrl.replace(/\/$/, "")}/uploads/:path*`,
         },
       ],
-      afterFiles: [],
+      // /api/upload* is handled locally by this app's own app/api/upload*
+      // route handlers (see lib/localUpload.ts): Next's rewrite proxy fails
+      // on large multipart bodies, so those routes must win over this catch-
+      // all backend proxy. Using `afterFiles` (checked after the filesystem)
+      // rather than `beforeFiles` lets them do that while every other
+      // /api/* request still falls through to the backend here.
+      afterFiles: [
+        {
+          source: "/api/:path*",
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
       fallback: [],
     };
   },
