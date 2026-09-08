@@ -143,6 +143,7 @@ export default async function QuotationDetailPage({
       <ConfigurationSummary configuration={quotation.configurationJson} />
 
       <QuotationPdfPanel
+        salesReps={salesReps}
         quotation={{
           id: quotation.id,
           vehicleModel: quotation.vehicleModel,

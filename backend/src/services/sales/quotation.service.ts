@@ -22,6 +22,7 @@ async function getManagerEmails(): Promise<string[]> {
 
 export const quotationService = {
   async create(data: {
+    title?: string;
     customerName: string;
     phoneNumber: string;
     email?: string;
@@ -29,6 +30,7 @@ export const quotationService = {
     idDocumentType?: string;
     idPhotoUrl?: string;
     customerAddress?: string;
+    customerTin?: string;
     vehicleModel?: string;
     message?: string;
     financingInterest?: boolean;
@@ -50,6 +52,7 @@ export const quotationService = {
       const reference = await generateReference(REFERENCE_CATEGORY.QUOTATION);
 
       const quotationCreateData: any = {
+        title: data.title,
         customerName: data.customerName,
         phoneNumber: data.phoneNumber,
         email: data.email,
@@ -57,6 +60,7 @@ export const quotationService = {
         idDocumentType: data.idDocumentType,
         idPhotoUrl: data.idPhotoUrl,
         customerAddress: data.customerAddress,
+        customerTin: data.customerTin,
         vehicleModel: data.vehicleModel,
         message: data.message,
         financingInterest: data.financingInterest,

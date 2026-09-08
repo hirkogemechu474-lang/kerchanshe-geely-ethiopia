@@ -65,12 +65,15 @@ export default function QuotationPdfPanel({
   publicPdfUrl,
   publicSignUrl,
   webAppUrl,
+  salesReps,
 }: {
   quotation: QuotationPdfData;
   canManage: boolean;
   publicPdfUrl: string | null;
   publicSignUrl: string | null;
   webAppUrl: string;
+  /** Staff (sales reps + managers) selectable as the name printed on the document. */
+  salesReps?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [unitPrice, setUnitPrice] = useState(quotation.unitPrice?.toString() || '');
@@ -355,6 +358,18 @@ export default function QuotationPdfPanel({
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sales executive</label>
+                {salesReps && salesReps.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => e.target.value && setSalesExecutiveName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-1.5"
+                  >
+                    <option value="">Assign from staff (sales &amp; managers)…</option>
+                    {salesReps.map((rep) => (
+                      <option key={rep.id} value={rep.name}>{rep.name}</option>
+                    ))}
+                  </select>
+                )}
                 <input value={salesExecutiveName} onChange={(e) => setSalesExecutiveName(e.target.value)} placeholder="Name printed on the quotation" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>

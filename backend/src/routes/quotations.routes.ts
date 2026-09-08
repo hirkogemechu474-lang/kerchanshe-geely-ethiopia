@@ -592,6 +592,7 @@ router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Respo
   try {
     const { configuration, visitId: _visitId, ...body } = req.body;
     const result = await quotationService.create({
+      title: body.title,
       customerName: body.customerName,
       phoneNumber: body.phoneNumber,
       email: body.email,
@@ -599,6 +600,7 @@ router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Respo
       idDocumentType: body.idDocumentType,
       idPhotoUrl: body.idPhotoUrl,
       customerAddress: body.customerAddress,
+      customerTin: body.customerTin,
       vehicleModel: body.vehicleModel,
       message: body.message,
       financingInterest: body.financingInterest,
@@ -656,8 +658,13 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
       return res.status(400).json({ error: result.error });
     }
 
-    // Send email notification to the assigned rep and manager
-    const assignedRep = await userRepository.findById(result.data!.userId);
+    // Send email notification to the assigned rep and manager. The
+    // auto-assign path's result.data is a {userId,...} scoring summary, but
+    // a manual assignment's result.data is the raw updated Quotation row
+    // (assignedTo, not userId) — resolve whichever shape actually came back
+    // so a manual assign doesn't silently skip the notification.
+    const assignedRepId = result.data?.userId || result.data?.assignedTo;
+    const assignedRep = assignedRepId ? await userRepository.findById(assignedRepId) : null;
     if (assignedRep?.email) {
       const managerEmails = await getManagerEmails();
       await dispatchNotification({
