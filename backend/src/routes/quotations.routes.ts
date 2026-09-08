@@ -173,6 +173,7 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
     });
 
     let notificationSent = false;
+    let notificationError: string | undefined;
     if (quotation.email) {
       const link = quotation.reference ? `${env.urls.site}/quotation/${encodeURIComponent(quotation.reference)}` : undefined;
 
@@ -196,9 +197,12 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
         attachments,
       });
       notificationSent = result.ok;
+      notificationError = result.error;
+    } else {
+      notificationError = 'This quotation has no email address on file for the customer.';
     }
 
-    res.json({ ...updated, notificationSent });
+    res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Send quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });

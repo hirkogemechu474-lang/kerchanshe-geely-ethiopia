@@ -182,7 +182,11 @@ export default function QuotationPdfPanel({
       const res = await fetch(`/api/quotations/${quotation.id}/send-quotation`, { method: 'POST' });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to send quotation');
-      setNotice(data.notificationSent ? 'Quotation emailed to the customer.' : 'Quotation sent, but the email could not be delivered — check SMTP settings.');
+      setNotice(
+        data.notificationSent
+          ? 'Quotation emailed to the customer.'
+          : `Quotation sent, but the email could not be delivered${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
+      );
       router.refresh();
     } catch (err: any) {
       setError(err.message);

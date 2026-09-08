@@ -33,22 +33,23 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
       attachments: payload.attachments,
     });
 
-    // Write to audit table for each recipient
-    if (result.ok) {
-      for (const email of payload.to) {
-        try {
-          await prisma.notificationHistory.create({
-            data: {
-              recipientEmail: email,
-              notificationType: payload.type,
-              subject: payload.subject,
-              data: payload.data,
-              sentStatus: 'sent',
-            },
-          });
-        } catch {
-          // Audit write failure should not block the flow
-        }
+    // Write to audit table for each recipient — including failures, so a
+    // "could not be delivered" error is diagnosable afterward instead of
+    // only ever appearing in an unmonitored console.error.
+    for (const email of payload.to) {
+      try {
+        await prisma.notificationHistory.create({
+          data: {
+            recipientEmail: email,
+            notificationType: payload.type,
+            subject: payload.subject,
+            data: payload.data,
+            sentStatus: result.ok ? 'sent' : 'failed',
+            error: result.ok ? null : result.error,
+          },
+        });
+      } catch {
+        // Audit write failure should not block the flow
       }
     }
 

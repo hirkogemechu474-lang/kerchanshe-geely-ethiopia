@@ -704,7 +704,8 @@ model NotificationHistory {
   subject          String
   data             Json? // Additional context data
   sentAt           DateTime @default(now())
-  sentStatus       String   @default("sent")
+  sentStatus       String   @default("sent") // 'sent' | 'failed'
+  error            String?  @db.Text // nodemailer's error message when sentStatus is 'failed'
 
   @@index([sentAt])
 }
