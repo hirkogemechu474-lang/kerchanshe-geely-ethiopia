@@ -31,14 +31,28 @@ router.get('/board', async (req: Request, res: Response) => {
   try {
     const bays = await prisma.serviceBay.findMany({
       where: { isActive: true },
-      include: {
-        jobCards: {
-          where: { status: { notIn: ['INVOICED_CLOSED', 'CANCELLED'] } },
-          include: { technician: true, customerVehicle: true },
-        },
-      },
+      orderBy: { name: 'asc' },
     });
-    res.json(bays);
+
+    const jobCards = await prisma.jobCard.findMany({
+      where: { status: { notIn: ['INVOICED_CLOSED', 'CANCELLED'] } },
+      include: { technician: true, bay: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const mapped = jobCards.map((jc) => ({
+      id: jc.id,
+      jobCardNo: jc.jobCardNo,
+      customerName: jc.customerName,
+      status: jc.status,
+      bayId: jc.bayId,
+      scheduledStart: jc.scheduledStart?.toISOString() ?? null,
+      scheduledEnd: jc.scheduledEnd?.toISOString() ?? null,
+      technician: jc.technician ? { id: jc.technician.id, name: jc.technician.name } : null,
+      bay: jc.bay ? { id: jc.bay.id, name: jc.bay.name } : null,
+    }));
+
+    res.json({ bays, jobCards: mapped });
   } catch (error) {
     console.error('Workshop board error:', error);
     res.status(500).json({ error: 'Internal server error' });

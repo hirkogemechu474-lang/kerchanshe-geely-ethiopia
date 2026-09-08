@@ -44,8 +44,8 @@ export default function BayBoard() {
     const res = await fetch(`/api/admin/workshop/board?date=${date}`);
     if (res.ok) {
       const data = await res.json();
-      setBays(data.bays);
-      setJobCards(data.jobCards);
+      setBays(Array.isArray(data.bays) ? data.bays : Array.isArray(data) ? data : []);
+      setJobCards(Array.isArray(data.jobCards) ? data.jobCards : []);
     }
     setLoading(false);
   }, [date]);
