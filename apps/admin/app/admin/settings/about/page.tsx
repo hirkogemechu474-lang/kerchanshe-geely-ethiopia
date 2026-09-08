@@ -5,6 +5,7 @@ import {
   ArrowLeft, Save, Building2, Globe, Award, Shield, Zap, Heart, Users,
   Factory, TrendingUp, CheckCircle2, AlertCircle, RefreshCw, Image as ImageIcon,
   Handshake, Sparkles, Target, ListChecks, MessageSquare, BarChart3, Cpu, DollarSign, Star,
+  Video, Upload, Loader2, Trash2, Film,
 } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
@@ -17,7 +18,10 @@ type HomeStat = { label: string; value: string };
 type ValueItem = { icon: string; title: string; description: string };
 
 export interface AboutContent {
-  sectionHero: { eyebrow: string; title: string; subtitle: string; backgroundImage: string };
+  sectionHero: {
+    eyebrow: string; title: string; subtitle: string; backgroundImage: string;
+    mediaType?: string; videoUrl?: string; posterUrl?: string;
+  };
   statsBar: { items: HighlightItem[] };
   designPhilosophy: { eyebrow: string; title: string; paragraphs: string[]; image: string };
   partnership: {
@@ -58,6 +62,9 @@ const DEFAULT_DATA: AboutContent = {
     subtitle:
       'Bringing global automotive excellence to Ethiopia through the trusted partnership of Zhejiang Geely Holding Group and Kerchanshe Group.',
     backgroundImage: '',
+    mediaType: 'IMAGE',
+    videoUrl: '',
+    posterUrl: '',
   },
   statsBar: {
     items: [
@@ -264,6 +271,95 @@ function LabelField(props: { label: string; required?: boolean; children: React.
 
 const baseInput =
   'w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-geely-blue/30 focus:border-blue-500 transition';
+
+// Uploads through the generic /api/upload endpoint (not /api/upload/image,
+// which server-side is identical but the ImageUploader component hardcodes
+// an `image/*` client-side check that would reject video files).
+function VideoUploader({
+  value, onChange, hint, maxSizeMB = 100,
+}: { value: string; onChange: (url: string) => void; hint?: string; maxSizeMB?: number }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const upload = async (file: File) => {
+    setError(null);
+    if (!file.type.startsWith('video/')) {
+      setError('Only video files are accepted (MP4, WebM).');
+      return;
+    }
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      setError(`File too large (max ${maxSizeMB}MB). Choose a smaller video.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'about');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const json = await res.json();
+      if (!json?.url) throw new Error('No URL returned from upload API');
+      onChange(json.url);
+    } catch (e) {
+      setError((e as Error).message || 'Failed to upload video');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (value) {
+    return (
+      <div className="space-y-2">
+        <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black">
+          <video src={value} className="w-full aspect-[16/9] object-cover" controls />
+          <div className="absolute inset-x-0 bottom-0 p-3 flex items-center justify-end gap-2 bg-gradient-to-t from-black/60 to-transparent">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/95 text-gray-800 text-xs font-semibold hover:bg-white transition shadow cursor-pointer">
+              <Upload size={13} /> Replace
+              <input type="file" accept="video/*" className="hidden" disabled={uploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+            </label>
+            <button type="button" onClick={() => onChange('')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition shadow">
+              <Trash2 size={13} /> Remove
+            </button>
+          </div>
+        </div>
+        {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+        {error && <div className="text-xs text-red-600 bg-red-50 rounded-lg border border-red-200 p-2.5">{error}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block cursor-pointer">
+        <input type="file" accept="video/*" className="hidden" disabled={uploading}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+        <div className="relative aspect-[16/9] rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/40 transition-all flex flex-col items-center justify-center gap-3 px-4 text-center">
+          {uploading ? (
+            <>
+              <Loader2 className="w-10 h-10 animate-spin text-geely-blue" />
+              <div className="font-semibold text-sm text-geely-blue">Uploading… please wait</div>
+            </>
+          ) : (
+            <>
+              <div className="w-14 h-14 rounded-2xl bg-white shadow-sm ring-1 ring-black/5 flex items-center justify-center">
+                <Film className="w-7 h-7 text-gray-400" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-800">Click to upload background video</div>
+                <div className="text-xs text-gray-500 mt-1">MP4 recommended · max {maxSizeMB}MB</div>
+              </div>
+            </>
+          )}
+        </div>
+      </label>
+      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {error && <div className="text-xs text-red-600 bg-red-50 rounded-lg border border-red-200 p-2.5">{error}</div>}
+    </div>
+  );
+}
 
 function ParagraphArrayEditor({
   label,
@@ -700,14 +796,58 @@ export default function AboutSettingsPage() {
               />
             </LabelField>
             <div className="sm:col-span-2">
-              <ImageUploader
-                label="Hero Background Image (optional)"
-                value={data.sectionHero.backgroundImage}
-                onChange={(v) => setKey('sectionHero', { ...data.sectionHero, backgroundImage: v })}
-                category="about"
-                aspect="wide"
-                hint="Recommended size: 1920×700. If empty the /about page uses a nice navy→blue gradient instead."
-              />
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Hero Background Media</label>
+              <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 gap-1 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setKey('sectionHero', { ...data.sectionHero, mediaType: 'IMAGE' })}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                    (data.sectionHero.mediaType ?? 'IMAGE') === 'IMAGE'
+                      ? 'bg-white shadow text-gray-900 ring-1 ring-black/5'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <ImageIcon size={13} /> Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKey('sectionHero', { ...data.sectionHero, mediaType: 'VIDEO' })}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                    data.sectionHero.mediaType === 'VIDEO'
+                      ? 'bg-white shadow text-gray-900 ring-1 ring-black/5'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Video size={13} /> Video
+                </button>
+              </div>
+
+              {(data.sectionHero.mediaType ?? 'IMAGE') === 'IMAGE' ? (
+                <ImageUploader
+                  label="Hero Background Image (optional)"
+                  value={data.sectionHero.backgroundImage}
+                  onChange={(v) => setKey('sectionHero', { ...data.sectionHero, backgroundImage: v })}
+                  category="about"
+                  aspect="wide"
+                  hint="Recommended size: 1920×700. If empty the /about page uses a nice navy→blue gradient instead."
+                />
+              ) : (
+                <div className="space-y-4">
+                  <VideoUploader
+                    value={data.sectionHero.videoUrl ?? ''}
+                    onChange={(v) => setKey('sectionHero', { ...data.sectionHero, videoUrl: v })}
+                    hint="Plays muted, looping, in the background — like a silent showreel. Keep it short (10-20s) and under a few MB for fast loading."
+                  />
+                  <ImageUploader
+                    label="Video Poster (Thumbnail)"
+                    value={data.sectionHero.posterUrl ?? ''}
+                    onChange={(v) => setKey('sectionHero', { ...data.sectionHero, posterUrl: v })}
+                    category="about"
+                    aspect="wide"
+                    hint="Shown instantly while the video loads, and as the fallback on very slow connections. Recommended: a still frame from the video."
+                  />
+                </div>
+              )}
             </div>
           </div>
         </SectionCard>

@@ -14,7 +14,10 @@ type StatsCard = { icon: string; title: string; description: string; gradient: s
 type ValueItem = { icon: string; title: string; description: string };
 
 interface AboutContent {
-  sectionHero: { eyebrow: string; title: string; subtitle: string; backgroundImage: string };
+  sectionHero: {
+    eyebrow: string; title: string; subtitle: string; backgroundImage: string;
+    mediaType?: string; videoUrl?: string; posterUrl?: string;
+  };
   statsBar: { items: HighlightItem[] };
   designPhilosophy: { eyebrow: string; title: string; paragraphs: string[]; image: string };
   partnership: {
@@ -60,6 +63,9 @@ const FALLBACK: AboutContent = {
     subtitle:
       'Bringing global automotive excellence to Ethiopia through the trusted partnership of Zhejiang Geely Holding Group and Kerchanshe Group.',
     backgroundImage: '',
+    mediaType: 'IMAGE',
+    videoUrl: '',
+    posterUrl: '',
   },
   statsBar: {
     items: [
@@ -234,6 +240,7 @@ function mergeFallback(d: Partial<AboutContent> | null | undefined): AboutConten
 export default function AboutPage() {
   const [data, setData] = useState<AboutContent>(FALLBACK);
   const [loaded, setLoaded] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     fetch('/api/public/about', { cache: 'no-store' })
@@ -243,13 +250,22 @@ export default function AboutPage() {
       .finally(() => setLoaded(true));
   }, []);
 
+  // Let the LCP paint (poster/text) happen before fetching the hero video.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVideoReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const isVideoHero = data.sectionHero.mediaType === 'VIDEO' && !!data.sectionHero.videoUrl;
+  const heroPoster = data.sectionHero.posterUrl || data.sectionHero.backgroundImage;
+
   return (
     <>
         {/* 1. Hero section */}
         <section
           className="relative min-h-[min(760px,88vh)] overflow-hidden bg-black text-white"
           style={
-            data.sectionHero.backgroundImage
+            !isVideoHero && data.sectionHero.backgroundImage
               ? {
                   backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.78), rgba(0,0,0,0.16)), url(${data.sectionHero.backgroundImage})`,
                   backgroundSize: 'cover',
@@ -258,13 +274,47 @@ export default function AboutPage() {
               : undefined
           }
         >
-          <div
-            className={
-              data.sectionHero.backgroundImage
-                ? ''
-                : 'absolute inset-0 bg-gradient-to-br from-black via-[#101318] to-[#194bff]'
-            }
-          />
+          {isVideoHero ? (
+            <>
+              {heroPoster && (
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: `url(${heroPoster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                />
+              )}
+              {/* Deferring the <video> mount until after first paint keeps the
+                  file fetch from competing with the LCP text/poster render.
+                  No `poster` attribute here: the background div above already
+                  shows it, and repeating it would both re-fetch the same
+                  image and give the browser a second LCP candidate. */}
+              {videoReady && (
+                <video
+                  key={data.sectionHero.videoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  className="absolute inset-0 w-full h-full object-cover"
+                >
+                  <source src={data.sectionHero.videoUrl} type="video/mp4" />
+                  <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+                </video>
+              )}
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.78), rgba(0,0,0,0.16))' }}
+              />
+            </>
+          ) : (
+            <div
+              className={
+                data.sectionHero.backgroundImage
+                  ? ''
+                  : 'absolute inset-0 bg-gradient-to-br from-black via-[#101318] to-[#194bff]'
+              }
+            />
+          )}
 
           <div className="relative flex min-h-[min(760px,88vh)] items-end max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16 pb-16 sm:pb-24">
             <div className="max-w-5xl">
