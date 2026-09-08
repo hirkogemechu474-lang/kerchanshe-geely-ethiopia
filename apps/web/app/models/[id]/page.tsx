@@ -255,6 +255,9 @@ export default async function VehicleDetailPage({
 }) {
   const { id } = await params;
   const { visitId } = await searchParams;
+  // Doesn't depend on the vehicle at all — start it alongside getVehicle()
+  // instead of after, so its round-trip isn't pure added latency on top.
+  const contactPhonePromise = getContactPhone();
   const vehicle = await getVehicle(id);
 
   if (!vehicle) {
@@ -262,7 +265,7 @@ export default async function VehicleDetailPage({
   }
 
   const [contactPhone, showcase] = await Promise.all([
-    getContactPhone(),
+    contactPhonePromise,
     getShowcase(vehicle.slug || id),
   ]);
 
