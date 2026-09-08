@@ -14,10 +14,18 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
+  // Model detail pages (e.g. /models/geely-ex2, not the /models listing)
+  // show their own full-width nav (ModelPageTabs — vehicle name, section
+  // jump links, Schedule Test Drive) instead of the global site header,
+  // matching geelyauto.co.za/models/geely-e2's single-header layout rather
+  // than stacking both.
+  const isModelDetailPage = /^\/models\/[^/]+$/.test(pathname ?? '');
 
   return (
     <div className="min-h-screen flex flex-col bg-ice dark:bg-midnight transition-colors">
-      <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} overlay={pathname === '/'} />
+      {!isModelDetailPage && (
+        <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} overlay={pathname === '/'} />
+      )}
       <MobileDrawer
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}

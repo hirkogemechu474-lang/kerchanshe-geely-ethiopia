@@ -24,7 +24,6 @@ const TABS = [
 
 export function ModelPageTabs({ vehicleName, testDriveHref }: { vehicleName: string; testDriveHref: string }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [headerHidden, setHeaderHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Below `lg` the tab row collapses into a toggle that opens a slide-in
@@ -42,19 +41,6 @@ export function ModelPageTabs({ vehicleName, testDriveHref }: { vehicleName: str
   }, [menuOpen]);
 
   // Highlight the tab whose section is in the viewport
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY <= 24) setHeaderHidden(false);
-      else if (currentScrollY > lastScrollY + 4) setHeaderHidden(true);
-      else if (currentScrollY < lastScrollY - 4) setHeaderHidden(false);
-      lastScrollY = currentScrollY;
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   useEffect(() => {
     const sectionIds = TABS.map((t) => t.href.replace('#', ''));
 
@@ -89,9 +75,7 @@ export function ModelPageTabs({ vehicleName, testDriveHref }: { vehicleName: str
   const activeLabel = TABS.find((t) => t.id === activeTab || activeTab === t.href.replace('#section-', ''))?.label ?? 'Sections';
 
   return (
-    <div
-      className={`sticky z-40 border-b border-black/[0.08] bg-white shadow-sm transition-[top] duration-300 dark:border-midnight-line dark:bg-midnight-surface ${headerHidden ? 'top-0' : 'top-[108px] sm:top-[116px] lg:top-[84px]'}`}
-    >
+    <div className="sticky top-0 z-40 border-b border-black/[0.08] bg-white shadow-sm dark:border-midnight-line dark:bg-midnight-surface">
       {/* Compact bar: vehicle name + a "Sections" toggle on tablet/phone, full tab row from `lg` up */}
       <div className="mx-auto flex max-w-[1440px] items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-8 lg:gap-10">
         <a href="#section-overview" className="disp shrink-0 truncate py-5 text-base font-extrabold uppercase tracking-[0.04em] text-black dark:text-white max-[380px]:max-w-[110px] sm:max-w-none sm:text-xl lg:text-2xl">

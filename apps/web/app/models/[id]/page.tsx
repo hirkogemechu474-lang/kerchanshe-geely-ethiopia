@@ -144,7 +144,7 @@ function FeatureStorySection({
   return (
     <section
       id={id}
-      className={`scroll-mt-[108px] ${tone === "ice" ? "bg-ice" : "bg-white"} py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]`}
+      className={`scroll-mt-[76px] ${tone === "ice" ? "bg-ice" : "bg-white"} py-16`}
     >
       <div className="page-container">
         <div className="mb-12 text-center md:text-left">
@@ -482,7 +482,7 @@ export default async function VehicleDetailPage({
       {/* ── HERO SECTION — full-bleed image, minimal chrome, no price on this
            browsing page (matches the pattern on Geely's regional model pages,
            e.g. geely.com.eg/models/gx3-pro, which show no pricing at all) ── */}
-      <div id="section-overview" className="relative scroll-mt-[108px] bg-ink text-white sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+      <div id="section-overview" className="relative scroll-mt-[76px] bg-ink text-white">
         <div className="relative h-[70vh] min-h-[420px] max-h-[720px] w-full overflow-hidden">
           {publicHeroVideoUrl ? (
             <video
@@ -618,7 +618,7 @@ export default async function VehicleDetailPage({
            grid and the color/variant picker both come right after the tab
            nav, before the Interior/Comfort/Technology/Safety storytelling
            sections, not after them ── */}
-      <section id="section-exteriors" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+      <section id="section-exteriors" className="scroll-mt-[76px] bg-white py-12">
         <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-6">Exterior</h2>
           {exteriorMedia.length > 0 ? (
@@ -695,7 +695,7 @@ export default async function VehicleDetailPage({
       )}
 
       {/* ── INTERIOR GALLERY SECTION ──────────────────────────────────── */}
-      <section id="section-interior-gallery" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+      <section id="section-interior-gallery" className="scroll-mt-[76px] bg-white py-16">
         <div className="page-container">
           <div className="mb-10 text-center md:text-left">
             <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
@@ -771,7 +771,7 @@ export default async function VehicleDetailPage({
            card; if nothing is filled in for this vehicle, the section
            doesn't render at all. ── */}
       {comfortCards.length > 0 && (
-        <section id="section-comfort" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-comfort" className="scroll-mt-[76px] bg-ice py-16">
           <div className="page-container">
             <div className="mb-10 text-center md:text-left">
               <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
@@ -826,7 +826,7 @@ export default async function VehicleDetailPage({
       {/* ── TECHNOLOGY SECTION — real per-vehicle data (admin: Vehicle
            Sections → Technology tab: infotainment/connectivity). ── */}
       {technologyCards.length > 0 && (
-        <section id="section-technology" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-technology" className="scroll-mt-[76px] bg-white py-16">
           <div className="page-container">
             <div className="mb-10 text-center md:text-left">
               <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
@@ -854,7 +854,7 @@ export default async function VehicleDetailPage({
            → Technology tab → Photos & Videos). Renders nothing until a
            vehicle has at least one entry. ── */}
       {technologyMedia.length > 0 && (
-        <section id="section-technology-media" className="scroll-mt-[108px] bg-ice py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-technology-media" className="scroll-mt-[76px] bg-ice py-12">
           <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-6">Technology Media</h2>
             {(() => {
@@ -913,7 +913,7 @@ export default async function VehicleDetailPage({
       {/* ── SAFETY/ADAS SECTION — real per-vehicle data (admin: Vehicle
            Sections → Safety tab: airbags/abs/esc/tpms/cameras/sensors/adas). ── */}
       {safetyCards.length > 0 && (
-        <section id="section-safety-adas" className="scroll-mt-[108px] bg-ink text-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-safety-adas" className="scroll-mt-[76px] bg-ink text-white py-16">
           <div className="page-container">
             <div className="mb-10 text-center md:text-left">
               <div className="inline-flex items-center gap-2 bg-active-blue/20 text-active-blue-80 px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
@@ -945,7 +945,7 @@ export default async function VehicleDetailPage({
            → Safety tab → Photos & Videos). Renders nothing until a vehicle
            has at least one entry. ── */}
       {safetyMedia.length > 0 && (
-        <section id="section-safety-media" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-safety-media" className="scroll-mt-[76px] bg-white py-12">
           <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-6">Safety Media</h2>
             {(() => {
@@ -1017,7 +1017,7 @@ export default async function VehicleDetailPage({
 
       {/* ── SPECIFICATIONS — plain tabular layout, light typography, no
            boxed cards, matching the reference's spec table treatment ── */}
-      <section id="section-specs" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+      <section id="section-specs" className="scroll-mt-[76px] bg-white py-16">
         <div className="page-container">
           <h2 className="disp text-3xl text-navy font-bold mb-10">Technical Specifications</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
@@ -1160,7 +1160,7 @@ export default async function VehicleDetailPage({
            id, which meant the tab-scroll IntersectionObserver could only ever
            find whichever of the two rendered first in the DOM) ── */}
       {featuredFeatures.length > 0 && (
-        <section id="section-features-list" className="scroll-mt-[108px] bg-ice py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+        <section id="section-features-list" className="scroll-mt-[76px] bg-ice py-16">
           <div className="page-container">
             <h2 className="disp text-3xl text-navy font-bold mb-8">Vehicle Features</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
@@ -1180,7 +1180,7 @@ export default async function VehicleDetailPage({
            the public site until now; mirrors the reference site's own
            "Warranty Promise" section, placed right after Specifications ── */}
       {warrantyRows.length > 0 && (
-        <section id="section-warranty" className="scroll-mt-[108px] bg-white py-16 sm:scroll-mt-[116px] lg:scroll-mt-[84px] border-t border-line">
+        <section id="section-warranty" className="scroll-mt-[76px] bg-white py-16 border-t border-line">
           <div className="page-container">
             <div className="mb-8 text-center md:text-left">
               <div className="inline-flex items-center gap-2 bg-active-blue/10 text-active-blue px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
