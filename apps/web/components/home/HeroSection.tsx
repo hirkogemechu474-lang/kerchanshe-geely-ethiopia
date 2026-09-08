@@ -79,7 +79,7 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
               Move forward. In every direction.
             </h1>
             <p className="text-base max-w-[480px] text-[#d8e4f5] leading-relaxed mb-8">
-              Explore the full Geely range — from efficient city SUVs to family-ready flagships — backed by nationwide dealer support and genuine parts.
+              Explore the full Geely range, from efficient city SUVs to family-ready flagships, backed by nationwide dealer support and genuine parts.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button href="/quote" variant="solid" size="lg">

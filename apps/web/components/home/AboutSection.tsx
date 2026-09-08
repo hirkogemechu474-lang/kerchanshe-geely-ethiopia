@@ -14,11 +14,11 @@ interface AboutContent {
 const DEFAULT_HOME_ABOUT: AboutContent = {
   title: 'Discover Geely',
   description:
-    'Geely Auto Group is a leading global automobile manufacturer based in Hangzhou, China. Founded in 1997, we are trusted in more than 80 markets worldwide — and through our exclusive Ethiopian distributor, Kerchanshe Group Geely, we bring that same global engineering to Ethiopian roads.',
+    'Geely Auto Group is a leading global automobile manufacturer based in Hangzhou, China. Founded in 1997, we are trusted in more than 80 markets worldwide, and through our exclusive Ethiopian distributor, Kerchanshe Group Geely, we bring that same global engineering to Ethiopian roads.',
   image:
     'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%20geely%20car%20showroom%20in%20addis%20ababa%20with%20suv%20vehicles%20on%20display%20professional%20lighting&image_size=landscape_4_3',
   keyPoints: [
-    'Founded in 1997 — headquartered in Hangzhou, China',
+    'Founded in 1997, headquartered in Hangzhou, China',
     'Trusted in 80+ markets across the globe',
     'Exclusive Ethiopian distributor: Kerchanshe Group Geely',
   ],

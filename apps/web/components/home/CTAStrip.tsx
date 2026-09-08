@@ -9,7 +9,7 @@ export default function CTAStrip() {
             Ready to feel it on the road?
           </h3>
           <p className="text-[#b9cbe4] text-sm">
-            Book a test drive at your nearest showroom — most requests confirmed
+            Book a test drive at your nearest showroom. Most requests confirmed
             within one business day.
           </p>
         </div>

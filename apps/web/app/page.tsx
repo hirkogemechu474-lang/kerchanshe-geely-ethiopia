@@ -145,9 +145,11 @@ export default async function HomePage() {
   // falls back to the same defaults the original code used when unset.
   const initialStats = DEFAULT_STATS;
 
-  const initialShowcase = (() => {
-    const showcase = showcaseList[0];
-    if (!showcase) return null;
+  // Every active/published showcase, not just the first one — lets visitors
+  // pick which vehicle's "Explore Every Angle" viewer they want (see
+  // ShowcaseSection's vehicle tabs) instead of always seeing whichever
+  // showcase happens to sort first.
+  const initialShowcases = (Array.isArray(showcaseList) ? showcaseList : []).map((showcase: any) => {
     const views = Array.isArray(showcase.views)
       ? (showcase.views as { angle: string; imageUrl: string; label: string }[]).map((view) => ({
           ...view,
@@ -155,7 +157,7 @@ export default async function HomePage() {
         }))
       : [];
     return { ...showcase, views };
-  })();
+  });
 
   // API responses carry dates as ISO strings already (JSON has no Date type).
   const initialNewsArticles = newsRows.map((article: any) => ({
@@ -190,7 +192,7 @@ export default async function HomePage() {
       <ModelsShowcase initialCategories={initialCategories} initialVehicles={initialVehicles} />
       <SpotlightStrip />
       <AboutSection />
-      <ShowcaseSection initialShowcase={initialShowcase} />
+      <ShowcaseSection initialShowcases={initialShowcases} />
       <StatisticsSection initialStats={initialStats} />
       <TrustSection />
       <PromotionsBanner initialPromotions={initialPromotions} />

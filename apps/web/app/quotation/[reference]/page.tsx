@@ -180,7 +180,7 @@ export default function QuotationSigningPage() {
           <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
             <div className="flex items-center gap-3 mb-1">
               <FileText className="w-6 h-6 text-geely-blue" />
-              <h1 className="text-2xl font-bold text-navy dark:text-ice">Sales Quotation — {quotation.quotationNo}</h1>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice">Sales Quotation: {quotation.quotationNo}</h1>
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {quotation.customerName}
@@ -209,7 +209,7 @@ export default function QuotationSigningPage() {
                 <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                 <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Quotation Signed</h2>
                 <p className="text-sm text-steel dark:text-steel-light mb-4">
-                  Signed {quotation.signedAt ? new Date(quotation.signedAt).toLocaleString() : ''}. Thank you — our sales team will
+                  Signed {quotation.signedAt ? new Date(quotation.signedAt).toLocaleString() : ''}. Thank you, our sales team will
                   be in touch with next steps.
                 </p>
                 <a

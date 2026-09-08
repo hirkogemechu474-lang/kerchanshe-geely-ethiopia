@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import imageLoader from '@/lib/imageLoader';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ModelSpotlightSimple } from '@/components/ModelSpotlightSimple';
+import { Model3DViewer } from '@/components/Model3DViewer';
 import Button from '@/components/ui/Button';
+import { Maximize2 } from 'lucide-react';
 
 interface ShowcaseView {
   angle: string;
@@ -21,6 +23,9 @@ interface Showcase {
   title: string;
   subtitle: string | null;
   views: ShowcaseView[];
+  // Optional real 3D model (.glb/.gltf) — when set, this replaces the
+  // photo-swap gallery below with an actual drag-to-rotate 3D viewer.
+  modelUrl?: string | null;
   ctaText: string | null;
   ctaLink: string | null;
   sortOrder: number;
@@ -30,11 +35,15 @@ interface ShowcaseSectionProps {
   // Fetched server-side (see app/page.tsx) so this section's real markup is
   // in the initial HTML instead of an empty aria-hidden shell that gets
   // replaced after a client fetch — that swap was a major CLS contributor.
-  initialShowcase: Showcase | null;
+  // Every active/published showcase (not just one) — a vehicle-picker lets
+  // visitors switch which one they're looking at instead of always seeing
+  // whichever one happens to sort first.
+  initialShowcases: Showcase[];
 }
 
-export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProps) {
-  const showcase = initialShowcase;
+export default function ShowcaseSection({ initialShowcases }: ShowcaseSectionProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const showcase = initialShowcases[activeIndex] ?? null;
   const sectionRef = useRef<HTMLElement>(null);
 
   // Parallax effects
@@ -48,7 +57,8 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.8, 1, 1.1]);
   const goldBlobY = useTransform(scrollYProgress, [0, 1], [-50, 50]);
 
-  if (!showcase || !Array.isArray(showcase.views) || showcase.views.length === 0) {
+  const hasViews = Array.isArray(showcase?.views) && showcase!.views.length > 0;
+  if (!showcase || (!hasViews && !showcase.modelUrl)) {
     return (
       <motion.section
         ref={sectionRef}
@@ -102,7 +112,7 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
     );
   }
 
-  const views = showcase.views.map((view) => ({
+  const views = (showcase.views || []).map((view) => ({
     angle: view.angle,
     image: view.imageUrl,
     label: view.label,
@@ -158,17 +168,53 @@ export default function ShowcaseSection({ initialShowcase }: ShowcaseSectionProp
           </motion.p>
         </motion.div>
 
+        {/* Vehicle picker — only rendered once there's something to switch
+            between, so a site with just one active showcase looks unchanged. */}
+        {initialShowcases.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
+            {initialShowcases.map((s, index) => (
+              <button
+                key={s.id}
+                onClick={() => setActiveIndex(index)}
+                className={`px-5 py-2.5 rounded-full text-sm font-semibold border transition-all ${
+                  index === activeIndex
+                    ? 'bg-navy text-white border-navy shadow-md shadow-navy/15'
+                    : 'bg-white dark:bg-midnight-surface text-navy dark:text-ice border-line dark:border-midnight-line hover:border-active-blue hover:text-active-blue'
+                }`}
+              >
+                {s.vehicleName}
+              </button>
+            ))}
+          </div>
+        )}
+
         <motion.div
+          key={showcase.id}
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <ModelSpotlightSimple
-            modelName={showcase.vehicleName}
-            views={views}
-            className="shadow-2xl"
-          />
+          {showcase.modelUrl ? (
+            <div className="relative aspect-[16/9] rounded-xl bg-mesh-blue shadow-2xl overflow-hidden">
+              <Model3DViewer src={showcase.modelUrl} alt={showcase.vehicleName} className="h-full w-full" />
+              <Link
+                href={`/models/${showcase.vehicleId}/3d-view`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-navy/90 px-4 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-navy"
+              >
+                <Maximize2 size={16} />
+                Open Full 3D Viewer
+              </Link>
+            </div>
+          ) : (
+            <ModelSpotlightSimple
+              modelName={showcase.vehicleName}
+              views={views}
+              className="shadow-2xl"
+            />
+          )}
         </motion.div>
 
         {(showcase.ctaText || showcase.ctaLink) && (

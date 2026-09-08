@@ -173,7 +173,7 @@ export default function StaffSignaturePage() {
               <h1 className="text-2xl font-bold text-navy dark:text-ice">Set Up Your Signature</h1>
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-8">
-              Hi {info.name} — this signature will be used automatically whenever you countersign a sales agreement or vehicle handover.
+              Hi {info.name}, this signature will be used automatically whenever you countersign a sales agreement or vehicle handover.
               {info.hasExistingSignature && ' Setting up a new one replaces the signature currently on file.'}
             </p>
 

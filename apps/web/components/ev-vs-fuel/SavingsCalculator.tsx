@@ -305,7 +305,7 @@ export default function SavingsCalculator() {
     { label: 'Oil Changes (Annual)', petrol: maintenance.oilChangeRequirement, electric: 'None required' },
     { label: 'Brake Pad Lifespan', petrol: maintenance.brakePadLifespanPetrol, electric: maintenance.brakePadLifespanEV },
     { label: 'CO₂ Emissions per Year', petrol: `${num(results.co2SavedPerYear)} kg`, electric: '0 kg (Tailpipe)' },
-    { label: 'Total Annual Net Savings', petrol: '—', electric: 'On request' },
+    { label: 'Total Annual Net Savings', petrol: 'N/A', electric: 'On request' },
   ];
 
   return (

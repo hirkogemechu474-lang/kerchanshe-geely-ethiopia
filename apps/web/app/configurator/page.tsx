@@ -292,7 +292,7 @@ export default function ConfiguratorPage() {
               Configure Your {selectedVehicle ? selectedVehicle.name.replace('Geely ', '') : 'Geely'}
             </h1>
             <p className="text-white/80 max-w-xl text-base lg:text-lg">
-              Customize your vehicle with your preferred trim, color, wheels, and more — see your configuration update in real time.
+              Customize your vehicle with your preferred trim, color, wheels, and more, and see your configuration update in real time.
             </p>
             {selectedVehicle && (
               <Link

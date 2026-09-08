@@ -186,7 +186,7 @@ export default function ServicePage() {
             Support That Moves With You
           </p>
           <p className="text-steel dark:text-steel-light text-base max-w-2xl mb-8 leading-relaxed">
-            Owning a Geely is a long-term relationship built on trust, quality, and care. Our maintenance plans, genuine parts, and nationwide support keep your vehicle running the way it was built to &mdash; wherever you are in Ethiopia.
+            Owning a Geely is a long-term relationship built on trust, quality, and care. Our maintenance plans, genuine parts, and nationwide support keep your vehicle running the way it was built to, wherever you are in Ethiopia.
           </p>
           <button
             onClick={() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" })}
@@ -219,7 +219,7 @@ export default function ServicePage() {
                 Expert Hands, Trusted Care
               </h2>
               <p className="text-steel dark:text-steel-light mb-8 leading-relaxed">
-                Our technicians are certified to global Geely standards and equipped with advanced diagnostic tools, so every visit is handled with precision &mdash; from routine maintenance to warranty service.
+                Our technicians are certified to global Geely standards and equipped with advanced diagnostic tools, so every visit is handled with precision, from routine maintenance to warranty service.
               </p>
               <div className="space-y-5">
                 <div className="flex items-start gap-4">

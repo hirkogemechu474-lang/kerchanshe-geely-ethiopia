@@ -177,7 +177,7 @@ export default function HandoverSigningPage() {
           <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
             <div className="flex items-center gap-3 mb-1">
               <PackageCheck className="w-6 h-6 text-geely-blue" />
-              <h1 className="text-2xl font-bold text-navy dark:text-ice">Vehicle Handover — {order.orderNo}</h1>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice">Vehicle Handover: {order.orderNo}</h1>
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {order.customerName} · {order.vehicleModel}

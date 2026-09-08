@@ -367,7 +367,7 @@ export default function VehiclePurchasePage() {
               ) : (
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 text-left">
                   <p className="mb-3">
-                    Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign — you can continue to payment right after that. This page will update automatically once it's approved.
+                    Your order is pending approval by a sales agent. Once approved, we'll email you a sales agreement to review and sign, and you can continue to payment right after that. This page will update automatically once it's approved.
                   </p>
                   <button
                     type="button"
@@ -375,7 +375,7 @@ export default function VehiclePurchasePage() {
                     disabled={checkingApproval}
                     className="text-amber-900 font-semibold underline hover:no-underline disabled:opacity-60"
                   >
-                    {checkingApproval ? "Checking..." : "Continue — check approval status"}
+                    {checkingApproval ? "Checking..." : "Continue: check approval status"}
                   </button>
                 </div>
               )

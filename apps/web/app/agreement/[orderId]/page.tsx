@@ -177,7 +177,7 @@ export default function AgreementSigningPage() {
           <div className="bg-white dark:bg-midnight-surface rounded-xl shadow-lg p-8">
             <div className="flex items-center gap-3 mb-1">
               <FileText className="w-6 h-6 text-geely-blue" />
-              <h1 className="text-2xl font-bold text-navy dark:text-ice">Sales Agreement — {order.orderNo}</h1>
+              <h1 className="text-2xl font-bold text-navy dark:text-ice">Sales Agreement: {order.orderNo}</h1>
             </div>
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {order.customerName} · {order.vehicleModel}
@@ -199,7 +199,7 @@ export default function AgreementSigningPage() {
                   <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed &amp; Approved</h2>
                   <p className="text-sm text-steel dark:text-steel-light mb-4">
-                    Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you — you're ready to continue.
+                    Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you, you're ready to continue.
                   </p>
                   <a
                     href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
@@ -228,7 +228,7 @@ export default function AgreementSigningPage() {
                   <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Agreement Signed</h2>
                   <p className="text-sm text-steel dark:text-steel-light mb-4">
                     Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Your agreement is now under review by our
-                    sales manager — we'll email you a payment link as soon as it's approved.
+                    sales manager. We'll email you a payment link as soon as it's approved.
                   </p>
                   <a
                     href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}

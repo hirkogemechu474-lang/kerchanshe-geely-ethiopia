@@ -145,7 +145,7 @@ export default function ModelsPage() {
             Geely Models
           </h1>
           <p className="text-[#c3d2ea] text-base max-w-2xl leading-relaxed">
-            Discover the complete Geely lineup — from urban SUVs to refined sedans and electric
+            Discover the complete Geely lineup, from urban SUVs to refined sedans and electric
             vehicles. Every model is loaded live from the database and managed in the admin panel.
           </p>
         </div>

@@ -16,11 +16,14 @@ const TIMEFRAME_LABELS: Record<string, string> = {
 };
 
 interface QuoteFormData {
+  title: string;
+  titleOther?: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   address: string;
+  customerTin?: string;
   nationalId: string;
   idDocumentType: string;
   vehicleId: string;
@@ -66,6 +69,7 @@ export default function QuotePage() {
     reset,
   } = useForm<QuoteFormData>({
     defaultValues: {
+      title: "",
       vehicleId: preselectedModel || "",
       financingNeeded: "not-sure",
       tradeIn: "no",
@@ -74,6 +78,7 @@ export default function QuotePage() {
   });
 
   const watchTradeIn = watch("tradeIn");
+  const watchTitle = watch("title");
 
   useEffect(() => {
     if (!configurationParam) return;
@@ -226,11 +231,13 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          title: data.title === "other" ? (data.titleOther || undefined) : (data.title || undefined),
           customerName: `${data.firstName} ${data.lastName}`,
           phoneNumber: data.phone,
           email: data.email,
           nationalId: data.nationalId,
           customerAddress: data.address,
+          customerTin: data.customerTin || undefined,
           idDocumentType: data.idDocumentType,
           idPhotoUrl: idPhotoUrl || undefined,
           vehicleModel: selectedVehicle?.name || data.vehicleId,
@@ -290,7 +297,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       {
         icon: Mail,
         title: "You get a secure payment link",
-        description: "Only once it's approved — there's nothing to pay right now.",
+        description: "Only once it's approved, there's nothing to pay right now.",
       },
     ];
 
@@ -498,6 +505,30 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      Title <span className="text-steel dark:text-steel-light font-normal">(optional)</span>
+                    </label>
+                    <select
+                      {...register("title")}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                    >
+                      <option value="">Select title</option>
+                      <option value="Ato">Ato</option>
+                      <option value="Miss">Miss</option>
+                      <option value="Dr">Dr</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {watchTitle === "other" && (
+                      <input
+                        type="text"
+                        {...register("titleOther")}
+                        className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue mt-2"
+                        placeholder="Enter title"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -593,6 +624,18 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
                   <div>
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      Customer TIN <span className="text-steel dark:text-steel-light font-normal">(optional, if you have one)</span>
+                    </label>
+                    <input
+                      type="text"
+                      {...register("customerTin")}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      placeholder="Taxpayer Identification Number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       ID Document Type <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -627,7 +670,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
-                      ID Document Photo <span className="text-steel dark:text-steel-light font-normal">(optional — speeds up verification)</span>
+                      ID Document Photo <span className="text-steel dark:text-steel-light font-normal">(optional, speeds up verification)</span>
                     </label>
                     <div className="flex items-center gap-4">
                       {idPhotoUrl ? (

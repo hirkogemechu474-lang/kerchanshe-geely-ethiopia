@@ -162,7 +162,7 @@ export default function PurchasePage() {
             </div>
             <div>
               <div className="text-xl font-bold text-navy dark:text-ice">
-                {loading ? "—" : banks.length}
+                {loading ? "..." : banks.length}
               </div>
               <div className="text-sm text-steel dark:text-steel-light">
                 Partner financing banks
@@ -175,7 +175,7 @@ export default function PurchasePage() {
             </div>
             <div>
               <div className="text-xl font-bold text-navy dark:text-ice">
-                {loading ? "—" : vehicles.length}
+                {loading ? "..." : vehicles.length}
               </div>
               <div className="text-sm text-steel dark:text-steel-light">
                 Available Geely models

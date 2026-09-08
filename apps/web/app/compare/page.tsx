@@ -157,7 +157,7 @@ export default function ComparePage() {
         getSpec(
           vehicle,
           "warranty.basic",
-          getSpec(vehicle, "warranty.powertrain", "—")
+          getSpec(vehicle, "warranty.powertrain", "N/A")
         ),
     },
   ];
@@ -167,7 +167,7 @@ export default function ComparePage() {
     (Array.isArray(vehicle.images) && vehicle.images[0]) ||
     null;
 
-  const getSpec = (vehicle: Vehicle, path: string, defaultValue = "—") => {
+  const getSpec = (vehicle: Vehicle, path: string, defaultValue = "N/A") => {
     const keys = path.split(".");
     let value: any = vehicle.specifications || {};
 

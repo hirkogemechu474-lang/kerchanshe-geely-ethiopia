@@ -3,10 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import imageLoader from "@/lib/imageLoader";
-import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 
 interface Category {
   id: string;
@@ -27,6 +24,10 @@ interface Vehicle {
   images: unknown;
   badge?: string | null;
   isFeatured?: boolean;
+  tagline?: string | null;
+  enginePower?: string | null;
+  acceleration?: string | null;
+  fuelTankCapacity?: string | null;
 }
 
 function publicMediaUrl(url: string | null | undefined): string {
@@ -54,10 +55,102 @@ const FALLBACK_CATEGORIES: Category[] = [
 ];
 
 interface ModelsShowcaseProps {
-  // Fetched server-side (see app/page.tsx) so the grid renders on first paint
-  // instead of showing an empty/loading state until the client fetch resolves.
   initialCategories?: Category[];
   initialVehicles?: Vehicle[];
+}
+
+function VehicleCard({ vehicle, size }: { vehicle: Vehicle; size: "hero" | "large" | "medium" | "small" }) {
+  const specs: { label: string; value: string }[] = [];
+  if (vehicle.enginePower) specs.push({ label: "Max Power", value: vehicle.enginePower });
+  if (vehicle.acceleration) specs.push({ label: "0-100km/h Acceleration", value: vehicle.acceleration });
+  if (vehicle.fuelTankCapacity) specs.push({ label: "Fuel Tank Capacity", value: vehicle.fuelTankCapacity });
+
+  const sizeClasses = {
+    hero: "col-span-full",
+    large: "col-span-full md:col-span-1",
+    medium: "col-span-full sm:col-span-1",
+    small: "col-span-1",
+  };
+
+  const imageHeightClasses = {
+    hero: "h-[300px] sm:h-[400px] md:h-[480px] lg:h-[540px]",
+    large: "h-[280px] sm:h-[340px] md:h-[400px]",
+    medium: "h-[220px] sm:h-[260px] md:h-[300px]",
+    small: "h-[180px] sm:h-[220px] md:h-[260px]",
+  };
+
+  const nameSizeClasses = {
+    hero: "text-[28px] sm:text-[36px] md:text-[48px] lg:text-[56px]",
+    large: "text-[24px] sm:text-[30px] md:text-[36px]",
+    medium: "text-[20px] sm:text-[24px] md:text-[28px]",
+    small: "text-[18px] sm:text-[20px] md:text-[24px]",
+  };
+
+  const specSizeClasses = {
+    hero: "text-[24px] md:text-[32px] lg:text-[36px]",
+    large: "text-[20px] md:text-[28px]",
+    medium: "text-[18px] md:text-[22px]",
+    small: "text-[16px] md:text-[18px]",
+  };
+
+  return (
+    <div className={`${sizeClasses[size]} group`}>
+      <Link href={`/models/${vehicle.slug}`} className="block">
+        <div className="relative w-full bg-gradient-to-b from-[#f0f2f5] to-[#e8eaed] dark:from-midnight-card dark:to-midnight-surface rounded-2xl overflow-hidden">
+          {/* Vehicle image */}
+          <div className={`relative w-full ${imageHeightClasses[size]} flex items-center justify-center p-4 md:p-8`}>
+            {vehicle.heroImageUrl ? (
+              <Image
+                src={publicMediaUrl(vehicle.heroImageUrl)}
+                alt={vehicle.name}
+                loader={imageLoader}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-contain group-hover:scale-105 transition-transform duration-500"
+                priority={size === "hero"}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-steel dark:text-steel-light text-sm">
+                {vehicle.name}
+              </div>
+            )}
+          </div>
+
+          {/* Content overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 md:p-6">
+            <h3 className={`disp ${nameSizeClasses[size]} text-white font-extrabold leading-tight uppercase`}>
+              {vehicle.name}
+            </h3>
+            {vehicle.tagline && (
+              <p className="text-[14px] md:text-[16px] text-white/80 font-semibold uppercase mt-1 tracking-wide">
+                {vehicle.tagline}
+              </p>
+            )}
+
+            {/* Specs row */}
+            {specs.length > 0 && size !== "small" && (
+              <div className="flex flex-wrap gap-4 md:gap-6 mt-3">
+                {specs.map((spec) => (
+                  <div key={spec.label} className="text-left">
+                    <div className={`${specSizeClasses[size]} font-extrabold text-white leading-none`}>
+                      {spec.value}
+                    </div>
+                    <div className="text-[10px] md:text-[11px] text-white/60 mt-0.5">
+                      {spec.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3 inline-block bg-white dark:bg-ice text-navy dark:text-navy text-[12px] md:text-[13px] font-bold px-5 py-2 rounded group-hover:bg-gray-100 transition-colors">
+              Discover More
+            </div>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
 }
 
 export default function ModelsShowcase({ initialCategories, initialVehicles }: ModelsShowcaseProps) {
@@ -65,147 +158,70 @@ export default function ModelsShowcase({ initialCategories, initialVehicles }: M
     initialCategories?.length ? initialCategories : FALLBACK_CATEGORIES
   );
   const [vehicles] = useState<Vehicle[]>(initialVehicles ?? []);
-  const [active, setActive] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>("all");
 
-  const tabs = useMemo(() => {
-    return [{ id: "all", name: "All Models", slug: "all", description: null }, ...categories];
-  }, [categories]);
+  const tabs = useMemo(() => categories, [categories]);
 
-  const visibleVehicles = useMemo(() => {
-    if (active === "all") return vehicles;
-    return vehicles.filter((v) => categoryMatches(active, v));
-  }, [vehicles, active]);
+  const filteredVehicles = useMemo(() => {
+    if (activeTab === "all") return vehicles;
+    return vehicles.filter((v) => categoryMatches(activeTab, v));
+  }, [vehicles, activeTab]);
+
+  const count = filteredVehicles.length;
+
+  const gridConfig = useMemo(() => {
+    if (count === 0) return { cols: "", gap: "" };
+    if (count === 1) return { cols: "grid-cols-1", gap: "gap-0" };
+    if (count === 2) return { cols: "grid-cols-1 md:grid-cols-2", gap: "gap-4 md:gap-6" };
+    if (count === 3) return { cols: "grid-cols-1 md:grid-cols-3", gap: "gap-4 md:gap-6" };
+    return { cols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4", gap: "gap-4 md:gap-6" };
+  }, [count]);
 
   return (
-    <section className="bg-white dark:bg-midnight-surface py-16 md:py-20 transition-colors">
+    <section className="bg-white dark:bg-midnight-surface py-12 md:py-16 lg:py-20 transition-colors">
       <div className="page-container">
-        {/* Section header */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-10">
-          <div>
-            <div className="text-[12px] tracking-[0.2em] text-active-blue font-bold mb-3 uppercase">
-              Models
-            </div>
-            <h2 className="disp text-[30px] md:text-[40px] text-navy dark:text-ice font-extrabold leading-tight">
-              Find Your Geely
-            </h2>
-            <p className="text-steel dark:text-steel-light text-sm md:text-[15px] mt-2 max-w-xl">
-              From urban SUVs to refined sedans and zero-emission electric vehicles — explore the
-              range built for every Ethiopian road.
-            </p>
-          </div>
-          <Link
-            href="/models"
-            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-active-blue border-b border-active-blue pb-0.5 hover:opacity-75 transition-opacity whitespace-nowrap"
-          >
-            Discover More
-            <span aria-hidden>&rarr;</span>
-          </Link>
-        </div>
-
+        <h2 className="text-2xl md:text-3xl font-bold text-navy dark:text-ice text-center mb-8 md:mb-10">
+          Explore Our Models
+        </h2>
         {/* Category tabs */}
-        <div className="flex flex-wrap gap-2 md:gap-3 mb-10">
-          {tabs.map((tab) => {
-            const count = tab.id === "all" ? vehicles.length : categories.find((c) => c.id === tab.id)?._count?.vehicles ?? undefined;
-            const isActive = active === tab.slug;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActive(tab.slug)}
-                className={`px-5 md:px-6 py-2.5 rounded-full text-[13px] md:text-sm font-semibold border transition-all ${
-                  isActive
-                    ? "bg-navy text-white border-navy shadow-md shadow-navy/15"
-                    : "bg-white dark:bg-midnight-surface text-navy dark:text-ice border-line dark:border-midnight-line hover:border-active-blue hover:text-active-blue"
-                }`}
-              >
-                {tab.name}
-                {typeof count === "number" && (
-                  <span className={`ml-2 text-[11px] ${isActive ? "text-white/70" : "text-steel dark:text-steel-light"}`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="flex justify-center mb-10 md:mb-14">
+          <div className="inline-flex flex-wrap justify-center gap-2 bg-[#f5f5f5] dark:bg-midnight-card rounded-full p-1.5">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.slug;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.slug)}
+                  className={`px-5 md:px-6 py-2 rounded-full text-[13px] md:text-sm font-semibold transition-all ${
+                    isActive
+                      ? "bg-white dark:bg-midnight-surface text-navy dark:text-ice shadow-sm"
+                      : "text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice"
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Vehicle grid */}
-        {visibleVehicles.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-steel dark:text-steel-light text-sm mb-4">No models available in this category yet.</p>
-            <Button href="/models" variant="solid" size="md">
-              View All Models
-            </Button>
+        {count === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-steel dark:text-steel-light text-sm">No models available in this category yet.</p>
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              variants={{
-                hidden: {},
-                visible: { transition: { staggerChildren: 0.09 } },
-              }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
-            >
-              {visibleVehicles.map((vehicle) => {
-                const imageUrl = publicMediaUrl(vehicle.heroImageUrl) || (Array.isArray(vehicle.images) ? publicMediaUrl(vehicle.images[0]) : null);
-                const label = vehicle.vehicleCategory?.name || vehicle.category;
-                return (
-                  <motion.div
-                    key={vehicle.id}
-                    className="group"
-                    variants={{
-                      hidden: { opacity: 0, x: -48 },
-                      visible: { opacity: 1, x: 0 },
-                    }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  >
-                    <Link href={`/models/${vehicle.slug}`} className="block">
-                      <Card variant="media" className="relative aspect-[4/3] bg-[#eef2f7]">
-                        {imageUrl ? (
-                          <Image
-                            src={imageUrl}
-                            alt=""
-                            loader={imageLoader}
-                            fill
-                            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[11px] text-steel dark:text-steel-light px-6 text-center">
-                            {vehicle.name}
-                          </div>
-                        )}
-                        {vehicle.isFeatured && (
-                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-navy text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                            Featured
-                          </span>
-                        )}
-                      </Card>
-                      <div className="pt-4">
-                        <div className="text-[11px] uppercase tracking-[0.14em] text-steel dark:text-steel-light font-semibold">
-                          {label}
-                        </div>
-                        <h3 className="disp text-[18px] text-navy dark:text-ice font-bold mt-1 group-hover:text-active-blue transition-colors">
-                          {vehicle.name}
-                        </h3>
-                      </div>
-                    </Link>
-                    <div className="flex items-center gap-2.5 mt-4">
-                      <Button href={`/models/${vehicle.slug}`} variant="solid" size="sm" className="flex-1">
-                        Explore
-                      </Button>
-                      <Button href={`/compare?add=${vehicle.id}`} variant="outline" tone="light" size="sm" className="flex-1">
-                        Compare
-                      </Button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
+          <div className={`grid ${gridConfig.cols} ${gridConfig.gap}`}>
+            {filteredVehicles.map((vehicle, idx) => {
+              let size: "hero" | "large" | "medium" | "small";
+              if (count === 1) size = "hero";
+              else if (count === 2) size = "large";
+              else if (count === 3) size = "medium";
+              else size = idx < 2 ? "large" : "small";
+
+              return <VehicleCard key={vehicle.id} vehicle={vehicle} size={size} />;
+            })}
+          </div>
         )}
       </div>
     </section>

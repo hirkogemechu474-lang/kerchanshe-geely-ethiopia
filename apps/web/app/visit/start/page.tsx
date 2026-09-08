@@ -33,7 +33,7 @@ const STEPS = [
   {
     icon: UserPlus,
     title: '1. Register',
-    description: 'Just your name, phone, and email — no password, no account.',
+    description: 'Just your name, phone, and email. No password, no account.',
   },
   {
     icon: Car,

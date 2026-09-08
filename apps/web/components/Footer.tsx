@@ -86,7 +86,7 @@ interface ContactInfo {
 
 const FALLBACK_CONTACT: ContactInfo = {
   headquarters: {
-    name: 'Geely Ethiopia — Kerchanshe Group Geely HQ',
+    name: 'Geely Ethiopia, Kerchanshe Group Geely HQ',
     address: {
       street: 'Sarbet Area',
       area: 'Bole Sub-city',

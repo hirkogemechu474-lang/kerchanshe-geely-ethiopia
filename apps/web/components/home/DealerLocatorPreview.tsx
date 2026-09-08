@@ -55,7 +55,7 @@ export default function DealerLocatorPreview() {
           </h2>
           <p className="text-[#c3d2ea] text-[15px] leading-relaxed">
             Search by city or region to find showrooms, service centers, opening hours and contact
-            details — and book a test drive or service directly.
+            details, and book a test drive or service directly.
           </p>
         </div>
 

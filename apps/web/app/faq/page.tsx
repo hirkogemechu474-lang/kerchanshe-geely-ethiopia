@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions | Geely Ethiopia",
   description:
-    "Find answers to common questions about Geely vehicles in Ethiopia — warranty coverage, financing, test drives, trade-ins, servicing, electric vehicle charging, and more.",
+    "Find answers to common questions about Geely vehicles in Ethiopia: warranty coverage, financing, test drives, trade-ins, servicing, electric vehicle charging, and more.",
   keywords:
     "Geely Ethiopia FAQ, Geely questions, Geely warranty, Geely financing, Geely service, electric vehicle charging Ethiopia, Geely trade-in",
   alternates: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Frequently Asked Questions | Geely Ethiopia",
     description:
-      "Find answers to common questions about Geely vehicles in Ethiopia — warranty, financing, test drives, servicing, and more.",
+      "Find answers to common questions about Geely vehicles in Ethiopia: warranty, financing, test drives, servicing, and more.",
     url: "https://geelyethiopia.com/faq",
     siteName: "Geely Ethiopia",
     locale: "en_ET",

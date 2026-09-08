@@ -73,7 +73,7 @@ const FALLBACK: AboutContent = {
     eyebrow: 'DESIGN PHILOSOPHY',
     title: 'Inspired by Nature, Engineered for Tomorrow',
     paragraphs: [
-      "Every Geely vehicle is inspired by nature's energy — from Stonehenge-inspired Matrix LED headlight designs to bold Icefall vertical grilles and lava-flow LED taillights.",
+      "Every Geely vehicle is inspired by nature's energy, from Stonehenge-inspired Matrix LED headlight designs to bold Icefall vertical grilles and lava-flow LED taillights.",
       "This design language carries through every model Kerchanshe Group Geely brings to Ethiopia, pairing striking presence with world-class engineering and safety.",
     ],
     image: '',
@@ -84,7 +84,7 @@ const FALLBACK: AboutContent = {
     paragraphs: [
       'In April 2025, Kerchanshe Group announced a landmark agreement with Zhejiang Geely Holding Group (ZGH) to become the exclusive, official distributor of Geely vehicles in Ethiopia.',
       "This partnership brings together Geely's world-class automotive engineering, safety innovation, and design excellence with Kerchanshe Group's 20+ years of trusted local distribution, manufacturing infrastructure, and after-sales expertise.",
-      'Operating through Kerchanshe Group Geely, the motor vehicles division of Kerchanshe Group, we are not just importing vehicles — we are building a complete automotive ecosystem with plans for local assembly, job creation, and technology transfer.',
+      'Operating through Kerchanshe Group Geely, the motor vehicles division of Kerchanshe Group, we are not just importing vehicles. We are building a complete automotive ecosystem with plans for local assembly, job creation, and technology transfer.',
     ],
     highlights: [
       { value: '2025', label: 'Exclusive Partnership Announced' },
@@ -98,15 +98,15 @@ const FALLBACK: AboutContent = {
     eyebrow: 'OUR PURPOSE',
     mission: {
       title: 'Our Mission',
-      text: "Geely's mission is to design vehicles and technologies that put people first — combining innovation, safety, and smart engineering to make every journey better, brought to Ethiopia through Kerchanshe Group Geely's local expertise and support.",
+      text: "Geely's mission is to design vehicles and technologies that put people first, combining innovation, safety, and smart engineering to make every journey better, brought to Ethiopia through Kerchanshe Group Geely's local expertise and support.",
     },
     vision: {
       title: 'Our Vision',
-      text: 'To be the most competitive and respected global automotive brand, leading the transformation of the industry through innovation, sustainability, and human-centered design — with Kerchanshe Group Geely driving that vision forward in Ethiopia.',
+      text: 'To be the most competitive and respected global automotive brand, leading the transformation of the industry through innovation, sustainability, and human-centered design, with Kerchanshe Group Geely driving that vision forward in Ethiopia.',
     },
     values: [
       { icon: 'Zap', title: 'Innovation', description: 'We challenge limits with new ideas, smart technology, and forward-thinking design in every vehicle we bring to Ethiopia.' },
-      { icon: 'Award', title: 'Quality', description: "Every detail matters — we uphold Geely's global standards of precision, durability, and craftsmanship on every vehicle we sell and support." },
+      { icon: 'Award', title: 'Quality', description: "Every detail matters. We uphold Geely's global standards of precision, durability, and craftsmanship on every vehicle we sell and support." },
       { icon: 'Heart', title: 'Responsibility', description: 'We drive progress with integrity, prioritizing safety, sustainability, and a positive impact on Ethiopian communities.' },
     ],
     image: '',
@@ -128,7 +128,7 @@ const FALLBACK: AboutContent = {
       "One of the world's leading automotive groups, with a portfolio spanning multiple brands and innovative technologies.",
     features: [
       { icon: 'Globe', title: 'Global Reach', description: 'Operations in over 40 countries worldwide with production facilities across Asia, Europe, and beyond.' },
-      { icon: 'Award', title: 'Premium Brands', description: 'Owns Volvo Cars, Polestar, Lynk & Co, Zeekr, Geometry, and Lotus — recognized for excellence.' },
+      { icon: 'Award', title: 'Premium Brands', description: 'Owns Volvo Cars, Polestar, Lynk & Co, Zeekr, Geometry, and Lotus, recognized for excellence.' },
       { icon: 'Zap', title: 'Innovation Leader', description: 'Pioneering electric and new energy vehicles with advanced battery and autonomous driving technology.' },
       { icon: 'Shield', title: 'Safety First', description: 'Multiple 5-star safety ratings globally, with C-NCAP and Euro NCAP recognition for engineering excellence.' },
     ],

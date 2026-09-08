@@ -73,7 +73,7 @@ export default function CsiSurveyPage({ params }: { params: Promise<{ jobCardId:
               </h1>
               <p className="text-steel dark:text-steel-light">
                 {state.reason === 'already_submitted' &&
-                  "We've already received your feedback for this visit — thank you!"}
+                  "We've already received your feedback for this visit, thank you!"}
                 {state.reason === 'not_closed' &&
                   "This service visit hasn't been marked as complete yet. Please check back once your vehicle has been picked up."}
                 {state.reason === 'not_found' && "We couldn't find a survey for this link."}

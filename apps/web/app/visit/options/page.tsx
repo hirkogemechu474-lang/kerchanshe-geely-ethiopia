@@ -59,7 +59,7 @@ function WelcomeContent() {
         {visit?.fullName ? `Welcome, ${visit.fullName}!` : 'Welcome!'}
       </h1>
       <p className="text-steel dark:text-steel-light mb-8">
-        Explore our full range of Geely vehicles — photos, videos, and complete specifications for every model.
+        Explore our full range of Geely vehicles: photos, videos, and complete specifications for every model.
       </p>
       <button
         onClick={() => router.push(`/models?visitId=${encodeURIComponent(visitId)}`)}

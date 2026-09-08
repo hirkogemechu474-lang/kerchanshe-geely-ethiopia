@@ -193,10 +193,10 @@ export default function ServiceCheckInPage() {
               <h1 className="text-2xl font-bold text-navy dark:text-ice mb-2">You&apos;re checked in!</h1>
               {result.matchedAppointment ? (
                 <p className="text-steel dark:text-steel-light mb-6">
-                  We found your appointment{result.serviceType ? ` for ${result.serviceType}` : ''} — please take a seat, an advisor will call you shortly.
+                  We found your appointment{result.serviceType ? ` for ${result.serviceType}` : ''}, please take a seat, an advisor will call you shortly.
                 </p>
               ) : (
-                <p className="text-steel dark:text-steel-light mb-6">Please take a seat — an advisor will call you shortly.</p>
+                <p className="text-steel dark:text-steel-light mb-6">Please take a seat, an advisor will call you shortly.</p>
               )}
               <div className="bg-ice dark:bg-midnight rounded-lg p-6 inline-block">
                 <p className="text-xs uppercase tracking-wide text-steel">Queue position</p>
@@ -262,13 +262,13 @@ export default function ServiceCheckInPage() {
                     <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-start gap-2">
                       <CircleCheck className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                       <p className="text-sm text-green-800">
-                        Welcome back, {vinLookup.customerName}! We found your {vinLookup.model || 'vehicle'} on file — your details are filled in below.
+                        Welcome back, {vinLookup.customerName}! We found your {vinLookup.model || 'vehicle'} on file, your details are filled in below.
                       </p>
                     </div>
                   )}
                   {vinLookup.status === 'not_found' && (
                     <p className="text-xs text-steel dark:text-steel-light mt-2">
-                      No record for this VIN yet — no problem, just fill in your details below.
+                      No record for this VIN yet, no problem, just fill in your details below.
                     </p>
                   )}
                 </div>

@@ -18,13 +18,13 @@ import {
 export const metadata: Metadata = {
   title: "Electric vs. Fuel | Which Geely Is Right for You?",
   description:
-    "Compare Geely's electric and fuel-powered vehicles side by side — running costs, charging vs. refueling, maintenance, range, and environmental impact — to find the right fit for how you drive.",
+    "Compare Geely's electric and fuel-powered vehicles side by side: running costs, charging vs. refueling, maintenance, range, and environmental impact, to find the right fit for how you drive.",
   keywords:
     "Geely electric vs fuel, EV comparison Ethiopia, Geely EV, Geely petrol, electric car running cost, fuel car maintenance",
   openGraph: {
     title: "Electric vs. Fuel | Which Geely Is Right for You?",
     description:
-      "A side-by-side look at Geely's electric and fuel-powered lineups — costs, charging, maintenance, range, and environmental impact.",
+      "A side-by-side look at Geely's electric and fuel-powered lineups: costs, charging, maintenance, range, and environmental impact.",
   },
 };
 
@@ -39,26 +39,26 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   {
     label: "Running Cost",
     icon: Wallet,
-    electric: "Lower cost per km — electricity is cheaper than petrol/diesel per kilometer driven.",
+    electric: "Lower cost per km, electricity is cheaper than petrol/diesel per kilometer driven.",
     fuel: "Higher cost per km, tracking fuel prices directly.",
   },
   {
     label: "Refueling / Charging",
     icon: Clock,
-    electric: "Charge overnight at home or at a public charging station — no fuel-station stops for daily driving.",
+    electric: "Charge overnight at home or at a public charging station, no fuel-station stops for daily driving.",
     fuel: "A few minutes at any fuel station, with a dense refueling network already in place.",
   },
   {
     label: "Maintenance",
     icon: Wrench,
-    electric: "Fewer moving parts (no engine oil, exhaust, or transmission service) — lower long-term maintenance.",
-    fuel: "Standard service intervals — oil changes, filters, and exhaust system upkeep.",
+    electric: "Fewer moving parts (no engine oil, exhaust, or transmission service), lower long-term maintenance.",
+    fuel: "Standard service intervals: oil changes, filters, and exhaust system upkeep.",
   },
   {
     label: "Range & Trip Planning",
     icon: MapPin,
     electric: "Best suited to daily commuting and city driving; longer trips need charging-stop planning.",
-    fuel: "Refuel almost anywhere in minutes — best for long-distance and rural driving today.",
+    fuel: "Refuel almost anywhere in minutes, best for long-distance and rural driving today.",
   },
   {
     label: "Performance",
@@ -69,7 +69,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   {
     label: "Environmental Impact",
     icon: Leaf,
-    electric: "Zero tailpipe emissions — cleaner running, especially in city traffic.",
+    electric: "Zero tailpipe emissions, cleaner running, especially in city traffic.",
     fuel: "Tailpipe emissions apply; modern engines are more efficient than older generations.",
   },
 ];
@@ -87,7 +87,7 @@ export default function EvVsFuelPage() {
             Electric vs. Fuel
           </h1>
           <p className="text-white/80 max-w-2xl mx-auto text-base lg:text-lg">
-            Every Geely — electric or fuel-powered — is built on the same commitment to safety,
+            Every Geely, electric or fuel-powered, is built on the same commitment to safety,
             technology, and quality. Here&apos;s how the two power a different kind of drive.
           </p>
         </div>
@@ -224,7 +224,7 @@ export default function EvVsFuelPage() {
         <div className="rounded-2xl bg-navy dark:bg-midnight-surface text-white p-8 lg:p-12 text-center">
           <h2 className="font-display font-bold text-2xl lg:text-3xl mb-3">Still not sure which is right for you?</h2>
           <p className="text-white/70 max-w-xl mx-auto mb-8">
-            Talk to a sales consultant, or take either type for a test drive — the best way to
+            Talk to a sales consultant, or take either type for a test drive. The best way to
             feel the difference is behind the wheel.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

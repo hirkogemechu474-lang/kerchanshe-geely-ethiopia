@@ -17,7 +17,7 @@ async function getServicePage(slug: string) {
     // loopback request to. Mirrors the NEXTAUTH_URL/NEXTAUTH_URL_INTERNAL
     // split already used for auth.
     const internalBaseUrl =
-      process.env.SITE_URL_INTERNAL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:7501';
+      process.env.SITE_URL_INTERNAL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.geelyauto.co.za';
     const response = await fetch(
       `${internalBaseUrl}/api/public/services/pages/${slug}`,
       { cache: 'no-store' }
