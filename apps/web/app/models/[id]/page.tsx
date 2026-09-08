@@ -41,6 +41,16 @@ function isVideoUrl(url: string): boolean {
   return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext));
 }
 
+// Picks a grid column count and tile aspect ratio from how many images/videos
+// are actually there, instead of a fixed 2-column grid that leaves an empty
+// cell (and a slab of whitespace) when a vehicle only has one or two photos.
+function mediaGridLayout(count: number): { gridClass: string; aspectClass: string } {
+  if (count <= 1) return { gridClass: 'grid-cols-1', aspectClass: 'aspect-[16/9]' };
+  if (count === 2) return { gridClass: 'grid-cols-1 sm:grid-cols-2', aspectClass: 'aspect-[4/3]' };
+  if (count === 3) return { gridClass: 'grid-cols-1 sm:grid-cols-3', aspectClass: 'aspect-[4/3]' };
+  return { gridClass: 'grid-cols-1 md:grid-cols-2', aspectClass: 'aspect-[4/3]' };
+}
+
 // One "feature story" entry (specs.interior.highlights / specs.exterior.highlights
 // — see apps/admin/lib/vehicle-specifications.ts for the authoring shape). Brand
 // new field, so values are treated as string-safe-but-possibly-missing/empty.
@@ -90,15 +100,6 @@ async function getShowcase(vehicleId: string) {
     const { data } = await apiClient.get(`/public/showcase?vehicleId=${encodeURIComponent(vehicleId)}`);
     const showcases = Array.isArray(data) ? data : [];
     return showcases[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getBrochureSetting() {
-  try {
-    const { data } = await apiClient.get("/public/vehicle-settings");
-    return parseSettingValue(data)?.brochure ?? null;
   } catch {
     return null;
   }
@@ -163,7 +164,7 @@ function FeatureStorySection({
                     <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4">
                       <ImageWithFallback
                         src={highlight.imageUrl}
-                        alt={`${vehicleName} — ${highlight.title}`}
+                        alt={`${vehicleName}: ${highlight.title}`}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                         iconClassName="h-10 w-10"
@@ -260,8 +261,7 @@ export default async function VehicleDetailPage({
     notFound();
   }
 
-  const [brochure, contactPhone, showcase] = await Promise.all([
-    getBrochureSetting(),
+  const [contactPhone, showcase] = await Promise.all([
     getContactPhone(),
     getShowcase(vehicle.slug || id),
   ]);
@@ -272,17 +272,21 @@ export default async function VehicleDetailPage({
   const visitParam = visitId ? `&visitId=${encodeURIComponent(visitId)}` : "";
   const detailsHrefFor = (slug: string) => `/models/${slug}${visitId ? `?visitId=${encodeURIComponent(visitId)}` : ""}`;
 
-  const brochureUrl = publicBrochureUrl(brochure?.url, `/api/vehicles/${vehicle.slug}/brochure`);
+  // Each vehicle owns its own brochure (Admin → Vehicles → Settings → 360°
+  // Showcase); when none has been uploaded, fall back to the auto-generated
+  // PDF built from this vehicle's own specs rather than any other vehicle's.
+  const brochureUrl = publicBrochureUrl(showcase?.brochureUrl, `/api/vehicles/${vehicle.slug}/brochure`);
   const contactPhoneHref = `tel:${contactPhone.replace(/[^0-9+]/g, "")}`;
   const whatsappNumber = contactPhone.replace(/[^0-9]/g, "");
   // Uploaded in Admin → Vehicles → Settings → 360° Showcase for this
   // vehicle's slug — the 360 section falls back to plain gallery images
   // when there's no showcase data.
-  const rawShowcaseViews: Array<{ angle?: string; imageUrl?: string; label?: string }> = Array.isArray(showcase?.views) ? showcase.views : [];
+  const rawShowcaseViews: Array<{ angle?: string; imageUrl?: string; label?: string; colorId?: string }> = Array.isArray(showcase?.views) ? showcase.views : [];
   const showcaseViews = rawShowcaseViews
-    .filter((v): v is { angle: string; imageUrl: string; label: string } => typeof v?.imageUrl === "string" && !!v.imageUrl)
-    .map((v) => ({ angle: v.angle ?? "", imageUrl: publicMediaUrl(v.imageUrl), label: v.label ?? "" }));
+    .filter((v): v is { angle: string; imageUrl: string; label: string; colorId?: string } => typeof v?.imageUrl === "string" && !!v.imageUrl)
+    .map((v) => ({ angle: v.angle ?? "", imageUrl: publicMediaUrl(v.imageUrl), label: v.label ?? "", colorId: v.colorId }));
   const showcaseVideoUrl: string | null = publicMediaUrl(showcase?.videoUrl) || null;
+  const showcaseModelUrl: string | null = publicMediaUrl(showcase?.modelUrl) || null;
 
   const imageList: string[] = Array.isArray(vehicle.images)
     ? vehicle.images.filter((image: unknown): image is string => typeof image === "string")
@@ -378,6 +382,8 @@ export default async function VehicleDetailPage({
   // vehicle hasn't had these set yet, so nothing goes blank mid-rollout.
   const dedicatedInteriorImages: string[] = Array.isArray(specs?.interior?.images) ? specs.interior.images : [];
   const dedicatedExteriorImages: string[] = Array.isArray(specs?.exterior?.images) ? specs.exterior.images : [];
+  const technologyMedia: string[] = (Array.isArray(specs?.technology?.images) ? specs.technology.images : []).map((url: string) => publicMediaUrl(url));
+  const safetyMedia: string[] = (Array.isArray(specs?.safety?.images) ? specs.safety.images : []).map((url: string) => publicMediaUrl(url));
   const interiorMedia = dedicatedInteriorImages.length > 0
     ? dedicatedInteriorImages.map((url: string) => publicMediaUrl(url))
     : publicImageList.slice(1, 5);
@@ -411,6 +417,8 @@ export default async function VehicleDetailPage({
   // will have [] for a while; both sections render nothing when empty.
   const exteriorHighlights = normalizeHighlights(specs?.exterior?.highlights);
   const interiorHighlights = normalizeHighlights(specs?.interior?.highlights);
+  const technologyHighlights = normalizeHighlights(specs?.technology?.highlights);
+  const safetyHighlights = normalizeHighlights(specs?.safety?.highlights);
 
   // Comfort & Experience, Technology, and Safety/ADAS used to render a
   // hardcoded, identical-for-every-vehicle feature list. These now read the
@@ -621,7 +629,16 @@ export default async function VehicleDetailPage({
                   className="w-full aspect-[16/9] max-h-[720px] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
                 >
                   {isVideoUrl(media) ? (
-                    <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
+                    <video
+                      src={media}
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      controls
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                    />
                   ) : (
                     <ImageWithFallback
                       src={media}
@@ -697,15 +714,25 @@ export default async function VehicleDetailPage({
                 </div>
               );
             }
+            const { gridClass, aspectClass } = mediaGridLayout(interiorMedia.length);
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`grid ${gridClass} gap-6`}>
                 {interiorMedia.map((media: string, index: number) => (
                   <div
                     key={`interior-${index}`}
-                    className="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
+                    className={`${aspectClass} rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4`}
                   >
                     {isVideoUrl(media) ? (
-                      <video src={media} className="w-full h-full object-cover" controls muted loop playsInline />
+                      <video
+                        src={media}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        controls
+                        muted
+                        loop
+                        playsInline
+                        preload="auto"
+                      />
                     ) : (
                       <ImageWithFallback
                         src={media}
@@ -756,7 +783,8 @@ export default async function VehicleDetailPage({
               </p>
             </div>
             {(() => {
-              const comfortImages = publicImageList.slice(2, 6);
+              const comfortImages = publicImageList.slice(2, 6).slice(0, 2);
+              const comfortGridClass = comfortImages.length <= 1 ? 'grid-cols-1' : 'grid-cols-2';
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                   <div className="space-y-6">
@@ -772,8 +800,8 @@ export default async function VehicleDetailPage({
                       </div>
                     ))}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {comfortImages.slice(0, 2).map((img: string, index: number) => (
+                  <div className={`grid ${comfortGridClass} gap-4`}>
+                    {comfortImages.map((img: string, index: number) => (
                       <div
                         key={`comfort-${index}`}
                         className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4"
@@ -822,6 +850,66 @@ export default async function VehicleDetailPage({
         </section>
       )}
 
+      {/* ── TECHNOLOGY MEDIA — dedicated photos/videos (admin: Vehicle Sections
+           → Technology tab → Photos & Videos). Renders nothing until a
+           vehicle has at least one entry. ── */}
+      {technologyMedia.length > 0 && (
+        <section id="section-technology-media" className="scroll-mt-[108px] bg-ice py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+          <div className="page-container">
+            <h2 className="disp text-3xl text-navy font-bold mb-6">Technology Media</h2>
+            {(() => {
+              const { gridClass, aspectClass } = mediaGridLayout(technologyMedia.length);
+              return (
+                <div className={`grid ${gridClass} gap-6`}>
+                  {technologyMedia.map((media, index) => (
+                    <div
+                      key={`technology-${index}`}
+                      className={`${aspectClass} rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4`}
+                    >
+                      {isVideoUrl(media) ? (
+                        <video
+                          src={media}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          controls
+                          muted
+                          loop
+                          playsInline
+                          preload="auto"
+                        />
+                      ) : (
+                        <ImageWithFallback
+                          src={media}
+                          alt={`${vehicle.name} technology ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          iconClassName="h-10 w-10"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {/* ── TECHNOLOGY DEEP DIVE — real, per-vehicle feature-story blocks
+           (admin: Vehicle Sections → Technology tab → Highlights). Brand new
+           field; renders nothing until a vehicle has at least one entry. ── */}
+      {technologyHighlights.length > 0 && (
+        <FeatureStorySection
+          id="section-technology-highlights"
+          eyebrow="Technology"
+          heading="Technology Deep Dive"
+          intro={`The engineering behind the ${vehicle.name}'s performance and efficiency.`}
+          highlights={technologyHighlights}
+          vehicleName={vehicle.name}
+          tone="ice"
+        />
+      )}
+
       {/* ── SAFETY/ADAS SECTION — real per-vehicle data (admin: Vehicle
            Sections → Safety tab: airbags/abs/esc/tpms/cameras/sensors/adas). ── */}
       {safetyCards.length > 0 && (
@@ -853,6 +941,66 @@ export default async function VehicleDetailPage({
         </section>
       )}
 
+      {/* ── SAFETY MEDIA — dedicated photos/videos (admin: Vehicle Sections
+           → Safety tab → Photos & Videos). Renders nothing until a vehicle
+           has at least one entry. ── */}
+      {safetyMedia.length > 0 && (
+        <section id="section-safety-media" className="scroll-mt-[108px] bg-white py-12 sm:scroll-mt-[116px] lg:scroll-mt-[84px]">
+          <div className="page-container">
+            <h2 className="disp text-3xl text-navy font-bold mb-6">Safety Media</h2>
+            {(() => {
+              const { gridClass, aspectClass } = mediaGridLayout(safetyMedia.length);
+              return (
+                <div className={`grid ${gridClass} gap-6`}>
+                  {safetyMedia.map((media, index) => (
+                    <div
+                      key={`safety-${index}`}
+                      className={`${aspectClass} rounded-xl overflow-hidden bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4`}
+                    >
+                      {isVideoUrl(media) ? (
+                        <video
+                          src={media}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          controls
+                          muted
+                          loop
+                          playsInline
+                          preload="auto"
+                        />
+                      ) : (
+                        <ImageWithFallback
+                          src={media}
+                          alt={`${vehicle.name} safety ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          iconClassName="h-10 w-10"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {/* ── SAFETY ENGINEERING — real, per-vehicle feature-story blocks
+           (admin: Vehicle Sections → Safety tab → Highlights). Brand new
+           field; renders nothing until a vehicle has at least one entry. ── */}
+      {safetyHighlights.length > 0 && (
+        <FeatureStorySection
+          id="section-safety-highlights"
+          eyebrow="Safety"
+          heading="Safety Engineering"
+          intro={`How the ${vehicle.name} is built to protect everyone inside it.`}
+          highlights={safetyHighlights}
+          vehicleName={vehicle.name}
+          tone="light"
+        />
+      )}
+
       {/* ── 360° SPOTLIGHT SECTION — color swatches (from the same admin-managed
            Vehicle Colors used above) let a visitor swap the displayed color,
            mirroring geely.com.eg/models/gx3-pro#360's "Discover Every Angle" ── */}
@@ -863,6 +1011,7 @@ export default async function VehicleDetailPage({
         heroImageUrl={publicHeroImageUrl}
         showcaseViews={showcaseViews}
         showcaseVideoUrl={showcaseVideoUrl}
+        showcaseModelUrl={showcaseModelUrl}
         colors={publicOptionColors}
       />
 

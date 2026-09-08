@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { ModelSpotlightSimple } from './ModelSpotlightSimple';
 import { ModelSpotlight360 } from './ModelSpotlight360';
-import { RotateCw, Camera } from 'lucide-react';
+import { Model3DViewer } from './Model3DViewer';
+import { RotateCw, Camera, Box, Maximize2 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
@@ -11,12 +13,16 @@ interface ViewEntry {
   angle: string;
   image: string;
   label: string;
+  /** Which VehicleColor this frame belongs to, when the showcase has a full spin sequence per color rather than one shared sequence. */
+  colorId?: string;
 }
 
 interface ShowcaseView {
   angle: string;
   imageUrl: string;
   label: string;
+  /** Optional — tags this frame as belonging to one VehicleColor's spin sequence (set from Admin → Vehicle Settings → 360° View). Vehicles without any tagged view keep today's single-shared-sequence behavior. */
+  colorId?: string;
 }
 
 interface VehicleColorOption {
@@ -40,6 +46,9 @@ interface Model360SectionProps {
   showcaseViews?: ShowcaseView[];
   /** Optional uploaded showcase video managed from the admin panel. */
   showcaseVideoUrl?: string | null;
+  /** Optional real .glb/.gltf 3D model managed from the admin panel — when
+   * set, adds a drag-to-rotate 3D Model tab alongside Video/360/Angles. */
+  showcaseModelUrl?: string | null;
   /** Managed in Admin → Vehicles → Colors. Selecting one swaps the front
    * view's image, mirroring geely.com.eg's color-switchable 360° viewer. */
   colors?: VehicleColorOption[];
@@ -63,9 +72,12 @@ export function Model360Section({
   heroImageUrl,
   showcaseViews = [],
   showcaseVideoUrl = null,
+  showcaseModelUrl = null,
   colors = [],
 }: Model360SectionProps) {
-  const [activeTab, setActiveTab] = useState<'video' | '360' | 'angles'>(showcaseVideoUrl ? 'video' : '360');
+  const [activeTab, setActiveTab] = useState<'video' | '3d' | '360' | 'angles'>(
+    showcaseVideoUrl ? 'video' : showcaseModelUrl ? '3d' : '360'
+  );
   const [lightbox, setLightbox] = useState<{ title: string; images: string[] } | null>(null);
   const colorsWithImages = colors.filter((c) => c.imageUrl);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(
@@ -82,6 +94,7 @@ export function Model360Section({
           angle: view.angle || String(index * (360 / showcaseViews.length)),
           image: view.imageUrl,
           label: view.label || `View ${index + 1}`,
+          colorId: view.colorId,
         }));
     }
 
@@ -127,9 +140,20 @@ export function Model360Section({
   };
 
   const baseViews = buildViewsFromImages();
-  const views = selectedColor
-    ? [{ ...baseViews[0], image: selectedColor.imageUrl as string, label: selectedColor.name }, ...baseViews.slice(1)]
-    : baseViews;
+  // A vehicle with a full 360° spin sequence per color (each view tagged with
+  // colorId in Admin → Vehicle Settings → 360° View) gets the whole sequence
+  // swapped on color selection, not just the first frame. Vehicles without
+  // any tagged view (the common case today) keep the old single-shared-
+  // sequence behavior of swapping just the front frame's image below.
+  const hasPerColorViews = baseViews.some((v) => v.colorId);
+  const colorScopedViews = hasPerColorViews && selectedColorId
+    ? baseViews.filter((v) => v.colorId === selectedColorId)
+    : null;
+  const views = colorScopedViews && colorScopedViews.length > 0
+    ? colorScopedViews
+    : selectedColor
+      ? [{ ...baseViews[0], image: selectedColor.imageUrl as string, label: selectedColor.name }, ...baseViews.slice(1)]
+      : baseViews;
   const rawImageUrls = views.map(v => v.image);
 
   return (
@@ -204,6 +228,17 @@ export function Model360Section({
               <Camera size={16} />
               Showcase Video
             </button>}
+            {showcaseModelUrl && <button
+              onClick={() => setActiveTab('3d')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                activeTab === '3d'
+                  ? 'bg-navy text-white shadow-md'
+                  : 'text-steel dark:text-steel-light hover:text-navy dark:hover:text-ice'
+              }`}
+            >
+              <Box size={16} />
+              3D Model
+            </button>}
             <button
               onClick={() => setActiveTab('360')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
@@ -234,13 +269,29 @@ export function Model360Section({
             <video
               className="mx-auto aspect-video max-h-[680px] w-full object-contain"
               src={showcaseVideoUrl}
+              autoPlay
               controls
+              muted
+              loop
               playsInline
-              preload="metadata"
+              preload="auto"
               aria-label={`${modelName} showcase video`}
             >
               <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
             </video>
+          </div>
+        ) : activeTab === '3d' && showcaseModelUrl ? (
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 shadow-2xl aspect-video">
+            <Model3DViewer src={showcaseModelUrl} alt={`${modelName} 3D model`} className="h-full w-full" />
+            <Link
+              href={`/models/${modelId}/3d-view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-navy/90 px-4 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-navy"
+            >
+              <Maximize2 size={16} />
+              Open Full 3D Viewer
+            </Link>
           </div>
         ) : activeTab === '360' ? (
           <ModelSpotlight360
