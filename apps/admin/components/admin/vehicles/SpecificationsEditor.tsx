@@ -13,7 +13,24 @@ import ImageUpload from './ImageUpload';
 import MediaBrowser from './MediaBrowser';
 
 /** Sections with a dedicated photo/video gallery, shown on the public model page beyond the generic text fields. */
-const IMAGE_GALLERY_TABS = new Set(['interior', 'exterior']);
+const IMAGE_GALLERY_TABS = new Set(['interior', 'exterior', 'safety', 'technology']);
+type GalleryTab = 'interior' | 'exterior' | 'safety' | 'technology';
+
+/** Where each tab's photo/video gallery actually renders on the public model page — see apps/web/app/models/[id]/page.tsx. */
+const GALLERY_SECTION_NAME: Record<GalleryTab, string> = {
+  interior: 'Interior Gallery',
+  exterior: 'Exteriors',
+  safety: 'Safety Media',
+  technology: 'Technology Media',
+};
+
+/** Where each tab's feature-story highlights actually render on the public model page. */
+const HIGHLIGHTS_SECTION_NAME: Record<GalleryTab, string> = {
+  interior: 'Comfort & Experience',
+  exterior: 'Exteriors',
+  safety: 'Safety Engineering',
+  technology: 'Technology Deep Dive',
+};
 
 interface SpecificationsEditorProps {
   specifications: any;
@@ -73,7 +90,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
   const datalistBaseId = useId();
   // Which highlight card's image picker is open — there can be many highlight
   // cards across the two tabs, all sharing this one MediaBrowser modal instance.
-  const [activeHighlightImageIndex, setActiveHighlightImageIndex] = useState<{ tab: 'interior' | 'exterior'; index: number } | null>(null);
+  const [activeHighlightImageIndex, setActiveHighlightImageIndex] = useState<{ tab: GalleryTab; index: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -92,27 +109,27 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
     onChange(toSpecificationsPayload(next));
   };
 
-  const updateImages = (tab: 'interior' | 'exterior', images: string[]) => {
+  const updateImages = (tab: GalleryTab, images: string[]) => {
     const next = { ...sections, [tab]: { ...sections[tab], images } };
     setSections(next);
     onChange(toSpecificationsPayload(next));
   };
 
-  const updateHighlights = (tab: 'interior' | 'exterior', highlights: SpecHighlight[]) => {
+  const updateHighlights = (tab: GalleryTab, highlights: SpecHighlight[]) => {
     const next = { ...sections, [tab]: { ...sections[tab], highlights } };
     setSections(next);
     onChange(toSpecificationsPayload(next));
   };
 
-  const addHighlight = (tab: 'interior' | 'exterior') => {
+  const addHighlight = (tab: GalleryTab) => {
     updateHighlights(tab, [...sections[tab].highlights, { title: '', description: '', imageUrl: '' }]);
   };
 
-  const updateHighlightField = (tab: 'interior' | 'exterior', index: number, field: 'title' | 'description', value: string) => {
+  const updateHighlightField = (tab: GalleryTab, index: number, field: 'title' | 'description', value: string) => {
     updateHighlights(tab, sections[tab].highlights.map((h, i) => (i === index ? { ...h, [field]: value } : h)));
   };
 
-  const removeHighlight = (tab: 'interior' | 'exterior', index: number) => {
+  const removeHighlight = (tab: GalleryTab, index: number) => {
     updateHighlights(tab, sections[tab].highlights.filter((_, i) => i !== index));
   };
 
@@ -125,8 +142,8 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
   const renderFields = (tabId: string) => {
     const values = (sections as Record<string, any>)[tabId] as Record<string, string>;
     const suggestionFields = tabId === 'performance' ? PERFORMANCE_SUGGESTION_FIELDS : {};
-    // `images` (interior/exterior only) is a string[] gallery, rendered separately below — not a text field.
-    return Object.entries(values).filter(([key]) => key !== 'images').map(([key, value]) => {
+    // `images` (string[] gallery) and `highlights` (SpecHighlight[]) are rendered separately below — not plain text fields.
+    return Object.entries(values).filter(([key]) => key !== 'images' && key !== 'highlights').map(([key, value]) => {
       const label = key.replace(/([A-Z])/g, ' $1').trim();
       const suggestionKey = suggestionFields[key as keyof typeof suggestionFields];
       const options = suggestionKey ? suggestions?.[suggestionKey] : undefined;
@@ -191,12 +208,12 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
             {selectedTab} Photos & Videos
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Dedicated {selectedTab} media shown in the {selectedTab === 'interior' ? 'Interior Gallery' : 'Exteriors'} section
+            Dedicated {selectedTab} media shown in the {GALLERY_SECTION_NAME[selectedTab as GalleryTab]} section
             on the vehicle detail page — add photos from multiple angles/sides, or a walkthrough video.
           </p>
           <ImageUpload
-            images={(sections[selectedTab as 'interior' | 'exterior'].images as string[]) || []}
-            onChange={(images) => updateImages(selectedTab as 'interior' | 'exterior', images)}
+            images={(sections[selectedTab as GalleryTab].images as string[]) || []}
+            onChange={(images) => updateImages(selectedTab as GalleryTab, images)}
           />
         </div>
       )}
@@ -208,10 +225,10 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Real, per-vehicle feature stories — each becomes an alternating photo + headline + description
-            block on the public model page&apos;s {selectedTab === 'interior' ? 'Comfort & Experience' : 'Exteriors'} section.
+            block on the public model page&apos;s {HIGHLIGHTS_SECTION_NAME[selectedTab as GalleryTab]} section.
           </p>
           <div className="space-y-4">
-            {(sections[selectedTab as 'interior' | 'exterior'].highlights as SpecHighlight[]).map((highlight, index) => (
+            {(sections[selectedTab as GalleryTab].highlights as SpecHighlight[]).map((highlight, index) => (
               <div key={index} className="flex flex-col sm:flex-row gap-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <ImageThumb src={highlight.imageUrl || null} alt={highlight.title || 'Highlight'} sizeClass="w-16 h-16" />
                 <div className="flex-1 space-y-3">
@@ -220,7 +237,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
                     <input
                       type="text"
                       value={highlight.title}
-                      onChange={(e) => updateHighlightField(selectedTab as 'interior' | 'exterior', index, 'title', e.target.value)}
+                      onChange={(e) => updateHighlightField(selectedTab as GalleryTab, index, 'title', e.target.value)}
                       placeholder="e.g. Bold Front Grille"
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
                     />
@@ -229,7 +246,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                     <textarea
                       value={highlight.description}
-                      onChange={(e) => updateHighlightField(selectedTab as 'interior' | 'exterior', index, 'description', e.target.value)}
+                      onChange={(e) => updateHighlightField(selectedTab as GalleryTab, index, 'description', e.target.value)}
                       rows={2}
                       placeholder="e.g. A striking front fascia with chrome accents and signature LED lighting."
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
@@ -238,14 +255,14 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setActiveHighlightImageIndex({ tab: selectedTab as 'interior' | 'exterior', index })}
+                      onClick={() => setActiveHighlightImageIndex({ tab: selectedTab as GalleryTab, index })}
                       className="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <ImageIcon className="w-4 h-4" />{highlight.imageUrl ? 'Change' : 'Choose'} Image
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeHighlight(selectedTab as 'interior' | 'exterior', index)}
+                      onClick={() => removeHighlight(selectedTab as GalleryTab, index)}
                       className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
                       aria-label="Remove highlight"
                     >
@@ -258,7 +275,7 @@ export default function SpecificationsEditor({ specifications, onChange }: Speci
           </div>
           <button
             type="button"
-            onClick={() => addHighlight(selectedTab as 'interior' | 'exterior')}
+            onClick={() => addHighlight(selectedTab as GalleryTab)}
             className="mt-4 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:text-gray-200 rounded-lg text-sm hover:bg-geely-blue/10 dark:hover:bg-geely-blue/20 hover:border-geely-blue transition-colors"
           >
             + Add Highlight

@@ -50,10 +50,18 @@ export interface CanonicalSpecSections {
     cameras: string;
     sensors: string;
     adas: string;
+    /** Dedicated safety-engineering photos/videos (crash structure, ADAS demos, etc.) — shown on the public model page's Safety Engineering section. */
+    images: string[];
+    /** Real, per-vehicle safety engineering stories (title/description/photo) — e.g. crash-structure or ADAS feature call-outs. */
+    highlights: SpecHighlight[];
   };
   technology: {
     infotainment: string;
     connectivity: string;
+    /** Dedicated technology photos/videos (powertrain/architecture CG, etc.) — shown on the public model page's Technology Deep Dive section. */
+    images: string[];
+    /** Real, per-vehicle technology stories (title/description/photo) — e.g. E-Drive, battery architecture, traction control. */
+    highlights: SpecHighlight[];
   };
   interior: {
     climate: string;
@@ -90,8 +98,8 @@ export interface CanonicalSpecSections {
 
 export const EMPTY_CANONICAL_SECTIONS: CanonicalSpecSections = {
   performance: { type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '', range: '', batteryCapacity: '', acceleration: '' },
-  safety: { airbags: '', abs: '', esc: '', tpms: '', cameras: '', sensors: '', adas: '' },
-  technology: { infotainment: '', connectivity: '' },
+  safety: { airbags: '', abs: '', esc: '', tpms: '', cameras: '', sensors: '', adas: '', images: [], highlights: [] },
+  technology: { infotainment: '', connectivity: '', images: [], highlights: [] },
   interior: { climate: '', seats: '', seatingCapacity: '', cargoVolume: '', images: [], highlights: [] },
   exterior: { lighting: '', wheels: '', length: '', width: '', height: '', wheelbase: '', groundClearance: '', curbWeight: '', images: [], highlights: [] },
   warranty: { basic: '', powertrain: '', corrosion: '', roadside: '', maintenance: '' },
@@ -124,10 +132,14 @@ export function normalizeToSections(raw: any): CanonicalSpecSections {
     safety: {
       ...EMPTY_CANONICAL_SECTIONS.safety,
       ...(r.safety || {}),
+      images: Array.isArray(r.safety?.images) ? r.safety.images : [],
+      highlights: normalizeHighlights(r.safety?.highlights),
     },
     technology: {
       infotainment: r.technology?.infotainment ?? legacyFeatures.infotainment ?? '',
       connectivity: r.technology?.connectivity ?? legacyFeatures.connectivity ?? '',
+      images: Array.isArray(r.technology?.images) ? r.technology.images : [],
+      highlights: normalizeHighlights(r.technology?.highlights),
     },
     interior: {
       climate: r.interior?.climate ?? legacyFeatures.climate ?? '',

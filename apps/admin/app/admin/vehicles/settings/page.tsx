@@ -33,18 +33,19 @@ interface VehicleSettingsData {
     standard: string;
     electric: string;
   };
-  brochure: {
-    url: string;
-    fileName: string;
-    fileSize: number | null;
-    uploadedAt: string | null;
-  };
 }
 
 interface ShowcaseView {
   angle: string;
   imageUrl: string;
   label: string;
+  /** Optional — ties this frame to one VehicleColor so the public 360° viewer swaps its whole spin sequence on color selection instead of just the front frame. Leave unset for a single shared sequence across all colors. */
+  colorId?: string;
+}
+
+interface VehicleColorOption {
+  id: string;
+  name: string;
 }
 
 interface Showcase {
@@ -55,6 +56,10 @@ interface Showcase {
   subtitle: string | null;
   views: ShowcaseView[];
   videoUrl: string | null;
+  modelUrl: string | null;
+  brochureUrl: string | null;
+  brochureFileName: string | null;
+  brochureFileSize: number | null;
   ctaText: string | null;
   ctaLink: string | null;
   sortOrder: number;
@@ -63,6 +68,13 @@ interface Showcase {
   scheduledAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface PickerVehicle {
+  id: string;
+  name: string;
+  slug: string;
+  model: string;
 }
 
 /* ---------- DEFAULTS ---------- */
@@ -77,7 +89,6 @@ const DEFAULT_DATA: VehicleSettingsData = {
     standard: 'Every 10,000 km or 6 months',
     electric: 'Every 20,000 km or 12 months',
   },
-  brochure: { url: '', fileName: '', fileSize: null, uploadedAt: null },
 };
 
 /* ---------- PAGE ---------- */
@@ -90,6 +101,8 @@ export default function VehicleSettingsPage() {
   const [section, setSection] = useState<string>('all');
 
   const [showcases, setShowcases] = useState<Showcase[]>([]);
+  const [vehicles, setVehicles] = useState<PickerVehicle[]>([]);
+  const [vehicleColors, setVehicleColors] = useState<VehicleColorOption[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     vehicleId: '',
@@ -98,6 +111,10 @@ export default function VehicleSettingsPage() {
     subtitle: 'Experience our vehicles like never before with our interactive 360° viewer.',
     views: [] as ShowcaseView[],
     videoUrl: '',
+    modelUrl: '',
+    brochureUrl: '',
+    brochureFileName: '',
+    brochureFileSize: null as number | null,
     ctaText: 'Explore in Detail',
     ctaLink: '',
     sortOrder: 0,
@@ -107,7 +124,15 @@ export default function VehicleSettingsPage() {
   });
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingModel, setUploadingModel] = useState(false);
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
+  // <model-viewer> is a custom element — its module has to load client-side
+  // before the tag is usable, so the live 3D preview below waits for it.
+  const [modelViewerReady, setModelViewerReady] = useState(false);
+
+  useEffect(() => {
+    import('@google/model-viewer').then(() => setModelViewerReady(true));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -118,7 +143,6 @@ export default function VehicleSettingsPage() {
           setData({
             warranty: { ...DEFAULT_DATA.warranty, ...(raw.warranty ?? {}) },
             serviceIntervals: { ...DEFAULT_DATA.serviceIntervals, ...(raw.serviceIntervals ?? {}) },
-            brochure: { ...DEFAULT_DATA.brochure, ...(raw.brochure ?? {}) },
           });
         }
       } catch {
@@ -128,7 +152,36 @@ export default function VehicleSettingsPage() {
       }
     })();
     fetchShowcases();
+    fetchVehicles();
   }, []);
+
+  async function fetchVehicles() {
+    try {
+      const res = await fetch('/api/vehicles?pageSize=200&page=1');
+      if (res.ok) {
+        const data = await res.json();
+        setVehicles(data.items || []);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    }
+  }
+
+  // Populates the per-view color picker below — only used when a vehicle has
+  // a full 360° spin sequence per color, so this is empty (and the picker
+  // hidden) for every vehicle that hasn't opted into that yet.
+  async function fetchColorsForVehicle(vehicleUuid: string) {
+    if (!vehicleUuid) { setVehicleColors([]); return; }
+    try {
+      const res = await fetch(`/api/admin/vehicle-colors?vehicleId=${encodeURIComponent(vehicleUuid)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVehicleColors((Array.isArray(data) ? data : data.items || []).map((c: any) => ({ id: c.id, name: c.name })));
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle colors:', error);
+    }
+  }
 
   const save = async () => {
     setSaving(true);
@@ -165,14 +218,18 @@ export default function VehicleSettingsPage() {
     }
   }
 
-  function resetForm() {
+  function resetForm(vehicle?: PickerVehicle) {
     setFormData({
-      vehicleId: '',
-      vehicleName: '',
+      vehicleId: vehicle?.slug || '',
+      vehicleName: vehicle?.name || '',
       title: 'Explore Every Angle',
       subtitle: 'Experience our vehicles like never before with our interactive 360° viewer.',
       views: [],
       videoUrl: '',
+      modelUrl: '',
+      brochureUrl: '',
+      brochureFileName: '',
+      brochureFileSize: null,
       ctaText: 'Explore in Detail',
       ctaLink: '',
       sortOrder: 0,
@@ -184,6 +241,8 @@ export default function VehicleSettingsPage() {
   }
 
   function editShowcase(showcase: Showcase) {
+    const vehicle = vehicles.find((v) => v.slug === showcase.vehicleId);
+    fetchColorsForVehicle(vehicle?.id || '');
     setFormData({
       vehicleId: showcase.vehicleId,
       vehicleName: showcase.vehicleName,
@@ -191,6 +250,10 @@ export default function VehicleSettingsPage() {
       subtitle: showcase.subtitle || '',
       views: showcase.views,
       videoUrl: showcase.videoUrl || '',
+      modelUrl: showcase.modelUrl || '',
+      brochureUrl: showcase.brochureUrl || '',
+      brochureFileName: showcase.brochureFileName || '',
+      brochureFileSize: showcase.brochureFileSize ?? null,
       ctaText: showcase.ctaText || '',
       ctaLink: showcase.ctaLink || '',
       sortOrder: showcase.sortOrder,
@@ -202,8 +265,30 @@ export default function VehicleSettingsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // Vehicle-first workflow: pick a vehicle up top and this section loads
+  // whichever brochure/video/3D-model/views already exist for it (or starts
+  // a blank record for that exact vehicle) — the only way to reach the
+  // uploads below, so nothing can end up attached to the wrong vehicle.
+  function selectVehicleForShowcase(slug: string) {
+    if (!slug) { resetForm(); setVehicleColors([]); return; }
+    const vehicle = vehicles.find((v) => v.slug === slug);
+    if (!vehicle) return;
+    fetchColorsForVehicle(vehicle.id);
+    const existing = showcases.find((s) => s.vehicleId === slug);
+    if (existing) {
+      editShowcase(existing);
+    } else {
+      resetForm(vehicle);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!formData.vehicleId) {
+      alert('Choose a vehicle in step 1 above first.');
+      return;
+    }
 
     try {
       const url = editingId
@@ -318,14 +403,11 @@ export default function VehicleSettingsPage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.url) throw new Error(result.error || 'Failed to upload brochure');
 
-      setData((current) => ({
+      setFormData((current) => ({
         ...current,
-        brochure: {
-          url: result.url,
-          fileName: file.name,
-          fileSize: file.size,
-          uploadedAt: new Date().toISOString(),
-        },
+        brochureUrl: result.url,
+        brochureFileName: file.name,
+        brochureFileSize: file.size,
       }));
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Failed to upload brochure');
@@ -354,6 +436,29 @@ export default function VehicleSettingsPage() {
       setError(uploadError instanceof Error ? uploadError.message : 'Failed to upload showcase video');
     } finally {
       setUploadingVideo(false);
+    }
+  }
+
+  async function handleShowcase3DModelUpload(file: File) {
+    if (!file) return;
+    if (!/\.(glb|gltf)$/i.test(file.name)) {
+      setError('Please upload a .glb or .gltf 3D model file.');
+      return;
+    }
+
+    setUploadingModel(true);
+    setError(null);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      const response = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.url) throw new Error(result.error || 'Failed to upload 3D model');
+      setFormData((current) => ({ ...current, modelUrl: result.url }));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Failed to upload 3D model');
+    } finally {
+      setUploadingModel(false);
     }
   }
 
@@ -514,37 +619,66 @@ export default function VehicleSettingsPage() {
       {(section === 'all' || section === '360') && (
         <SectionCard id="sec-360" title="360° Vehicle Showcase" subtitle="Manage interactive 360° viewer section on the homepage" icon={Layers} gradient="from-fuchsia-500 to-pink-600" accent="violet">
           <div className="space-y-6">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="rounded-2xl border-2 border-violet-200 bg-violet-50/40 p-6">
+              <h2 className="text-xl font-bold text-gray-900">1. Choose a vehicle</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Everything below — brochure, video, 3D model, and 360° photo views — belongs to
+                whichever vehicle is selected here, so it can never end up attached to the wrong
+                model. Picking a vehicle that already has a showcase loads it for editing.
+              </p>
+              <select
+                value={formData.vehicleId}
+                onChange={(e) => selectVehicleForShowcase(e.target.value)}
+                className="mt-4 w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent font-medium"
+              >
+                <option value="">Select a vehicle...</option>
+                {formData.vehicleId && !vehicles.some((v) => v.slug === formData.vehicleId) && (
+                  <option value={formData.vehicleId}>
+                    {formData.vehicleName || formData.vehicleId} (not a real vehicle — pick one below to fix)
+                  </option>
+                )}
+                {vehicles.map((v) => {
+                  const has = showcases.some((s) => s.vehicleId === v.slug);
+                  return (
+                    <option key={v.id} value={v.slug}>
+                      {v.name} ({v.model}){has ? ' — has a showcase' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className={`rounded-2xl border border-gray-200 bg-white p-6 ${!formData.vehicleId ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Frontend brochure</h2>
-                  <p className="mt-1 text-sm text-gray-500">Upload the PDF used by Download Brochure buttons on public vehicle pages.</p>
+                  <h2 className="text-xl font-bold text-gray-900">Brochure — {formData.vehicleName || 'select a vehicle above'}</h2>
+                  <p className="mt-1 text-sm text-gray-500">Upload the PDF used by this vehicle&apos;s Download Brochure button. Each vehicle has its own.</p>
                 </div>
-                {data.brochure.url && <a href={data.brochure.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-700 hover:text-fuchsia-800"><Eye className="h-4 w-4" />Preview PDF</a>}
+                {formData.brochureUrl && <a href={formData.brochureUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-700 hover:text-fuchsia-800"><Eye className="h-4 w-4" />Preview PDF</a>}
               </div>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-fuchsia-700">
-                  <input type="file" accept="application/pdf,.pdf" className="hidden" disabled={uploadingBrochure} onChange={(event) => {
+                  <input type="file" accept="application/pdf,.pdf" className="hidden" disabled={uploadingBrochure || !formData.vehicleId} onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) handleBrochureUpload(file);
                     event.currentTarget.value = '';
                   }} />
-                  <FileText className="h-4 w-4" />{uploadingBrochure ? 'Uploading...' : data.brochure.url ? 'Replace PDF' : 'Upload PDF'}
+                  <FileText className="h-4 w-4" />{uploadingBrochure ? 'Uploading...' : formData.brochureUrl ? 'Replace PDF' : 'Upload PDF'}
                 </label>
-                {data.brochure.url ? <div className="flex items-center gap-2 text-sm text-gray-600"><span className="max-w-64 truncate font-medium">{data.brochure.fileName || 'Uploaded brochure.pdf'}</span>{data.brochure.fileSize && <span className="text-gray-400">({(data.brochure.fileSize / 1024 / 1024).toFixed(1)} MB)</span>}<button type="button" onClick={() => setData((current) => ({ ...current, brochure: DEFAULT_DATA.brochure }))} className="text-red-600 hover:text-red-700">Remove</button></div> : <p className="text-sm text-gray-500">PDF only, up to 15 MB. Save Changes after uploading.</p>}
+                {formData.brochureUrl ? <div className="flex items-center gap-2 text-sm text-gray-600"><span className="max-w-64 truncate font-medium">{formData.brochureFileName || 'Uploaded brochure.pdf'}</span>{formData.brochureFileSize && <span className="text-gray-400">({(formData.brochureFileSize / 1024 / 1024).toFixed(1)} MB)</span>}<button type="button" onClick={() => setFormData((current) => ({ ...current, brochureUrl: '', brochureFileName: '', brochureFileSize: null }))} className="text-red-600 hover:text-red-700">Remove</button></div> : <p className="text-sm text-gray-500">PDF only, up to 15 MB. Save the showcase after uploading — without one, the site auto-generates a basic brochure from this vehicle&apos;s specs.</p>}
               </div>
             </div>
-            <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 p-6">
+            <div className={`rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 p-6 ${!formData.vehicleId ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">360° Showcase Video</h2>
-                  <p className="mt-1 text-sm text-gray-600">Upload an optional product video. It will appear in the public vehicle showcase video tab.</p>
+                  <h2 className="text-xl font-bold text-gray-900">360° Showcase Video — {formData.vehicleName || 'select a vehicle above'}</h2>
+                  <p className="mt-1 text-sm text-gray-600">Upload an optional product video. It will appear in this vehicle&apos;s public showcase video tab.</p>
                 </div>
                 {formData.videoUrl && <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-700 hover:text-fuchsia-800"><Eye className="h-4 w-4" />Preview video</a>}
               </div>
               <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
                 <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-fuchsia-700">
-                  <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" className="hidden" disabled={uploadingVideo} onChange={(event) => {
+                  <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" className="hidden" disabled={uploadingVideo || !formData.vehicleId} onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) handleShowcaseVideoUpload(file);
                     event.currentTarget.value = '';
@@ -559,6 +693,55 @@ export default function VehicleSettingsPage() {
               </div>
               {formData.videoUrl && <video src={formData.videoUrl} controls preload="metadata" className="mt-5 max-h-72 w-full rounded-xl border border-gray-200 bg-black" />}
             </div>
+            <div className={`rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 p-6 ${!formData.vehicleId ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Real 3D Model — {formData.vehicleName || 'select a vehicle above'} (optional)</h2>
+                  <p className="mt-1 text-sm text-gray-600">Upload a real 3D model file (.glb or .gltf) for a drag-to-rotate viewer. When set, this replaces the photo gallery above in the public "Explore Every Angle" section, and adds an "Open Full 3D Viewer" link that opens a dedicated full-page 3D view in a new tab.</p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-fuchsia-700">
+                  <input type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" className="hidden" disabled={uploadingModel || !formData.vehicleId} onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) handleShowcase3DModelUpload(file);
+                    event.currentTarget.value = '';
+                  }} />
+                  <Layers className="h-4 w-4" />{uploadingModel ? 'Uploading...' : formData.modelUrl ? 'Replace 3D Model' : 'Upload 3D Model'}
+                </label>
+                {formData.modelUrl ? (
+                  <button type="button" onClick={() => setFormData((current) => ({ ...current, modelUrl: '' }))} className="text-sm font-medium text-red-600 hover:text-red-700">Remove 3D model</button>
+                ) : (
+                  <p className="text-sm text-gray-500">.glb or .gltf, up to 25 MB. Save the showcase after uploading.</p>
+                )}
+              </div>
+              {formData.modelUrl && (
+                <div className="mt-5 h-72 w-full overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-slate-100 to-slate-200">
+                  {modelViewerReady ? (
+                    <model-viewer
+                      src={formData.modelUrl}
+                      alt="3D model preview"
+                      camera-controls
+                      auto-rotate
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">Loading preview...</div>
+                  )}
+                </div>
+              )}
+              {editingId && formData.modelUrl && (
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SITE_URL}/models/${formData.vehicleId}/3d-view`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-700 hover:text-fuchsia-800"
+                >
+                  <Eye className="h-4 w-4" />
+                  Open the live full-page 3D Viewer
+                </a>
+              )}
+            </div>
             {/* Create/Edit Form */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -566,34 +749,16 @@ export default function VehicleSettingsPage() {
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Vehicle Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.vehicleId}
-                      onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
-                      placeholder="coolray, emgrand, etc."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.vehicleName}
-                      onChange={(e) => setFormData({ ...formData, vehicleName: e.target.value })}
-                      placeholder="Geely Coolray"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
-                      required
-                    />
+                {/* Vehicle — chosen in step 1 above; shown read-only here so
+                    it can't drift from the brochure/video/3D-model uploads. */}
+                <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-gray-500">Vehicle</div>
+                  <div className="mt-0.5 flex items-center justify-between gap-3">
+                    <span className="font-semibold text-gray-900">
+                      {formData.vehicleName || 'None selected'}
+                      {formData.vehicleId && <span className="ml-2 font-normal text-gray-400">/models/{formData.vehicleId}</span>}
+                    </span>
+                    <span className="text-xs text-gray-400">Change it in step 1 above</span>
                   </div>
                 </div>
 
@@ -667,6 +832,24 @@ export default function VehicleSettingsPage() {
                             <Trash2 size={18} />
                           </button>
                         </div>
+
+                        {vehicleColors.length > 0 && (
+                          <div className="mb-3">
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                              Color (optional — tag this frame to give that color its own full 360° spin)
+                            </label>
+                            <select
+                              value={view.colorId || ''}
+                              onChange={(e) => updateView(index, 'colorId', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            >
+                              <option value="">Shared across all colors</option>
+                              {vehicleColors.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
@@ -886,7 +1069,7 @@ export default function VehicleSettingsPage() {
                   {editingId && (
                     <button
                       type="button"
-                      onClick={resetForm}
+                      onClick={() => resetForm()}
                       className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel
@@ -945,6 +1128,9 @@ export default function VehicleSettingsPage() {
                           )}
                           <p className="text-gray-500 text-sm">
                             {showcase.views.length} view{showcase.views.length !== 1 ? 's' : ''} • Sort: {showcase.sortOrder}
+                            {showcase.videoUrl && ' • Video'}
+                            {showcase.modelUrl && ' • 3D Model'}
+                            {showcase.brochureUrl && ' • Brochure'}
                           </p>
                         </div>
 
