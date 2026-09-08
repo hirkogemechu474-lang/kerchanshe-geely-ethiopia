@@ -241,6 +241,10 @@ model ShowroomVisit {
 // Quotations
 model Quotation {
   id                         String                       @id @default(uuid())
+  // Salutation printed alongside customerName (e.g. "Ato", "W/ro", "Dr") —
+  // a free-text field so the public form's "Other" option needs no enum
+  // change here; the form itself constrains the common choices.
+  title                      String?
   customerName               String
   phoneNumber                String
   // Optional: digital ("website") leads always have one (enforced in
@@ -1436,6 +1440,11 @@ model ChatbotConversation {
   // matching this codebase's existing decoupled-link convention (e.g.
   // ShowroomVisit.quotationId) rather than a Prisma relation.
   leadId        String?
+  // Last vehicle the rule engine confidently identified in this conversation
+  // (loose reference, same convention as leadId) — lets a bare follow-up
+  // ("does it have a sunroof?") resolve to a specific vehicle instead of
+  // losing context. Left stale on purpose when a later message is ambiguous.
+  lastVehicleId String?
   startedAt     DateTime         @default(now())
   lastMessageAt DateTime         @updatedAt
   messages      ChatbotMessage[]
@@ -1529,6 +1538,10 @@ model VehicleShowcase {
   subtitle    String? // e.g., "Experience our vehicles like never before"
   views       Json // Array of {angle, imageUrl, label}
   videoUrl    String? // Optional uploaded 360° showcase video
+  modelUrl    String? // Optional real 3D model file (.glb/.gltf) for an interactive drag-to-rotate viewer; shown instead of the photo gallery when set
+  brochureUrl      String? // Optional per-vehicle brochure PDF; overrides the auto-generated fallback at /api/vehicles/:id/brochure
+  brochureFileName String?
+  brochureFileSize Int?
   ctaText     String? // Call to action button text
   ctaLink     String? // Call to action button link
   sortOrder   Int           @default(0)
