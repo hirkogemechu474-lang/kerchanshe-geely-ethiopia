@@ -103,7 +103,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
   }, [searchQuery, categoryFilter, statusFilter, currentPage]);
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!confirm(`Permanently delete "${name}"? This cannot be undone — its colors, interiors and packages will be deleted too.`)) return;
 
     try {
       const response = await fetch(`/api/vehicles/${id}`, {
@@ -111,7 +111,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
       });
 
       if (response.ok) {
-        alert('Vehicle deleted successfully!');
+        alert('Vehicle permanently deleted.');
         fetchVehicles();
       } else {
         const error = await response.json();

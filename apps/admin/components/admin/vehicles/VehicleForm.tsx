@@ -210,13 +210,9 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
       };
 
       // `slug` is required and unique on Vehicle but this form never
-      // collects one — generate it from the name, same as every other admin
-      // form in this codebase. Only on create: changing an existing
-      // vehicle's slug on every edit would break already-shared/bookmarked
-      // URLs, so edits leave it untouched.
-      if (mode === 'create') {
-        dataToSave.slug = generateSlug(formData.name);
-      }
+      // collects one — regenerate it from the name on every save (create
+      // and edit) so the public URL always reflects the current name.
+      dataToSave.slug = generateSlug(formData.name);
 
       const url = mode === 'create'
         ? '/api/vehicles'
