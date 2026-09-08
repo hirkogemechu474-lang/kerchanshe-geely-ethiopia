@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { LeadService } from '../leads/lead.service';
+import { generateAiReply, isAiChatbotEnabled, type ChatTurn } from './groq.service';
 
 export interface ChatbotConfig {
   enabled: boolean;
@@ -17,7 +18,7 @@ export const DEFAULT_CHATBOT_CONFIG: ChatbotConfig = {
   fallbackMessage: "I couldn't find an answer to that. Our team is happy to help you directly on WhatsApp.",
 };
 
-export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'fallback';
+export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'greeting' | 'fallback';
 
 export interface ChatbotReply {
   answer: string;
@@ -25,12 +26,18 @@ export interface ChatbotReply {
   showWhatsAppCta: boolean;
 }
 
+export interface ChatbotAiStatus {
+  enabled: boolean;
+  provider: 'groq';
+  model: string;
+}
+
 // Ethiopian mobile number heuristic: 9 digits starting with 9, optionally
 // prefixed with a leading 0 or +251. Not a strict validator — good enough to
 // decide whether the customer volunteered a callback number in chat.
 const PHONE_PATTERN = /(?:\+?251|0)?9\d{8}\b/;
 
-const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 'fallback'>, string[]> = {
+const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 'greeting' | 'fallback'>, string[]> = {
   'test-drive': ['test drive', 'test-drive', 'testdrive', 'try the car', 'book a drive', 'schedule a drive'],
   financing: ['financ', 'loan', 'installment', 'down payment', 'downpayment', 'monthly payment', 'bank loan', 'credit', 'emi'],
   promotions: ['promo', 'offer', 'discount', 'deal', 'sale'],
@@ -38,6 +45,29 @@ const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 
 };
 
 const VEHICLE_KEYWORDS = ['model', 'models', 'car', 'suv', 'sedan', 'price', 'latest', 'new car', 'specs', 'specification', 'vehicle'];
+
+// Signals a follow-up question is still about the last vehicle this
+// conversation identified by name, even though this message doesn't name one
+// itself (e.g. "does it have a sunroof?" right after asking about the EX5).
+const VEHICLE_FOLLOWUP_KEYWORDS = [
+  'safety', 'feature', 'color', 'colour', 'interior', 'wheel', 'accessory', 'accessories',
+  'spec', 'warranty', 'engine', 'mileage', 'fuel', 'seat', 'dimension', 'power', 'torque',
+  'transmission', 'airbag', 'adas', 'camera', 'sensor', 'infotainment', 'connectivity',
+  'climate', 'lighting', 'range', 'battery', 'charging', 'trunk', 'cargo', 'boot',
+];
+const PRONOUN_FOLLOWUP_PATTERN = /\b(it|this|that)\b/;
+
+function looksLikeVehicleFollowUp(normalized: string): boolean {
+  return VEHICLE_FOLLOWUP_KEYWORDS.some((k) => normalized.includes(k)) || PRONOUN_FOLLOWUP_PATTERN.test(normalized);
+}
+
+// Small talk that isn't covered by any specific intent above but still
+// deserves a real reply instead of the generic "couldn't find an answer"
+// fallback. Checked only after every more specific intent has had a chance
+// to match, so e.g. "hi, book me a test drive" still answers the test drive.
+const GREETING_PATTERN = /\b(hi+|hello+|hey+|hiya|yo|sup|greetings|good morning|good afternoon|good evening)\b/;
+const THANKS_PATTERN = /\b(thanks?|thank you|thank u|thankyou|appreciate it|appreciated)\b/;
+const HELP_PATTERN = /\b(who are you|what are you|what can you do|what do you do|how (can|do) you help|how does this (work|chat)|what is this)\b/;
 
 function normalize(message: string): string {
   return message.toLowerCase().replace(/[^\w\s+]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -53,18 +83,85 @@ async function getConfig(): Promise<ChatbotConfig> {
   }
 }
 
+function getAiStatus(): ChatbotAiStatus {
+  return { enabled: isAiChatbotEnabled(), provider: 'groq', model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b' };
+}
+
+// Turns a flat string-valued spec section (as edited via the admin
+// SpecificationsEditor, e.g. { adas: '', airbags: '6' }) into grounding
+// lines, skipping blank fields the admin hasn't filled in.
+function humanizeKey(key: string): string {
+  const spaced = key.replace(/([A-Z])/g, ' $1');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function formatSpecSection(label: string, section: unknown): string[] {
+  if (!section || typeof section !== 'object') return [];
+  const parts = Object.entries(section as Record<string, unknown>)
+    .filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
+    .map(([k, v]) => `${humanizeKey(k)}: ${v}`);
+  return parts.length > 0 ? [`${label} — ${parts.join(', ')}`] : [];
+}
+
+type VehicleDetail = NonNullable<Awaited<ReturnType<typeof getVehicleDetail>>>;
+
+async function getVehicleDetail(vehicleId: string) {
+  return prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      badge: true,
+      category: true,
+      specifications: true,
+      colors: { select: { name: true }, orderBy: { sortOrder: 'asc' } },
+      interiors: { select: { name: true, materialType: true }, orderBy: { sortOrder: 'asc' } },
+      wheels: { select: { name: true, size: true }, orderBy: { sortOrder: 'asc' } },
+      accessories: { select: { name: true, category: true }, orderBy: { sortOrder: 'asc' } },
+    },
+  });
+}
+
+// Grounds the AI in everything admin-curated about one specific vehicle —
+// full specs JSON plus its colors/interior/wheel/accessory options — instead
+// of just its name and slug, so follow-up questions about features, safety,
+// or warranty terms can be answered from real data instead of a punt.
+function formatVehicleDetail(v: VehicleDetail): string {
+  const specs = (v.specifications as Record<string, unknown>) || {};
+  const lines: string[] = [`${v.name}${v.badge ? ` (${v.badge})` : ''} — /models/${v.slug}`];
+
+  lines.push(...formatSpecSection('Engine', specs.engine));
+  lines.push(...formatSpecSection('Dimensions', specs.dimensions));
+  lines.push(...formatSpecSection('Features', specs.features));
+  lines.push(...formatSpecSection('Safety', specs.safety));
+  lines.push(...formatSpecSection('Warranty', specs.warranty));
+
+  if (v.colors.length > 0) lines.push(`Available colors: ${v.colors.map((c) => c.name).join(', ')}`);
+  if (v.interiors.length > 0) lines.push(`Interior options: ${v.interiors.map((i) => `${i.name} (${i.materialType})`).join(', ')}`);
+  if (v.wheels.length > 0) lines.push(`Wheel options: ${v.wheels.map((w) => `${w.name} ${w.size}`).join(', ')}`);
+  if (v.accessories.length > 0) lines.push(`Accessories available: ${v.accessories.map((a) => a.name).join(', ')}`);
+
+  return lines.join('\n');
+}
+
 // `requireNameMention` restricts this to messages that name a specific
 // vehicle (a high-confidence signal, safe to check before the knowledge
 // base). Without it, generic words like "car" or "model" would shadow every
 // admin-curated knowledge base entry, since most questions mention a vehicle
 // in passing — so the generic keyword fallback only runs once the knowledge
 // base has already had a chance to answer.
-async function answerVehicles(normalized: string, requireNameMention: boolean): Promise<string | null> {
+//
+// When exactly one vehicle is named, the reply is grounded in that vehicle's
+// full detail (specs/colors/interior/wheels/accessories) rather than just a
+// name+link line, and its id is returned so the conversation can remember it
+// for follow-up questions that don't repeat the name.
+async function answerVehicles(normalized: string, requireNameMention: boolean): Promise<{ text: string; vehicleId: string | null } | null> {
   const vehicles = await prisma.vehicle.findMany({
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
     take: 8,
-    select: { name: true, slug: true, model: true, badge: true },
+    select: { id: true, name: true, slug: true, model: true, badge: true },
   });
   if (vehicles.length === 0) return null;
 
@@ -72,12 +169,18 @@ async function answerVehicles(normalized: string, requireNameMention: boolean): 
   const genericMatch = !requireNameMention && VEHICLE_KEYWORDS.some((k) => normalized.includes(k));
   if (mentioned.length === 0 && !genericMatch) return null;
 
+  if (mentioned.length === 1) {
+    const detail = await getVehicleDetail(mentioned[0].id);
+    if (detail) return { text: formatVehicleDetail(detail), vehicleId: detail.id };
+  }
+
   const shortlist = (mentioned.length > 0 ? mentioned : vehicles).slice(0, 5);
   const lines = shortlist.map((v) => {
     return `• ${v.name}${v.badge ? ` (${v.badge})` : ''} — /models/${v.slug}`;
   });
 
-  return `Here${shortlist.length === 1 ? "'s" : ' are'} our ${mentioned.length > 0 ? 'match' + (shortlist.length === 1 ? '' : 'es') : 'latest models'}:\n${lines.join('\n')}\n\nWant to book a test drive or see financing options for one of these?`;
+  const text = `Here${shortlist.length === 1 ? "'s" : ' are'} our ${mentioned.length > 0 ? 'match' + (shortlist.length === 1 ? '' : 'es') : 'latest models'}:\n${lines.join('\n')}\n\nWant to book a test drive or see financing options for one of these?`;
+  return { text, vehicleId: null };
 }
 
 async function answerTestDrive(): Promise<string> {
@@ -157,6 +260,14 @@ async function answerFromKnowledgeBase(normalized: string): Promise<{ id: string
   return best ? { id: best.id, answer: best.answer } : null;
 }
 
+function answerThanks(): string {
+  return "You're welcome! Let me know if you'd like to see our models, book a test drive, check financing, or find a dealer near you.";
+}
+
+function answerHelp(): string {
+  return 'I can help you explore our models, book a test drive, check current promotions, look at financing options, or find a dealer. Just ask me something like "what SUVs do you have" or "how do I book a test drive".';
+}
+
 async function maybeCaptureLead(
   conversationId: string,
   existingLeadId: string | null,
@@ -185,6 +296,16 @@ async function maybeCaptureLead(
   }
 }
 
+async function getRecentHistory(conversationId: string): Promise<ChatTurn[]> {
+  const recent = await prisma.chatbotMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: 'desc' },
+    take: 8,
+    select: { role: true, content: true },
+  });
+  return recent.reverse().map((m) => ({ role: m.role as 'user' | 'bot', content: m.content }));
+}
+
 async function handleMessage(sessionId: string, message: string): Promise<ChatbotReply> {
   const conversation = await prisma.chatbotConversation.upsert({
     where: { sessionId },
@@ -192,10 +313,14 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
     create: { sessionId },
   });
 
+  const history = isAiChatbotEnabled() ? await getRecentHistory(conversation.id) : [];
+  const config = await getConfig();
+
   const normalized = normalize(message);
   let intent: ChatbotIntent = 'fallback';
   let answer: string | null = null;
   let matchedKnowledgeId: string | null = null;
+  let matchedVehicleId: string | null = null;
 
   if (INTENT_KEYWORDS['test-drive'].some((k) => normalized.includes(k))) {
     intent = 'test-drive';
@@ -212,11 +337,14 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
   } else {
     // High-confidence check first: a named vehicle mention. The broader
     // "mentions a generic word like 'car' or 'model'" check is deferred
-    // below, after the knowledge base has had a chance to answer.
+    // below, after the knowledge base has had a chance to answer. A null
+    // result here (requireNameMention: true) reliably means this message
+    // doesn't name any vehicle at all — used below to detect follow-ups.
     const namedVehicleAnswer = await answerVehicles(normalized, true);
     if (namedVehicleAnswer) {
       intent = 'vehicles';
-      answer = namedVehicleAnswer;
+      answer = namedVehicleAnswer.text;
+      matchedVehicleId = namedVehicleAnswer.vehicleId;
     }
   }
 
@@ -229,31 +357,70 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
     }
   }
 
+  // This message didn't name a vehicle itself (else the branch above would
+  // have answered) and nothing else matched — if it reads like a follow-up
+  // ("does it have ADAS?") and we remember which vehicle this conversation
+  // was just discussing, ground the answer in that vehicle's full detail
+  // instead of falling through to the generic "latest models" list.
+  if (!answer && conversation.lastVehicleId && looksLikeVehicleFollowUp(normalized)) {
+    const detail = await getVehicleDetail(conversation.lastVehicleId);
+    if (detail) {
+      intent = 'vehicles';
+      answer = formatVehicleDetail(detail);
+      matchedVehicleId = detail.id;
+    }
+  }
+
   if (!answer) {
     const genericVehicleAnswer = await answerVehicles(normalized, false);
     if (genericVehicleAnswer) {
       intent = 'vehicles';
-      answer = genericVehicleAnswer;
+      answer = genericVehicleAnswer.text;
+      matchedVehicleId = genericVehicleAnswer.vehicleId;
     }
   }
 
-  const config = await getConfig();
-  if (!answer) {
-    intent = 'fallback';
-    answer = config.fallbackMessage;
+  if (!answer && GREETING_PATTERN.test(normalized)) {
+    intent = 'greeting';
+    answer = config.greeting;
+  } else if (!answer && THANKS_PATTERN.test(normalized)) {
+    intent = 'greeting';
+    answer = answerThanks();
+  } else if (!answer && HELP_PATTERN.test(normalized)) {
+    intent = 'greeting';
+    answer = answerHelp();
   }
+
+  const ruleBasedAnswer = answer;
+  if (!ruleBasedAnswer) {
+    intent = 'fallback';
+  }
+
+  // The rule engine already fetched real vehicles/promotions/dealers/financing
+  // for this intent — reuse that formatted text as grounding so the AI layer
+  // can only restate real data, never invent prices or specs.
+  const aiAnswer = await generateAiReply({ message, history, groundingContext: ruleBasedAnswer });
+  answer = aiAnswer ?? ruleBasedAnswer ?? config.fallbackMessage;
 
   await prisma.chatbotMessage.create({ data: { conversationId: conversation.id, role: 'user', content: message } });
   await prisma.chatbotMessage.create({
     data: { conversationId: conversation.id, role: 'bot', content: answer, intent, matchedKnowledgeId },
   });
 
+  if (matchedVehicleId && matchedVehicleId !== conversation.lastVehicleId) {
+    await prisma.chatbotConversation.update({
+      where: { id: conversation.id },
+      data: { lastVehicleId: matchedVehicleId },
+    });
+  }
+
   await maybeCaptureLead(conversation.id, conversation.leadId, message, intent);
 
-  return { answer, intent, showWhatsAppCta: intent === 'fallback' };
+  return { answer, intent, showWhatsAppCta: intent === 'fallback' && !aiAnswer };
 }
 
 export const chatbotService = {
   getConfig,
+  getAiStatus,
   handleMessage,
 };

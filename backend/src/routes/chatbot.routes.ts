@@ -1,8 +1,15 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { chatbotService } from '../services/chatbot/chatbot.service';
 
 const router = Router();
+
+// ── AI layer status ──────────────────────────────────────────────────────
+
+router.get('/ai-status', requireAdminApiSession, async (req: Request, res: Response) => {
+  res.json(chatbotService.getAiStatus());
+});
 
 // ── Knowledge base CRUD ─────────────────────────────────────────────────
 

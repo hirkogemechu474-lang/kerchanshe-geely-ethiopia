@@ -10,6 +10,12 @@ interface ChatbotConfig {
   fallbackMessage: string;
 }
 
+interface ChatbotAiStatus {
+  enabled: boolean;
+  provider: string;
+  model: string;
+}
+
 const DEFAULT_CONFIG: ChatbotConfig = {
   enabled: true,
   greeting: "Hi! I'm the Geely Assistant. Ask me about our models, test drives, promotions, financing, or dealer locations.",
@@ -23,9 +29,11 @@ export default function ChatbotSettingsForm() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [config, setConfig] = useState<ChatbotConfig>(DEFAULT_CONFIG);
+  const [aiStatus, setAiStatus] = useState<ChatbotAiStatus | null>(null);
 
   useEffect(() => {
     fetchConfig();
+    fetchAiStatus();
   }, []);
 
   async function fetchConfig() {
@@ -41,6 +49,15 @@ export default function ChatbotSettingsForm() {
       console.error('Error fetching chatbot config:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchAiStatus() {
+    try {
+      const response = await fetch('/api/chatbot/ai-status');
+      if (response.ok) setAiStatus(await response.json());
+    } catch (error) {
+      console.error('Error fetching chatbot AI status:', error);
     }
   }
 
@@ -84,6 +101,26 @@ export default function ChatbotSettingsForm() {
 
   return (
     <div>
+      {aiStatus && (
+        <div
+          className={`mb-6 p-4 rounded-lg border flex items-center justify-between ${
+            aiStatus.enabled ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}
+        >
+          <div>
+            <p className="text-sm font-medium">
+              AI enhancement: {aiStatus.enabled ? `Active — ${aiStatus.provider} (${aiStatus.model})` : 'Not configured'}
+            </p>
+            <p className="text-xs mt-0.5 opacity-80">
+              {aiStatus.enabled
+                ? 'The chatbot uses this model to phrase natural replies grounded in real site data.'
+                : 'Set GROQ_API_KEY on the backend to enable AI-generated replies — the chatbot still answers from rules and the knowledge base without it.'}
+            </p>
+          </div>
+          <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${aiStatus.enabled ? 'bg-green-500' : 'bg-amber-500'}`} />
+        </div>
+      )}
+
       {message && (
         <div className={`mb-6 p-4 rounded-lg ${
           message.toLowerCase().includes('error')

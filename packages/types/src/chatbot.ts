@@ -6,7 +6,7 @@ export interface ChatbotConfig {
   fallbackMessage: string;
 }
 
-export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'fallback';
+export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'greeting' | 'fallback';
 
 export interface ChatbotKnowledgeEntry {
   id: string;
