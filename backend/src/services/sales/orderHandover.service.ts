@@ -2,6 +2,8 @@ import { salesOrderRepository, userRepository, documentSignatureRepository } fro
 import { signLinkToken, verifyLinkToken } from '../../utils/secureLink';
 import { generateHandoverPdf, HandoverPdfData, HandoverItemRow, InspectionRow, EvGuidanceRow } from '../pdf/handover.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
+import { dispatchNotification } from '../email/notifications.dispatch';
+import { env } from '../../config/env';
 
 async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
@@ -102,6 +104,34 @@ export const orderHandoverService = {
         });
       } catch {
         // Signature-log write failure should not block the customer sign flow.
+      }
+
+      const assignedAgent = order.salesAgentId ? await userRepository.findById(order.salesAgentId) : null;
+      const managerEmails = await userRepository.findManagerEmails();
+      const recipients = [assignedAgent?.email, ...managerEmails].filter((email): email is string => Boolean(email));
+      if (recipients.length > 0) {
+        await dispatchNotification({
+          type: 'order_status',
+          to: recipients,
+          subject: `Customer Signed Handover — ${order.orderNo}`,
+          data: {
+            orderNo: order.orderNo,
+            customerName: order.customerName,
+            vehicleModel: order.vehicleModel,
+            nextStep: 'Manager countersignature is required to complete the handover.',
+            adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
+          },
+          inApp: {
+            type: 'signature_required',
+            title: 'Customer Signed Handover — Countersignature Required',
+            body: `Hello, customer ${order.customerName} has signed the handover for order ${order.orderNo} (${order.vehicleModel}). Manager countersignature is required to complete the handover.`,
+            link: `/admin/orders/${order.id}`,
+            orderId: order.id,
+            relatedModel: 'order',
+            relatedId: order.id,
+            priority: 'high',
+          },
+        });
       }
 
       return { ok: true, data: updated };

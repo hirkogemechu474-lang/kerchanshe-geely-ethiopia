@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
+import { auditService } from '../audit/audit.service';
 
 export interface LeadCreationData {
   customerName: string;
@@ -82,7 +83,8 @@ export class LeadService {
 
   static async qualify(
     leadId: string,
-    data: LeadQualificationData
+    data: LeadQualificationData,
+    performedById?: string
   ): Promise<LeadResponse> {
     try {
       const now = new Date();
@@ -105,6 +107,14 @@ export class LeadService {
       const lead = await prisma.lead.update({
         where: { id: leadId },
         data: updateData,
+      });
+
+      await auditService.log({
+        entityType: 'lead',
+        entityId: leadId,
+        action: data.qualified ? 'qualified' : 'disqualified',
+        performedById: performedById || 'system',
+        toValue: { status: updateData.status },
       });
 
       return { ok: true, data: lead };
@@ -146,7 +156,7 @@ export class LeadService {
     }
   }
 
-  static async assign(leadId: string, salesRepId: string): Promise<LeadResponse> {
+  static async assign(leadId: string, salesRepId: string, performedById?: string): Promise<LeadResponse> {
     try {
       const now = new Date();
 
@@ -161,6 +171,14 @@ export class LeadService {
         },
       });
 
+      await auditService.log({
+        entityType: 'lead',
+        entityId: leadId,
+        action: 'assigned',
+        performedById: performedById || 'system',
+        toValue: { assignedTo: salesRepId },
+      });
+
       return { ok: true, data: lead };
     } catch (error: any) {
       console.error('[LEAD ASSIGN ERROR]', error.message);
@@ -171,7 +189,8 @@ export class LeadService {
   static async escalate(
     leadId: string,
     reason: string,
-    newAssignee?: string
+    newAssignee?: string,
+    performedById?: string
   ): Promise<LeadResponse> {
     try {
       const now = new Date();
@@ -193,6 +212,15 @@ export class LeadService {
       const lead = await prisma.lead.update({
         where: { id: leadId },
         data: updateData,
+      });
+
+      await auditService.log({
+        entityType: 'lead',
+        entityId: leadId,
+        action: 'escalated',
+        performedById: performedById || 'system',
+        toValue: { assignedTo: newAssignee ?? null },
+        reason,
       });
 
       return { ok: true, data: lead };

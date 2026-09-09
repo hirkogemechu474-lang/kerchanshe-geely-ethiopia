@@ -1,4 +1,5 @@
 import { warrantyClaimRepository, counterRepository } from '../../repositories';
+import { auditService } from '../audit/audit.service';
 
 export const warrantyClaimService = {
   async list(status?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -87,6 +88,16 @@ export const warrantyClaimService = {
           reasonCode: reasonCode ?? null,
         }
       );
+
+      await auditService.log({
+        entityType: 'warranty',
+        entityId: id,
+        action: 'status_changed',
+        performedById: changedById,
+        fromValue: { status: claim.status },
+        toValue: { status: toStatus },
+        reason: reasonCode,
+      });
 
       return { ok: true, data: result };
     } catch (error: any) {

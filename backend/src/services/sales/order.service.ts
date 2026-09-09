@@ -3,6 +3,7 @@ import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { commissionService } from './commission.service';
 import { seedPdiChecklist } from './pdiChecklist.template';
 import { prisma } from '../../config/database';
+import { auditService } from '../audit/audit.service';
 
 // Real OrderStatus enum values are QUOTED/BOOKED/FINANCING_PENDING/
 // READY_FOR_DELIVERY/DELIVERED/CANCELLED (see schema.prisma) — this used to
@@ -181,6 +182,16 @@ export const orderService = {
         }
       );
 
+      await auditService.log({
+        entityType: 'order',
+        entityId: id,
+        action: 'status_changed',
+        performedById: changedById,
+        fromValue: { status: order.status },
+        toValue: { status: toStatus },
+        reason: reasonCode,
+      });
+
       return { ok: true, data: result };
     } catch (error: any) {
       console.error('[ORDER STATE TRANSITION WITH COMMISSION ERROR]', error.message);
@@ -210,6 +221,16 @@ export const orderService = {
           reasonCode: reasonCode ?? null,
         }
       );
+
+      await auditService.log({
+        entityType: 'order',
+        entityId: id,
+        action: 'status_changed',
+        performedById: changedById,
+        fromValue: { status: order.status },
+        toValue: { status: toStatus },
+        reason: reasonCode,
+      });
 
       return { ok: true, data: result };
     } catch (error: any) {

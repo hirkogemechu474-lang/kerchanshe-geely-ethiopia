@@ -75,7 +75,7 @@ router.post('/:id/qualify', requireAdminApiSession, async (req: Request, res: Re
     const lead = await LeadService.qualify(req.params.id, {
       qualified,
       internalNotes,
-    });
+    }, req.adminSession!.user.id);
     if (!lead.ok) {
       return res.status(400).json({ error: lead.error });
     }
@@ -113,7 +113,7 @@ router.post('/:id/test-drive', requireAdminApiSession, async (req: Request, res:
 router.post('/:id/assign', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const { salesRepId } = req.body;
-    const result = await LeadService.assign(req.params.id, salesRepId);
+    const result = await LeadService.assign(req.params.id, salesRepId, req.adminSession!.user.id);
     if (!result.ok) {
       return res.status(400).json({ error: result.error });
     }
@@ -128,7 +128,7 @@ router.post('/:id/assign', requireAdminApiSession, async (req: Request, res: Res
 router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const { reason, newAssignee } = req.body;
-    const result = await LeadService.escalate(req.params.id, reason, newAssignee);
+    const result = await LeadService.escalate(req.params.id, reason, newAssignee, req.adminSession!.user.id);
     if (!result.ok) {
       return res.status(400).json({ error: result.error });
     }

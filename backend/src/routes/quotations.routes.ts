@@ -12,6 +12,7 @@ import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
 import { MAX_REASONABLE_PRICE_ETB } from '../config/pricing';
+import { auditService } from '../services/audit/audit.service';
 
 const router = Router();
 
@@ -173,6 +174,15 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
       data: { status: 'sent' },
     });
 
+    await auditService.log({
+      entityType: 'quotation',
+      entityId: quotation.id,
+      action: 'sent',
+      performedById: req.adminSession!.user.id,
+      fromValue: { status: quotation.status },
+      toValue: { status: 'sent' },
+    });
+
     let notificationSent = false;
     let notificationError: string | undefined;
     if (quotation.email) {
@@ -227,6 +237,15 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
         managerRejectedAt: new Date(),
         managerRejectionReason: reason,
       },
+    });
+
+    await auditService.log({
+      entityType: 'quotation',
+      entityId: quotation.id,
+      action: 'rejected',
+      performedById: req.adminSession!.user.id,
+      toValue: { managerApprovalStatus: 'REJECTED' },
+      reason,
     });
 
     // Step 4: Notify the assigned sales agent that the quotation was rejected
@@ -439,6 +458,16 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
       },
     });
 
+    await auditService.log({
+      entityType: 'quotation',
+      entityId: quotation.id,
+      action: 'escalated',
+      performedById: req.adminSession!.user.id,
+      fromValue: { assignedTo: existing.assignedTo },
+      toValue: { assignedTo: quotation.assignedTo },
+      reason: req.body.reason,
+    });
+
     // Send email notification to the new assignee and manager
     let notificationSent = false;
     let notificationError: string | undefined;
@@ -498,7 +527,7 @@ router.post('/check-overdue-escalations', requireAdminApiSession, async (req: Re
 // POST /api/quotations/:id/convert-to-order (convert to sales order)
 router.post('/:id/convert-to-order', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const result = await convertQuotationToOrderService.convert(req.params.id, req.body?.assignedTo);
+    const result = await convertQuotationToOrderService.convert(req.params.id, req.body?.assignedTo, req.adminSession!.user.id);
     if (!result.ok) {
       res.status(result.error === 'Quotation not found.' ? 404 : 400).json({ error: result.error });
       return;
@@ -535,6 +564,14 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
           managerApprovedAt: new Date(),
           managerSignatureUrl,
         },
+      });
+
+      await auditService.log({
+        entityType: 'quotation',
+        entityId: quotation.id,
+        action: 'discount_approved',
+        performedById: req.adminSession!.user.id,
+        toValue: { managerApprovalStatus: 'APPROVED', discountPercent },
       });
 
       // Regenerate PDF so it includes the manager's signature
@@ -581,6 +618,14 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
         managerApprovedAt: new Date(),
         managerSignatureUrl,
       },
+    });
+
+    await auditService.log({
+      entityType: 'quotation',
+      entityId: quotation.id,
+      action: 'approved',
+      performedById: req.adminSession!.user.id,
+      toValue: { managerApprovalStatus: 'APPROVED' },
     });
 
     // Regenerate PDF so it includes the manager's signature

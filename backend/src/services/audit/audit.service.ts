@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { userRepository } from '../../repositories';
 
 export interface AuditLogEntry {
   entityType: string; // quotation, order, lead, warranty, etc.
@@ -18,6 +19,17 @@ export const auditService = {
    */
   async log(entry: AuditLogEntry): Promise<{ ok: boolean; error?: string }> {
     try {
+      // Most call sites only have a user id handy (from req.adminSession),
+      // not a display name — resolve it here so the Audit Log page never has
+      // to fall back to showing a raw UUID. 'system' is used for
+      // non-user-initiated events (e.g. auto-escalation) and has no row to
+      // resolve, so it's left as-is.
+      let performedByName = entry.performedByName;
+      if (!performedByName && entry.performedById && entry.performedById !== 'system') {
+        const user = await userRepository.findByIdSlim(entry.performedById).catch(() => null);
+        performedByName = user?.name ?? undefined;
+      }
+
       await prisma.$executeRaw`
         INSERT INTO "AuditLog" (id, "entityType", "entityId", action, "performedById", "performedByName", "fromValue", "toValue", reason, metadata, "createdAt")
         VALUES (
@@ -26,7 +38,7 @@ export const auditService = {
           ${entry.entityId},
           ${entry.action},
           ${entry.performedById},
-          ${entry.performedByName || null},
+          ${performedByName || null},
           ${entry.fromValue ? JSON.stringify(entry.fromValue) : null}::jsonb,
           ${entry.toValue ? JSON.stringify(entry.toValue) : null}::jsonb,
           ${entry.reason || null},

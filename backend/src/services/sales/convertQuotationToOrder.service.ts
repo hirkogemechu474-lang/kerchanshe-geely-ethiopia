@@ -2,9 +2,10 @@ import { quotationRepository, salesOrderRepository, vehicleRepository } from '..
 import { prisma } from '../../config/database';
 import { seedPdiChecklist } from './pdiChecklist.template';
 import { vehicleAllocationService } from './vehicleAllocation.service';
+import { auditService } from '../audit/audit.service';
 
 export const convertQuotationToOrderService = {
-  async convert(quotationId: string, assignedTo?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
+  async convert(quotationId: string, assignedTo?: string, performedById?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const quotation = await quotationRepository.findById(quotationId);
       if (!quotation) return { ok: false, error: 'Quotation not found.' };
@@ -77,6 +78,14 @@ export const convertQuotationToOrderService = {
       });
 
       await seedPdiChecklist(prisma, order.id);
+
+      await auditService.log({
+        entityType: 'quotation',
+        entityId: quotationId,
+        action: 'converted',
+        performedById: performedById || salesAgentId || 'system',
+        toValue: { orderId: order.id, orderNo: order.orderNo },
+      });
 
       return { ok: true, data: order };
     } catch (error: any) {

@@ -47,6 +47,8 @@ function ctaForIntent(intent?: string): { label: string; href: string } | null {
       return { label: 'See Financing Options', href: '/financing' };
     case 'dealers':
       return { label: 'Find a Dealer', href: '/dealers' };
+    case 'contact':
+      return { label: 'Contact Us', href: '/contact' };
     default:
       return null;
   }

@@ -18,7 +18,7 @@ export const DEFAULT_CHATBOT_CONFIG: ChatbotConfig = {
   fallbackMessage: "I couldn't find an answer to that. Our team is happy to help you directly on WhatsApp.",
 };
 
-export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'knowledge' | 'greeting' | 'fallback';
+export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'contact' | 'knowledge' | 'greeting' | 'fallback';
 
 export interface ChatbotReply {
   answer: string;
@@ -41,8 +41,36 @@ const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 
   'test-drive': ['test drive', 'test-drive', 'testdrive', 'try the car', 'book a drive', 'schedule a drive'],
   financing: ['financ', 'loan', 'installment', 'down payment', 'downpayment', 'monthly payment', 'bank loan', 'credit', 'emi'],
   promotions: ['promo', 'offer', 'discount', 'deal', 'sale'],
-  dealers: ['dealer', 'showroom', 'branch', 'address', 'location', 'where are you', 'where can i find'],
+  dealers: ['dealer', 'showroom', 'branch', 'find a dealer', 'nearest'],
+  // Checked after `dealers` in the intent chain below, so a message naming
+  // both ("dealer address") still resolves to the more specific dealers
+  // answer. 'address'/'location' moved here from dealers — "give me your
+  // address" is a contact-info ask, not necessarily "list every dealer".
+  contact: ['contact', 'phone number', 'phone', 'call you', 'email', 'e-mail', 'reach you', 'get in touch', 'whatsapp', 'address', 'location', 'where are you', 'where can i find'],
 };
+
+// Most keywords above are deliberately matched as substrings/prefixes
+// ("financ" for finance/financing/financial, "promo" for promo/promotion/
+// promotions, "discount" for discount/discounted) so `.includes()` is
+// correct for them. A couple are short enough to false-positive inside an
+// unrelated real word — "deal" inside "dealer", "sale" inside "sales"/
+// "wholesale" — which is exactly how "Find a dealer" used to get misread as
+// a promotions question. Those are matched as whole words instead.
+// 'sale' deliberately does NOT match its own plural "sales" — in this
+// dealership domain "sales" overwhelmingly means the sales team/department
+// ("my sales agent", "sales manager"), not a discount event, so treating it
+// as a promotions signal would misfire constantly. 'deal' does match "deals"
+// since that plural has no such competing everyday meaning here.
+const WHOLE_WORD_PATTERNS: Record<string, RegExp> = {
+  deal: /\bdeals?\b/,
+  sale: /\bsale\b/,
+};
+
+function keywordMatches(normalized: string, keyword: string): boolean {
+  const wholeWordPattern = WHOLE_WORD_PATTERNS[keyword];
+  if (wholeWordPattern) return wholeWordPattern.test(normalized);
+  return normalized.includes(keyword);
+}
 
 const VEHICLE_KEYWORDS = ['model', 'models', 'car', 'suv', 'sedan', 'price', 'latest', 'new car', 'specs', 'specification', 'vehicle'];
 
@@ -68,6 +96,10 @@ function looksLikeVehicleFollowUp(normalized: string): boolean {
 const GREETING_PATTERN = /\b(hi+|hello+|hey+|hiya|yo|sup|greetings|good morning|good afternoon|good evening)\b/;
 const THANKS_PATTERN = /\b(thanks?|thank you|thank u|thankyou|appreciate it|appreciated)\b/;
 const HELP_PATTERN = /\b(who are you|what are you|what can you do|what do you do|how (can|do) you help|how does this (work|chat)|what is this)\b/;
+
+// Catches the model punting ("I don't have that on hand") even when it was
+// handed real grounding data — see the note where this is used below.
+const HEDGE_PATTERN = /\b(i don'?t have|i do not have|i don'?t know|i'?m not (sure|able)|i can'?t (find|provide|access)|i couldn'?t find|no (information|data) (on|about)|not (currently )?available to me)\b/i;
 
 function normalize(message: string): string {
   return message.toLowerCase().replace(/[^\w\s+]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -209,6 +241,36 @@ async function answerPromotions(): Promise<string> {
   return `Here are our current offers:\n${lines.join('\n')}`;
 }
 
+function readContactSetting(raw: Record<string, any>): string {
+  const parts: string[] = [];
+  const phone = raw?.phone?.primary || raw?.phone?.sales;
+  if (phone) parts.push(`Phone: ${phone}`);
+  if (raw?.whatsapp) parts.push(`WhatsApp: ${raw.whatsapp}`);
+  const email = raw?.email?.general || raw?.email?.sales;
+  if (email) parts.push(`Email: ${email}`);
+  const addr = raw?.headquarters?.address;
+  if (addr) {
+    const addressLine = [addr.street, addr.area, addr.city, addr.region, addr.country].filter(Boolean).join(', ');
+    if (addressLine) parts.push(`Address: ${addressLine}`);
+  }
+  return parts.join('\n');
+}
+
+async function answerContact(): Promise<string> {
+  const setting = await prisma.setting.findUnique({ where: { key: 'contact_information' } });
+  if (!setting?.value) {
+    return "I don't have our contact details loaded right now — please check the /contact page or reach us on WhatsApp.";
+  }
+  try {
+    const contact = JSON.parse(setting.value);
+    const lines = readContactSetting(contact);
+    if (!lines) return "I don't have our contact details loaded right now — please check the /contact page or reach us on WhatsApp.";
+    return `Here's how to reach us:\n${lines}\n\nYou can also find this on our /contact page.`;
+  } catch {
+    return "I don't have our contact details loaded right now — please check the /contact page or reach us on WhatsApp.";
+  }
+}
+
 async function answerDealers(): Promise<string> {
   const dealers = await prisma.dealer.findMany({
     where: { active: true },
@@ -322,18 +384,21 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
   let matchedKnowledgeId: string | null = null;
   let matchedVehicleId: string | null = null;
 
-  if (INTENT_KEYWORDS['test-drive'].some((k) => normalized.includes(k))) {
+  if (INTENT_KEYWORDS['test-drive'].some((k) => keywordMatches(normalized, k))) {
     intent = 'test-drive';
     answer = await answerTestDrive();
-  } else if (INTENT_KEYWORDS.financing.some((k) => normalized.includes(k))) {
+  } else if (INTENT_KEYWORDS.financing.some((k) => keywordMatches(normalized, k))) {
     intent = 'financing';
     answer = await answerFinancing();
-  } else if (INTENT_KEYWORDS.promotions.some((k) => normalized.includes(k))) {
-    intent = 'promotions';
-    answer = await answerPromotions();
-  } else if (INTENT_KEYWORDS.dealers.some((k) => normalized.includes(k))) {
+  } else if (INTENT_KEYWORDS.dealers.some((k) => keywordMatches(normalized, k))) {
     intent = 'dealers';
     answer = await answerDealers();
+  } else if (INTENT_KEYWORDS.contact.some((k) => keywordMatches(normalized, k))) {
+    intent = 'contact';
+    answer = await answerContact();
+  } else if (INTENT_KEYWORDS.promotions.some((k) => keywordMatches(normalized, k))) {
+    intent = 'promotions';
+    answer = await answerPromotions();
   } else {
     // High-confidence check first: a named vehicle mention. The broader
     // "mentions a generic word like 'car' or 'model'" check is deferred
@@ -396,11 +461,19 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
     intent = 'fallback';
   }
 
-  // The rule engine already fetched real vehicles/promotions/dealers/financing
-  // for this intent — reuse that formatted text as grounding so the AI layer
-  // can only restate real data, never invent prices or specs.
+  // The rule engine already fetched real vehicles/promotions/dealers/financing/
+  // contact details for this intent — reuse that formatted text as grounding
+  // so the AI layer can only restate real data, never invent prices or specs.
   const aiAnswer = await generateAiReply({ message, history, groundingContext: ruleBasedAnswer });
-  answer = aiAnswer ?? ruleBasedAnswer ?? config.fallbackMessage;
+
+  // Despite the system prompt telling it to only speak from CONTEXT DATA, the
+  // model sometimes hedges anyway ("I don't have that on hand") even when
+  // real grounding was provided — observed live with dealer lookups, where a
+  // real dealer record existed but the AI answered as if it had nothing.
+  // When we already have a solid rule-based answer, a hedging AI reply is
+  // strictly worse than just showing that real answer, so discard it.
+  const aiHedged = aiAnswer != null && ruleBasedAnswer != null && HEDGE_PATTERN.test(aiAnswer);
+  answer = aiHedged ? ruleBasedAnswer : aiAnswer ?? ruleBasedAnswer ?? config.fallbackMessage;
 
   await prisma.chatbotMessage.create({ data: { conversationId: conversation.id, role: 'user', content: message } });
   await prisma.chatbotMessage.create({
