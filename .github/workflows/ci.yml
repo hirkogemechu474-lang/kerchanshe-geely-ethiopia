@@ -40,7 +40,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/geely_ethiopia"
+      DATABASE_URL: "postgresql://postgres:12345678@localhost:5432/geely_ethiopia"
     steps:
       - uses: actions/checkout@v4
 

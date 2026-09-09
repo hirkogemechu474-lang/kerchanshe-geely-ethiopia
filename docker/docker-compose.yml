@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: geely_ethiopia
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -26,7 +26,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geely_ethiopia
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/geely_ethiopia
       NEXTAUTH_SECRET: dev-secret-change-in-production
       JWT_SECRET: dev-jwt-secret-change-in-production
       CORS_ORIGIN_WEB: https://www.geelyauto.co.za
