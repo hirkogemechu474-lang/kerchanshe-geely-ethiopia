@@ -17,6 +17,11 @@ interface HeaderProps {
   // it and turns solid on scroll or once a menu opens, matching
   // geelyauto.co.za. Every other page keeps the plain sticky solid header.
   overlay?: boolean;
+  // True only on model detail pages (/models/[slug]), which have their own
+  // sticky sub-nav (ModelPageTabs) directly below this header. Once scrolled
+  // past, this header slides up out of view so the two sticky bars don't
+  // stack — it slides back down once you scroll back near the top.
+  autoHide?: boolean;
 }
 
 // A simple, static list of links shown in a compact dropdown card — for nav
@@ -87,9 +92,11 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Header({ onMobileMenuToggle = () => {}, overlay = false }: HeaderProps) {
+export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHide = false }: HeaderProps) {
   const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
   const [linkGroupOpen, setLinkGroupOpen]   = useState<keyof typeof LINK_GROUPS | null>(null);
@@ -133,6 +140,26 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false }: Heade
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Hide once scrolled past this header's own rendered height — the exact
+  // point where ModelPageTabs (sticky top-0, sitting right below in the
+  // document) starts sticking to the top of the viewport itself, so the two
+  // never overlap. Re-measured on resize since the header's height changes
+  // across breakpoints (64px vs 84px min-height).
+  useEffect(() => {
+    if (!autoHide) { setHidden(false); return; }
+    let headerHeight = headerRef.current?.getBoundingClientRect().height ?? 84;
+    const measure = () => { headerHeight = headerRef.current?.getBoundingClientRect().height ?? headerHeight; };
+    const handleScroll = () => setHidden(window.scrollY > headerHeight);
+    measure();
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', measure);
+    };
+  }, [autoHide]);
 
   // Transparent-over-hero only while the overlay page is at rest, unscrolled
   // and with no menu open — a solid bar reads better under an open dropdown.
@@ -275,7 +302,10 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false }: Heade
 
   return (
     <header
-      className={`${overlay ? 'fixed' : 'sticky'} top-0 z-50 w-full border-b transition-[background-color,border-color,box-shadow] duration-300 ${
+      ref={headerRef}
+      className={`${overlay ? 'fixed' : 'sticky'} top-0 z-50 w-full border-b transition-[background-color,border-color,box-shadow,transform] duration-300 ${
+        hidden ? '-translate-y-full' : 'translate-y-0'
+      } ${
         transparent
           ? 'border-transparent bg-transparent shadow-none'
           : 'border-black/[0.08] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md dark:border-midnight-line dark:bg-midnight-surface/95 dark:shadow-none'

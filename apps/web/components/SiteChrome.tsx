@@ -14,18 +14,21 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
-  // Model detail pages (e.g. /models/geely-ex2, not the /models listing)
-  // show their own full-width nav (ModelPageTabs — vehicle name, section
-  // jump links, Schedule Test Drive) instead of the global site header,
-  // matching geelyauto.co.za/models/geely-e2's single-header layout rather
-  // than stacking both.
+  // Model detail pages (e.g. /models/geely-ex2, not the /models listing) also
+  // show their own full-width nav (ModelPageTabs — vehicle name, section jump
+  // links, Schedule Test Drive) right below the global header. Showing both
+  // sticky bars at once would stack them, so the global header on these pages
+  // auto-hides once you scroll past it, leaving ModelPageTabs alone at the
+  // top — it reappears once you scroll back near the top of the page.
   const isModelDetailPage = /^\/models\/[^/]+$/.test(pathname ?? '');
 
   return (
     <div className="min-h-screen flex flex-col bg-ice dark:bg-midnight transition-colors">
-      {!isModelDetailPage && (
-        <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} overlay={pathname === '/'} />
-      )}
+      <Header
+        onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+        overlay={pathname === '/'}
+        autoHide={isModelDetailPage}
+      />
       <MobileDrawer
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
