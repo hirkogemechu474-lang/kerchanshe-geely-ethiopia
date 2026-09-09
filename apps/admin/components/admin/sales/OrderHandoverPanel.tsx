@@ -144,7 +144,7 @@ export default function OrderHandoverPanel({
       setSignOffNotice(
         data.notificationSent
           ? `Sign-off link emailed to ${order.customerEmail}.`
-          : 'Could not email the sign-off link — check SMTP settings.'
+          : `Could not email the sign-off link${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
       );
       onUpdated();
       router.refresh();

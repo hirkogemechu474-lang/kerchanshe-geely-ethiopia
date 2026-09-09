@@ -1,6 +1,6 @@
 import {
   openDocument, saveBuffer, addPage, drawHeaderFooter, drawSectionTitle, drawFieldTable,
-  drawLabelValue, drawCheckbox, drawSignatureBlock, ensureSpace, wrapText,
+  drawLabelValue, drawCheckbox, drawSignatureBlock, ensureSpace, wrapText, embedSignatureImage,
   PDF_MARGIN, PDF_CONTENT_WIDTH, PDF_HEADER_CONTENT_Y, COLORS, dateValue, formatBrandModel, PagedContext,
 } from './pdfLayout';
 import type { CompanyInfo } from './companyInfo';
@@ -92,6 +92,8 @@ export interface HandoverPdfData {
   handoverExpectedCompletionDate?: Date | string | null;
   handoverSignedAt?: Date | string | null;
   countersignedByName?: string | null;
+  customerSignatureUrl?: string | null;
+  managerSignatureUrl?: string | null;
 }
 
 function drawItemsHandedOverTable(ctx: PagedContext, rows: HandoverItemRow[]): PagedContext {
@@ -161,6 +163,8 @@ function drawInspectionTable(ctx: PagedContext, rows: InspectionRow[]): PagedCon
 
 export async function generateHandoverPdf(data: HandoverPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
+  const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
+  const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE DELIVERY & HANDOVER NOTE';
   drawHeaderFooter(ctx, title, company);
@@ -272,8 +276,8 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
   ctx = ensureSpace(ctx, 90);
   drawSignatureBlock(
     ctx,
-    { heading: `FOR ${company.legalName.toUpperCase()}`, name: data.countersignedByName },
-    { heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE', name: data.customerName, title: data.customerTitle },
+    { heading: `FOR ${company.legalName.toUpperCase()}`, name: data.countersignedByName, signatureImage: managerSignatureImage ?? undefined },
+    { heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE', name: data.customerName, title: data.customerTitle, signatureImage: customerSignatureImage ?? undefined },
   );
 
   return saveBuffer(doc);

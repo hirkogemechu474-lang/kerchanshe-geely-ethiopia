@@ -614,7 +614,7 @@ router.post('/:id/send-handover-signoff', requireAdminApiSession, async (req: Re
       data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
     });
 
-    res.json({ notificationSent: result.ok });
+    res.json({ notificationSent: result.ok, notificationError: result.error });
   } catch (error) {
     console.error('Send handover signoff error:', error);
     res.status(500).json({ error: 'Internal server error' });

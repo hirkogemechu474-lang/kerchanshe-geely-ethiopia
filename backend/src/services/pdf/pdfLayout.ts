@@ -226,8 +226,17 @@ export async function embedSignatureImage(doc: PDFDocument, source?: string | nu
       bytes = Buffer.from(source.split(',')[1] || '', 'base64');
     } else {
       const relative = source.startsWith('/') ? source.slice(1) : source;
-      const localPath = path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', relative);
-      if (fs.existsSync(localPath)) {
+      // Uploaded files are meant to live under apps/admin/public (see
+      // upload.routes.ts's ADMIN_PUBLIC_UPLOADS), but some were historically
+      // written under apps/web/public instead (an older/inconsistent upload
+      // path) — check both so a signature already on disk doesn't silently
+      // fail to embed just because of which app it happened to land under.
+      const candidatePaths = [
+        path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', relative),
+        path.resolve(process.cwd(), '..', 'apps', 'web', 'public', relative),
+      ];
+      const localPath = candidatePaths.find((p) => fs.existsSync(p));
+      if (localPath) {
         bytes = fs.readFileSync(localPath);
       } else if (/^https?:\/\//i.test(source)) {
         const response = await fetch(source);

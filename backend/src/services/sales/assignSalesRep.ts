@@ -58,6 +58,11 @@ export async function assignSalesRep(params: {
   salesRepId?: string;
   autoAssign?: boolean;
   factors?: AssignmentFactors;
+  /** Force manager-tier assignment (sales_manager/general_manager/admin)
+   * regardless of the admin-configured `managersOnly` rule — used by
+   * escalation, which must always hand off to a manager, not whatever the
+   * default sales-rep auto-assign rule is currently set to. */
+  forceManagerOnly?: boolean;
 }): Promise<{ ok: boolean; data?: any; error?: string; assignedRep?: any }> {
   try {
     let resolvedRepId = params.salesRepId;
@@ -73,7 +78,8 @@ export async function assignSalesRep(params: {
       const autoResult = await autoAssignBestRep(
         params.targetType,
         params.targetId,
-        params.factors
+        params.factors,
+        params.forceManagerOnly
       );
       if (!autoResult.ok) return autoResult;
 
@@ -178,7 +184,8 @@ interface BestRepResult {
 async function autoAssignBestRep(
   targetType: 'quotation' | 'order',
   targetId: string,
-  factors?: AssignmentFactors
+  factors?: AssignmentFactors,
+  forceManagerOnly?: boolean
 ): Promise<{ ok: boolean; data?: BestRepResult; error?: string }> {
   try {
     // Load assignment rules from admin settings
@@ -190,12 +197,16 @@ async function autoAssignBestRep(
       specializationWeight: factors?.specializationWeight ?? DEFAULT_FACTORS.specializationWeight ?? 0,
     };
 
-    // Get all active sales reps — if managersOnly, filter to sales_manager role
+    // Get all active sales reps — if managersOnly (or an explicit
+    // forceManagerOnly caller, e.g. escalation), filter to manager-tier
+    // roles instead (same set treated as "manager" everywhere else, e.g.
+    // userRepository.findManagerEmails()).
     const salesRoles = ['sales', 'sales_representative', 'sales_agent'];
+    const managerRoles = ['sales_manager', 'general_manager', 'admin'];
     const allReps = await prisma.user.findMany({
       where: {
         isActive: true,
-        role: rules.managersOnly ? 'sales_manager' : { in: salesRoles },
+        role: forceManagerOnly || rules.managersOnly ? { in: managerRoles } : { in: salesRoles },
       },
       select: {
         id: true,
@@ -211,7 +222,12 @@ async function autoAssignBestRep(
     console.log('[ASSIGN] Rules:', rules, 'Found reps:', allReps.length, allReps.map(r => r.name));
 
     if (allReps.length === 0) {
-      return { ok: false, error: 'No active sales representatives found.' };
+      return {
+        ok: false,
+        error: forceManagerOnly || rules.managersOnly
+          ? 'No active managers found to assign to.'
+          : 'No active sales representatives found.',
+      };
     }
 
     // Get target data to determine vehicle model/brand for specialization matching

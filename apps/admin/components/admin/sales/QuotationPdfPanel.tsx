@@ -65,15 +65,17 @@ export default function QuotationPdfPanel({
   publicPdfUrl,
   publicSignUrl,
   webAppUrl,
-  salesReps,
+  assignedRepName,
 }: {
   quotation: QuotationPdfData;
   canManage: boolean;
   publicPdfUrl: string | null;
   publicSignUrl: string | null;
   webAppUrl: string;
-  /** Staff (sales reps + managers) selectable as the name printed on the document. */
-  salesReps?: { id: string; name: string }[];
+  /** Name of whoever the quotation is actually assigned to (Assigned To panel) — the
+   *  default for the name printed on the document, so it doesn't drift from the real
+   *  assignment. */
+  assignedRepName?: string | null;
 }) {
   const router = useRouter();
   const [unitPrice, setUnitPrice] = useState(quotation.unitPrice?.toString() || '');
@@ -85,7 +87,10 @@ export default function QuotationPdfPanel({
   const [paymentTerms, setPaymentTerms] = useState(quotation.paymentTerms || '');
   const [deliveryTerms, setDeliveryTerms] = useState(quotation.deliveryTerms || '');
   const [salesType, setSalesType] = useState(quotation.salesType || 'showroom');
-  const [salesExecutiveName, setSalesExecutiveName] = useState(quotation.salesExecutiveName || '');
+  // Defaults to whoever the quotation is currently assigned to (manager or rep) —
+  // not a separate manual pick — but stays editable in case the printed name needs
+  // to differ from the live assignment.
+  const [salesExecutiveName, setSalesExecutiveName] = useState(quotation.salesExecutiveName || assignedRepName || '');
   const [customerTin, setCustomerTin] = useState(quotation.customerTin || '');
   const [customerAddress, setCustomerAddress] = useState(quotation.customerAddress || '');
   const [vehicleVariant, setVehicleVariant] = useState(quotation.vehicleVariant || '');
@@ -362,19 +367,8 @@ export default function QuotationPdfPanel({
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sales executive</label>
-                {salesReps && salesReps.length > 0 && (
-                  <select
-                    value=""
-                    onChange={(e) => e.target.value && setSalesExecutiveName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-1.5"
-                  >
-                    <option value="">Assign from staff (sales &amp; managers)…</option>
-                    {salesReps.map((rep) => (
-                      <option key={rep.id} value={rep.name}>{rep.name}</option>
-                    ))}
-                  </select>
-                )}
                 <input value={salesExecutiveName} onChange={(e) => setSalesExecutiveName(e.target.value)} placeholder="Name printed on the quotation" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <p className="mt-1 text-[11px] text-gray-400">Defaults to whoever this quotation is assigned to — edit only if the printed name should differ.</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Delivery location</label>

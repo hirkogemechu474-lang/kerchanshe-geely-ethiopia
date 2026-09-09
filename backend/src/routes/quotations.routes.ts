@@ -411,6 +411,23 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
     const existing = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Quotation not found' }); return; }
 
+    // "Escalate to Manager" must actually hand the quotation to a manager —
+    // it previously only flagged status/escalatedAt while leaving
+    // `assignedTo` untouched, so the original (possibly busy) rep stayed
+    // assigned and got a misleading "reassigned to you" email about their
+    // own quotation. Pick whichever active manager currently has the
+    // lightest load, same workload-aware logic as the sales-rep auto-assign.
+    const managerAssignment = await assignSalesRep({
+      targetType: 'quotation',
+      targetId: req.params.id,
+      autoAssign: true,
+      forceManagerOnly: true,
+    });
+    if (!managerAssignment.ok) {
+      res.status(400).json({ error: managerAssignment.error || 'No manager is available to escalate to.' });
+      return;
+    }
+
     const quotation = await prisma.quotation.update({
       where: { id: req.params.id },
       data: {
@@ -423,11 +440,13 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
     });
 
     // Send email notification to the new assignee and manager
+    let notificationSent = false;
+    let notificationError: string | undefined;
     if (quotation.assignedTo) {
       const assignedUser = await userRepository.findById(quotation.assignedTo);
       if (assignedUser?.email) {
         const managerEmails = await getManagerEmails();
-        await dispatchNotification({
+        const notifyResult = await dispatchNotification({
           type: 'lead_assignment',
           to: [assignedUser.email, ...managerEmails],
           subject: `Quotation Escalated — Reassigned to You${quotation.reference ? ` (${quotation.reference})` : ''}`,
@@ -451,10 +470,14 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
             priority: 'urgent',
           },
         });
+        notificationSent = notifyResult.ok;
+        notificationError = notifyResult.error;
+      } else {
+        notificationError = 'The assigned manager has no email address on file.';
       }
     }
 
-    res.json(quotation);
+    res.json({ ...quotation, notificationSent, notificationError });
   } catch (error) {
     console.error('Escalate quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -674,9 +697,11 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
     // so a manual assign doesn't silently skip the notification.
     const assignedRepId = result.data?.userId || result.data?.assignedTo;
     const assignedRep = assignedRepId ? await userRepository.findById(assignedRepId) : null;
+    let notificationSent = false;
+    let notificationError: string | undefined;
     if (assignedRep?.email) {
       const managerEmails = await getManagerEmails();
-      await dispatchNotification({
+      const notifyResult = await dispatchNotification({
         type: 'lead_assignment',
         to: [assignedRep.email, ...managerEmails],
         subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
@@ -700,9 +725,11 @@ router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res:
           priority: 'high',
         },
       });
+      notificationSent = notifyResult.ok;
+      notificationError = notifyResult.error;
     }
 
-    res.json({ success: true, assignedRep: result.data, error: result.error });
+    res.json({ success: true, assignedRep: result.data, error: result.error, notificationSent, notificationError });
   } catch (error) {
     console.error('Assign rep error:', error);
     res.status(500).json({ error: 'Internal server error' });

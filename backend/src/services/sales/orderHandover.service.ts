@@ -6,7 +6,7 @@ import { getCompanyInfo } from '../pdf/companyInfo';
 async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
   const detail = await salesOrderRepository.findByIdWithDocumentDetail(order.id);
-  const countersigner = order.handoverCountersignedById ? await userRepository.findById(order.handoverCountersignedById) : null;
+  const countersigner = order.handoverCountersignedById ? await userRepository.findByIdSlim(order.handoverCountersignedById) : null;
   const pdiTotal = detail?.pdiItems?.length ?? 0;
   const pdiChecked = detail?.pdiItems?.filter((p: any) => p.isChecked).length ?? 0;
 
@@ -44,6 +44,8 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
     handoverDate: (order.deliveredAt ?? order.handoverSignedAt) ? String(order.deliveredAt ?? order.handoverSignedAt) : new Date().toISOString(),
     handoverSignedAt: order.handoverSignedAt,
     countersignedByName: countersigner?.name ?? null,
+    customerSignatureUrl: order.handoverSignedDocumentUrl ?? null,
+    managerSignatureUrl: countersigner?.signatureUrl ?? null,
   };
 }
 

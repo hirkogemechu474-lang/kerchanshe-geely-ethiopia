@@ -34,6 +34,7 @@ export default function AssignedToPanel({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [showEscalateForm, setShowEscalateForm] = useState(false);
   const [escalateReason, setEscalateReason] = useState('');
 
@@ -52,6 +53,7 @@ export default function AssignedToPanel({
   const assign = async (body: { salesRepId?: string; autoAssign?: boolean }) => {
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const res = await fetch(`/api/quotations/${quotationId}/assign-rep`, {
         method: 'POST',
@@ -61,6 +63,9 @@ export default function AssignedToPanel({
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to assign');
+      }
+      if (data.notificationSent === false) {
+        setNotice(`Assigned, but the notification email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`);
       }
       router.refresh();
     } catch (err) {
@@ -77,15 +82,19 @@ export default function AssignedToPanel({
     }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const res = await fetch(`/api/quotations/${quotationId}/escalate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: escalateReason }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to escalate');
+      }
+      if (data.notificationSent === false) {
+        setNotice(`Escalated, but the notification email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`);
       }
       setShowEscalateForm(false);
       setEscalateReason('');
@@ -135,6 +144,7 @@ export default function AssignedToPanel({
         {busy ? 'Assigning…' : 'Auto-Assign Best Rep'}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
+      {notice && <p className="text-xs text-yellow-700">{notice}</p>}
 
       {!isClosed && (
         <div>

@@ -50,6 +50,9 @@ export default async function QuotationDetailPage({
   if (!quotation) notFound();
 
   const salesReps = await listSalesReps();
+  const assignedRepName = quotation.assignedTo
+    ? salesReps.find((r) => r.id === quotation.assignedTo)?.name ?? null
+    : null;
   const escalatedByUser = quotation.escalatedById
     ? await client.get(`/admin/users/${quotation.escalatedById}`).then((r) => r.data).catch(() => null)
     : null;
@@ -143,7 +146,7 @@ export default async function QuotationDetailPage({
       <ConfigurationSummary configuration={quotation.configurationJson} />
 
       <QuotationPdfPanel
-        salesReps={salesReps}
+        assignedRepName={assignedRepName}
         quotation={{
           id: quotation.id,
           vehicleModel: quotation.vehicleModel,
