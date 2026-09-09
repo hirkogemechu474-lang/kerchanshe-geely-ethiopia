@@ -131,7 +131,7 @@ router.post('/:id/signature-link', async (req: Request, res: Response) => {
   try {
     const result = await staffSignatureService.initiateSetup(req.params.id);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
-    res.json({ success: true });
+    res.json({ success: true, notificationSent: result.data?.notificationSent, notificationError: result.data?.notificationError });
   } catch (error) {
     console.error('Send signature link error:', error);
     res.status(500).json({ error: 'Internal server error' });

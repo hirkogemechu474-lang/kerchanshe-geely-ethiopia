@@ -219,7 +219,7 @@ export default function OrderApprovalPanel({
         order.customerEmail
           ? data.notificationSent
             ? `Agreement emailed to ${order.customerEmail}.`
-            : 'The agreement could not be emailed — check SMTP settings.'
+            : `The agreement could not be emailed${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
           : 'No customer email is on file, so the agreement was not emailed.'
       );
       onUpdated();
@@ -242,7 +242,7 @@ export default function OrderApprovalPanel({
         order.customerEmail
           ? data.notificationSent
             ? `Countersigned. A payment link was emailed to ${order.customerEmail}.`
-            : 'Countersigned, but the payment-link email could not be sent — check SMTP settings.'
+            : `Countersigned, but the payment-link email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
           : 'Countersigned. No customer email is on file, so the payment link was not emailed.'
       );
       onUpdated();

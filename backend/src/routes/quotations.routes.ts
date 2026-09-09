@@ -11,6 +11,7 @@ import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
+import { MAX_REASONABLE_PRICE_ETB } from '../config/pricing';
 
 const router = Router();
 
@@ -314,6 +315,10 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
       res.status(400).json({ error: 'unitPrice is required' });
       return;
     }
+    if (parsedUnitPrice > MAX_REASONABLE_PRICE_ETB) {
+      res.status(400).json({ error: `Unit price looks too high (max ETB ${MAX_REASONABLE_PRICE_ETB.toLocaleString()}). Check for a typo.` });
+      return;
+    }
     const parsedQuantity = quantity != null && quantity !== '' ? Number(quantity) : 1;
     const parsedDiscount = discountAmount != null && discountAmount !== '' ? Number(discountAmount) : 0;
     const parsedRegistrationCharge = registrationCharge != null && registrationCharge !== '' ? Number(registrationCharge) : null;
@@ -373,7 +378,7 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
         quotationNo: updated.quotationNo || quotation.reference,
         customerName: quotation.customerName,
         vehicleModel: quotation.vehicleModel,
-        totalPrice: `${parsedUnitPrice} × ${parsedQuantity} - ${parsedDiscount} + ${vatAmount}`,
+        totalPrice: Math.max(0, parsedUnitPrice * parsedQuantity - parsedDiscount) + vatAmount,
         salesAgent: assignedAgent?.name || 'Unassigned',
         nextStep: 'Review the pricing and approve or reject the quotation.',
         adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,

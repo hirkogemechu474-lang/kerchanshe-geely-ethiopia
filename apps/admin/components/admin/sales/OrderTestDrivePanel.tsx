@@ -69,7 +69,7 @@ export default function OrderTestDrivePanel({
       setNotice(
         data.notificationSent
           ? `Test-drive invite emailed to ${order.customerEmail}.`
-          : 'Test drive created, but the notification email could not be sent — check SMTP settings.'
+          : `Test drive created, but the notification email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
       );
       setShowForm(false);
       setPreferredDate('');

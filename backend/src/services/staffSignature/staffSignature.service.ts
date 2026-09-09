@@ -16,7 +16,7 @@ export const staffSignatureService = {
 
       const setupUrl = `${env.urls.admin}/signature/setup?token=${token}`;
 
-      await sendEmail({
+      const emailResult = await sendEmail({
         to: user.email,
         subject: 'Signature Setup Link',
         html: `
@@ -30,7 +30,7 @@ export const staffSignatureService = {
         `,
       });
 
-      return { ok: true };
+      return { ok: true, data: { notificationSent: emailResult.ok, notificationError: emailResult.error } };
     } catch (error: any) {
       console.error('[SIGNATURE SETUP ERROR]', error.message);
       return { ok: false, error: 'Failed to initiate signature setup.' };

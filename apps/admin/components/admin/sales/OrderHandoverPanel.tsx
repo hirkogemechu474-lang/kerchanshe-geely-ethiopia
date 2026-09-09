@@ -243,7 +243,7 @@ export default function OrderHandoverPanel({
         order.customerEmail
           ? emailData.notificationSent
             ? `Delivery confirmation emailed to ${order.customerEmail}.`
-            : 'Delivered, but the confirmation email could not be sent — check SMTP settings.'
+            : `Delivered, but the confirmation email could not be sent${emailData.notificationError ? `: ${emailData.notificationError}` : ' — check SMTP settings.'}`
           : 'Delivered. No customer email on file, so no confirmation was sent.'
       );
       onUpdated();

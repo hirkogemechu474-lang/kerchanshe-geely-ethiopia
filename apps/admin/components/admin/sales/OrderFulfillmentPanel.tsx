@@ -108,7 +108,7 @@ export default function OrderFulfillmentPanel({
           ? ''
           : data.notificationSent
           ? `Invoice emailed to the customer.`
-          : 'Invoice generated, but the email could not be sent — check SMTP settings.'
+          : `Invoice generated, but the email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
       );
       onUpdated();
       router.refresh();

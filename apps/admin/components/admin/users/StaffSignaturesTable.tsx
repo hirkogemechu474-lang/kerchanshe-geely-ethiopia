@@ -29,7 +29,7 @@ export default function StaffSignaturesTable({ users, webAppUrl }: { users: Staf
         id: user.id,
         text: data.notificationSent
           ? `Signature setup link emailed to ${user.email}.`
-          : 'Link created, but the email could not be sent — check SMTP settings.',
+          : `Link created, but the email could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`,
       });
     } catch (err: any) {
       setNotice({ id: user.id, text: err.message });

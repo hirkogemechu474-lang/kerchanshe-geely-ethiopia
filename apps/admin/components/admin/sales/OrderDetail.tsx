@@ -344,7 +344,7 @@ export default function OrderDetail({
                 disabled={!permissions.canManageQuotations || Boolean(state.approvedAt)}
               />
               {permissions.canManageQuotations && !state.approvedAt && totalPrice !== (state.totalPrice?.toString() || '') && (
-                <Button variant="secondary" onClick={() => patchFields({ totalPrice: totalPrice || null })} disabled={busy}>
+                <Button variant="secondary" onClick={() => patchFields({ totalPrice: totalPrice === '' ? null : Number(totalPrice) })} disabled={busy}>
                   Save
                 </Button>
               )}

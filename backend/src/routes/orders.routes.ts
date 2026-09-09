@@ -14,6 +14,7 @@ import { signLinkToken } from '../utils/secureLink';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { env } from '../config/env';
 import { rateLimiters } from '../utils/rateLimit';
+import { MAX_REASONABLE_PRICE_ETB } from '../config/pricing';
 
 const router = Router();
 
@@ -119,6 +120,15 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 // PATCH /api/orders/:id (admin update fields)
 router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    const { totalPrice, commissionRate } = req.body;
+    if (totalPrice != null && (typeof totalPrice !== 'number' || !Number.isFinite(totalPrice) || totalPrice < 0 || totalPrice > MAX_REASONABLE_PRICE_ETB)) {
+      res.status(400).json({ error: `Total price must be a number between 0 and ETB ${MAX_REASONABLE_PRICE_ETB.toLocaleString()}.` });
+      return;
+    }
+    if (commissionRate != null && (typeof commissionRate !== 'number' || !Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100)) {
+      res.status(400).json({ error: 'Commission rate must be a number between 0 and 100.' });
+      return;
+    }
     const order = await prisma.salesOrder.update({ where: { id: req.params.id }, data: req.body });
     res.json(order);
   } catch (error) {
@@ -279,6 +289,7 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
     }
 
     let notificationSent = false;
+    let notificationError: string | undefined;
     if (order.customerEmail) {
       const paymentToken = signLinkToken('payment', order.id);
       const link = `${env.urls.site}/payment/order/${order.id}?token=${encodeURIComponent(paymentToken)}`;
@@ -289,9 +300,10 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
         data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
       });
       notificationSent = result.ok;
+      notificationError = result.error;
     }
 
-    res.json({ ...updated, notificationSent });
+    res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Countersign error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -311,6 +323,7 @@ router.post('/:id/send-agreement', requireAdminApiSession, async (req: Request, 
     const updated = await prisma.salesOrder.update({ where: { id: req.params.id }, data: { agreementSentAt: new Date() } });
 
     let notificationSent = false;
+    let notificationError: string | undefined;
     if (order.customerEmail) {
       const link = `${env.urls.site}${orderAgreementService.generateAgreementLink(order.id)}`;
 
@@ -333,9 +346,10 @@ router.post('/:id/send-agreement', requireAdminApiSession, async (req: Request, 
         attachments,
       });
       notificationSent = result.ok;
+      notificationError = result.error;
     }
 
-    res.json({ ...updated, notificationSent });
+    res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Send agreement error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -425,6 +439,7 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
     });
 
     let notificationSent = false;
+    let notificationError: string | undefined;
     if (order.customerEmail) {
       const result = await dispatchNotification({
         type: 'order_status',
@@ -433,9 +448,10 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
         data: { orderNo: order.orderNo, invoiceNo: updated.invoiceNo, invoiceAmount: updated.invoiceAmount, customerName: order.customerName },
       });
       notificationSent = result.ok;
+      notificationError = result.error;
     }
 
-    res.status(201).json({ ...updated, notificationSent });
+    res.status(201).json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Generate invoice error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -522,7 +538,7 @@ router.post('/:id/send-test-drive', requireAdminApiSession, async (req: Request,
       data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, preferredDate, preferredTime, location },
     });
 
-    res.status(201).json({ ...testDrive, notificationSent: result.ok });
+    res.status(201).json({ ...testDrive, notificationSent: result.ok, notificationError: result.error });
   } catch (error) {
     console.error('Send test drive error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -538,6 +554,7 @@ router.post('/:id/handover-email', requireAdminApiSession, async (req: Request, 
     const updated = await prisma.salesOrder.update({ where: { id: req.params.id }, data: { handoverNotifiedAt: new Date() } });
 
     let notificationSent = false;
+    let notificationError: string | undefined;
     if (order.customerEmail) {
       const result = await dispatchNotification({
         type: 'order_status',
@@ -546,9 +563,10 @@ router.post('/:id/handover-email', requireAdminApiSession, async (req: Request, 
         data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
       });
       notificationSent = result.ok;
+      notificationError = result.error;
     }
 
-    res.json({ ...updated, notificationSent });
+    res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Send handover email error:', error);
     res.status(500).json({ error: 'Internal server error' });
