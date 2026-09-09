@@ -450,6 +450,10 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
 
     const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
     if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (action === 'confirm' && !order.countersignedAt) {
+      res.status(400).json({ error: "Get the manager's countersignature before confirming payment." });
+      return;
+    }
 
     const updated = action === 'confirm'
       ? await prisma.salesOrder.update({

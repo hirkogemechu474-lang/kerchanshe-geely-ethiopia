@@ -8,7 +8,9 @@ import { env } from '@/lib/env';
 // link to set up their signature (web/app/staff-signature/[token]), then
 // see who has one on file. Once set, agreement/handover countersign
 // actions stamp that actual signature image instead of just the person's
-// typed name — see web/app/api/agreement/[orderId]/countersign-stamp.
+// typed name — see backend/src/routes/orders.routes.ts's POST /:id/countersign
+// (agreement) and backend/src/routes/handover.routes.ts's
+// POST /:orderId/countersign-stamp (handover).
 export default async function StaffSignaturesPage() {
   await requirePermission('canManageUsers');
 

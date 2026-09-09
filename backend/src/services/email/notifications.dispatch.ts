@@ -9,6 +9,8 @@ export interface NotificationPayload {
   subject: string;
   data: Record<string, any>;
   attachments?: EmailAttachment[];
+  /** When set, the email opens with "Hello {greetingName}," above the data table. */
+  greetingName?: string;
   /** In-app notification — if provided, creates a bell notification for each recipient */
   inApp?: {
     type: string;
@@ -131,6 +133,7 @@ function buildNotificationHtml(payload: NotificationPayload): string {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1a1a2e;">${payload.subject}</h2>
+      ${payload.greetingName ? `<p style="margin: 0 0 12px;">Hello ${payload.greetingName},</p>` : ''}
       <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
         ${dataEntries}
       </div>

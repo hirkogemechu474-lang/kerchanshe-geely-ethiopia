@@ -4,11 +4,11 @@ import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository, vehicleRepository } from '../repositories';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
-import { quotationService } from '../services/sales/quotation.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
+import { verifyLinkToken } from '../utils/secureLink';
 
 let cachedManagerEmails: string[] | null = null;
 let managerEmailsCachedAt = 0;
@@ -643,49 +643,6 @@ router.post('/quick-request', rateLimiters.contactForm, async (req: Request, res
   }
 });
 
-router.post('/quotations', rateLimiters.contactForm, async (req: Request, res: Response) => {
-  try {
-    // The web quote page POSTs `configuration` and `visitId`, but neither is a
-    // column on Quotation (the configurator selection is stored as
-    // `configurationJson`, and `visitId` is not persisted on this model).
-    // Map `configuration` -> `configurationJson` and drop the non-column keys
-    // so a defined `configuration` can't crash prisma.create.
-    const { configuration, visitId, ...rest } = (req.body ?? {}) as Record<string, any>;
-    const data: any = { ...rest };
-    if (configuration !== undefined) data.configurationJson = configuration;
-
-    const result = await quotationService.create({
-      customerName: data.customerName,
-      phoneNumber: data.phoneNumber,
-      email: data.email,
-      nationalId: data.nationalId,
-      idDocumentType: data.idDocumentType,
-      idPhotoUrl: data.idPhotoUrl,
-      customerAddress: data.customerAddress,
-      vehicleModel: data.vehicleModel,
-      message: data.message,
-      financingInterest: data.financingInterest,
-      tradeInInterest: data.tradeInInterest,
-      source: data.source,
-      configurationJson: data.configurationJson,
-      autoAssign: true,
-    });
-    if (!result.ok || !result.data) {
-      res.status(400).json({ error: result.error || 'Failed to save quotation' });
-      return;
-    }
-
-    res.status(201).json({
-      success: true,
-      reference: result.data.reference,
-      salesAgentNotified: Boolean(result.assignedRep),
-    });
-  } catch (error) {
-    console.error('Submit quotation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 router.get('/quotations/:reference', async (req: Request, res: Response) => {
   try {
     // NOTE: `include: { vehicle: true, salesAgent: true }` referenced
@@ -1102,13 +1059,32 @@ router.post('/purchases/:purchaseId/payment/callback', async (req: Request, res:
   }
 });
 
+// The emailed payment link (see POST /api/orders/:id/countersign, which is
+// the only place a 'payment' token is ever minted) is only sent once a
+// manager has countersigned the agreement. Verifying the token here — and
+// re-checking countersignedAt itself — makes that a real precondition on
+// these endpoints instead of just "we didn't email the link early."
+function guardPaymentAccess(order: { countersignedAt: Date | null } | null, token: unknown, orderId: string, res: Response): boolean {
+  if (!order) { res.status(404).json({ error: 'Order not found' }); return false; }
+  if (!verifyLinkToken(typeof token === 'string' ? token : undefined, 'payment', orderId)) {
+    res.status(403).json({ error: 'Invalid or expired link.' });
+    return false;
+  }
+  if (!order.countersignedAt) {
+    res.status(403).json({ error: 'This order is awaiting manager countersignature before payment can proceed.' });
+    return false;
+  }
+  return true;
+}
+
 router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
   try {
-    const payment = await prisma.salesOrder.findUnique({
+    const order = await prisma.salesOrder.findUnique({
       where: { id: req.params.orderId },
-      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true },
+      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true, countersignedAt: true },
     });
-    if (!payment) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
+    const { countersignedAt, ...payment } = order!;
     res.json(payment);
   } catch (error) {
     console.error('Get order payments error:', error);
@@ -1118,6 +1094,8 @@ router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
 
 router.post('/orders/:orderId/payment/proof', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId }, select: { countersignedAt: true } });
+    if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
     const { proofUrl } = req.body;
     const payment = await salesOrderRepository.updatePaymentProof(req.params.orderId, proofUrl);
     res.status(201).json({ success: true, id: payment.id });
@@ -1129,6 +1107,8 @@ router.post('/orders/:orderId/payment/proof', rateLimiters.contactForm, async (r
 
 router.post('/orders/:orderId/payment/mock-pay', async (req: Request, res: Response) => {
   try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId }, select: { countersignedAt: true } });
+    if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
     // Schema comment: "the online 'pay now' mock path skips straight to
     // PAID" with no staff reviewer — exactly what this helper does.
     const payment = await salesOrderRepository.updatePaymentStatusPaid(req.params.orderId);

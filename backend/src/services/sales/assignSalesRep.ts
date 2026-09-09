@@ -283,10 +283,16 @@ async function autoAssignBestRep(
       if (allReps.length === 0) {
         return { ok: false, error: 'No active sales representatives found.' };
       }
-      // Fallback: assign to least recently logged-in rep
-      const fallbackRep = allReps.sort((a, b) => (a.lastLogin?.getTime() ?? 0) - (b.lastLogin?.getTime() ?? 0))[0];
-      console.log('[ASSIGN] All scores 0, fallback to:', fallbackRep.name);
-      return { ok: true, data: { userId: fallbackRep.id, score: 0, reason: 'Fallback assignment' } };
+      // Fallback: every rep scored 0 (e.g. everyone marked unavailable) — still
+      // pick the least-loaded rep by actual workload rather than an unrelated
+      // signal like login recency.
+      const fallbackScored = await Promise.all(
+        allReps.map(async (rep) => ({ rep, workload: await calculateWorkloadScore(rep.id, targetId) }))
+      );
+      fallbackScored.sort((a, b) => b.workload - a.workload);
+      const fallbackRep = fallbackScored[0].rep;
+      console.log('[ASSIGN] All scores 0, fallback to least-loaded:', fallbackRep.name);
+      return { ok: true, data: { userId: fallbackRep.id, score: 0, reason: 'Fallback assignment (least-loaded)' } };
     }
 
     // Sort by score descending, then by lastLogin ascending (prefer recently active)

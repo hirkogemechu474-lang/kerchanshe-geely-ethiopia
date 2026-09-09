@@ -1,9 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
-import { documentSignatureRepository, userRepository } from '../repositories';
 
 const router = Router();
 
@@ -61,41 +58,6 @@ router.get('/:orderId/pdf', async (req: Request, res: Response) => {
     res.send(result.data);
   } catch (error) {
     console.error('Generate agreement PDF error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// POST /api/agreement/:orderId/countersign-stamp (staff countersign)
-router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: Request, res: Response) => {
-  try {
-    const existing = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId } });
-    if (!existing) { res.status(404).json({ error: 'Order not found' }); return; }
-    if (!existing.signedAt || !existing.signedDocumentUrl) {
-      res.status(400).json({ error: 'The customer must sign the agreement before manager countersignature.' });
-      return;
-    }
-    const order = await prisma.salesOrder.update({
-      where: { id: req.params.orderId },
-      data: {
-        countersignedAt: new Date(),
-        countersignedById: req.adminSession!.user.id,
-      },
-    });
-
-    try {
-      const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
-      await documentSignatureRepository.upsert('SALES_AGREEMENT', order.id, 'manager', {
-        signedByName: manager?.name ?? req.adminSession!.user.name,
-        signatureUrl: manager?.signatureUrl ?? null,
-        signedByUserId: req.adminSession!.user.id,
-      });
-    } catch {
-      // Signature-log write failure should not block countersigning.
-    }
-
-    res.json(order);
-  } catch (error) {
-    console.error('Countersign agreement error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

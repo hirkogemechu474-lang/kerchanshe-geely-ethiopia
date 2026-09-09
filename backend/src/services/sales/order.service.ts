@@ -37,13 +37,14 @@ export const orderStateMachine = {
 // registration + invoice gates the Fulfillment panel enforces before
 // DELIVERED. Returns a human-readable reason the transition is blocked, or
 // null if it's allowed.
-function getTransitionBlockReason(order: { pdiItems?: { isChecked: boolean }[]; approvedAt: Date | null; signedDocumentUrl: string | null; paymentStatus: string; registeredAt: Date | null; invoicedAt: Date | null }, toStatus: string): string | null {
+function getTransitionBlockReason(order: { pdiItems?: { isChecked: boolean }[]; approvedAt: Date | null; signedDocumentUrl: string | null; countersignedAt: Date | null; paymentStatus: string; registeredAt: Date | null; invoicedAt: Date | null }, toStatus: string): string | null {
   if (toStatus === 'READY_FOR_DELIVERY') {
     const pdiItems = order.pdiItems ?? [];
     const pdiComplete = pdiItems.length > 0 && pdiItems.every((p) => p.isChecked);
     if (!pdiComplete) return 'Complete the PDI checklist before marking this order ready for delivery.';
     const agreementComplete = Boolean(order.approvedAt) && Boolean(order.signedDocumentUrl);
     if (!agreementComplete) return 'Approve the order and attach the signed agreement before marking it ready for delivery.';
+    if (!order.countersignedAt) return "Get the manager's countersignature before marking this order ready for delivery.";
     if (order.paymentStatus !== 'PAID') return 'Confirm payment before marking this order ready for delivery.';
   }
   if (toStatus === 'DELIVERED') {

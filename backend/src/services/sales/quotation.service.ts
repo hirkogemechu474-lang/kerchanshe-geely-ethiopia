@@ -119,19 +119,25 @@ export const quotationService = {
         if (assignedUser?.email) {
           const managerEmails = await getManagerEmails();
           console.log('[QUOTATION CREATE] Sending notification to:', [assignedUser.email, ...managerEmails]);
+          const subject = `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`;
+          const data = {
+            quotationId: quotation.id,
+            quotationNo: quotation.reference,
+            customerName: quotation.customerName,
+            phoneNumber: quotation.phoneNumber,
+            vehicleModel: quotation.vehicleModel,
+            assignedTo: assignedUser.name,
+            adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
+          };
+          // Two separate dispatches — not one email BCC'd to everyone — so the
+          // "Hello {name}," greeting actually addresses the assigned agent
+          // instead of also appearing on the managers' copy.
           const notificationResult = await dispatchNotification({
             type: 'lead_assignment',
-            to: [assignedUser.email, ...managerEmails],
-            subject: `New Quotation Assignment${quotation.reference ? ` (${quotation.reference})` : ''}`,
-            data: {
-              quotationId: quotation.id,
-              quotationNo: quotation.reference,
-              customerName: quotation.customerName,
-              phoneNumber: quotation.phoneNumber,
-              vehicleModel: quotation.vehicleModel,
-              assignedTo: assignedUser.name,
-              adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
-            },
+            to: [assignedUser.email],
+            subject,
+            greetingName: assignedUser.name,
+            data,
             inApp: {
               type: 'lead_assignment',
               title: 'New Quotation Assigned',
@@ -144,6 +150,24 @@ export const quotationService = {
             },
           });
           console.log('[QUOTATION CREATE] Notification result:', notificationResult);
+          if (managerEmails.length) {
+            await dispatchNotification({
+              type: 'lead_assignment',
+              to: managerEmails,
+              subject,
+              data,
+              inApp: {
+                type: 'lead_assignment',
+                title: 'New Quotation Assigned',
+                body: `${assignedUser.name} has been assigned a new quotation${quotation.reference ? ` (${quotation.reference})` : ''} for ${quotation.customerName}${quotation.vehicleModel ? ` — ${quotation.vehicleModel}` : ''}.`,
+                link: `/admin/quotations/${quotation.id}`,
+                quotationId: quotation.id,
+                relatedModel: 'quotation',
+                relatedId: quotation.id,
+                priority: 'high',
+              },
+            });
+          }
         } else {
           console.log('[QUOTATION CREATE] No email found for assigned rep:', assignedRep.userId);
         }

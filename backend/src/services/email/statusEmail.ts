@@ -7,7 +7,7 @@ export async function sendQuotationConfirmationEmail(params: {
   reference: string;
   vehicleModel?: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const trackingLink = `${env.urls.site}/status?ref=${encodeURIComponent(params.reference)}`;
+  const modelsLink = `${env.urls.site}/models`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -32,7 +32,7 @@ export async function sendQuotationConfirmationEmail(params: {
         </div>
 
         <div style="text-align: center; margin: 25px 0;">
-          <a href="${trackingLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Track Your Request</a>
+          <a href="${modelsLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Browse Our Models</a>
         </div>
 
         <p style="color: #666;">If you have any questions, please don't hesitate to contact us.</p>
