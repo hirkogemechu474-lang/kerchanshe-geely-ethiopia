@@ -149,7 +149,11 @@ export default async function RootLayout({
   const pixelId = seo.facebookPixelId?.trim();
 
   return (
-    <html lang="en" className={`${inter.variable} ${manrope.variable} ${notoSansEthiopic.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${manrope.variable} ${notoSansEthiopic.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Next's basePath does NOT rewrite hand-written fetch('/api/...') calls
             (only routing/Link/asset URLs) — this app has ~47 client components
