@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Gauge, ClipboardCheck, Timer, ShieldCheck, Star, Download, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Gauge, ClipboardCheck, Timer, ShieldCheck, Star, Loader2 } from 'lucide-react';
 import { Card, StatTile } from '@/components/admin/ui';
+import ReportExportBar from '@/components/admin/reports/ReportExportBar';
+import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
 
 interface BiData {
   period: { from: string; to: string; label: string; monthValue: string };
@@ -68,11 +70,50 @@ function normalizeBiData(raw: any): BiData {
   };
 }
 
+function buildReport(data: BiData, trend: TrendPoint[] | null): DashboardReport {
+  const csiValue = data.csi.available
+    ? `${data.csi.averageRating.toFixed(2)} / 5 (${data.csi.responseCount} response${data.csi.responseCount === 1 ? '' : 's'})`
+    : 'No data';
+  return {
+    title: 'Workshop Management BI Dashboard',
+    subtitle: `Monthly workshop performance — ${data.period.label}`,
+    sections: [
+      statsSection('Key Performance Indicators', [
+        { label: 'Jobs Closed', value: data.kpis.jobsClosedCount },
+        { label: 'First-Time-Fix Rate', value: data.kpis.firstTimeFixRate === null ? '—' : `${data.kpis.firstTimeFixRate}%` },
+        { label: 'Avg. Turnaround', value: data.kpis.avgTurnaroundHours === null ? '—' : `${data.kpis.avgTurnaroundHours}h` },
+        { label: 'Avg. Warranty Turnaround', value: data.kpis.avgWarrantyTurnaroundDays === null ? '—' : `${data.kpis.avgWarrantyTurnaroundDays}d` },
+      ]),
+      statsSection('Revenue Mix', [
+        { label: 'Standard / Chargeable', value: data.revenue.standard.toLocaleString() },
+        { label: 'Warranty / Goodwill', value: data.revenue.warrantyGoodwill.toLocaleString() },
+        { label: 'Total', value: data.revenue.total.toLocaleString() },
+      ]),
+      statsSection('Warranty Claims Resolved', [
+        { label: 'Approved', value: data.kpis.claimsApproved },
+        { label: 'Rejected', value: data.kpis.claimsRejected },
+        { label: 'Total Resolved', value: data.kpis.claimsResolved },
+      ]),
+      statsSection('Customer Satisfaction (CSI)', [{ label: 'Average Rating', value: csiValue }]),
+      tableSection(
+        'First-Time-Fix Rate — 6 Month Trend',
+        ['Month', 'Jobs Closed', 'First-Time-Fix', 'Avg. Turnaround', 'Revenue'],
+        (trend ?? []).map((p) => [
+          p.label,
+          p.jobsClosedCount,
+          p.firstTimeFixRate === null ? '—' : `${p.firstTimeFixRate}%`,
+          p.avgTurnaroundHours === null ? '—' : `${p.avgTurnaroundHours}h`,
+          p.revenueTotal.toLocaleString(),
+        ])
+      ),
+    ],
+  };
+}
+
 export default function WorkshopBiDashboard({ canExport }: { canExport: boolean }) {
   const [month, setMonth] = useState(currentMonthValue());
   const [data, setData] = useState<BiData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
   const [trend, setTrend] = useState<TrendPoint[] | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -106,22 +147,7 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
     })();
   }, []);
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const res = await fetch(`/api/admin/workshop/bi-dashboard?month=${month}&format=csv`);
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `workshop-bi-${month}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setExporting(false);
-    }
-  };
+  const report = useMemo(() => (data ? buildReport(data, trend) : null), [data, trend]);
 
   const csiAverage = data?.csi.available ? data.csi.averageRating : null;
   let csiText = '';
@@ -148,17 +174,14 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
           onChange={(e) => setMonth(e.target.value)}
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
         />
-        {canExport && (
-          <button
-            onClick={handleExport}
-            disabled={exporting || !data}
-            className="ml-auto inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
-          >
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Export CSV
-          </button>
-        )}
       </div>
+
+      {canExport && report && (
+        <Card>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Download this dashboard</p>
+          <ReportExportBar report={report} canExport={canExport} />
+        </Card>
+      )}
 
       {loading || !data ? (
         <div className="text-gray-400 text-sm">Loading…</div>

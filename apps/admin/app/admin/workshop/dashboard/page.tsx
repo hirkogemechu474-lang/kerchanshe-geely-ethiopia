@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/admin/ui';
 import WorkshopDashboard from '@/components/admin/workshop/WorkshopDashboard';
 
 export default async function WorkshopDashboardPage() {
-  await requirePermission('canViewJobCards');
+  const session = await requirePermission('canViewJobCards');
 
   return (
     <div className="space-y-6">
@@ -11,7 +11,7 @@ export default async function WorkshopDashboardPage() {
         title="Workshop Live Dashboard"
         description="Real-time bay occupancy, today's jobs, and average turnaround"
       />
-      <WorkshopDashboard />
+      <WorkshopDashboard canExport={session.permissions.canExportReports} />
     </div>
   );
 }

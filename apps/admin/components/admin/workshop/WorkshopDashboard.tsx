@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Gauge, ClipboardList, Timer, Hourglass, PackageSearch } from 'lucide-react';
 import { JOB_CARD_STATUS_COLORS, JOB_CARD_STATUS_LABELS } from '@/lib/services/workshop/jobCardStateMachine';
-import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile } from '@/components/admin/ui';
+import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow, StatTile, Card } from '@/components/admin/ui';
+import ReportExportBar from '@/components/admin/reports/ReportExportBar';
+import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
 
 const REFRESH_MS = 30_000;
 
@@ -44,7 +46,41 @@ function formatMinutes(mins: number | null) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export default function WorkshopDashboard() {
+function buildReport(data: DashboardData): DashboardReport {
+  return {
+    title: 'Workshop Live Dashboard',
+    subtitle: "Real-time bay occupancy, today's jobs, and average turnaround",
+    sections: [
+      statsSection('Key Performance Indicators', [
+        { label: 'Bays Busy', value: `${data.baysBusy} / ${data.baysTotal}` },
+        { label: 'Jobs Today', value: data.jobsToday },
+        { label: 'Avg. Turnaround', value: formatMinutes(data.avgTurnaroundMinutes) },
+        { label: 'Pending Approval', value: data.pendingApproval },
+        { label: 'Overdue (3+ days)', value: data.overdueCount },
+        { label: 'Parts Below Reorder', value: data.partsBelowReorder },
+      ]),
+      tableSection(
+        'Bay Status Board',
+        ['Bay', 'Type', 'Status', 'Current Job'],
+        data.bays.map((b) => [b.name, b.bayType, b.status.replace('_', ' '), b.currentJobCard?.jobCardNo ?? '—'])
+      ),
+      tableSection(
+        'Open Job Cards',
+        ['Job#', 'Vehicle / Plate', 'Customer', 'Status', 'Technician', 'Bay'],
+        data.jobCards.map((j) => [
+          j.jobCardNo,
+          `${j.vehicleModel || '—'} / ${j.plateNo}`,
+          j.customerName,
+          JOB_CARD_STATUS_LABELS[j.status as keyof typeof JOB_CARD_STATUS_LABELS] ?? j.status,
+          j.technicianName || 'Unassigned',
+          j.bayName || '—',
+        ])
+      ),
+    ],
+  };
+}
+
+export default function WorkshopDashboard({ canExport }: { canExport: boolean }) {
   const [data, setData] = useState<DashboardData | null>(null);
 
   const load = useCallback(async () => {
@@ -70,10 +106,19 @@ export default function WorkshopDashboard() {
     };
   }, [load]);
 
+  const report = useMemo(() => (data ? buildReport(data) : null), [data]);
+
   if (!data) return <div className="text-gray-400 text-sm">Loading dashboard…</div>;
 
   return (
     <div className="space-y-6">
+      {canExport && report && (
+        <Card>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Download this dashboard</p>
+          <ReportExportBar report={report} canExport={canExport} />
+        </Card>
+      )}
+
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <StatTile label="Bays Busy" value={`${data.baysBusy} / ${data.baysTotal}`} icon={Gauge} />

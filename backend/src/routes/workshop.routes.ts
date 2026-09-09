@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { resolveBiMonthRange, computeWorkshopBiMetrics, WorkshopBiMetrics } from '../services/workshop/biSummary.service';
 
 const router = Router();
 
@@ -399,50 +400,87 @@ router.get('/parts/reorder-alerts', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/admin/workshop/bi-dashboard (BI dashboard)
+// Renders the same BI payload as a flat "metric,value" CSV. Kept working for
+// any callers still hitting ?format=csv, but the branded export system now
+// handles the primary export path — this is just a fallback, not the main UI.
+function buildWorkshopBiCsv(payload: {
+  period: { label: string };
+  kpis: WorkshopBiMetrics['kpis'];
+  revenue: WorkshopBiMetrics['revenue'];
+  csi: WorkshopBiMetrics['csi'];
+}): string {
+  const rows: [string, string | number][] = [
+    ['Period', payload.period.label],
+    ['Jobs Closed', payload.kpis.jobsClosedCount],
+    ['First-Time-Fix Rate (%)', payload.kpis.firstTimeFixRate ?? ''],
+    ['Avg Turnaround (hours)', payload.kpis.avgTurnaroundHours ?? ''],
+    ['Avg Warranty Turnaround (days)', payload.kpis.avgWarrantyTurnaroundDays ?? ''],
+    ['Claims Resolved', payload.kpis.claimsResolved],
+    ['Claims Approved', payload.kpis.claimsApproved],
+    ['Claims Rejected', payload.kpis.claimsRejected],
+    ['Revenue - Standard', payload.revenue.standard],
+    ['Revenue - Warranty/Goodwill', payload.revenue.warrantyGoodwill],
+    ['Revenue - Total', payload.revenue.total],
+    ['CSI Average Rating', payload.csi.available ? payload.csi.averageRating : ''],
+    ['CSI Response Count', payload.csi.available ? payload.csi.responseCount : 0],
+  ];
+  return ['Metric,Value', ...rows.map(([k, v]) => `${k},${v}`)].join('\n');
+}
+
+// GET /api/admin/workshop/bi-dashboard (monthly BI dashboard — KPI derivations live in biSummary.service.ts)
 router.get('/bi-dashboard', async (req: Request, res: Response) => {
   try {
-    const totalRevenue = await prisma.jobCard.aggregate({ _sum: { invoiceAmount: true }, where: { status: 'INVOICED_CLOSED' } });
-    const totalJobCards = await prisma.jobCard.count();
-    // JobCard has no stored duration field — completion time is derived from
-    // closeTs - openTs on closed job cards (same approach as biSummary.service.ts).
-    const closedJobCards = await prisma.jobCard.findMany({
-      where: { status: 'INVOICED_CLOSED', closeTs: { not: null } },
-      select: { openTs: true, closeTs: true },
-      take: 200,
-      orderBy: { closeTs: 'desc' },
-    });
+    const { start, end, monthValue, label } = resolveBiMonthRange(req.query.month as string | undefined);
+    const metrics = await computeWorkshopBiMetrics(start, end);
 
-    let avgCompletionTime = 0;
-    if (closedJobCards.length > 0) {
-      const totalHours = closedJobCards.reduce(
-        (sum, jc) => sum + (jc.closeTs!.getTime() - jc.openTs.getTime()) / (1000 * 60 * 60),
-        0
-      );
-      avgCompletionTime = Math.round((totalHours / closedJobCards.length) * 10) / 10;
+    const payload = {
+      period: { from: start.toISOString(), to: new Date(end.getTime() - 1).toISOString(), label, monthValue },
+      kpis: metrics.kpis,
+      revenue: metrics.revenue,
+      csi: metrics.csi,
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (req.query.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="workshop-bi-${monthValue}.csv"`);
+      res.send(buildWorkshopBiCsv(payload));
+      return;
     }
 
-    res.json({ totalRevenue: totalRevenue._sum?.invoiceAmount ?? 0, totalJobCards, avgCompletionTime });
+    res.json(payload);
   } catch (error) {
     console.error('BI dashboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/admin/workshop/bi-dashboard/trend (multi-month trend)
+// GET /api/admin/workshop/bi-dashboard/trend (last N months, oldest first — same
+// per-month derivations as /bi-dashboard via computeWorkshopBiMetrics)
 router.get('/bi-dashboard/trend', async (req: Request, res: Response) => {
   try {
-    const months = parseInt(req.query.months as string) || 12;
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
-
-    const jobCards = await prisma.jobCard.findMany({
-      where: { createdAt: { gte: startDate } },
-      select: { createdAt: true, invoiceAmount: true, status: true },
-      orderBy: { createdAt: 'asc' },
+    const months = Math.max(1, Math.min(24, parseInt(req.query.months as string) || 6));
+    const now = new Date();
+    const monthValues = Array.from({ length: months }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
 
-    res.json(jobCards);
+    const trend = await Promise.all(monthValues.map(async (monthValue) => {
+      const { start, end, label } = resolveBiMonthRange(monthValue);
+      const metrics = await computeWorkshopBiMetrics(start, end);
+      return {
+        monthValue,
+        label,
+        jobsClosedCount: metrics.kpis.jobsClosedCount,
+        firstTimeFixRate: metrics.kpis.firstTimeFixRate,
+        avgTurnaroundHours: metrics.kpis.avgTurnaroundHours,
+        revenueTotal: metrics.revenue.total,
+        csiAverage: metrics.csi.available ? metrics.csi.averageRating : null,
+      };
+    }));
+
+    res.json({ trend });
   } catch (error) {
     console.error('BI trend error:', error);
     res.status(500).json({ error: 'Internal server error' });

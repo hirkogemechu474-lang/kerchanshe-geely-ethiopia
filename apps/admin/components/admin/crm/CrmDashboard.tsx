@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Users, FileText, ShoppingCart, Wallet, TrendingUp, Gauge, RefreshCw, Loader2, BadgeDollarSign,
 } from 'lucide-react';
 import { Card, StatTile, Button } from '@/components/admin/ui';
+import ReportExportBar from '@/components/admin/reports/ReportExportBar';
+import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
 
 interface CrmDashboard {
   pipeline: {
@@ -43,7 +45,51 @@ function fmt(value: number) {
   return `ETB ${Math.round(value).toLocaleString('en-US')}`;
 }
 
-export default function CrmDashboard() {
+function buildReport(data: CrmDashboard, agents: AgentPerf[], sources: LeadSource[], trend: RevenuePoint[]): DashboardReport {
+  return {
+    title: 'CRM Dashboard',
+    subtitle: 'Sales funnel, conversion, revenue, and agent performance across the CRM lifecycle',
+    sections: [
+      statsSection('Sales Pipeline', [
+        { label: 'Total Leads', value: data.pipeline.leads.total },
+        { label: 'Quotations', value: data.pipeline.quotations.total },
+        { label: 'Orders', value: data.pipeline.orders.total },
+        { label: 'Delivered', value: data.pipeline.orders.delivered },
+        { label: 'Cancelled', value: data.pipeline.orders.cancelled },
+        { label: 'SLA Compliance', value: `${data.slaCompliance}%` },
+      ]),
+      statsSection('Conversion Rates', [
+        { label: 'Lead → Quotation', value: `${data.conversionRates.leadToQuotation}%` },
+        { label: 'Quotation → Order', value: `${data.conversionRates.quotationToOrder}%` },
+        { label: 'Order → Delivery', value: `${data.conversionRates.orderToDelivery}%` },
+        { label: 'Financing', value: `${data.financing.approved} approved / ${data.financing.pending} pending / ${data.financing.declined} declined` },
+        { label: 'Trade-ins', value: `${data.tradeIns.approved} approved / ${data.tradeIns.pending} pending` },
+      ]),
+      statsSection('Revenue', [
+        { label: 'Last 30 days', value: `${fmt(data.revenue.last30Days.total)} (${data.revenue.last30Days.count} orders)` },
+        { label: 'Last 90 days', value: `${fmt(data.revenue.last90Days.total)} (${data.revenue.last90Days.count} orders)` },
+        { label: 'All-time (delivered)', value: `${fmt(data.revenue.allTime.total)} (${data.revenue.allTime.count} orders)` },
+      ]),
+      tableSection(
+        'Lead Sources',
+        ['Source', 'Count', 'Percentage'],
+        sources.map((s) => [s.source.replace(/_/g, ' '), s.count, `${s.percentage}%`])
+      ),
+      tableSection(
+        'Monthly Revenue Trend',
+        ['Month', 'Revenue', 'Orders'],
+        trend.map((p) => [p.label, fmt(p.revenue), p.orders])
+      ),
+      tableSection(
+        'Agent Performance',
+        ['Agent', 'Orders', 'Delivered', 'Conversion', 'Revenue', 'Commission'],
+        agents.map((a) => [a.agentName, a.totalOrders, a.deliveredOrders, `${a.conversionRate}%`, fmt(a.totalRevenue), fmt(a.earnedCommission)])
+      ),
+    ],
+  };
+}
+
+export default function CrmDashboard({ canExport }: { canExport: boolean }) {
   const [data, setData] = useState<CrmDashboard | null>(null);
   const [agents, setAgents] = useState<AgentPerf[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
@@ -71,6 +117,7 @@ export default function CrmDashboard() {
   useEffect(() => { load(); }, [load]);
 
   const maxRevenue = trend.length > 0 ? Math.max(...trend.map((p) => p.revenue)) : 0;
+  const report = useMemo(() => (data ? buildReport(data, agents, sources, trend) : null), [data, agents, sources, trend]);
 
   return (
     <div className="space-y-6">
@@ -82,6 +129,13 @@ export default function CrmDashboard() {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </Button>
       </div>
+
+      {canExport && report && (
+        <Card>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Download this dashboard</p>
+          <ReportExportBar report={report} canExport={canExport} />
+        </Card>
+      )}
 
       {loading && !data ? (
         <div className="flex items-center justify-center py-20">
