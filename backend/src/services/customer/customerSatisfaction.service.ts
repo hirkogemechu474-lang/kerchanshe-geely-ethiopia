@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
 
@@ -157,12 +158,16 @@ export const customerSatisfactionService = {
       const where: any = { status: { in: ['SCHEDULED', 'IN_PROGRESS'] } };
       if (agentId) where.assignedTo = agentId;
 
+      const agentFilter = agentId
+        ? Prisma.sql`AND f."assignedTo" = ${agentId}`
+        : Prisma.sql``;
+
       const followUps = await prisma.$queryRaw<any[]>`
         SELECT f.*, o."orderNo", o."customerName", o."vehicleModel"
         FROM "CustomerFollowUp" f
         JOIN "SalesOrder" o ON f."orderId" = o.id
         WHERE f.status IN ('SCHEDULED', 'IN_PROGRESS')
-        ${agentId ? prisma.$queryRaw`AND f."assignedTo" = ${agentId}` : prisma.$queryRaw``}
+        ${agentFilter}
         ORDER BY f."scheduledDate" ASC
         LIMIT 50
       `;
