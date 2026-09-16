@@ -357,14 +357,24 @@ async function seedMedia() {
 
   // ── Demo users ───────────────────────────────────────────────────────────
   const passwordHash = await bcrypt.hash('ChangeMe123!', 10);
+  const passwordHash2 = await bcrypt.hash('TestUser123!', 10);
   const usersDir = path.join(MEDIA_ROOT, 'users');
   const demoUsers = [
-    { name: 'Selam Admin', email: 'hirkogemechu10@gmail.com', role: 'super_admin', avatar: 'super-admin.svg' },
-    { name: 'Meron Sales', email: 'hirkogemechu34@gmail.com', role: 'sales_manager', avatar: 'sales-manager.svg' },
-    { name: 'Dawit Bekele', email: 'hirkogemechu474@gmail.com', role: 'sales_representative', avatar: 'sales-representative.svg' },
-    { name: 'Yonas Tesfaye', email: 'hirkogemechu51@gmail.com', role: 'workshop_manager', avatar: 'workshop-manager.svg' },
-    { name: 'Hanna Girma', email: 'hirkogemechu17@gmail.com', role: 'service_advisor', avatar: 'service-advisor.svg' },
-    { name: 'Bethel Alemu', email: 'hirkogemechu8@gmail.com', role: 'marketing', avatar: 'marketing.svg' },
+    { name: 'Selam Admin', email: 'hirkogemechu10@gmail.com', role: 'super_admin', avatar: 'super-admin.svg', hash: passwordHash },
+    { name: 'Meron Sales', email: 'hirkogemechu34@gmail.com', role: 'sales_manager', avatar: 'sales-manager.svg', hash: passwordHash },
+    { name: 'Dawit Bekele', email: 'hirkogemechu474@gmail.com', role: 'sales_representative', avatar: 'sales-representative.svg', hash: passwordHash },
+    { name: 'Yonas Tesfaye', email: 'hirkogemechu51@gmail.com', role: 'workshop_manager', avatar: 'workshop-manager.svg', hash: passwordHash },
+    { name: 'Hanna Girma', email: 'hirkogemechu17@gmail.com', role: 'service_advisor', avatar: 'service-advisor.svg', hash: passwordHash },
+    { name: 'Bethel Alemu', email: 'hirkogemechu8@gmail.com', role: 'marketing', avatar: 'marketing.svg', hash: passwordHash },
+    // Alternate accounts for every role
+    { name: 'Abebe Admin', email: 'admin@geelyethiopia.com', role: 'super_admin', avatar: 'super-admin.svg', hash: passwordHash2 },
+    { name: 'Chaltu Sales', email: 'sales.manager@geelyethiopia.com', role: 'sales_manager', avatar: 'sales-manager.svg', hash: passwordHash2 },
+    { name: 'Fikru Demissie', email: 'sales.rep@geelyethiopia.com', role: 'sales_representative', avatar: 'sales-representative.svg', hash: passwordHash2 },
+    { name: 'Getachew Worku', email: 'workshop@geelyethiopia.com', role: 'workshop_manager', avatar: 'workshop-manager.svg', hash: passwordHash2 },
+    { name: 'Hiwot Ayalew', email: 'service@geelyethiopia.com', role: 'service_advisor', avatar: 'service-advisor.svg', hash: passwordHash2 },
+    { name: 'Imani Tesfaye', email: 'marketing@geelyethiopia.com', role: 'marketing', avatar: 'marketing.svg', hash: passwordHash2 },
+    { name: 'Jemila Ahmed', email: 'parts@geelyethiopia.com', role: 'parts_manager', avatar: 'sales-manager.svg', hash: passwordHash2 },
+    { name: 'Kebede Tadesse', email: 'technician@geelyethiopia.com', role: 'technician', avatar: 'workshop-manager.svg', hash: passwordHash2 },
   ];
   for (const u of demoUsers) {
     await prisma.user.upsert({
@@ -373,7 +383,7 @@ async function seedMedia() {
       create: {
         email: u.email,
         name: u.name,
-        passwordHash,
+        passwordHash: u.hash,
         role: u.role,
         isActive: true,
         avatarUrl: urlFor(path.join(usersDir, u.avatar)),
