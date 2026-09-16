@@ -1374,7 +1374,7 @@ router.post('/orders/:orderId/delivery-schedule', rateLimiters.contactForm, asyn
       res.status(403).json({ error: 'Invalid or expired link.' });
       return;
     }
-    if (order.status !== 'READY_FOR_DELIVERY') {
+    if (order.status !== 'READY_FOR_DELIVERY' && order.status !== 'DELIVERED') {
       res.status(400).json({ error: 'This order is not yet ready for delivery scheduling.' });
       return;
     }

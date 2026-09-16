@@ -102,10 +102,20 @@ export default function HandoverSigningPage() {
     setSignError('');
     try {
       const signatureDataUrl = canvasRef.current.toDataURL('image/png');
+
+      const blob = await (await fetch(signatureDataUrl)).blob();
+      const file = new File([blob], 'handover-signature.png', { type: 'image/png' });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'signed-handovers');
+      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok) throw new Error(uploadData?.error || 'Signature upload failed.');
+
       const res = await fetch(`/api/handover/${orderId}/sign?${tokenQs}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'drawn', signatureDataUrl }),
+        body: JSON.stringify({ type: 'drawn', photoUrl: uploadData.url }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Unable to submit your signature.');

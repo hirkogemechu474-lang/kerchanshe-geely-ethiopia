@@ -388,7 +388,178 @@ async function seedMedia() {
   });
 }
 
-seedMedia()
+// ── News articles ──────────────────────────────────────────────────────────
+// Only seeded the first time the table is empty, so admin-authored articles
+// are never duplicated or overwritten on a re-run.
+async function seedNewsIfEmpty() {
+  const existing = await prisma.newsArticle.count();
+  if (existing > 0) return;
+
+  const ex5Dir = (p: string) => path.join(MEDIA_ROOT, 'models/ex5/images', p);
+  const globalDir = (p: string) => path.join(MEDIA_ROOT, 'models/global/images', p);
+  const ex2Dir = (p: string) => path.join(MEDIA_ROOT, 'models/ex2/images', p);
+
+  const articles = [
+    {
+      title: 'Geely EX5 Officially Launches in Ethiopia',
+      category: 'Product Launch',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: globalDir('global-kv-1.jpg'),
+      publishDate: new Date('2025-09-10'),
+      excerpt:
+        'The mid-size electric SUV brings Flyme Auto, a 540° panoramic view and up to 460 km of WLTP range to Ethiopian roads.',
+      content: `
+        <p>Kerchanshe Group Geely today announced the official launch of the Geely EX5 in Ethiopia, marking the first fully electric SUV to arrive under the exclusive distribution partnership between Kerchanshe Group and Zhejiang Geely Holding Group.</p>
+        <p>Built on Geely's dedicated electric architecture, the EX5 combines a spacious mid-size SUV body with a 60.2 kWh LFP battery rated for up to 460 km of WLTP range, Flyme Auto connectivity, ambient interior lighting and a full suite of driver-assistance features including adaptive cruise control and automatic emergency braking.</p>
+        <p>"The EX5 is the clearest expression yet of what this partnership means for Ethiopian drivers: genuine global engineering, backed by local sales and service support," said a Kerchanshe Group Geely spokesperson. The EX5 is available now at the Sarbet showroom in Addis Ababa, with test drives open to the public.</p>
+      `,
+    },
+    {
+      title: 'Kerchanshe Group Geely Opens Flagship Showroom in Sarbet, Addis Ababa',
+      category: 'Company News',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: ex5Dir('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵银色）left 45°.jpg'),
+      publishDate: new Date('2025-06-15'),
+      excerpt:
+        'The new flagship showroom in Sarbet brings genuine Geely vehicles, certified after-sales support and a full customer experience center to Addis Ababa.',
+      content: `
+        <p>Kerchanshe Group Geely has opened its flagship showroom in Sarbet, Addis Ababa, giving Ethiopian customers their first opportunity to see, touch and test drive genuine Geely vehicles backed by full manufacturer warranty and local after-sales support.</p>
+        <p>The showroom houses Geely's growing new-energy lineup alongside a dedicated service center staffed by technicians trained to Geely's global standards. It is the physical anchor of the exclusive distribution agreement announced between Kerchanshe Group and Zhejiang Geely Holding Group.</p>
+        <p>"This showroom is just the beginning," the company said. "We're building a complete ecosystem here — sales, service, parts and eventually local assembly — so owning a Geely in Ethiopia feels as seamless as it does anywhere else in the world."</p>
+      `,
+    },
+    {
+      title: 'Geely EX2 Arrives: The Compact Electric SUV Built for the City',
+      category: 'Product Launch',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: ex2Dir('lifestyle/lifestyle-1.jpg'),
+      publishDate: new Date('2026-02-18'),
+      excerpt:
+        'A compact electric crossover with wireless charging, ambient lighting and five colorways, designed for everyday city driving.',
+      content: `
+        <p>Kerchanshe Group Geely has added the Geely EX2 to its Ethiopian lineup, a compact electric crossover designed for drivers who want an EV that is easy to park, easy to charge and easy to live with in the city.</p>
+        <p>The EX2 pairs Geely's halcyon EM-i powertrain with a well-equipped cabin featuring wireless phone charging, ambient interior lighting and rear air vents, and is offered in five colorways from launch: Aurora Green, Star Silver, Comet Gray, Moon White and Nebula Beige.</p>
+        <p>"The EX2 opens up electric mobility to a new segment of Ethiopian drivers," said a Kerchanshe Group Geely representative. "It's compact, efficient and priced to make the switch to EV an easy decision." The EX2 is available for viewing and test drives at the Sarbet showroom.</p>
+      `,
+    },
+    {
+      title: 'Geely EX5 Earns Top Marks in Independent Crash-Safety Testing',
+      category: 'Safety',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: ex5Dir('features/airbags/GEELY EX5 EM-i左舵/jpg/（左舵银色）7 airbags .jpg'),
+      publishDate: new Date('2026-04-05'),
+      excerpt:
+        'Up to 7 airbags, active safety systems and Geely\'s reinforced body structure combine for class-leading occupant protection.',
+      content: `
+        <p>The Geely EX5 has earned top marks in independent crash-safety evaluations, reinforcing Geely's global reputation for engineering vehicles that protect everyone inside them.</p>
+        <p>Every EX5 sold in Ethiopia comes equipped with up to 7 airbags, adaptive cruise control, automatic emergency braking, lane departure warning and blind-spot detection as standard, all built around a reinforced body structure engineered to Geely's global safety standards.</p>
+        <p>"Safety isn't an option package for us, it's the baseline," said a Kerchanshe Group Geely spokesperson. "Every customer who drives an EX5 off our lot in Addis Ababa is getting the same safety engineering Geely sells in Europe and Asia."</p>
+      `,
+    },
+    {
+      title: 'Kerchanshe Group and Zhejiang Geely Holding Sign Exclusive Distribution Agreement',
+      category: 'Partnership',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: globalDir('global-kv-2.jpg'),
+      publishDate: new Date('2025-04-22'),
+      excerpt:
+        'A landmark agreement makes Kerchanshe Group the exclusive, official distributor of Geely vehicles in Ethiopia.',
+      content: `
+        <p>Kerchanshe Group has announced a landmark agreement with Zhejiang Geely Holding Group (ZGH) to become the exclusive, official distributor of Geely vehicles in Ethiopia, bringing one of the world's largest automotive groups to the Ethiopian market for the first time.</p>
+        <p>The partnership combines Geely's global automotive engineering, safety innovation and design excellence with Kerchanshe Group's more than two decades of trusted local distribution, infrastructure and after-sales expertise built across its coffee export, manufacturing, construction and heavy-equipment businesses.</p>
+        <p>Operating through Kerchanshe Group Geely, the two companies say the agreement goes beyond importing vehicles, with plans for local assembly, job creation and technology transfer in the years ahead.</p>
+      `,
+    },
+    {
+      title: "Smarter Every Day: Geely's Over-the-Air Updates Bring Continuous Innovation to Ethiopian Roads",
+      category: 'Technology',
+      author: 'Kerchanshe Geely Ethiopia',
+      image: ex5Dir('features/OTA/GEELY EX5 EM-i左舵/GEELY EX5 EM-i左舵OTA.jpg'),
+      publishDate: new Date('2026-07-30'),
+      excerpt:
+        'Over-the-air software updates mean every Geely EX5 in Ethiopia keeps gaining new features and improvements long after purchase.',
+      content: `
+        <p>Geely vehicles sold by Kerchanshe Group Geely don't stand still after they leave the showroom. Over-the-air (OTA) software updates let the EX5's infotainment, connectivity and driver-assistance systems improve over time, the same way a smartphone does.</p>
+        <p>Through the Geely App, owners can remotely check vehicle status, receive update notifications and unlock new features as they roll out globally, all without a trip to the service center for routine software work.</p>
+        <p>"OTA updates mean the car you buy today keeps getting better," said a Kerchanshe Group Geely representative. "It's one more way we're bringing the full Geely ownership experience to Ethiopia, not just the vehicle itself."</p>
+      `,
+    },
+  ];
+
+  for (const a of articles) {
+    await prisma.newsArticle.create({
+      data: {
+        title: a.title,
+        category: a.category,
+        author: a.author,
+        content: a.content.trim(),
+        excerpt: a.excerpt,
+        imageUrl: urlFor(a.image),
+        status: 'published',
+        publishDate: a.publishDate,
+      },
+    });
+  }
+
+  console.log('Seed complete: news articles', { count: articles.length });
+}
+
+// ── About page content ──────────────────────────────────────────────────────
+// Stored as Setting['about_page'] (see backend/src/routes/public.routes.ts
+// and settings.routes.ts). Only created if the row doesn't already exist, so
+// an admin's real edits made in the About editor are never overwritten.
+async function seedAboutPageIfEmpty() {
+  const existing = await prisma.setting.findUnique({ where: { key: 'about_page' } });
+  if (existing) return;
+
+  const ex5Dir = (p: string) => path.join(MEDIA_ROOT, 'models/ex5/images', p);
+  const globalDir = (p: string) => path.join(MEDIA_ROOT, 'models/global/images', p);
+
+  const heroImage = urlFor(globalDir('global-kv-1.jpg'));
+  const designImage = urlFor(ex5Dir('exterior/Exterior Part/Headlights/前大灯Headlights.jpg'));
+  const missionVisionImage = urlFor(ex5Dir('outdoor/Exterior/GEELY EX5 EM-i左舵/JPG/GEELY EX5 EM-i左舵(3).jpg'));
+  const valueImage = urlFor(ex5Dir('interior/Amber Brown/jpg/（左舵棕色）entire interior + seats.jpg'));
+  const innovationImage = urlFor(ex5Dir('features/OTA/GEELY EX5 EM-i左舵/GEELY EX5 EM-i左舵OTA.jpg'));
+  const newEnergyImage = urlFor(ex5Dir('features/Geely Battery/P145电池图片- Geely Battery.jpg'));
+  const globalizationImage = urlFor(globalDir('global-kv-2.jpg'));
+  const showroomImage = urlFor(ex5Dir('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵银色）left 45°.jpg'));
+
+  const aboutContent = {
+    sectionHero: { backgroundImage: heroImage },
+    designPhilosophy: { image: designImage },
+    missionVisionValues: {
+      image: missionVisionImage,
+      values: [
+        { icon: 'Star', title: 'Value', description: 'Our commitment to offering high value to our users is reflected in every strategic decision.', image: valueImage },
+        { icon: 'Zap', title: 'Innovation', description: 'We continue to demonstrate our pursuit of the most advanced technological innovations.', image: innovationImage },
+        { icon: 'Heart', title: 'New Energy', description: 'Our early adoption of new energy development underscores our dedication to sustainable solutions.', image: newEnergyImage },
+        { icon: 'Globe', title: 'Globalization', description: 'Our journey into globalization, beginning in 2002, shapes our identity.', image: globalizationImage },
+      ],
+    },
+    historyTimeline: {
+      milestones: [
+        { year: '2003', title: 'Kerchanshe Group Founded', description: "Began as a coffee export business and grew into one of Ethiopia's most diversified conglomerates.", image: '' },
+        { year: 'April 2025', title: 'Exclusive Geely Partnership Signed', description: 'Kerchanshe Group and Zhejiang Geely Holding Group announce an exclusive distribution agreement.', image: globalizationImage },
+        { year: '2025', title: 'Kerchanshe Group Geely Launches', description: 'Opens its showroom in Sarbet, Addis Ababa, bringing genuine Geely vehicles to Ethiopian customers.', image: showroomImage },
+        { year: 'In Progress', title: 'Local Assembly & Technology Transfer', description: 'Plans underway for local vehicle assembly in Ethiopia, creating jobs and building industrial capacity.', image: newEnergyImage },
+      ],
+    },
+  };
+
+  await prisma.setting.create({
+    data: { key: 'about_page', value: JSON.stringify(aboutContent), type: 'general' },
+  });
+
+  console.log('Seed complete: about page content');
+}
+
+async function main() {
+  await seedMedia();
+  await seedNewsIfEmpty();
+  await seedAboutPageIfEmpty();
+}
+
+main()
   .catch((e) => {
     console.error(e);
     process.exit(1);

@@ -110,10 +110,20 @@ function SignatureSetupContent() {
     setSignError('');
     try {
       const signatureDataUrl = canvasRef.current.toDataURL('image/png');
+
+      const blob = await (await fetch(signatureDataUrl)).blob();
+      const file = new File([blob], 'staff-signature.png', { type: 'image/png' });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'staff-signatures');
+      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok) throw new Error(uploadData?.error || 'Signature upload failed.');
+
       const res = await fetch(`/api/staff-signature/${token}/sign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'drawn', signatureDataUrl }),
+        body: JSON.stringify({ type: 'drawn', photoUrl: uploadData.url }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Unable to save your signature.');
