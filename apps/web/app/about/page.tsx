@@ -430,6 +430,48 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* 2b. A Historic Partnership */}
+      <section className="py-24 sm:py-32 bg-[#f8f9fa] dark:bg-midnight transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div className={data.partnership.rightImage ? '' : 'lg:col-span-2 max-w-3xl mx-auto text-center'}>
+              <div className={`inline-block text-geely-blue text-xs font-bold tracking-[0.2em] uppercase mb-6 ${data.partnership.rightImage ? '' : 'mx-auto'}`}>
+                {data.partnership.eyebrow}
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-black dark:text-ice tracking-tight mb-8 leading-[1.05] text-balance">
+                {data.partnership.title}
+              </h2>
+              <div className="space-y-5 mb-10">
+                {data.partnership.paragraphs.map((p, i) => (
+                  <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
+                    {p}
+                  </p>
+                ))}
+              </div>
+              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-6 ${data.partnership.rightImage ? '' : 'max-w-xl mx-auto'}`}>
+                {data.partnership.highlights.map((h, i) => (
+                  <div key={i}>
+                    <div className="text-2xl sm:text-3xl font-black text-navy dark:text-ice tracking-tight">{h.value}</div>
+                    <div className="text-xs font-bold text-steel dark:text-steel-light uppercase tracking-wide mt-1">{h.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {data.partnership.rightImage && (
+              <div className="relative overflow-hidden rounded-2xl aspect-video lg:aspect-square bg-slate-100 shadow-xl">
+                <Image
+                  src={data.partnership.rightImage}
+                  alt={data.partnership.title}
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* 3. Our Mission — clean beige style with image */}
       <section className="bg-[#f0ebe3] dark:bg-midnight transition-colors">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">

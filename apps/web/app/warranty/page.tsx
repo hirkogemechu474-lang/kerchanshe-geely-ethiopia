@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import imageLoader from "@/lib/imageLoader";
 import { MainLayout } from "@/components/MainLayout";
 import { CheckCircle, Shield, Clock, Wrench, Phone, Mail, MapPin, Award, Car } from "lucide-react";
 
@@ -128,7 +127,6 @@ export default function WarrantyPage() {
         <Image
           src="/images/vehicles/ex5/ex5-hero.jpg"
           alt="Geely vehicle on the road"
-          loader={imageLoader}
           fill
           priority
           sizes="100vw"

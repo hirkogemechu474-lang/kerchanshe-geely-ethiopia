@@ -506,12 +506,11 @@ async function seedNewsIfEmpty() {
 
 // ── About page content ──────────────────────────────────────────────────────
 // Stored as Setting['about_page'] (see backend/src/routes/public.routes.ts
-// and settings.routes.ts). Only created if the row doesn't already exist, so
-// an admin's real edits made in the About editor are never overwritten.
-async function seedAboutPageIfEmpty() {
-  const existing = await prisma.setting.findUnique({ where: { key: 'about_page' } });
-  if (existing) return;
-
+// and settings.routes.ts). Fills in only the image fields that are still
+// blank — on a fresh DB that's everything below; on this project's dev DB an
+// admin has already set most of these by hand, so any field with a real
+// value already in place is left untouched.
+async function seedAboutPageImages() {
   const ex5Dir = (p: string) => path.join(MEDIA_ROOT, 'models/ex5/images', p);
   const globalDir = (p: string) => path.join(MEDIA_ROOT, 'models/global/images', p);
 
@@ -520,43 +519,89 @@ async function seedAboutPageIfEmpty() {
   const missionVisionImage = urlFor(ex5Dir('outdoor/Exterior/GEELY EX5 EM-i左舵/JPG/GEELY EX5 EM-i左舵(3).jpg'));
   const valueImage = urlFor(ex5Dir('interior/Amber Brown/jpg/（左舵棕色）entire interior + seats.jpg'));
   const innovationImage = urlFor(ex5Dir('features/OTA/GEELY EX5 EM-i左舵/GEELY EX5 EM-i左舵OTA.jpg'));
-  const newEnergyImage = urlFor(ex5Dir('features/Geely Battery/P145电池图片- Geely Battery.jpg'));
+  // The battery-diagram fixture crops badly on the 4:3/16:10 card shapes
+  // these sections use (mostly dead white space around a small diagram), so
+  // new-energy/sustainability slots use this eco-green exterior shot instead.
+  const newEnergyImage = urlFor(ex5Dir('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵绿色）right 45°.jpg'));
   const globalizationImage = urlFor(globalDir('global-kv-2.jpg'));
   const showroomImage = urlFor(ex5Dir('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵银色）left 45°.jpg'));
 
-  const aboutContent = {
-    sectionHero: { backgroundImage: heroImage },
-    designPhilosophy: { image: designImage },
-    missionVisionValues: {
-      image: missionVisionImage,
-      values: [
-        { icon: 'Star', title: 'Value', description: 'Our commitment to offering high value to our users is reflected in every strategic decision.', image: valueImage },
-        { icon: 'Zap', title: 'Innovation', description: 'We continue to demonstrate our pursuit of the most advanced technological innovations.', image: innovationImage },
-        { icon: 'Heart', title: 'New Energy', description: 'Our early adoption of new energy development underscores our dedication to sustainable solutions.', image: newEnergyImage },
-        { icon: 'Globe', title: 'Globalization', description: 'Our journey into globalization, beginning in 2002, shapes our identity.', image: globalizationImage },
-      ],
-    },
-    historyTimeline: {
-      milestones: [
-        { year: '2003', title: 'Kerchanshe Group Founded', description: "Began as a coffee export business and grew into one of Ethiopia's most diversified conglomerates.", image: '' },
-        { year: 'April 2025', title: 'Exclusive Geely Partnership Signed', description: 'Kerchanshe Group and Zhejiang Geely Holding Group announce an exclusive distribution agreement.', image: globalizationImage },
-        { year: '2025', title: 'Kerchanshe Group Geely Launches', description: 'Opens its showroom in Sarbet, Addis Ababa, bringing genuine Geely vehicles to Ethiopian customers.', image: showroomImage },
-        { year: 'In Progress', title: 'Local Assembly & Technology Transfer', description: 'Plans underway for local vehicle assembly in Ethiopia, creating jobs and building industrial capacity.', image: newEnergyImage },
-      ],
-    },
+  // Best-effort image pick for a value/milestone card, keyed by whatever
+  // title an admin may have already given it; falls back to position so
+  // cards with an unrecognized title still get a sensible photo.
+  const valueImageByTitle: Record<string, string> = {
+    Value: valueImage,
+    Quality: valueImage,
+    Innovation: innovationImage,
+    'New Energy': newEnergyImage,
+    Responsibility: newEnergyImage,
+    Globalization: globalizationImage,
+  };
+  const valueImageByIndex = [valueImage, innovationImage, newEnergyImage, globalizationImage];
+
+  const milestoneImageByTitle: Record<string, string> = {
+    'Kerchanshe Group Founded': '',
+    'Exclusive Geely Partnership Signed': globalizationImage,
+    'Kerchanshe Group Geely Launches': showroomImage,
+    'Local Assembly & Technology Transfer': newEnergyImage,
   };
 
-  await prisma.setting.create({
-    data: { key: 'about_page', value: JSON.stringify(aboutContent), type: 'general' },
+  const defaultValues = [
+    { icon: 'Star', title: 'Value', description: 'Our commitment to offering high value to our users is reflected in every strategic decision.' },
+    { icon: 'Zap', title: 'Innovation', description: 'We continue to demonstrate our pursuit of the most advanced technological innovations.' },
+    { icon: 'Heart', title: 'New Energy', description: 'Our early adoption of new energy development underscores our dedication to sustainable solutions.' },
+    { icon: 'Globe', title: 'Globalization', description: 'Our journey into globalization, beginning in 2002, shapes our identity.' },
+  ];
+  const defaultMilestones = [
+    { year: '2003', title: 'Kerchanshe Group Founded', description: "Began as a coffee export business and grew into one of Ethiopia's most diversified conglomerates." },
+    { year: 'April 2025', title: 'Exclusive Geely Partnership Signed', description: 'Kerchanshe Group and Zhejiang Geely Holding Group announce an exclusive distribution agreement.' },
+    { year: '2025', title: 'Kerchanshe Group Geely Launches', description: 'Opens its showroom in Sarbet, Addis Ababa, bringing genuine Geely vehicles to Ethiopian customers.' },
+    { year: 'In Progress', title: 'Local Assembly & Technology Transfer', description: 'Plans underway for local vehicle assembly in Ethiopia, creating jobs and building industrial capacity.' },
+  ];
+
+  const existing = await prisma.setting.findUnique({ where: { key: 'about_page' } });
+  const current: Record<string, any> = existing?.value ? JSON.parse(existing.value) : {};
+
+  // A field is safe to (re-)fill if it's genuinely blank, or if it was set
+  // by this same seed script on a previous run (still pointing at
+  // /uploads/seed/...) — that lets a corrected pick here replace its own
+  // earlier guess without ever touching a real admin-uploaded image.
+  const seedOwned = (url: unknown) => typeof url === 'string' && url.startsWith('/uploads/seed/');
+  const fillable = (url: unknown) => !url || seedOwned(url);
+  const pick = (currentUrl: unknown, fallbackUrl: string) => (fillable(currentUrl) ? fallbackUrl : (currentUrl as string));
+
+  const values = (current.missionVisionValues?.values?.length ? current.missionVisionValues.values : defaultValues).map(
+    (v: any, i: number) => ({ ...v, image: pick(v.image, valueImageByTitle[v.title] || valueImageByIndex[i % valueImageByIndex.length]) })
+  );
+  const milestones = (current.historyTimeline?.milestones?.length ? current.historyTimeline.milestones : defaultMilestones).map(
+    (m: any) => ({ ...m, image: pick(m.image, milestoneImageByTitle[m.title] || '') })
+  );
+
+  const next = {
+    ...current,
+    sectionHero: { ...current.sectionHero, backgroundImage: pick(current.sectionHero?.backgroundImage, heroImage) },
+    designPhilosophy: { ...current.designPhilosophy, image: pick(current.designPhilosophy?.image, designImage) },
+    missionVisionValues: {
+      ...current.missionVisionValues,
+      image: pick(current.missionVisionValues?.image, missionVisionImage),
+      values,
+    },
+    historyTimeline: { ...current.historyTimeline, milestones },
+  };
+
+  await prisma.setting.upsert({
+    where: { key: 'about_page' },
+    update: { value: JSON.stringify(next) },
+    create: { key: 'about_page', value: JSON.stringify(next), type: 'general' },
   });
 
-  console.log('Seed complete: about page content');
+  console.log('Seed complete: about page images filled');
 }
 
 async function main() {
   await seedMedia();
   await seedNewsIfEmpty();
-  await seedAboutPageIfEmpty();
+  await seedAboutPageImages();
 }
 
 main()

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
-import imageLoader from "@/lib/imageLoader";
 import { MainLayout } from "@/components/MainLayout";
 import { getDealers, type Dealer } from "@/lib/api";
 import { validateGenericIdOrLicense } from "@/lib/idValidation";
@@ -178,7 +177,6 @@ export default function ServicePage() {
         <Image
           src="/uploads/seed/models/global/images/global-kv-1.jpg"
           alt="Geely vehicle ready for service"
-          loader={imageLoader}
           fill
           priority
           sizes="100vw"
@@ -215,7 +213,6 @@ export default function ServicePage() {
               <Image
                 src="/uploads/seed/models/ex2/images/interior/interior-horizon-gray-front.jpg"
                 alt="Advanced diagnostics inside a Geely cockpit"
-                loader={imageLoader}
                 fill
                 sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-cover"
@@ -279,7 +276,6 @@ export default function ServicePage() {
         <Image
           src="/uploads/seed/models/ex2/images/lifestyle/lifestyle-1.jpg"
           alt=""
-          loader={imageLoader}
           fill
           sizes="100vw"
           className="object-cover"

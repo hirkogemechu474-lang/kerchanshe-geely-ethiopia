@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import imageLoader from "@/lib/imageLoader";
 
 interface Category {
   id: string;
@@ -103,7 +102,6 @@ function VehicleCard({ vehicle, size }: { vehicle: Vehicle; size: "hero" | "larg
               <Image
                 src={publicMediaUrl(vehicle.heroImageUrl)}
                 alt={vehicle.name}
-                loader={imageLoader}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-contain group-hover:scale-105 transition-transform duration-500"

@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import imageLoader from '@/lib/imageLoader';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ModelSpotlightSimple } from '@/components/ModelSpotlightSimple';
 import { Model3DViewer } from '@/components/Model3DViewer';
@@ -86,7 +85,6 @@ export default function ShowcaseSection({ initialShowcases }: ShowcaseSectionPro
               <Image
                 src="/images/vehicles/ex5/ex5-hero.jpg"
                 alt="Geely vehicle showcase"
-                loader={imageLoader}
                 fill
                 sizes="(min-width: 1024px) 1280px, 100vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"

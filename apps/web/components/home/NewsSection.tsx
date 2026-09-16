@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import imageLoader from "@/lib/imageLoader";
 
 interface NewsArticle {
   id: string;
@@ -69,7 +68,6 @@ export default function NewsSection({ initialArticles }: NewsSectionProps) {
                     <Image
                       src={article.imageUrl}
                       alt=""
-                      loader={imageLoader}
                       fill
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import imageLoader from "@/lib/imageLoader";
 import Button from "@/components/ui/Button";
 
 interface HeroSection {
@@ -116,7 +115,6 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
             <Image
               src={currentHero.posterUrl}
               alt={currentHero.title}
-              loader={imageLoader}
               fill
               priority={currentIndex === 0}
               sizes="100vw"
@@ -163,7 +161,6 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
           <Image
             src={currentHero.imageUrl}
             alt={currentHero.title}
-            loader={imageLoader}
             fill
             priority={currentIndex === 0}
             sizes="100vw"
