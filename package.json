@@ -13,6 +13,10 @@
     "db:seed": "pnpm --filter @geely/backend db:seed",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "clean": "pnpm -r exec rm -rf node_modules .next dist"
+    "clean": "pnpm -r exec rm -rf node_modules .next dist",
+    "start:backend": "pnpm --filter @geely/backend start",
+    "start:admin": "pnpm --filter @geely/admin start",
+    "start:web": "pnpm --filter @geely/web start",
+    "start:prod": "pnpm -r run --parallel start"
   }
 }

@@ -105,7 +105,7 @@ export default function RoadsidePage() {
                   setIsSubmitted(false);
                   setShowRequestForm(true);
                 }}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
               >
                 New Request
               </button>
@@ -390,7 +390,7 @@ export default function RoadsidePage() {
                     document.getElementById("request-form")?.scrollIntoView({ behavior: "smooth" });
                   }, 100);
                 }}
-                className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:text-geely-blue transition-all"
+                className="border-2 border-white text-white font-bold text-base px-8 py-4 hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:text-geely-blue transition-all"
               >
                 Submit Request Online
               </button>

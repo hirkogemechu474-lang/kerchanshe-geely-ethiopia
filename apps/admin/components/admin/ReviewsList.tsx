@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Edit, Trash2, Eye, Star, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Trash2, Star, Loader } from 'lucide-react';
 import { Button, TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow } from '@/components/admin/ui';
 
 interface Review {
@@ -32,7 +31,7 @@ export default function ReviewsList() {
     try {
       const response = await fetch('/api/reviews/admin/reviews');
       const data = await response.json();
-      setReviews(data.reviews || []);
+      setReviews(data.items || []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
@@ -185,13 +184,6 @@ export default function ReviewsList() {
               </Td>
               <Td>
                 <div className="flex gap-2">
-                  <Link
-                    href={`/admin/reviews/${review.id}`}
-                    className="text-geely-blue hover:text-blue-900"
-                    title="Edit"
-                  >
-                    <Edit size={16} />
-                  </Link>
                   <button
                     onClick={() => handleDelete(review.id)}
                     className="text-red-600 hover:text-red-900"

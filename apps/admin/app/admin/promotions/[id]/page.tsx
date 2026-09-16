@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Calendar, Eye, Image as ImageIcon, Save, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 interface PromotionForm {
   title: string;
@@ -77,12 +78,8 @@ export default function EditPromotionPage() {
     setUploading(true);
     setError('');
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const response = await fetch('/api/upload', { method: 'POST', body });
-      const result = await response.json();
-      if (!response.ok || !result.url) throw new Error(result.error || 'Image upload failed');
-      update('bannerImage', result.url);
+      const asset = await uploadAndRegisterMedia(file, { category: 'promotions' });
+      update('bannerImage', asset.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed');
     } finally {

@@ -1,3 +1,3 @@
-import { ROLE_OPTIONS, ROLE_DESCRIPTIONS } from '@geely/types';
+import { ROLE_OPTIONS, ROLE_DESCRIPTIONS } from './types';
 
 export { ROLE_OPTIONS, ROLE_DESCRIPTIONS };

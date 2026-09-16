@@ -112,8 +112,10 @@ export function drawRightText(ctx: PagedContext, text: string, x: number, y: num
 }
 
 export function drawLabelValue(ctx: PagedContext, label: string, value: string, x: number, y: number) {
-  ctx.page.drawText(label, { x, y, size: 8, font: ctx.font, color: COLORS.gray });
-  ctx.page.drawText(value, { x, y: y - 13, size: 11, font: ctx.bold, color: COLORS.dark });
+  const safeLabel = sanitizePdfText(label);
+  const safeValue = sanitizePdfText(value);
+  ctx.page.drawText(safeLabel, { x, y, size: 8, font: ctx.font, color: COLORS.gray });
+  ctx.page.drawText(safeValue, { x, y: y - 13, size: 11, font: ctx.bold, color: COLORS.dark });
 }
 
 export function drawSectionTitle(ctx: PagedContext, text: string) {
@@ -160,7 +162,7 @@ export function drawTable(ctx: PagedContext, headers: string[], rows: Array<Arra
     color: COLORS.lightGray,
   });
   headers.forEach((h, i) => {
-    current.page.drawText(h.toUpperCase(), { x: cellX[i] + pad, y: headerY + 4, size: 8, font: current.bold, color: COLORS.dark });
+    current.page.drawText(sanitizePdfText(h.toUpperCase()), { x: cellX[i] + pad, y: headerY + 4, size: 8, font: current.bold, color: COLORS.dark });
   });
   current.y = headerY + 4;
 
@@ -176,7 +178,7 @@ export function drawTable(ctx: PagedContext, headers: string[], rows: Array<Arra
     row.forEach((val, i) => {
       const font = i === 0 ? current.bold : current.font;
       const maxWidth = colWidths[i] - pad * 2;
-      const text = truncateToWidth(font, String(val), 10, maxWidth);
+      const text = truncateToWidth(font, sanitizePdfText(String(val)), 10, maxWidth);
       const isAmount = colWidths[i] === 80;
       const x = isAmount ? cellX[i] + colWidths[i] - pad - font.widthOfTextAtSize(text, 10) : cellX[i] + pad;
       current.page.drawText(text, { x, y: rowTop - 15, size: 10, font, color: COLORS.dark });
@@ -270,14 +272,14 @@ export function drawSignatureBlock(ctx: PagedContext, left: SignatureEntry, righ
   for (const [entry, x] of columns) {
     let ey = startY;
     if (entry.heading) {
-      ctx.page.drawText(entry.heading, { x, y: ey, size: 9, font: ctx.bold, color: COLORS.dark });
+      ctx.page.drawText(sanitizePdfText(entry.heading), { x, y: ey, size: 9, font: ctx.bold, color: COLORS.dark });
       ey -= 18;
     }
     ctx.page.drawText('Name:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
-    ctx.page.drawText(entry.name || '____________________________', { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
+    ctx.page.drawText(sanitizePdfText(entry.name || '____________________________'), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
     ey -= 16;
     ctx.page.drawText('Title:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
-    ctx.page.drawText(entry.title || '____________________________', { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
+    ctx.page.drawText(sanitizePdfText(entry.title || '____________________________'), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
     ey -= 16;
     ctx.page.drawText('Signature:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
     if (entry.signatureImage) {
@@ -287,7 +289,7 @@ export function drawSignatureBlock(ctx: PagedContext, left: SignatureEntry, righ
     ctx.page.drawLine({ start: { x: x + 62, y: ey - 2 }, end: { x: x + colWidth, y: ey - 2 }, thickness: 0.5, color: COLORS.border });
     ey -= 16;
     ctx.page.drawText('Date:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
-    ctx.page.drawText(entry.date || '____________________________', { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
+    ctx.page.drawText(sanitizePdfText(entry.date || '____________________________'), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
     ey -= 16;
     if (entry.showStamp) {
       ctx.page.drawText('Stamp:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
@@ -309,13 +311,14 @@ export function drawFieldTable(ctx: PagedContext, rows: Array<[string, string]>,
   const valueWidth = PDF_CONTENT_WIDTH - labelWidth - pad * 2;
 
   for (const [label, value] of rows) {
-    const lines = Math.max(1, Math.ceil(ctx.font.widthOfTextAtSize(value, 10) / valueWidth));
+    const safeValue = sanitizePdfText(value);
+    const lines = Math.max(1, Math.ceil(ctx.font.widthOfTextAtSize(safeValue, 10) / valueWidth));
     const rowH = 14 * lines + 10;
     ctx = ensureSpace(ctx, rowH);
     const rowTop = ctx.y;
     ctx.page.drawLine({ start: { x: PDF_MARGIN, y: rowTop }, end: { x: PDF_MARGIN + PDF_CONTENT_WIDTH, y: rowTop }, thickness: 0.5, color: COLORS.border });
     ctx.page.drawText(label, { x: PDF_MARGIN + pad, y: rowTop - 15, size: 9, font: ctx.bold, color: COLORS.dark });
-    const wrapped = wrapText({ ...ctx, y: rowTop - 15 }, value, valueX, rowTop - 15, 10, valueWidth);
+    const wrapped = wrapText({ ...ctx, y: rowTop - 15 }, safeValue, valueX, rowTop - 15, 10, valueWidth);
     void wrapped;
     ctx.y = rowTop - rowH;
   }
@@ -323,8 +326,12 @@ export function drawFieldTable(ctx: PagedContext, rows: Array<[string, string]>,
   return ctx;
 }
 
+function sanitizePdfText(text: string): string {
+  return text.replace(/[\r\n\t]+/g, ' ');
+}
+
 export function wrapText(ctx: PagedContext, text: string, x: number, y: number, size: number, maxWidth: number): PagedContext {
-  const words = text.split(/\s+/);
+  const words = sanitizePdfText(text).split(/\s+/);
   let line = '';
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;

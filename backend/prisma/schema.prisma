@@ -16,6 +16,9 @@ model User {
   role                         String
   isActive                     Boolean   @default(true)
   dealerId                     String?
+  // Profile photo shown in the admin UI (top nav, staff lists, etc.) — no
+  // upload endpoint writes this yet, only the seed script.
+  avatarUrl                    String?
   otpCode                      String?
   otpExpiry                    DateTime?
   createdAt                    DateTime  @default(now())
@@ -264,6 +267,14 @@ model Quotation {
   preferredDealer            String?
   financingInterest          Boolean                      @default(false)
   tradeInInterest            Boolean                      @default(false)
+  // Real trade-in condition/mileage/photo/valuation capture, linked from the
+  // public /trade-in form (see backend/src/routes/public.routes.ts) — the
+  // parallel Lead model already had a working TradeInEvaluation link via
+  // leadId, but the actual live trade-in submission flow creates a
+  // Quotation, not a Lead, so this FK closes that gap without touching the
+  // existing Lead-linked path.
+  tradeInEvaluationId        String?                      @unique
+  tradeInEvaluation          TradeInEvaluation?            @relation(fields: [tradeInEvaluationId], references: [id])
   message                    String?                      @db.Text
   // FR-101 lead source tagging: 'website' | 'walk-in' | 'referral' | 'phone' | 'other'.
   // Plain string, matching the existing `status` field's convention rather
@@ -504,6 +515,12 @@ model SalesOrder {
   paymentSubmittedAt             DateTime?
   paymentConfirmedAt             DateTime?
   paymentConfirmedById           String?
+  // Finance verification — distinct from paymentConfirmedAt (which fires on
+  // an unreviewed mock-pay success too). The READY_FOR_DELIVERY gate
+  // requires this, not just paymentStatus === 'PAID', so delivery can't
+  // proceed on an unverified payment notification alone.
+  paymentVerifiedAt              DateTime?
+  paymentVerifiedById            String?
   // Vehicle Registration — a stage between PDI and Invoice in the CRM
   // pipeline diagram; a loose actor reference (no FK), matching every
   // other changedById-style field in this codebase.
@@ -545,6 +562,11 @@ model SalesOrder {
   salesType                      String? // 'showroom' | 'order'
   vehicleType                    String?                   @default("BEV") // 'BEV' | 'Other'
   motorBatterySerialNo           String?
+  // Salutation printed alongside customerName on the Sales Agreement/Invoice
+  // (e.g. "Ato", "Miss", "Dr") — mirrors Quotation.title's shape; carried
+  // over from the linked quotation at conversion time, editable per-order
+  // since walk-in orders (no quotation) enter it directly.
+  purchaserTitle                 String?
   purchaserTin                   String?
   purchaserAddress               String?                   @db.Text
   purchaserAuthorizedRep         String?
@@ -563,6 +585,14 @@ model SalesOrder {
   deliveryLocation               String?
   exteriorColor                  String?
   interiorColor                  String?
+  // Manager delivery gate — distinct from the generic status PATCH: a
+  // manager can explicitly hold a READY_FOR_DELIVERY-eligible order back
+  // even once every other gate (PDI/agreement/payment/allocation) is clear.
+  deliveryHold                   Boolean                   @default(false)
+  deliveryHoldReason             String?                   @db.Text
+  // Customer-picked handover date/time, set via the public delivery-
+  // scheduling page once the order reaches READY_FOR_DELIVERY.
+  deliveryScheduledAt            DateTime?
   // ── Invoice ───────────────────────────────────────────────────────────
   // Fixed-shape array (≤3 rows: vehicle / accessories / other item), see
   // InvoiceLineItem in salesInvoice.pdf.ts — not a relational line-items
@@ -605,15 +635,40 @@ model SalesOrder {
 // for delivery' until the PDI checklist is 100% complete"). A default
 // checklist is seeded when an order is booked — see
 // admin/lib/sales/pdiChecklistTemplate.ts.
+// PENDING = not yet inspected; PASS/FAIL = inspected with that outcome;
+// NA = not applicable to this vehicle/order. Only PASS/NA count toward the
+// "100% complete" delivery gate (see order.service.ts) — a FAIL blocks
+// until resolved and reinspected back to PASS, same as an unset item did
+// before this enum existed.
+enum PdiItemResult {
+  PENDING
+  PASS
+  FAIL
+  NA
+}
+
 model PdiChecklistItem {
-  id          String     @id @default(uuid())
+  id          String        @id @default(uuid())
   orderId     String
-  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order       SalesOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   label       String
-  isChecked   Boolean    @default(false)
+  // Deprecated in favor of `result` below, kept (and kept in sync: true iff
+  // result is PASS or NA) so any other existing reader of a plain
+  // checked/unchecked flag keeps working without a rewrite.
+  isChecked   Boolean       @default(false)
+  result      PdiItemResult @default(PENDING)
+  // Evidence photos + notes captured when an item is marked FAIL (or just
+  // as general inspection evidence) — same Json-array-of-URLs convention as
+  // WarrantyClaim.photoUrls.
+  photoUrls   Json?
+  notes       String?       @db.Text
+  // Set when a FAIL item is repaired and reinspected back to PASS — the
+  // reinspection loop the spec describes (fail -> repair -> reinspect).
+  resolvedAt  DateTime?
+  resolvedById String?
   checkedById String?
   checkedAt   DateTime?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime      @default(now())
 
   @@index([orderId])
 }
@@ -769,13 +824,19 @@ model ServiceBooking {
   vehicleInfo   String
   serviceType   String
   date          DateTime
+  timeSlot      String?
+  vehicleYear   String?
+  mileage       String?
+  vin           String?
+  location      String?
   technician    String?
-  status        String   @default("scheduled")
+  status        String   @default("PENDING")
   notes         String?
-  // Customer-facing lookup code (GY-SQ-DDMMYYYY-NNN), generated at
-  // creation via web/lib/reference.ts. Nullable for rows created before
+  // Customer-facing lookup code (GY-SB-DDMMYYYY-NNN), generated at
+  // creation via serviceBookingService. Nullable for rows created before
   // this column existed.
   reference     String?  @unique
+  createdById   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   jobCard       JobCard?
@@ -813,6 +874,13 @@ enum JobCardStatus {
   PARTS_WAITING
   QUALITY_CONTROL
   INVOICED_CLOSED
+  // Terminal state after INVOICED_CLOSED: the vehicle has actually been
+  // handed back to the customer, gated on paymentStatus === PAID (see
+  // workshop.routes.ts). INVOICED_CLOSED alone used to be the last status,
+  // which conflated "invoiced" with "the customer actually has their car
+  // back" — kept as a distinct step per the workflow spec's "Vehicle
+  // Release" stage.
+  RELEASED
   CANCELLED
 }
 
@@ -882,7 +950,16 @@ model JobCard {
   qcPassed             Boolean?
   qcNotes              String?                @db.Text
   qcById               String?
+  // Flat labor charge, matching the existing flat estimateAmount/
+  // invoiceAmount style rather than a labor-rate/hours table — invoiceAmount
+  // is the total (parts + labor) computed at invoice-generation time.
+  laborAmount          Float?
+  invoiceNo            String?
   invoiceAmount        Float?
+  // Reuses SalesOrder's PaymentStatus enum — same UNPAID/PENDING_REVIEW/PAID
+  // lifecycle, same mock-pay/staff-confirm convention as the sales side.
+  paymentStatus        PaymentStatus          @default(UNPAID)
+  paidAt               DateTime?
   serviceBookingId     String?                @unique
   serviceBooking       ServiceBooking?        @relation(fields: [serviceBookingId], references: [id])
   openTs               DateTime               @default(now())
@@ -1016,6 +1093,7 @@ model Customer {
   updatedAt            DateTime             @updatedAt
   vehicles             CustomerVehicle[]
   upgradeOpportunities UpgradeOpportunity[]
+  loyaltyAccount       LoyaltyAccount?
 
   // Not @unique: phone is the dedupe lookup key (UC-01 business rule), but
   // enforcing uniqueness at the DB level risks write failures on legitimate
@@ -1194,6 +1272,7 @@ model Promotion {
   displayOrder  Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  upgradeOpportunities UpgradeOpportunity[]
 }
 
 // Customer Reviews
@@ -1265,11 +1344,16 @@ model Lead {
 // Sales Order.
 model TradeInEvaluation {
   id                  String    @id @default(uuid())
-  leadId              String
-  lead                Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  // Nullable: the live public /trade-in form creates a Quotation (see
+  // Quotation.tradeInEvaluationId), not a Lead — the Lead-linked path is
+  // kept working for whatever staff-side flow still creates one that way.
+  leadId              String?
+  lead                Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotation           Quotation?
   // Vehicle being traded in
   vin                 String?
-  plateNo             String
+  // Nullable: the public form doesn't collect a plate number, only VIN.
+  plateNo             String?
   year                Int
   make                String?
   model               String?
@@ -1280,13 +1364,17 @@ model TradeInEvaluation {
   interiorCondition   String?
   exteriorCondition   String?
   mechanicalCondition String?
+  hasAccidents        Boolean?
+  hasModifications    Boolean?
+  serviceHistoryNotes String?   @db.Text
   // Photos (URLs to uploaded images)
   photoUrls           Json // Array of image URLs
-  // Valuation
-  estimatedValue      Float // AI/manager estimated value
+  // Valuation — nullable until a sales agent/manager has actually appraised
+  // the vehicle; a fresh public submission has neither yet.
+  estimatedValue      Float? // AI/manager estimated value
   estimatedBy         String? // who performed the estimate: sales_agent | manager | finance
-  evaluatedValue      Float // Final approved value by finance
-  approvalStatus      String // PENDING | APPROVED | REJECTED
+  evaluatedValue      Float? // Final approved value by finance
+  approvalStatus      String    @default("PENDING") // PENDING | APPROVED | REJECTED
   approvedById        String?
   approvedAt          DateTime?
   internalNotes       String?   @db.Text
@@ -1333,7 +1421,7 @@ model FinancingApplication {
 
 // News Articles
 // NOTE on the draft/scheduled/published workflow (see ContentStatus below,
-// used by HeroSection/FAQ/VehicleShowcase/SiteNavItem/ServicePage): this
+// used by HeroSection/FAQ/VehicleShowcase/SiteNavItem): this
 // model is deliberately NOT given a `status ContentStatus` + `scheduledAt`
 // pair. It already has its own `status: String` ("draft"/"scheduled"/
 // "published" — the admin news list already has stat tiles and a badge for
@@ -1468,10 +1556,10 @@ model ChatbotMessage {
   @@index([conversationId])
 }
 
-// Draft/Scheduled/Published workflow, shared by the 6 CMS-ish content models
-// below (HeroSection, FAQ, VehicleShowcase, SiteNavItem, ServicePage — plus
-// NewsArticle, which keeps its own pre-existing `status: String` +
-// `publishDate` pair instead, see the note on that model). This is an
+// Draft/Scheduled/Published workflow, shared by the CMS-ish content models
+// below (HeroSection, FAQ, VehicleShowcase, SiteNavItem — plus NewsArticle,
+// which keeps its own pre-existing `status: String` + `publishDate` pair
+// instead, see the note on that model). This is an
 // ADDITIONAL, independent layer on top of each model's existing `isActive` /
 // `isPublished` kill-switch, not a replacement — a row is only actually
 // visible on the public site when BOTH the kill-switch is on AND this status
@@ -1691,54 +1779,7 @@ model VehicleWheel {
   @@index([vehicleId])
 }
 
-// Services Menu System
-model ServiceSection {
-  id           String        @id @default(uuid())
-  title        String // e.g., "Sales", "Service & Parts"
-  slug         String        @unique
-  description  String?
-  iconUrl      String?
-  isActive     Boolean       @default(true)
-  displayOrder Int           @default(0)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  items        ServiceItem[]
-}
-
-model ServiceItem {
-  id           String         @id @default(uuid())
-  sectionId    String
-  section      ServiceSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  title        String // e.g., "Test Drive", "Service Booking"
-  description  String? // Short description
-  icon         String? // Lucide icon name
-  image        String? // Featured image URL
-  url          String? // Link URL
-  isActive     Boolean        @default(true)
-  isFeatured   Boolean        @default(false)
-  displayOrder Int            @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-}
-
-model ServicePage {
-  id              String        @id @default(uuid())
-  title           String
-  slug            String        @unique
-  excerpt         String? // Short summary
-  content         String?       @db.Text // Rich text content
-  heroImage       String?
-  heroVideo       String?
-  metaTitle       String?
-  metaDescription String?
-  isPublished     Boolean       @default(false)
-  status          ContentStatus @default(PUBLISHED)
-  scheduledAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-}
-
-// Electric Menu System (identical to Services Menu)
+// Electric Menu System
 model ElectricSection {
   id           String         @id @default(uuid())
   title        String // e.g., "Models", "Charging", "Benefits"
@@ -2119,6 +2160,13 @@ model UpgradeOpportunity {
   status          String           @default("IDENTIFIED") // IDENTIFIED | CONTACTED | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST | EXPIRED
   assignedTo      String?
   notes           String?          @db.Text
+  // Optional link to the campaign/promotion that prompted this opportunity's
+  // outreach (e.g. detectOpportunities() flagged an aging vehicle right as a
+  // trade-in Promotion is running) — a light connective link, not a new
+  // targeting engine; detectOpportunities()'s own age/mileage logic is
+  // unchanged.
+  promotionId     String?
+  promotion       Promotion?       @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   wonAt           DateTime?
   wonById         String?
   lostAt          DateTime?
@@ -2130,6 +2178,7 @@ model UpgradeOpportunity {
   @@index([status])
   @@index([assignedTo])
   @@index([opportunityType])
+  @@index([promotionId])
 }
 
 model SLATimer {
@@ -2149,4 +2198,46 @@ model SLATimer {
   @@index([entityType, entityId])
   @@index([status, deadline])
   @@index([assignedTo, status])
+}
+
+// ─── Loyalty Program ────────────────────────────────────────────────────────
+// One account per Customer (found-or-created by phone, same dedupe
+// convention as every other customer lookup in this codebase — Quotation/
+// CustomerVehicle etc. don't have a real customerId FK, so points are
+// earned by matching on customerPhone at the two hook points: a SalesOrder
+// reaching DELIVERED and a JobCard reaching RELEASED — see
+// loyalty.service.ts). Tier is a plain running total threshold, recomputed
+// on every earn/redeem; no time-decay/expiry modeled.
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  VIP
+}
+
+model LoyaltyAccount {
+  id           String               @id @default(uuid())
+  customerId   String               @unique
+  customer     Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  points       Int                  @default(0)
+  tier         LoyaltyTier          @default(BRONZE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  transactions LoyaltyTransaction[]
+
+  @@index([tier])
+}
+
+model LoyaltyTransaction {
+  id         String         @id @default(uuid())
+  accountId  String
+  account    LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  points     Int // positive = earn, negative = redeem
+  reason     String
+  sourceType String? // 'SALES_ORDER' | 'JOB_CARD' | 'MANUAL' | 'REFERRAL'
+  sourceId   String?
+  createdAt  DateTime       @default(now())
+
+  @@index([accountId])
+  @@index([createdAt])
 }

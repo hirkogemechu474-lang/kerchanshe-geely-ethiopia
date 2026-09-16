@@ -25,7 +25,6 @@ export { rolePermissionRepository } from './rolePermission.repository';
 export { dashboardRepository } from './dashboard.repository';
 export { showroomVisitRepository } from './showroomVisit.repository';
 export { staffSignatureRepository } from './staffSignature.repository';
-export { serviceCmsRepository } from './serviceCms.repository';
 export { searchRepository } from './search.repository';
 export { redirectRepository } from './redirect.repository';
 export { partsPageRepository } from './partsPage.repository';

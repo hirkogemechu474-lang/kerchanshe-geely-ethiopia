@@ -268,7 +268,7 @@ export default function QuotationSigningPage() {
                       <button
                         onClick={submitDrawnSignature}
                         disabled={!hasSignature || submitting}
-                        className="flex-1 bg-geely-blue text-white font-bold py-2.5 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-geely-blue text-white font-bold py-2.5 hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {submitting ? 'Submitting…' : 'Submit Signature'}
                       </button>

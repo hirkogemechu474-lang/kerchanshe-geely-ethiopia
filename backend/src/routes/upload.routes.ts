@@ -39,13 +39,9 @@ function sanitizeSegment(name: unknown): string {
 // parsed by the time we resolve the destination subfolder. diskStorage's
 // `destination` callback runs before the text fields are guaranteed to be
 // populated on `req.body`, which silently dropped the category.
-// 100MB covers the largest thing admins upload here today (showcase videos,
-// promised "up to 50 MB" in the admin UI, and 3D model files) with headroom —
-// previously this was capped at 25MB, well under what the UI told admins was
-// allowed, so anything bigger silently failed.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 1024 * 1024 * 1024, files: 1 },
 });
 
 // multer emits a MulterError (e.g. LIMIT_FILE_SIZE) through Express's error-
@@ -56,7 +52,7 @@ const upload = multer({
 function handleMulterError(err: any, req: any, res: any, next: any): void {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      res.status(413).json({ error: 'File is too large. Maximum upload size is 100MB.' });
+      res.status(413).json({ error: 'File is too large. Maximum upload size is 1GB.' });
       return;
     }
     res.status(400).json({ error: err.message });

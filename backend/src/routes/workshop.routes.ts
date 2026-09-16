@@ -2,6 +2,12 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { resolveBiMonthRange, computeWorkshopBiMetrics, WorkshopBiMetrics } from '../services/workshop/biSummary.service';
+import { jobCardPartsService } from '../services/workshop/jobCardParts.service';
+import { jobCardRepository } from '../repositories';
+import { loyaltyService } from '../services/loyalty/loyalty.service';
+import { generateServiceInvoicePdf } from '../services/pdf/serviceInvoice.pdf';
+import { getCompanyInfo } from '../services/pdf/companyInfo';
+import { dispatchNotification } from '../services/email/notifications.dispatch';
 
 const router = Router();
 
@@ -98,7 +104,9 @@ router.get('/job-cards', async (req: Request, res: Response) => {
 // POST /api/admin/workshop/job-cards (create)
 router.post('/job-cards', async (req: Request, res: Response) => {
   try {
-    const jobCard = await prisma.jobCard.create({ data: { ...req.body, createdById: req.adminSession!.user.id } });
+    // JobCard has no `createdById` column — this always threw an "Unknown
+    // argument" error before reaching the database.
+    const jobCard = await prisma.jobCard.create({ data: req.body });
     res.status(201).json(jobCard);
   } catch (error) {
     console.error('Create job card error:', error);
@@ -136,7 +144,13 @@ router.get('/job-cards/:id', async (req: Request, res: Response) => {
 // PATCH /api/admin/workshop/job-cards/:id (update fields)
 router.patch('/job-cards/:id', async (req: Request, res: Response) => {
   try {
-    const jobCard = await prisma.jobCard.update({ where: { id: req.params.id }, data: req.body });
+    // The admin UI's "Record Customer Approval" button sends `{ approve:
+    // true }` — `approve` isn't a real JobCard column (`customerApprovedAt`
+    // is), so this always threw an "Unknown argument" error before reaching
+    // the database.
+    const { approve, ...rest } = req.body;
+    const data = approve ? { ...rest, customerApprovedAt: new Date() } : rest;
+    const jobCard = await prisma.jobCard.update({ where: { id: req.params.id }, data });
     res.json(jobCard);
   } catch (error) {
     console.error('Update job card error:', error);
@@ -147,8 +161,71 @@ router.patch('/job-cards/:id', async (req: Request, res: Response) => {
 // PATCH /api/admin/workshop/job-cards/:id/status (transition status)
 router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
   try {
-    const { status } = req.body;
-    const jobCard = await prisma.jobCard.update({ where: { id: req.params.id }, data: { status } });
+    // The admin UI (JobCardDetail.tsx) sends `toStatus` (plus, from the QC
+    // panel, `qcPassed`/`qcNotes`) — this route used to destructure `status`
+    // instead, which was always undefined, so Prisma silently skipped
+    // setting it and every status transition through this UI was a no-op.
+    // `status` is still accepted for any other caller using the old name.
+    const { toStatus, status, qcPassed, qcNotes, reasonCode } = req.body;
+    const nextStatus = toStatus || status;
+    if (!nextStatus) { res.status(400).json({ error: 'toStatus is required' }); return; }
+
+    const current = await prisma.jobCard.findUnique({ where: { id: req.params.id } });
+    if (!current) { res.status(404).json({ error: 'Job card not found' }); return; }
+
+    // Quality-check gate: qcPassed/qcNotes/qcById columns already existed
+    // but nothing enforced or persisted them — a job card could reach
+    // INVOICED_CLOSED with no QC sign-off recorded at all.
+    if (nextStatus === 'INVOICED_CLOSED') {
+      const willPass = qcPassed !== undefined ? qcPassed === true : current.qcPassed === true;
+      if (!willPass) {
+        res.status(400).json({ error: 'Record a passing quality check before closing/invoicing this job card.' });
+        return;
+      }
+    }
+    // RELEASED is the true "vehicle handed back to customer" step, gated on
+    // payment — a job card previously had no status past INVOICED_CLOSED,
+    // which conflated "invoiced" with "customer actually has the car back."
+    if (nextStatus === 'RELEASED' && current.paymentStatus !== 'PAID') {
+      res.status(400).json({ error: 'Confirm payment before releasing the vehicle to the customer.' });
+      return;
+    }
+
+    const jobCardData: any = { status: nextStatus };
+    if (qcPassed !== undefined) {
+      jobCardData.qcPassed = qcPassed;
+      jobCardData.qcNotes = qcNotes ?? null;
+      jobCardData.qcById = req.adminSession!.user.id;
+    }
+
+    // Free the assigned bay once the job card leaves active work — the
+    // Bay Scheduling Board otherwise shows the bay as permanently occupied.
+    const terminalStatuses = ['INVOICED_CLOSED', 'RELEASED', 'CANCELLED'];
+    const freeBayId = terminalStatuses.includes(nextStatus) ? current.bayId : null;
+
+    const jobCard = await jobCardRepository.transitionStatus(
+      req.params.id,
+      current.status,
+      jobCardData,
+      { toStatus: nextStatus, changedById: req.adminSession!.user.id, reasonCode: reasonCode ?? null },
+      freeBayId,
+    );
+
+    if (nextStatus === 'RELEASED') {
+      try {
+        await loyaltyService.earnPoints({
+          customerPhone: current.customerPhone,
+          customerName: current.customerName,
+          amount: current.invoiceAmount ?? 0,
+          reason: `Service visit — ${current.jobCardNo}`,
+          sourceType: 'JOB_CARD',
+          sourceId: current.id,
+        });
+      } catch (loyaltyError: any) {
+        console.error('[AUTO LOYALTY EARN ERROR]', loyaltyError.message);
+      }
+    }
+
     res.json(jobCard);
   } catch (error) {
     console.error('Update job card status error:', error);
@@ -174,7 +251,27 @@ router.patch('/job-cards/:id/assign', async (req: Request, res: Response) => {
 // POST /api/admin/workshop/job-cards/:id/parts (request part)
 router.post('/job-cards/:id/parts', async (req: Request, res: Response) => {
   try {
-    const part = await prisma.jobCardPart.create({ data: { jobCardId: req.params.id, ...req.body } });
+    const { sparePartId, quantity, isWarranty } = req.body;
+    if (!sparePartId || !quantity) { res.status(400).json({ error: 'sparePartId and quantity are required' }); return; }
+
+    const sparePart = await prisma.sparePart.findUnique({ where: { id: sparePartId } });
+    if (!sparePart) { res.status(404).json({ error: 'Spare part not found' }); return; }
+
+    // unitPrice/requestedById are required, non-null columns — the admin
+    // form only ever sent sparePartId/quantity/isWarranty, so this create
+    // always threw a Prisma validation error before reaching the database.
+    // unitPrice is a snapshot of the current price, looked up server-side
+    // rather than trusted from the client.
+    const part = await prisma.jobCardPart.create({
+      data: {
+        jobCardId: req.params.id,
+        sparePartId,
+        quantity,
+        unitPrice: sparePart.price,
+        isWarranty: Boolean(isWarranty),
+        requestedById: req.adminSession!.user.id,
+      },
+    });
     res.status(201).json(part);
   } catch (error) {
     console.error('Request part error:', error);
@@ -185,11 +282,112 @@ router.post('/job-cards/:id/parts', async (req: Request, res: Response) => {
 // PATCH /api/admin/workshop/job-cards/:id/parts/:lineId (issue/backorder/cancel part)
 router.patch('/job-cards/:id/parts/:lineId', async (req: Request, res: Response) => {
   try {
-    const { status } = req.body;
+    // The admin UI (JobCardDetail.tsx) sends `action: 'issue'|'backorder'|
+    // 'cancel'` — this route used to read `status` instead, which was
+    // always undefined, so Prisma silently skipped the update and these
+    // buttons never actually changed a part's status. `status` (a real
+    // JobCardPartStatus value) is still accepted directly for other callers.
+    const ACTION_TO_STATUS: Record<string, string> = { issue: 'ISSUED', backorder: 'BACKORDERED', cancel: 'CANCELLED' };
+    const status = req.body.status || ACTION_TO_STATUS[req.body.action];
+    if (!status) { res.status(400).json({ error: 'A valid action or status is required' }); return; }
+    // Issuing a part actually decrements SparePart.stock (transactionally,
+    // via jobCardPartsService.issuePart) — a plain status update here used
+    // to silently leave inventory untouched.
+    if (status === 'ISSUED') {
+      const result = await jobCardPartsService.issuePart(req.params.lineId, req.adminSession!.user.id);
+      if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+      res.json(result.data);
+      return;
+    }
     const part = await prisma.jobCardPart.update({ where: { id: req.params.lineId }, data: { status } });
     res.json(part);
   } catch (error) {
     console.error('Update part status error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/admin/workshop/job-cards/:id/invoice (generate service invoice: parts + labor)
+router.post('/job-cards/:id/invoice', async (req: Request, res: Response) => {
+  try {
+    const jobCard = await prisma.jobCard.findUnique({
+      where: { id: req.params.id },
+      include: { jobCardParts: { include: { sparePart: true } } },
+    });
+    if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
+    if (jobCard.invoiceNo) { res.status(400).json({ error: 'Invoice already exists' }); return; }
+
+    const { laborAmount } = req.body ?? {};
+    const issuedParts = jobCard.jobCardParts.filter((p) => p.status === 'ISSUED');
+    const partsAmount = issuedParts.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0);
+    const laborTotal = typeof laborAmount === 'number' ? laborAmount : (jobCard.laborAmount ?? 0);
+    const invoiceAmount = partsAmount + laborTotal;
+    const invoiceNo = `SINV-${jobCard.jobCardNo}`;
+
+    const updated = await prisma.jobCard.update({
+      where: { id: req.params.id },
+      data: { invoiceNo, laborAmount: laborTotal, invoiceAmount, paymentStatus: 'UNPAID' },
+    });
+
+    let notificationSent = false;
+    let notificationError: string | undefined;
+    if (jobCard.customerEmail) {
+      try {
+        const company = await getCompanyInfo();
+        const pdfBuffer = await generateServiceInvoicePdf(
+          {
+            jobCardNo: jobCard.jobCardNo,
+            invoiceNo,
+            customerName: jobCard.customerName,
+            customerPhone: jobCard.customerPhone,
+            vehicleModel: jobCard.vehicleModel,
+            vin: jobCard.vin,
+            plateNo: jobCard.plateNo,
+            complaintText: jobCard.complaintText,
+            parts: issuedParts.map((p) => ({ name: p.sparePart.name, quantity: p.quantity, unitPrice: p.unitPrice })),
+            partsAmount,
+            laborAmount: laborTotal,
+            invoiceAmount,
+            invoiceDate: new Date(),
+          },
+          company,
+        );
+        const result = await dispatchNotification({
+          type: 'job_card_status',
+          to: [jobCard.customerEmail],
+          subject: `Service Invoice — ${jobCard.jobCardNo}`,
+          data: { jobCardNo: jobCard.jobCardNo, invoiceNo, invoiceAmount, customerName: jobCard.customerName },
+          attachments: [{ filename: `${invoiceNo}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }],
+        });
+        notificationSent = result.ok;
+        notificationError = result.error;
+      } catch (pdfError: any) {
+        console.error('[SERVICE INVOICE PDF ERROR]', pdfError.message);
+        notificationError = 'Failed to generate/send invoice PDF';
+      }
+    }
+
+    res.status(201).json({ ...updated, notificationSent, notificationError });
+  } catch (error) {
+    console.error('Generate service invoice error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/admin/workshop/job-cards/:id/payment (record/confirm service payment)
+router.post('/job-cards/:id/payment', async (req: Request, res: Response) => {
+  try {
+    const jobCard = await prisma.jobCard.findUnique({ where: { id: req.params.id } });
+    if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
+    if (!jobCard.invoiceNo) { res.status(400).json({ error: 'Generate the service invoice before recording payment.' }); return; }
+
+    const updated = await prisma.jobCard.update({
+      where: { id: req.params.id },
+      data: { paymentStatus: 'PAID', paidAt: new Date() },
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error('Record service payment error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

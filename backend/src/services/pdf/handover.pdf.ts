@@ -92,6 +92,7 @@ export interface HandoverPdfData {
   handoverExpectedCompletionDate?: Date | string | null;
   handoverSignedAt?: Date | string | null;
   countersignedByName?: string | null;
+  countersignedAt?: Date | string | null;
   customerSignatureUrl?: string | null;
   managerSignatureUrl?: string | null;
 }
@@ -276,8 +277,19 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
   ctx = ensureSpace(ctx, 90);
   drawSignatureBlock(
     ctx,
-    { heading: `FOR ${company.legalName.toUpperCase()}`, name: data.countersignedByName, signatureImage: managerSignatureImage ?? undefined },
-    { heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE', name: data.customerName, title: data.customerTitle, signatureImage: customerSignatureImage ?? undefined },
+    {
+      heading: `FOR ${company.legalName.toUpperCase()}`,
+      name: data.countersignedByName,
+      signatureImage: managerSignatureImage ?? undefined,
+      date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+    },
+    {
+      heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE',
+      name: data.customerName,
+      title: data.customerTitle,
+      signatureImage: customerSignatureImage ?? undefined,
+      date: data.handoverSignedAt ? new Date(data.handoverSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+    },
   );
 
   return saveBuffer(doc);

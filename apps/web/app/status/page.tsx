@@ -119,7 +119,7 @@ export default function StatusPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`inline-flex items-center gap-2 bg-geely-blue text-white font-bold text-sm px-6 py-3 rounded-lg transition-all ${
+                className={`inline-flex items-center gap-2 bg-geely-blue text-white font-bold text-sm px-6 py-3 transition-all ${
                   loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-90'
                 }`}
               >

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Upload, X, Image as ImageIcon, Video, FolderOpen } from 'lucide-react';
 import MediaBrowser from './MediaBrowser';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.m4v'];
 function isVideoUrl(url: string): boolean {
@@ -46,22 +47,8 @@ export default function ImageUpload({
     
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', 'vehicle');
-        formData.append('altText', file.name);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error('Upload failed');
-        }
-
-        const result = await response.json();
-        return result.url;
+        const asset = await uploadAndRegisterMedia(file, { category: 'vehicle' });
+        return asset.url;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);

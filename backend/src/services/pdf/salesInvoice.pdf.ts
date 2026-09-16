@@ -2,6 +2,7 @@ import {
   openDocument, saveBuffer, addPage, drawHeaderFooter, drawSectionTitle, drawTable, drawFieldTable,
   drawLabelValue, drawRightText, drawCheckbox, drawSignatureBlock, ensureSpace, wrapText,
   PDF_MARGIN, PDF_CONTENT_WIDTH, PDF_HEADER_CONTENT_Y, COLORS, dateValue, fillValue, formatBrandModel,
+  embedSignatureImage,
 } from './pdfLayout';
 import type { CompanyInfo } from './companyInfo';
 import type { HandoverItemRow } from './handover.pdf';
@@ -17,6 +18,7 @@ export interface InvoiceLineItem {
 export interface SalesInvoicePdfData {
   orderNo: string;
   customerName: string;
+  purchaserTitle?: string | null; // salutation, e.g. "Ato", "Miss", "Dr" — printed before customerName
   vehicleModel: string;
   totalPrice: number;
   invoiceNo?: string | null;
@@ -43,6 +45,9 @@ export interface SalesInvoicePdfData {
   deliveryLocation?: string | null;
   itemsHandedOver?: HandoverItemRow[] | null;
   sellerSignerName?: string | null;
+  customerSignatureUrl?: string | null;
+  customerSignedAt?: Date | string | null;
+  managerSignatureUrl?: string | null;
 }
 
 function taxableAmount(item: InvoiceLineItem): number {
@@ -60,6 +65,10 @@ const IMPORTANT_NOTES = [
 
 export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
+  const [customerSignatureImage, managerSignatureImage] = await Promise.all([
+    embedSignatureImage(doc.doc, data.customerSignatureUrl),
+    embedSignatureImage(doc.doc, data.managerSignatureUrl),
+  ]);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE SALES INVOICE';
   drawHeaderFooter(ctx, title, company);
@@ -91,7 +100,8 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
 
   const sellerBottom = drawParty(PDF_MARGIN, 'SELLER', company.legalName, company.tin || '—', company.address, `Tel: ${company.phone || '—'}  Email: ${company.email || '—'}`);
   const custX = PDF_MARGIN + half + 16;
-  const custBottom = drawParty(custX, 'CUSTOMER', data.customerName || '—', data.customerTin || '—', data.customerAddress || '—', `Tel: ${data.customerPhone || '—'}  Email: ${data.customerEmail || '—'}`);
+  const customerDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');
+  const custBottom = drawParty(custX, 'CUSTOMER', customerDisplayName, data.customerTin || '—', data.customerAddress || '—', `Tel: ${data.customerPhone || '—'}  Email: ${data.customerEmail || '—'}`);
   ctx.y = Math.min(sellerBottom, custBottom) - 14;
 
   ctx = ensureSpace(ctx, 150);
@@ -163,7 +173,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
   ctx = drawFieldTable(ctx, [
     ['Delivery Date', dateValue(data.deliveryDate)],
     ['Location', data.deliveryLocation || '—'],
-    ['Received By', data.customerName || '—'],
+    ['Received By', customerDisplayName],
     ['Odometer', data.odometerAtDelivery != null ? `${data.odometerAtDelivery} km` : '—'],
   ]);
   ctx.y -= 4;
@@ -196,8 +206,19 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
   ctx = ensureSpace(ctx, 100);
   drawSignatureBlock(
     ctx,
-    { heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE', name: data.customerName, showStamp: true },
-    { heading: company.legalName.toUpperCase(), name: data.sellerSignerName, showStamp: true },
+    {
+      heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE',
+      name: customerDisplayName,
+      showStamp: true,
+      signatureImage: customerSignatureImage,
+      date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+    },
+    {
+      heading: company.legalName.toUpperCase(),
+      name: data.sellerSignerName,
+      showStamp: true,
+      signatureImage: managerSignatureImage,
+    },
   );
 
   return saveBuffer(doc);

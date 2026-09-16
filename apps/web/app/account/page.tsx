@@ -3,7 +3,7 @@ import { serverApiClient } from '@/lib/serverApiClient';
 import Link from 'next/link';
 import {
   User, Mail, LogOut, Newspaper, Tag, Calendar,
-  Car, Wrench, FileText, ChevronRight,
+  Car, Wrench, FileText, ChevronRight, Star,
 } from 'lucide-react';
 
 export const metadata = { title: 'My Account | Geely Ethiopia' };
@@ -66,6 +66,8 @@ export default async function AccountPage() {
               { href: '/test-drive', icon: Car, label: 'Book a Test Drive', desc: 'Schedule time with our team' },
               { href: '/quote', icon: FileText, label: 'Request a Quote', desc: 'Get pricing on any model' },
               { href: '/service', icon: Wrench, label: 'Book a Service', desc: 'Schedule vehicle maintenance' },
+              { href: '/account/services', icon: Calendar, label: 'Service History', desc: 'View past appointments' },
+              { href: '/account/loyalty', icon: Star, label: 'Loyalty Points', desc: 'Check your points and rewards' },
             ].map(({ href, icon: Icon, label, desc }) => (
               <Link
                 key={href}
@@ -96,7 +98,7 @@ export default async function AccountPage() {
                 See all →
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {promotions.map((promo: any) => (
                 <div
                   key={promo.id}

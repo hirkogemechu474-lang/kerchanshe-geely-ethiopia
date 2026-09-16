@@ -64,6 +64,72 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   }
 });
 
+// GET /api/customers/:id/history (unified sales/warranty/complaint history)
+// Every domain model (Quotation/SalesOrder/WarrantyClaim/ComplaintCase/
+// Warranty) stores customerPhone as a free string with no customerId FK —
+// retrofitting that FK onto five-plus models would be a much bigger, riskier
+// schema change than this feature needs, so this aggregates the same way
+// the rest of the codebase already dedupes/looks customers up: by phone
+// number (and, where available, by VIN for the vehicles on file).
+router.get('/:id/history', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id: req.params.id },
+      include: { vehicles: { select: { vin: true } } },
+    });
+    if (!customer) { res.status(404).json({ error: 'Customer not found' }); return; }
+
+    const vins = customer.vehicles.map((v) => v.vin).filter((v): v is string => Boolean(v));
+
+    const [quotations, salesOrders, warrantyClaims, complaints, warranties, loyaltyAccount, leads, jobCards] = await Promise.all([
+      prisma.quotation.findMany({
+        where: { phoneNumber: customer.phone },
+        select: { id: true, quotationNo: true, vehicleModel: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.salesOrder.findMany({
+        where: { OR: [{ customerPhone: customer.phone }, ...(vins.length ? [{ vehicleAllocation: { vin: { in: vins } } }] : [])] },
+        select: { id: true, orderNo: true, vehicleModel: true, status: true, totalPrice: true, orderDate: true },
+        orderBy: { orderDate: 'desc' },
+      }),
+      prisma.warrantyClaim.findMany({
+        where: { jobCard: { customerPhone: customer.phone } },
+        select: { id: true, claimNo: true, status: true, defectCode: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.complaintCase.findMany({
+        where: { OR: [{ customerPhone: customer.phone }, ...(vins.length ? [{ vin: { in: vins } }] : [])] },
+        select: { id: true, caseNo: true, subject: true, status: true, priority: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.warranty.findMany({
+        where: { OR: [{ customerPhone: customer.phone }, ...(vins.length ? [{ vin: { in: vins } }] : [])] },
+        select: { id: true, vehicleModel: true, status: true, warrantyStartDate: true, warrantyEndDate: true, orderId: true },
+        orderBy: { warrantyStartDate: 'desc' },
+      }),
+      prisma.loyaltyAccount.findUnique({
+        where: { customerId: customer.id },
+        include: { transactions: { orderBy: { createdAt: 'desc' }, take: 10 } },
+      }),
+      prisma.lead.findMany({
+        where: { customerPhone: customer.phone },
+        select: { id: true, reference: true, vehicleModel: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.jobCard.findMany({
+        where: { OR: [{ customerPhone: customer.phone }, ...(vins.length ? [{ vin: { in: vins } }] : [])] },
+        select: { id: true, jobCardNo: true, vehicleModel: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    res.json({ quotations, salesOrders, warrantyClaims, complaints, warranties, loyaltyAccount, leads, jobCards });
+  } catch (error) {
+    console.error('Get customer history error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // PATCH /api/customers/:id (admin update)
 router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {

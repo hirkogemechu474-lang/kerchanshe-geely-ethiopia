@@ -43,14 +43,38 @@ export interface Dealer {
   isActive?: boolean;
 }
 
+// The Prisma Dealer model (backend/prisma/schema.prisma) nests contact info
+// under `contact: {phone, email, whatsapp}` and hours under
+// `workingHours: {weekdays, saturday, sunday}`, with flat `latitude`/
+// `longitude` columns — this normalizer maps the raw API row onto the flat
+// `phone`/`email`/`hours`/`coordinates` shape the dealer pages read.
+function normalizeDealer(raw: any): Dealer {
+  return {
+    ...raw,
+    phone: raw?.contact?.phone ?? raw?.phone,
+    email: raw?.contact?.email ?? raw?.email,
+    hours: raw?.workingHours
+      ? { weekday: raw.workingHours.weekdays, saturday: raw.workingHours.saturday, sunday: raw.workingHours.sunday }
+      : raw?.hours,
+    coordinates:
+      raw?.latitude != null && raw?.longitude != null
+        ? { latitude: raw.latitude, longitude: raw.longitude }
+        : raw?.coordinates,
+  };
+}
+
 export async function getDealers(): Promise<Dealer[]> {
-  const { data } = await apiClient.get('/dealers');
-  return Array.isArray(data) ? data : data.dealers || [];
+  // /dealers (no /public prefix) requires an admin session and 401s for
+  // site visitors — the public, unauthenticated listing lives at
+  // /public/dealers (backend/src/routes/public.routes.ts).
+  const { data } = await apiClient.get('/public/dealers');
+  const list = Array.isArray(data) ? data : data.dealers || [];
+  return list.map(normalizeDealer);
 }
 
 export async function getDealerById(id: string): Promise<Dealer> {
-  const { data } = await apiClient.get(`/dealers/${id}`);
-  return data;
+  const { data } = await apiClient.get(`/public/dealers/${id}`);
+  return normalizeDealer(data);
 }
 
 export async function getBusinessSettings(): Promise<any> {

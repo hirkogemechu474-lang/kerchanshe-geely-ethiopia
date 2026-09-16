@@ -75,7 +75,7 @@ export default function DealerDetailPage() {
           </p>
           <Link
             href="/dealers"
-            className="inline-block bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+            className="inline-block bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
           >
             View All Dealers
           </Link>
@@ -236,7 +236,7 @@ export default function DealerDetailPage() {
                     href={mapHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-geely-blue text-white font-bold text-sm py-3 px-6 rounded hover:bg-opacity-90 transition-all min-w-[160px]"
+                    className="flex-1 flex items-center justify-center gap-2 bg-geely-blue text-white font-bold text-sm py-3 px-6 hover:bg-opacity-90 transition-all min-w-[160px]"
                   >
                     <Navigation size={18} />
                     Get Directions
@@ -335,7 +335,7 @@ export default function DealerDetailPage() {
                   {(dealer.type === "service" || dealer.type === "both") && (
                     <Link
                       href="/service"
-                      className="flex items-center justify-center gap-2 w-full bg-geely-blue text-white font-bold text-sm py-3 px-6 rounded hover:bg-opacity-90 transition-all"
+                      className="flex items-center justify-center gap-2 w-full bg-geely-blue text-white font-bold text-sm py-3 px-6 hover:bg-opacity-90 transition-all"
                     >
                       <Wrench size={18} />
                       Book Service

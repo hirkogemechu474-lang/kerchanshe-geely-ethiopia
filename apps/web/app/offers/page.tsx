@@ -127,7 +127,7 @@ export default function OffersPage() {
 
                     <Link
                       href={promo.ctaButtonLink || "/quote"}
-                      className="block text-center bg-geely-blue text-white font-bold text-sm py-3 px-6 rounded hover:bg-opacity-90 transition-all"
+                      className="block text-center bg-geely-blue text-white font-bold text-sm py-3 px-6 hover:bg-opacity-90 transition-all"
                     >
                       {promo.ctaButtonText || "Get Quote with This Offer"}
                     </Link>
@@ -204,7 +204,7 @@ export default function OffersPage() {
 
                     <Link
                       href={promo.ctaButtonLink || "/quote"}
-                      className="block text-center bg-navy text-white font-bold text-xs py-2 px-4 rounded hover:bg-opacity-90 transition-all"
+                      className="block text-center bg-navy text-white font-bold text-xs py-2 px-4 hover:bg-opacity-90 transition-all"
                     >
                       {promo.ctaButtonText || "Apply This Offer"}
                     </Link>
@@ -256,13 +256,13 @@ export default function OffersPage() {
             </Link>
             <Link
               href="/dealers"
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
+              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
             >
               Visit Showroom
             </Link>
             <a
               href="tel:+251110000000"
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
+              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:bg-opacity-10 transition-all"
             >
               Call Now
             </a>

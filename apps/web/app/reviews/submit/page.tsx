@@ -1,14 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
-import { Star, User, Car, MessageCircle, Send, CheckCircle } from 'lucide-react';
+import { Star, User, Car, MessageCircle, Send, CheckCircle, Upload } from 'lucide-react';
+
+interface VehicleRecord {
+  id: string;
+  name: string;
+  slug?: string;
+}
 
 export default function SubmitReviewPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -18,19 +29,56 @@ export default function SubmitReviewPage() {
     reviewMessage: '',
   });
 
-  const vehicleModels = [
-    'Coolray',
-    'Monjaro',
-    'Okavango', 
-    'Azkarra',
-    'Emgrand',
-    'Geometry EX5',
-    'Other'
-  ];
+  useEffect(() => {
+    let active = true;
+
+    async function fetchVehicles() {
+      try {
+        const response = await fetch('/api/public/vehicles');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (active) {
+          const list: VehicleRecord[] = Array.isArray(data) ? data : data?.vehicles || [];
+          setVehicles(list);
+        }
+      } catch (error) {
+        console.error('Failed to load vehicles:', error);
+      } finally {
+        if (active) setVehiclesLoading(false);
+      }
+    }
+
+    void fetchVehicles();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    setImageError(null);
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      uploadData.append('category', 'reviews');
+      const res = await fetch('/api/upload/image', { method: 'POST', body: uploadData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setProfileImageUrl(data.url);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Failed to upload photo. Please try again.');
+    } finally {
+      setImageUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.rating === 0) {
       alert('Please select a rating');
       return;
@@ -42,7 +90,7 @@ export default function SubmitReviewPage() {
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, profileImage: profileImageUrl || undefined }),
       });
 
       if (response.ok) {
@@ -75,13 +123,14 @@ export default function SubmitReviewPage() {
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={() => router.push('/')}
-                  className="px-6 py-3 bg-geely-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                  className="px-6 py-3 bg-geely-blue text-white font-semibold hover:bg-opacity-90 transition-colors"
                 >
                   Back to Home
                 </button>
                 <button
                   onClick={() => {
                     setSubmitted(false);
+                    setProfileImageUrl(null);
                     setFormData({
                       fullName: '',
                       email: '',
@@ -151,6 +200,26 @@ export default function SubmitReviewPage() {
                       placeholder="your@email.com (optional)"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Your Photo <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {profileImageUrl ? (
+                        <img src={profileImageUrl} alt="Your uploaded photo" className="w-16 h-16 rounded-full object-cover border border-gray-300" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-[10px] text-gray-400 text-center px-1">
+                          No photo
+                        </div>
+                      )}
+                      <label className="inline-flex items-center gap-2 border-2 border-navy dark:border-ice text-navy dark:text-ice font-bold text-sm px-4 py-2.5 rounded-lg hover:bg-ice dark:hover:bg-midnight transition-all cursor-pointer">
+                        <Upload size={16} />
+                        {imageUploading ? 'Uploading…' : profileImageUrl ? 'Replace Photo' : 'Upload Photo'}
+                        <input type="file" accept="image/*" onChange={handleProfileImageChange} disabled={imageUploading} className="hidden" />
+                      </label>
+                    </div>
+                    {imageError && <p className="text-red-500 text-xs mt-1">{imageError}</p>}
+                  </div>
                 </div>
               </div>
 
@@ -167,14 +236,18 @@ export default function SubmitReviewPage() {
                     </label>
                     <select
                       required
+                      disabled={vehiclesLoading}
                       value={formData.vehicleModel}
                       onChange={(e) => setFormData({...formData, vehicleModel: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent disabled:opacity-50"
                     >
-                      <option value="">Select your Geely model</option>
-                      {vehicleModels.map((model) => (
-                        <option key={model} value={model}>{model}</option>
+                      <option value="">
+                        {vehiclesLoading ? 'Loading models…' : 'Select your Geely model'}
+                      </option>
+                      {vehicles.map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.name}>{vehicle.name}</option>
                       ))}
+                      <option value="Other">Other</option>
                     </select>
                   </div>
                 </div>
@@ -257,7 +330,7 @@ export default function SubmitReviewPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex items-center gap-2 bg-geely-blue text-white px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-geely-blue text-white px-8 py-4 font-bold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <>

@@ -12,13 +12,13 @@ export interface ChatbotConfig {
 
 export const DEFAULT_CHATBOT_CONFIG: ChatbotConfig = {
   enabled: true,
-  greeting: "Hi! I'm the Geely Assistant. Ask me about our models, test drives, promotions, financing, or dealer locations.",
+  greeting: "Hello, and welcome to Kerchanshe Geely Ethiopia! 👋 I'm the Geely Assistant — I can help with our models, test drives, financing, workshop servicing, genuine parts, promotions, or finding your nearest dealer. What can I help you with today?",
   logoUrl: '/assets/logos/geely-logo.png',
   primaryColor: '#194BFF',
   fallbackMessage: "I couldn't find an answer to that. Our team is happy to help you directly on WhatsApp.",
 };
 
-export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'contact' | 'knowledge' | 'greeting' | 'fallback';
+export type ChatbotIntent = 'vehicles' | 'test-drive' | 'promotions' | 'financing' | 'dealers' | 'contact' | 'service' | 'parts' | 'knowledge' | 'greeting' | 'fallback';
 
 export interface ChatbotReply {
   answer: string;
@@ -47,6 +47,11 @@ const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 
   // answer. 'address'/'location' moved here from dealers — "give me your
   // address" is a contact-info ask, not necessarily "list every dealer".
   contact: ['contact', 'phone number', 'phone', 'call you', 'email', 'e-mail', 'reach you', 'get in touch', 'whatsapp', 'address', 'location', 'where are you', 'where can i find'],
+  service: ['service', 'maintenance', 'oil change', 'workshop', 'repair', 'servicing', 'tune up', 'inspection', 'checkup', 'check up', 'job card'],
+  // 'part' is checked as a whole word (see WHOLE_WORD_PATTERNS, matches
+  // "part"/"parts") since it's a common substring of unrelated words
+  // ("apartment", "particular", "department").
+  parts: ['part', 'spare part', 'spare parts', 'genuine part', 'auto parts'],
 };
 
 // Most keywords above are deliberately matched as substrings/prefixes
@@ -64,6 +69,7 @@ const INTENT_KEYWORDS: Record<Exclude<ChatbotIntent, 'vehicles' | 'knowledge' | 
 const WHOLE_WORD_PATTERNS: Record<string, RegExp> = {
   deal: /\bdeals?\b/,
   sale: /\bsale\b/,
+  part: /\bparts?\b/,
 };
 
 function keywordMatches(normalized: string, keyword: string): boolean {
@@ -302,6 +308,28 @@ async function answerFinancing(): Promise<string> {
   return `Here's a look at our financing options:\n${lines.join('\n')}\n\nSee full details and calculate a monthly payment at /financing.`;
 }
 
+async function answerService(): Promise<string> {
+  return 'Our workshop team handles everything from scheduled maintenance and oil changes to diagnostics and warranty work. Book a service at /service, or share your phone number here and our service team will confirm a slot with you directly.';
+}
+
+async function answerParts(normalized: string): Promise<string> {
+  const parts = await prisma.sparePart.findMany({
+    where: { isActive: true },
+    orderBy: [{ isFeatured: 'desc' }, { displayOrder: 'asc' }],
+    take: 30,
+    select: { name: true, category: true, brand: true, stock: true },
+  });
+  if (parts.length === 0) {
+    return "Visit /parts to browse our genuine spare parts catalog and request a quote — tell me which part you're after and I can point you in the right direction.";
+  }
+  const mentioned = parts.filter(
+    (p) => normalized.includes(p.name.toLowerCase()) || (p.brand && normalized.includes(p.brand.toLowerCase())) || normalized.includes(p.category.toLowerCase())
+  );
+  const shortlist = (mentioned.length > 0 ? mentioned : parts).slice(0, 5);
+  const lines = shortlist.map((p) => `• ${p.name}${p.brand ? ` (${p.brand})` : ''}${p.stock > 0 ? '' : ' — currently out of stock'}`);
+  return `Here${shortlist.length === 1 ? "'s" : ' are'} some genuine parts we stock:\n${lines.join('\n')}\n\nVisit /parts for full details, pricing and to request a quote.`;
+}
+
 async function answerFromKnowledgeBase(normalized: string): Promise<{ id: string; answer: string } | null> {
   const entries = await prisma.chatbotKnowledge.findMany({ where: { isActive: true } });
   let best: { id: string; answer: string; score: number; priority: number; displayOrder: number } | null = null;
@@ -323,11 +351,11 @@ async function answerFromKnowledgeBase(normalized: string): Promise<{ id: string
 }
 
 function answerThanks(): string {
-  return "You're welcome! Let me know if you'd like to see our models, book a test drive, check financing, or find a dealer near you.";
+  return "You're very welcome! Let me know if you'd like to see our models, book a test drive, check financing, book a service, browse genuine parts, or find a dealer near you.";
 }
 
 function answerHelp(): string {
-  return 'I can help you explore our models, book a test drive, check current promotions, look at financing options, or find a dealer. Just ask me something like "what SUVs do you have" or "how do I book a test drive".';
+  return 'I can help you explore our models, book a test drive, check current promotions, look at financing options, book a workshop service, find genuine parts, or connect you with a dealer near you. Just ask me something like "what SUVs do you have", "how do I book a test drive", or "I need to service my car".';
 }
 
 async function maybeCaptureLead(
@@ -337,7 +365,7 @@ async function maybeCaptureLead(
   intent: ChatbotIntent
 ): Promise<void> {
   if (existingLeadId) return;
-  if (intent !== 'test-drive' && intent !== 'financing') return;
+  if (intent !== 'test-drive' && intent !== 'financing' && intent !== 'service') return;
 
   const phoneMatch = message.match(PHONE_PATTERN);
   if (!phoneMatch) return;
@@ -399,6 +427,12 @@ async function handleMessage(sessionId: string, message: string): Promise<Chatbo
   } else if (INTENT_KEYWORDS.promotions.some((k) => keywordMatches(normalized, k))) {
     intent = 'promotions';
     answer = await answerPromotions();
+  } else if (INTENT_KEYWORDS.service.some((k) => keywordMatches(normalized, k))) {
+    intent = 'service';
+    answer = await answerService();
+  } else if (INTENT_KEYWORDS.parts.some((k) => keywordMatches(normalized, k))) {
+    intent = 'parts';
+    answer = await answerParts(normalized);
   } else {
     // High-confidence check first: a named vehicle mention. The broader
     // "mentions a generic word like 'car' or 'model'" check is deferred

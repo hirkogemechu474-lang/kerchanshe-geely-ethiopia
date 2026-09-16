@@ -2,6 +2,7 @@ import { prisma } from '../../config/database';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { sendEmail } from '../email/smtp';
 import { userRepository } from '../../repositories';
+import { validateGenericIdOrLicense } from '../../utils/idValidation';
 
 export const leadService = {
   async submit(data: {
@@ -14,6 +15,10 @@ export const leadService = {
     nationalId?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
+      if (data.nationalId) {
+        const idError = validateGenericIdOrLicense(data.nationalId);
+        if (idError) return { ok: false, error: idError };
+      }
       const reference = await generateReference(REFERENCE_CATEGORY.CONTACT);
 
       const lead = await prisma.quotation.create({

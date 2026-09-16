@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { AdminPermissions } from '@geely/types';
+import type { AdminPermissions } from '@/types';
 import { Card, Button } from '@/components/admin/ui';
 
 interface JobCardRow {
@@ -36,6 +36,19 @@ interface CustomerData {
   email: string | null;
   address: string | null;
   vehicles: VehicleData[];
+}
+
+interface CustomerHistory {
+  quotations: { id: string; quotationNo: string | null; vehicleModel: string | null; status: string; createdAt: string }[];
+  salesOrders: { id: string; orderNo: string; vehicleModel: string; status: string; totalPrice: number | null; orderDate: string }[];
+  warrantyClaims: { id: string; claimNo: string; status: string; defectCode: string; createdAt: string }[];
+  complaints: { id: string; caseNo: string; subject: string; status: string; priority: string; createdAt: string }[];
+  warranties: { id: string; vehicleModel: string; status: string; warrantyStartDate: string; warrantyEndDate: string; orderId: string }[];
+  loyaltyAccount: {
+    points: number;
+    tier: string;
+    transactions: { id: string; points: number; reason: string; createdAt: string }[];
+  } | null;
 }
 
 function dateInputValue(iso: string | null) {
@@ -177,7 +190,7 @@ function VehicleCard({ vehicle, canEdit }: { vehicle: VehicleData; canEdit: bool
   );
 }
 
-export default function CustomerDetail({ customer, permissions }: { customer: CustomerData; permissions: AdminPermissions }) {
+export default function CustomerDetail({ customer, history, permissions }: { customer: CustomerData; history: CustomerHistory | null; permissions: AdminPermissions }) {
   const router = useRouter();
   const [state, setState] = useState(customer);
   const [editing, setEditing] = useState(false);
@@ -279,6 +292,150 @@ export default function CustomerDetail({ customer, permissions }: { customer: Cu
           </div>
         )}
       </div>
+
+      {history && <CustomerHistorySections history={history} />}
+    </div>
+  );
+}
+
+// Unified customer + vehicle ownership view: sales, warranty and complaint
+// records are matched by phone/VIN (see GET /customers/:id/history) since
+// none of those models carry a real customerId FK. Sits alongside the
+// existing workshop-only "Vehicles" service-history section above.
+const TIER_COLORS: Record<string, string> = {
+  BRONZE: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400',
+  SILVER: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  GOLD: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400',
+  VIP: 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400',
+};
+
+function LoyaltyCard({ loyaltyAccount }: { loyaltyAccount: CustomerHistory['loyaltyAccount'] }) {
+  if (!loyaltyAccount) {
+    return (
+      <Card>
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Loyalty</h3>
+        <p className="text-sm text-gray-400">No loyalty points earned yet — points are awarded automatically on vehicle delivery and paid service visits.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Loyalty</h3>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TIER_COLORS[loyaltyAccount.tier] ?? TIER_COLORS.BRONZE}`}>
+          {loyaltyAccount.tier}
+        </span>
+      </div>
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{loyaltyAccount.points.toLocaleString()} pts</p>
+      {loyaltyAccount.transactions.length > 0 && (
+        <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+          {loyaltyAccount.transactions.map((t) => (
+            <li key={t.id} className="py-1.5 flex items-center justify-between gap-3 text-xs">
+              <span className="text-gray-600 dark:text-gray-300 truncate">{t.reason}</span>
+              <span className="text-gray-400 shrink-0">+{t.points} · {new Date(t.createdAt).toLocaleDateString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function CustomerHistorySections({ history }: { history: CustomerHistory }) {
+  const sections: { title: string; empty: string; rows: React.ReactNode[] }[] = [
+    {
+      title: `Quotations (${history.quotations.length})`,
+      empty: 'No quotations on file for this phone number.',
+      rows: history.quotations.map((q) => (
+        <li key={q.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+          <Link href={`/admin/quotations/${q.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline truncate">
+            {q.quotationNo || q.vehicleModel || 'General enquiry'}
+          </Link>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-500">{new Date(q.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-gray-400 capitalize">{q.status.replace(/_/g, ' ')}</p>
+          </div>
+        </li>
+      )),
+    },
+    {
+      title: `Sales Orders (${history.salesOrders.length})`,
+      empty: 'No sales orders on file.',
+      rows: history.salesOrders.map((o) => (
+        <li key={o.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+          <Link href={`/admin/orders/${o.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline truncate">
+            {o.orderNo} · {o.vehicleModel}
+          </Link>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-500">{new Date(o.orderDate).toLocaleDateString()}</p>
+            <p className="text-xs text-gray-400 capitalize">{o.status.replace(/_/g, ' ')}</p>
+          </div>
+        </li>
+      )),
+    },
+    {
+      title: `Warranty (${history.warranties.length})`,
+      empty: 'No warranty registered.',
+      rows: history.warranties.map((w) => (
+        <li key={w.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+          <Link href={`/admin/orders/${w.orderId}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline truncate">
+            {w.vehicleModel}
+          </Link>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-500">
+              {new Date(w.warrantyStartDate).toLocaleDateString()} – {new Date(w.warrantyEndDate).toLocaleDateString()}
+            </p>
+            <p className="text-xs text-gray-400 capitalize">{w.status.toLowerCase()}</p>
+          </div>
+        </li>
+      )),
+    },
+    {
+      title: `Warranty Claims (${history.warrantyClaims.length})`,
+      empty: 'No warranty claims on file.',
+      rows: history.warrantyClaims.map((c) => (
+        <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+          <Link href={`/admin/workshop/warranty-claims/${c.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline truncate">
+            {c.claimNo} · {c.defectCode}
+          </Link>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-gray-400 capitalize">{c.status.replace(/_/g, ' ').toLowerCase()}</p>
+          </div>
+        </li>
+      )),
+    },
+    {
+      title: `Complaints (${history.complaints.length})`,
+      empty: 'No complaints on file.',
+      rows: history.complaints.map((c) => (
+        <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+          <Link href={`/admin/complaints/${c.id}`} className="text-geely-blue dark:text-blue-400 font-medium hover:underline truncate">
+            {c.caseNo} · {c.subject}
+          </Link>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-gray-400 capitalize">{c.status.replace(/_/g, ' ').toLowerCase()}</p>
+          </div>
+        </li>
+      )),
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <LoyaltyCard loyaltyAccount={history.loyaltyAccount} />
+      {sections.map((s) => (
+        <Card key={s.title}>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{s.title}</h3>
+          {s.rows.length === 0 ? (
+            <p className="text-sm text-gray-400">{s.empty}</p>
+          ) : (
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700">{s.rows}</ul>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }

@@ -18,9 +18,7 @@ export { assignSalesRep } from './sales/assignSalesRep';
 export { generateOrderNumber, parseOrderNumber, formatOrderNumber } from './sales/orderNumber';
 export { getPdiChecklist, getPdiCategories, PDI_CHECKLIST_TEMPLATE } from './sales/pdiChecklist.template';
 
-export { jobCardService } from './workshop/jobCard.service';
 export { jobCardPartsService } from './workshop/jobCardParts.service';
-export { jobCardStateMachineService } from './workshop/jobCardStateMachine';
 export { bayService } from './workshop/bay.service';
 export { technicianService } from './workshop/technician.service';
 export { warrantyClaimService } from './workshop/warrantyClaim.service';
@@ -63,8 +61,6 @@ export { convertToJobCardService } from './serviceBookings/convertToJobCard.serv
 
 export { showroomVisitService } from './showroom/showroomVisit.service';
 
-export { handoverService } from './handover/handover.service';
-
 export { agreementService } from './agreements/agreement.service';
 
 export { staffSignatureService } from './staffSignature/staffSignature.service';
@@ -91,7 +87,6 @@ export { promotionService } from './promotions/promotion.service';
 
 export { getTransporter, sendEmail } from './email/smtp';
 export {
-  sendOrderStatusEmail,
   sendJobCardStatusEmail,
   sendTestDriveConfirmationEmail,
   sendServiceBookingConfirmationEmail,

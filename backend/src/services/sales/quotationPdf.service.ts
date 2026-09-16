@@ -60,8 +60,10 @@ export const quotationPdfService = {
         issuedAt: quotation.quotationGeneratedAt,
         totalPrice,
         customerSignatureUrl: quotation.signedDocumentUrl,
+        customerSignedAt: quotation.signedAt,
         managerSignatureUrl: (quotation as any).managerSignatureUrl || manager?.signatureUrl,
         managerSignerName: manager?.name,
+        managerSignedAt: quotation.managerApprovedAt,
       }, company);
 
       return { ok: true, data: pdfBuffer };

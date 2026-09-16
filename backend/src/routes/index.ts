@@ -13,7 +13,6 @@ import { customerRoutes } from './customers.routes';
 import { dealerRoutes } from './dealers.routes';
 import { settingRoutes } from './settings.routes';
 import { contentRoutes } from './content.routes';
-import { servicesMenuRoutes } from './services-menu.routes';
 import { mediaRoutes } from './media.routes';
 import { analyticsRoutes } from './analytics.routes';
 import { userRoutes } from './users.routes';
@@ -55,6 +54,7 @@ import { showroomVisitAdminRoutes } from './showroom-visits-admin.routes';
 import { vehicleConfigRoutes } from './vehicle-config.routes';
 import { documentsRoutes } from './documents.routes';
 import { reportsRoutes } from './reports.routes';
+import { loyaltyRoutes } from './loyalty.routes';
 
 const router = Router();
 
@@ -73,7 +73,6 @@ router.use('/customers', customerRoutes);
 router.use('/dealers', dealerRoutes);
 router.use('/settings', settingRoutes);
 router.use('/content', contentRoutes);
-router.use('/services-menu', servicesMenuRoutes);
 router.use('/media', mediaRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin/users', userRoutes);
@@ -114,5 +113,6 @@ router.use('/admin/showroom-visits', showroomVisitAdminRoutes);
 router.use('/admin', vehicleConfigRoutes);
 router.use('/admin/documents', documentsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/loyalty', loyaltyRoutes);
 
 export { router as routes };

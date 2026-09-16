@@ -6,7 +6,6 @@ import {
   ExternalLink,
   Edit,
   FileText,
-  Wrench,
   Package,
   Layers,
   Shield,
@@ -40,27 +39,6 @@ export default async function AllPagesPage() {
 
   const client = await serverApiClient();
   const pages: PageRow[] = [];
-
-  // Service pages
-  try {
-    const { data: servicePages } = await client.get('/services-menu/pages');
-    servicePages.forEach((p: any) =>
-      pages.push({
-        id: p.id,
-        type: 'service',
-        typeLabel: 'Service',
-        icon: Wrench,
-        title: p.title,
-        subtitle: p.excerpt || undefined,
-        publicUrl: `/services/${p.slug}`,
-        editHref: `/admin/services-menu/pages/${p.id}/edit`,
-        isPublished: p.isPublished,
-        updatedAt: p.updatedAt,
-      })
-    );
-  } catch (e) {
-    console.error('Service pages:', e);
-  }
 
   // Parts page content (single record)
   try {

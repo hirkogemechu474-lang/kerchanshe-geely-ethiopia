@@ -8,6 +8,7 @@ import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/services/vehicleService";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { withBasePath } from "@/lib/publicPath";
+import { validateGenericIdOrLicense } from "@/lib/idValidation";
 import { CheckCircle, AlertCircle, Info } from "lucide-react";
 
 interface TestDriveFormData {
@@ -43,7 +44,7 @@ export default function TestDrivePage() {
   const [locations, setLocations] = useState<string[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [contactPhone, setContactPhone] = useState("+251 11 000 0000");
+  const [contactPhone, setContactPhone] = useState("+251 99 338 9874");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -595,6 +596,7 @@ export default function TestDrivePage() {
                   type="text"
                   {...register("nationalId", {
                     required: "National ID or Driver's License number is required",
+                    validate: validateGenericIdOrLicense,
                   })}
                   className={`w-full px-4 py-3.5 border rounded text-sm focus:outline-none focus:border-navy transition-colors ${
                     errors.nationalId

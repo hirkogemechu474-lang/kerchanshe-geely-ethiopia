@@ -89,7 +89,7 @@ export default function WarrantyClaimPage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
               >
                 Submit Another Claim
               </button>
@@ -505,7 +505,7 @@ export default function WarrantyClaimPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 rounded-lg transition-all ${
+                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 transition-all ${
                     isSubmitting
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-opacity-90"

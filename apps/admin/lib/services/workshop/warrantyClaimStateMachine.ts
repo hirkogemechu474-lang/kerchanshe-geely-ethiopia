@@ -1,38 +1,34 @@
+// Vocabulary must match the real Prisma WarrantyClaimStatus enum exactly
+// (DRAFTED/SUBMITTED/UNDER_REVIEW/APPROVED/REJECTED/REIMBURSED — see
+// schema.prisma) — this module previously used an invented lowercase
+// vocabulary sharing zero values with the real enum, so any transition
+// check built on it silently never matched a real claim's actual status.
 export const WARRANTY_CLAIM_STATUS_LABELS: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
-  under_review: 'Under Review',
-  approved: 'Approved',
-  parts_ordered: 'Parts Ordered',
-  in_repair: 'In Repair',
-  completed: 'Completed',
-  rejected: 'Rejected',
-  cancelled: 'Cancelled',
+  DRAFTED: 'Draft',
+  SUBMITTED: 'Submitted',
+  UNDER_REVIEW: 'Under Review',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  REIMBURSED: 'Reimbursed',
 };
 
 export const WARRANTY_CLAIM_STATUS_COLORS: Record<string, string> = {
-  draft: 'gray',
-  submitted: 'yellow',
-  under_review: 'blue',
-  approved: 'green',
-  parts_ordered: 'yellow',
-  in_repair: 'blue',
-  completed: 'green',
-  rejected: 'red',
-  cancelled: 'red',
+  DRAFTED: 'gray',
+  SUBMITTED: 'yellow',
+  UNDER_REVIEW: 'blue',
+  APPROVED: 'green',
+  REJECTED: 'red',
+  REIMBURSED: 'green',
 };
 
 export function getAllowedClaimTransitions(currentStatus: string): string[] {
   const transitions: Record<string, string[]> = {
-    draft: ['submitted', 'cancelled'],
-    submitted: ['under_review', 'cancelled'],
-    under_review: ['approved', 'rejected'],
-    approved: ['parts_ordered'],
-    parts_ordered: ['in_repair'],
-    in_repair: ['completed'],
-    completed: [],
-    rejected: [],
-    cancelled: [],
+    DRAFTED: ['SUBMITTED'],
+    SUBMITTED: ['UNDER_REVIEW'],
+    UNDER_REVIEW: ['APPROVED', 'REJECTED'],
+    APPROVED: ['REIMBURSED'],
+    REJECTED: [],
+    REIMBURSED: [],
   };
   return transitions[currentStatus] || [];
 }

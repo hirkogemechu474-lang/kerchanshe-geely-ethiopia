@@ -110,6 +110,25 @@ export default function QuotationPdfPanel({
   const [copied, setCopied] = useState(false);
   const [colorOptions, setColorOptions] = useState<VehicleColorOption[] | null>(null);
 
+  useEffect(() => {
+    if (quotation.deliveryLocation) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/contact-information');
+        if (!res.ok) return;
+        const data = await res.json();
+        const addr = data?.headquarters?.address;
+        if (!addr || !active) return;
+        const parts = [addr.street, addr.area, addr.city, addr.region, addr.country].filter(Boolean);
+        if (parts.length && active) setDeliveryLocation(parts.join(', '));
+      } catch {
+        // Leave empty — placeholder remains.
+      }
+    })();
+    return () => { active = false; };
+  }, [quotation.deliveryLocation]);
+
   // Best-effort: Quotation.vehicleModel is a free-text name, not a real
   // Vehicle.id, so this resolves by name (see /api/admin/vehicle-colors's
   // vehicleName fallback) and simply leaves colorOptions null — falling
@@ -372,7 +391,7 @@ export default function QuotationPdfPanel({
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Delivery location</label>
-                <input value={deliveryLocation} onChange={(e) => setDeliveryLocation(e.target.value)} placeholder="Showroom address" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <input value={deliveryLocation} onChange={(e) => setDeliveryLocation(e.target.value)} placeholder="Auto-filled from showroom address" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Customer TIN</label>

@@ -58,6 +58,16 @@ export const convertQuotationToOrderService = {
         paymentStatus: 'UNPAID',
         financingStatus: quotation.financingInterest ? 'REQUESTED' : 'NOT_REQUESTED',
         orderDate: new Date(),
+        // Carry over agreement/invoice fields from Quotation to SalesOrder
+        salesType: quotation.salesType ?? undefined,
+        purchaserTitle: quotation.title ?? undefined,
+        purchaserTin: quotation.customerTin ?? undefined,
+        purchaserAddress: quotation.customerAddress ?? undefined,
+        exteriorColor: quotation.vehicleColor ?? undefined,
+        interiorColor: quotation.vehicleVariant ?? undefined,
+        deliveryLocation: quotation.deliveryLocation ?? undefined,
+        depositAmount: quotation.depositAmount ?? undefined,
+        depositDueDate: quotation.depositDueDate ?? undefined,
         // SalesOrder's equivalent of Quotation.assignedTo is salesAgentId
         // (same free-text-actor-reference convention — see its doc comment).
         // commissionStatus per its own doc comment: "PENDING once a

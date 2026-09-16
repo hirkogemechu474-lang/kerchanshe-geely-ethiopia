@@ -8,9 +8,24 @@ import { env } from '../../config/env';
 async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
   const detail = await salesOrderRepository.findByIdWithDocumentDetail(order.id);
-  const countersigner = order.handoverCountersignedById ? await userRepository.findByIdSlim(order.handoverCountersignedById) : null;
   const pdiTotal = detail?.pdiItems?.length ?? 0;
   const pdiChecked = detail?.pdiItems?.filter((p: any) => p.isChecked).length ?? 0;
+
+  // A manager countersigning via the emailed link isn't authenticated, so
+  // handoverCountersignedById stays null — fall back to the signature
+  // ledger (recorded by name at sign time) so the PDF still credits them.
+  let countersignerName: string | null = null;
+  let countersignerSignatureUrl: string | null = null;
+  if (order.handoverCountersignedById) {
+    const countersigner = await userRepository.findByIdSlim(order.handoverCountersignedById);
+    countersignerName = countersigner?.name ?? null;
+    countersignerSignatureUrl = countersigner?.signatureUrl ?? null;
+  } else if (order.handoverCountersignedAt) {
+    const signatures = await documentSignatureRepository.findMany('HANDOVER', order.id);
+    const managerSignature = signatures.find((s: any) => s.role === 'manager');
+    countersignerName = managerSignature?.signedByName ?? null;
+    countersignerSignatureUrl = managerSignature?.signatureUrl ?? null;
+  }
 
   return {
     orderNo: order.orderNo,
@@ -45,9 +60,10 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
     handoverExpectedCompletionDate: order.handoverExpectedCompletionDate,
     handoverDate: (order.deliveredAt ?? order.handoverSignedAt) ? String(order.deliveredAt ?? order.handoverSignedAt) : new Date().toISOString(),
     handoverSignedAt: order.handoverSignedAt,
-    countersignedByName: countersigner?.name ?? null,
+    countersignedByName: countersignerName,
+    countersignedAt: order.handoverCountersignedAt,
     customerSignatureUrl: order.handoverSignedDocumentUrl ?? null,
-    managerSignatureUrl: countersigner?.signatureUrl ?? null,
+    managerSignatureUrl: countersignerSignatureUrl,
   };
 }
 
@@ -57,7 +73,7 @@ export const orderHandoverService = {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
 
-      if (!verifyLinkToken(token, 'handover', orderId)) {
+      if (!verifyLinkToken(token, ['handover', 'handover-countersign'], orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };
       }
 
@@ -74,6 +90,7 @@ export const orderHandoverService = {
           totalPrice: order.totalPrice,
           handoverSignedDocumentUrl: order.handoverSignedDocumentUrl,
           handoverSignedAt: order.handoverSignedAt,
+          handoverCountersignedAt: order.handoverCountersignedAt,
           status: order.status,
         },
       };
@@ -146,12 +163,17 @@ export const orderHandoverService = {
     return `/handover/${orderId}?token=${token}`;
   },
 
+  generateManagerCountersignLink(orderId: string): string {
+    const token = signLinkToken('handover-countersign', orderId);
+    return `/handover/${orderId}/countersign?token=${token}`;
+  },
+
   async generateHandoverPdf(orderId: string, token: string): Promise<{ ok: boolean; data?: Buffer; error?: string }> {
     try {
       const order = await salesOrderRepository.findById(orderId);
       if (!order) return { ok: false, error: 'Order not found.' };
 
-      if (!verifyLinkToken(token, 'handover', orderId)) {
+      if (!verifyLinkToken(token, ['handover', 'handover-countersign'], orderId)) {
         return { ok: false, error: 'Invalid or expired link.' };
       }
 

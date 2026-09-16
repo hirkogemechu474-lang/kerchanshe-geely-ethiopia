@@ -35,11 +35,12 @@ router.get('/lead/:leadId', requireAdminApiSession, async (req: Request, res: Re
 // POST /api/trade-in/:id/approve (approve/reject evaluation)
 router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { approvalStatus, evaluatedValue, approvedById, internalNotes } = req.body;
+    const { approvalStatus, evaluatedValue, internalNotes } = req.body;
     const result = await TradeInEvaluationService.updateEvaluation(req.params.id, {
       approvalStatus,
       evaluatedValue,
-      approvedById,
+      approvedById: req.adminSession!.user.id,
+      approvedAt: new Date(),
       internalNotes,
     });
     if (!result.ok) {

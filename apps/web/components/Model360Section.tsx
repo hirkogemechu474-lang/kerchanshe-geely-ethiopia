@@ -52,6 +52,9 @@ interface Model360SectionProps {
   /** Managed in Admin → Vehicles → Colors. Selecting one swaps the front
    * view's image, mirroring geely.com.eg's color-switchable 360° viewer. */
   colors?: VehicleColorOption[];
+  /** Admin-authored heading/copy for this section (VehicleShowcase.title/subtitle) — falls back to the default copy below when not set. */
+  showcaseTitle?: string | null;
+  showcaseSubtitle?: string | null;
 }
 
 const ANGLE_LABELS = [
@@ -74,6 +77,8 @@ export function Model360Section({
   showcaseVideoUrl = null,
   showcaseModelUrl = null,
   colors = [],
+  showcaseTitle = null,
+  showcaseSubtitle = null,
 }: Model360SectionProps) {
   const [activeTab, setActiveTab] = useState<'video' | '3d' | '360' | 'angles'>(
     showcaseVideoUrl ? 'video' : showcaseModelUrl ? '3d' : '360'
@@ -165,10 +170,10 @@ export function Model360Section({
               360° INTERACTIVE VIEW
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-3">
-              Discover Every Angle
+              {showcaseTitle || 'Discover Every Angle'}
             </h2>
             <p className="text-steel dark:text-steel-light text-lg">
-              Navigate through multiple angles and discover the {modelName} from every perspective.
+              {showcaseSubtitle || `Navigate through multiple angles and discover the ${modelName} from every perspective.`}
             </p>
           </div>
 

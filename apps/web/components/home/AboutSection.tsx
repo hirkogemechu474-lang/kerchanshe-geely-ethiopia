@@ -45,60 +45,69 @@ export default function AboutSection() {
   const keyPoints = content.keyPoints?.length ? content.keyPoints : DEFAULT_HOME_ABOUT.keyPoints;
 
   return (
-    <section className="relative overflow-hidden text-white">
-      {/* Full-bleed background image with a navy gradient overlay, mirroring
-          geely.com.eg's "About Geely" band rather than the old side-by-side
-          card layout. */}
-      <div className="absolute inset-0">
-        {content.image ? (
-          <Image
-            src={content.image}
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-navy" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/40" />
-      </div>
-
-      <div className="relative page-container py-20 md:py-28">
-        <div className="max-w-xl">
-          <div className="text-[12px] tracking-[0.2em] text-active-blue font-bold mb-4 uppercase">
-            Discover Geely
+    <section className="bg-ice py-20 md:py-28">
+      <div className="page-container grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-20">
+        {/* Photo side — a contained, framed image instead of a full-bleed
+            background with text overlaid on top of it. Nothing ever
+            renders on top of the photo itself, so there's no risk of a
+            panel or gradient landing on someone's face. */}
+        <div className="order-1 lg:order-1">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl shadow-xl sm:aspect-[16/11]">
+            {content.image ? (
+              <Image
+                src={content.image}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                priority
+                className="object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-navy" />
+            )}
           </div>
-          <h2 className="disp text-[30px] md:text-[42px] font-extrabold leading-[1.1] mb-6">
+        </div>
+
+        {/* Text side */}
+        <div className="order-2 lg:order-2">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="h-px w-8 bg-gold" aria-hidden />
+            <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-active-blue">
+              Discover Geely
+            </span>
+          </div>
+          <h2 className="disp mb-6 text-[30px] font-extrabold leading-[1.1] text-navy md:text-[42px]">
             {content.title || DEFAULT_HOME_ABOUT.title}
           </h2>
-          <p className="text-[15px] md:text-[16px] text-[#c3d2ea] leading-relaxed mb-8">
+          <p className="mb-8 text-[15px] leading-relaxed text-steel md:text-[16px]">
             {content.description || DEFAULT_HOME_ABOUT.description}
           </p>
 
-          <ul className="space-y-3 mb-9">
+          <ul className="mb-9 space-y-3">
             {keyPoints.map((point, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-active-blue shrink-0" />
-                <span className="text-white text-sm font-medium leading-relaxed">{point}</span>
+                <span className="text-navy text-sm font-medium leading-relaxed">{point}</span>
               </li>
             ))}
           </ul>
 
-          <Button href="/about" variant="outline" tone="dark" size="md">
-            Know More
-            <span aria-hidden>&rarr;</span>
-          </Button>
-        </div>
+          <div className="flex flex-wrap items-center gap-8">
+            <Button href="/about" variant="solid" size="md">
+              Know More
+              <span aria-hidden>&rarr;</span>
+            </Button>
 
-        {/* Credential badge */}
-        <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur rounded-2xl px-5 py-4 ring-1 ring-white/15 mt-14">
-          <div className="w-10 h-10 rounded-xl bg-active-blue/20 text-active-blue flex items-center justify-center text-lg font-extrabold shrink-0">
-            G
-          </div>
-          <div>
-            <div className="text-[15px] font-extrabold leading-none">Since 1997</div>
-            <div className="text-[11px] text-[#c3d2ea] mt-1">Global engineering, everywhere</div>
+            {/* Credential badge */}
+            <div className="flex items-center gap-3 sm:border-l sm:border-line sm:pl-8">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-active-blue/10 text-lg font-extrabold text-active-blue">
+                G
+              </div>
+              <div>
+                <div className="text-[15px] font-extrabold leading-none text-navy">Since 1997</div>
+                <div className="mt-1 text-[11px] text-steel">Global engineering, everywhere</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

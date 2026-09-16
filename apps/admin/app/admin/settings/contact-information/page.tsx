@@ -68,7 +68,7 @@ const DEFAULT_DATA: ContactInformation = {
     },
   },
   phone: {
-    primary: '+251 11 000 0000',
+    primary: '+251 99 338 9874',
     sales: '+251 11 000 0001',
     service: '+251 11 000 0002',
     parts: '+251 11 000 0003',
@@ -439,7 +439,7 @@ export default function ContactInformationPage() {
                         value={data.phone[key]}
                         onChange={e => updatePhone({ [key]: e.target.value } as Partial<ContactInformation['phone']>)}
                         className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        placeholder="+251 11 000 0000"
+                        placeholder="+251 99 338 9874"
                       />
                     </div>
                   </div>

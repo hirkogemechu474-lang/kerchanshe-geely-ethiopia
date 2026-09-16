@@ -24,7 +24,6 @@ import {
   ChevronRight,
   Image,
   FolderTree,
-  UtensilsCrossed,
   Globe,
   Edit3,
   Search,
@@ -63,8 +62,9 @@ import {
   Bot,
   BookOpen,
   MessagesSquare,
+  Award,
 } from 'lucide-react';
-import type { AdminPermissions } from '@geely/types';
+import type { AdminPermissions } from '@/types';
 import { useTheme } from './ThemeProvider';
 import BellNotification from './BellNotification';
 
@@ -110,7 +110,7 @@ interface AdminLayoutProps {
 const navSections: NavSection[] = [
   {
     id: 'dashboard',
-    label: 'Insights',
+    label: 'Dashboard',
     icon: LayoutDashboard,
     pinned: true,
     subgroups: [
@@ -125,13 +125,13 @@ const navSections: NavSection[] = [
   },
   {
     id: 'users',
-    label: 'User Management',
+    label: 'Manage Users',
     icon: Users,
     pinned: true,
     subgroups: [
       {
         items: [
-          { name: 'User Management', href: '/admin/users', icon: Users, permission: 'canManageUsers' },
+          { name: 'Manage Users', href: '/admin/users', icon: Users, permission: 'canManageUsers' },
           { name: 'Staff Signatures', href: '/admin/signatures', icon: PenTool, permission: 'canManageUsers' },
         ],
       },
@@ -139,135 +139,130 @@ const navSections: NavSection[] = [
   },
   {
     id: 'content',
-    label: 'Content Management',
+    label: 'Manage Content',
     icon: Globe,
     subgroups: [
       {
         label: 'Website',
         items: [
-          { name: 'All Pages', href: '/admin/pages', icon: Globe, permission: 'canManageContent' },
-          { name: 'Homepage', href: '/admin/content/hero', icon: Image, permission: 'canManageContent' },
-          { name: 'Geely Team', href: '/admin/content/geely-team', icon: Users, permission: 'canManageContent' },
-          { name: 'Header & Navigation', href: '/admin/site-navigation', icon: Menu, permission: 'canManageContent' },
-          { name: 'Website Settings', href: '/admin/settings', icon: Settings, permission: 'canManageSettings' },
+          { name: 'Manage Pages', href: '/admin/pages', icon: Globe, permission: 'canManageContent' },
+          { name: 'Manage Homepage', href: '/admin/content/hero', icon: Image, permission: 'canManageContent' },
+          { name: 'Manage Geely Team', href: '/admin/content/geely-team', icon: Users, permission: 'canManageContent' },
+          { name: 'Manage Navigation', href: '/admin/site-navigation', icon: Menu, permission: 'canManageContent' },
+          { name: 'Manage Settings', href: '/admin/settings', icon: Settings, permission: 'canManageSettings' },
         ],
       },
       {
         label: 'Vehicles',
         items: [
-          { name: 'All Vehicles', href: '/admin/vehicles', icon: Car, permission: 'canManageVehicles' },
-          { name: 'Categories', href: '/admin/categories', icon: FolderTree, permission: 'canManageVehicles' },
-          { name: 'Models & Variants', href: '/admin/vehicles/models-variants', icon: Layers, permission: 'canManageVehicles' },
-          { name: 'Specifications', href: '/admin/vehicles/specifications', icon: Gauge, permission: 'canManageVehicles' },
-          { name: 'Features', href: '/admin/vehicles/features', icon: ListChecks, permission: 'canManageVehicles' },
-          { name: 'Colors', href: '/admin/vehicles/colors', icon: Palette, permission: 'canManageVehicles' },
-          { name: 'Gallery & Videos', href: '/admin/vehicles/gallery', icon: Images, permission: 'canManageVehicles' },
-          { name: 'Vehicle Sections', href: '/admin/vehicles/sections', icon: LayoutPanelTop, permission: 'canManageVehicles' },
-          { name: 'Vehicle Settings', href: '/admin/vehicles/settings', icon: Settings, permission: 'canManageVehicles' },
-        ],
-      },
-      {
-        label: 'Services',
-        items: [
-          { name: 'Services Menu', href: '/admin/services-menu/pages', icon: UtensilsCrossed, permission: 'canManageContent' },
+          { name: 'Manage Vehicles', href: '/admin/vehicles', icon: Car, permission: 'canManageVehicles' },
+          { name: 'Manage Categories', href: '/admin/categories', icon: FolderTree, permission: 'canManageVehicles' },
+          { name: 'Manage Models', href: '/admin/vehicles/models-variants', icon: Layers, permission: 'canManageVehicles' },
+          { name: 'Manage Specs', href: '/admin/vehicles/specifications', icon: Gauge, permission: 'canManageVehicles' },
+          { name: 'Manage Features', href: '/admin/vehicles/features', icon: ListChecks, permission: 'canManageVehicles' },
+          { name: 'Manage Colors', href: '/admin/vehicles/colors', icon: Palette, permission: 'canManageVehicles' },
+          { name: 'Manage Gallery', href: '/admin/vehicles/gallery', icon: Images, permission: 'canManageVehicles' },
+          { name: 'Manage Sections', href: '/admin/vehicles/sections', icon: LayoutPanelTop, permission: 'canManageVehicles' },
+          { name: 'Vehicle Settings', href: '/admin/vehicles/settings', icon: Settings, permission: 'canManageSettings' },
         ],
       },
       {
         label: 'Marketing',
         items: [
-          { name: 'Promotions', href: '/admin/promotions', icon: Megaphone, permission: 'canManagePromotions' },
-          { name: 'News & Updates', href: '/admin/news', icon: Newspaper, permission: 'canManageContent' },
-          { name: 'Customer Reviews', href: '/admin/reviews', icon: Star, permission: 'canModerateReviews' },
-          { name: 'FAQ Management', href: '/admin/faq', icon: MessageSquare, permission: 'canManageContent' },
+          { name: 'Manage Promotions', href: '/admin/promotions', icon: Megaphone, permission: 'canManagePromotions' },
+          { name: 'Manage News', href: '/admin/news', icon: Newspaper, permission: 'canManageContent' },
+          { name: 'Manage Reviews', href: '/admin/reviews', icon: Star, permission: 'canModerateReviews' },
+          { name: 'Manage FAQ', href: '/admin/faq', icon: MessageSquare, permission: 'canManageContent' },
         ],
       },
       {
         label: 'Chatbot',
         items: [
-          { name: 'Chatbot Settings', href: '/admin/chatbot', icon: Bot, permission: 'canManageContent' },
-          { name: 'Knowledge Base', href: '/admin/chatbot/knowledge', icon: BookOpen, permission: 'canManageContent' },
-          { name: 'Conversations', href: '/admin/chatbot/conversations', icon: MessagesSquare, permission: 'canManageContent' },
+          { name: 'Manage Chatbot', href: '/admin/chatbot', icon: Bot, permission: 'canManageContent' },
+          { name: 'Manage Knowledge Base', href: '/admin/chatbot/knowledge', icon: BookOpen, permission: 'canManageContent' },
+          { name: 'View Conversations', href: '/admin/chatbot/conversations', icon: MessagesSquare, permission: 'canManageContent' },
         ],
       },
       {
         label: 'Dealers & Parts',
         items: [
-          { name: 'Dealer Locations', href: '/admin/dealers', icon: MapPin, permission: 'canViewDealers' },
-          { name: 'Parts Page Content', href: '/admin/parts/content', icon: Edit3, permission: 'canManageSpareParts' },
-          { name: 'Parts Categories', href: '/admin/parts/categories', icon: FolderTree, permission: 'canManageSpareParts' },
+          { name: 'Manage Dealers', href: '/admin/dealers', icon: MapPin, permission: 'canViewDealers' },
+          { name: 'Manage Parts Content', href: '/admin/parts/content', icon: Edit3, permission: 'canManageSpareParts' },
+          { name: 'Manage Parts Categories', href: '/admin/parts/categories', icon: FolderTree, permission: 'canManageSpareParts' },
         ],
       },
       {
         label: 'Sales & Financing',
         items: [
-          { name: 'Financing & Payment Banks', href: '/admin/financing', icon: CreditCard, permission: 'canManageSettings' },
-          { name: 'Vehicle Purchases', href: '/admin/purchases', icon: FileText, permission: 'canManageContent' },
+          { name: 'Manage Financing', href: '/admin/financing', icon: CreditCard, permission: 'canManageSettings' },
+          { name: 'Manage Purchases', href: '/admin/purchases', icon: FileText, permission: 'canManageContent' },
         ],
       },
       {
         label: 'Company',
         items: [
-          { name: 'About Page Content', href: '/admin/settings/about', icon: UserCircle2, permission: 'canManageContent' },
-          { name: 'Business Info', href: '/admin/settings/business-settings', icon: Building, permission: 'canManageSettings' },
-          { name: 'Contact Information', href: '/admin/settings/contact-information', icon: Phone, permission: 'canManageSettings' },
-          { name: 'Social Media', href: '/admin/settings/social-media', icon: Share2, permission: 'canManageSettings' },
+          { name: 'Manage About Page', href: '/admin/settings/about', icon: UserCircle2, permission: 'canManageContent' },
+          { name: 'Manage Business Info', href: '/admin/settings/business-settings', icon: Building, permission: 'canManageSettings' },
+          { name: 'Manage Contact Info', href: '/admin/settings/contact-information', icon: Phone, permission: 'canManageSettings' },
+          { name: 'Manage Social Media', href: '/admin/settings/social-media', icon: Share2, permission: 'canManageSettings' },
         ],
       },
       {
         label: 'Legal',
         items: [
-          { name: 'Policies & Legal', href: '/admin/settings/policies', icon: FileText, permission: 'canManageSettings' },
-          { name: 'Cookie Banner', href: '/admin/settings/cookie-banner', icon: Cookie, permission: 'canManageSettings' },
+          { name: 'Manage Policies', href: '/admin/settings/policies', icon: FileText, permission: 'canManageSettings' },
+          { name: 'Manage Cookie Banner', href: '/admin/settings/cookie-banner', icon: Cookie, permission: 'canManageSettings' },
         ],
       },
     ],
   },
   {
     id: 'swms',
-    label: 'SWMS',
+    label: 'Sales & Workshop',
     icon: Wrench,
     subgroups: [
       {
         label: 'Sales',
         items: [
-          { name: 'Test Drives', href: '/admin/test-drives', icon: Calendar, permission: 'canManageTestDrives' },
-          { name: 'Quote Requests', href: '/admin/quotations', icon: FileText, permission: 'canViewQuotations' },
-          { name: 'Sales Orders', href: '/admin/orders', icon: ShoppingCart, permission: 'canViewQuotations' },
-          { name: 'Parts Requests', href: '/admin/parts-requests', icon: FileText, permission: 'canManageSpareParts' },
-          { name: 'Messages', href: '/admin/messages', icon: MessageSquare, permission: 'canViewMessages' },
+          { name: 'Manage Test Drives', href: '/admin/test-drives', icon: Calendar, permission: 'canManageTestDrives' },
+          { name: 'Manage Quotations', href: '/admin/quotations', icon: FileText, permission: 'canViewQuotations' },
+          { name: 'Manage Orders', href: '/admin/orders', icon: ShoppingCart, permission: 'canManageOrders' },
+          { name: 'Manage Parts Requests', href: '/admin/parts-requests', icon: FileText, permission: 'canManageSpareParts' },
+          { name: 'Manage Messages', href: '/admin/messages', icon: MessageSquare, permission: 'canViewMessages' },
         ],
       },
       {
-        label: 'Service / Workshop',
+        label: 'Workshop',
         items: [
-          { name: 'Management BI Dashboard', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
-          { name: 'Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
-          { name: 'Customers', href: '/admin/customers', icon: Users, permission: 'canViewJobCards' },
-          { name: 'Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canViewJobCards' },
-          { name: 'Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },
-          { name: 'Bay Scheduling Board', href: '/admin/workshop/bays', icon: LayoutGrid, permission: 'canViewJobCards' },
-          { name: 'Technicians', href: '/admin/workshop/technicians', icon: UserCog, permission: 'canManageTechnicians' },
+          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'Manage Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
+          { name: 'Manage Customers', href: '/admin/customers', icon: Users, permission: 'canViewCustomers' },
+          { name: 'Manage Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },
+          { name: 'Manage Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },
+          { name: 'Manage Bay Schedule', href: '/admin/workshop/bays', icon: LayoutGrid, permission: 'canManageBays' },
+          { name: 'Manage Technicians', href: '/admin/workshop/technicians', icon: UserCog, permission: 'canManageTechnicians' },
           { name: 'Manage Bays', href: '/admin/workshop/bays/manage', icon: Settings, permission: 'canManageBays' },
+          { name: 'Service Check-In', href: '/admin/service-check-in', icon: Wrench, permission: 'canManageServiceBookings' },
         ],
       },
       {
         label: 'Parts & Inventory',
         items: [
-          { name: 'Spare Parts', href: '/admin/parts', icon: Package, permission: 'canManageSpareParts' },
+          { name: 'Manage Spare Parts', href: '/admin/parts', icon: Package, permission: 'canManageSpareParts' },
         ],
       },
       {
         label: 'CRM & Post-Sales',
         items: [
           { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
-          { name: 'Dealership Workflow', href: '/admin/workflow', icon: GitBranch, permission: 'canViewReports' },
-          { name: 'Commissions', href: '/admin/commissions', icon: BadgeDollarSign, permission: 'canManageOrders' },
-          { name: 'Warranty Register', href: '/admin/warranty', icon: ShieldCheck, permission: 'canViewJobCards' },
-          { name: 'Customer Satisfaction', href: '/admin/satisfaction', icon: Smile, permission: 'canManageCustomers' },
-          { name: 'Complaints', href: '/admin/complaints', icon: AlertCircle, permission: 'canManageCustomers' },
-          { name: 'Repeat Purchase', href: '/admin/repeat-purchase', icon: Repeat, permission: 'canManageCustomers' },
+          { name: 'Manage Workflow', href: '/admin/workflow', icon: GitBranch, permission: 'canViewReports' },
+          { name: 'Manage Commissions', href: '/admin/commissions', icon: BadgeDollarSign, permission: 'canManageOrders' },
+          { name: 'Manage Warranty Register', href: '/admin/warranty', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },
+          { name: 'Manage Loyalty', href: '/admin/loyalty', icon: Award, permission: 'canManageCustomers' },
+          { name: 'Manage Satisfaction', href: '/admin/satisfaction', icon: Smile, permission: 'canManageCustomers' },
+          { name: 'Manage Complaints', href: '/admin/complaints', icon: AlertCircle, permission: 'canManageCustomers' },
+          { name: 'Manage Repeat Purchase', href: '/admin/repeat-purchase', icon: Repeat, permission: 'canManageCustomers' },
           { name: 'SLA Monitor', href: '/admin/sla', icon: Timer, permission: 'canManageOrders' },
-          { name: 'Service Check-In', href: '/admin/service-check-in', icon: Wrench, permission: 'canViewJobCards' },
           { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, permission: 'canViewReports' },
         ],
       },
@@ -333,7 +328,6 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   const permissions = session?.user?.permissions ?? initialUser?.permissions;
 
   const matchesItem = (item: MenuItem, q: string) => {
-    // When permissions are not yet available, show all items
     if (item.permission && permissions) {
       if (!permissions[item.permission as keyof AdminPermissions]) return false;
     }

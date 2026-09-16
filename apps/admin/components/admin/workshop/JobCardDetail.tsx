@@ -12,7 +12,7 @@ import {
   WARRANTY_CLAIM_STATUS_COLORS,
   WARRANTY_CLAIM_STATUS_LABELS,
 } from '@/lib/services/workshop/warrantyClaimStateMachine';
-import type { AdminPermissions } from '@geely/types';
+import type { AdminPermissions } from '@/types';
 import { Card, Button, LinkButton } from '@/components/admin/ui';
 
 interface StatusHistoryEntry {
@@ -69,7 +69,11 @@ interface JobCardData {
   status: string;
   qcPassed: boolean | null;
   qcNotes: string | null;
+  laborAmount: number | null;
+  invoiceNo: string | null;
   invoiceAmount: number | null;
+  paymentStatus: string;
+  paidAt: string | null;
   technician: { id: string; name: string } | null;
   bay: { id: string; name: string; bayType: string } | null;
   statusHistory: StatusHistoryEntry[];
@@ -112,6 +116,7 @@ export default function JobCardDetail({
   const [partIsWarranty, setPartIsWarranty] = useState(false);
   const [warrantyStartDate, setWarrantyStartDate] = useState(state.warrantyStartDate?.slice(0, 10) || '');
   const [warrantyEndDate, setWarrantyEndDate] = useState(state.warrantyEndDate?.slice(0, 10) || '');
+  const [laborAmount, setLaborAmount] = useState(state.laborAmount?.toString() || '');
 
   const refresh = async () => {
     const res = await fetch(`/api/admin/workshop/job-cards/${state.id}`);
@@ -225,6 +230,40 @@ export default function JobCardDetail({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateInvoice = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/workshop/job-cards/${state.id}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ laborAmount: laborAmount ? Number(laborAmount) : undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate invoice');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmServicePayment = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/workshop/job-cards/${state.id}/payment`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to confirm payment');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -584,6 +623,51 @@ export default function JobCardDetail({
             </div>
           ) : (
             <p className="text-xs text-gray-400">Only a Service Manager (or above) can record a QC outcome.</p>
+          )}
+        </Card>
+      )}
+
+      {/* Service invoice & payment — available once the job has passed QC */}
+      {(state.status === 'INVOICED_CLOSED' || state.status === 'RELEASED') && (
+        <Card className="space-y-3">
+          <h2 className="font-semibold text-gray-900">Service Invoice & Payment</h2>
+          {!state.invoiceNo ? (
+            permissions.canManageJobCards && (
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Labor charge (ETB)</label>
+                  <input
+                    type="number"
+                    value={laborAmount}
+                    onChange={(e) => setLaborAmount(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <Button onClick={generateInvoice} disabled={busy}>
+                  Generate Invoice
+                </Button>
+              </div>
+            )
+          ) : (
+            <div className="space-y-2 text-sm">
+              <p><span className="text-gray-500">Invoice No.:</span> <strong>{state.invoiceNo}</strong></p>
+              <p><span className="text-gray-500">Amount Due:</span> <strong>ETB {(state.invoiceAmount ?? 0).toLocaleString()}</strong></p>
+              <p>
+                <span className="text-gray-500">Payment:</span>{' '}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${state.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                  {state.paymentStatus}
+                </span>
+              </p>
+              {state.paymentStatus !== 'PAID' && permissions.canManageJobCards && (
+                <Button onClick={confirmServicePayment} disabled={busy}>
+                  Confirm Payment Received
+                </Button>
+              )}
+              {state.status === 'INVOICED_CLOSED' && state.paymentStatus !== 'PAID' && (
+                <p className="text-xs text-orange-600">Confirm payment before this job card can be released to the customer.</p>
+              )}
+            </div>
           )}
         </Card>
       )}

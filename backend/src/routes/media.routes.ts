@@ -9,10 +9,12 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
-    const folder = req.query.folder as string;
+    const category = req.query.category as string;
+    const fileType = req.query.fileType as string;
 
     const where: any = {};
-    if (folder) where.folder = folder;
+    if (category) where.category = category;
+    if (fileType && fileType !== 'all') where.fileType = fileType;
 
     const [items, total] = await Promise.all([
       prisma.mediaAsset.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),

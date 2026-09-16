@@ -1,5 +1,8 @@
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { generateWarrantyCertificatePdf } from '../pdf/warrantyCertificate.pdf';
+import { getCompanyInfo } from '../pdf/companyInfo';
+import { env } from '../../config/env';
 
 export const warrantyService = {
   /**
@@ -16,6 +19,7 @@ export const warrantyService = {
       const existing = await prisma.warranty.findUnique({ where: { orderId } });
       if (existing) return { ok: false, error: 'Warranty already registered for this order.' };
 
+      const allocation = await prisma.vehicleAllocation.findUnique({ where: { orderId } });
       const purchaseDate = order.deliveredAt || new Date();
       const warrantyStartDate = purchaseDate;
       const warrantyEndDate = new Date(purchaseDate.getTime() + 3 * 365 * 24 * 60 * 60 * 1000); // 3 years
@@ -23,6 +27,7 @@ export const warrantyService = {
       const warranty = await prisma.warranty.create({
         data: {
           orderId,
+          vin: allocation?.vin ?? null,
           vehicleModel: order.vehicleModel,
           customerName: order.customerName,
           customerPhone: order.customerPhone,
@@ -39,8 +44,35 @@ export const warrantyService = {
         },
       });
 
-      // Send warranty registration email
+      // Send warranty registration email with the certificate attached —
+      // best-effort: a certificate-generation hiccup shouldn't undo the
+      // warranty record that already exists.
       if (order.customerEmail) {
+        let attachments;
+        try {
+          const company = await getCompanyInfo();
+          const pdfBuffer = await generateWarrantyCertificatePdf(
+            {
+              orderNo: order.orderNo,
+              customerName: order.customerName,
+              customerPhone: order.customerPhone,
+              vehicleModel: order.vehicleModel,
+              vin: warranty.vin,
+              purchaseDate,
+              warrantyStartDate,
+              warrantyEndDate,
+              warrantyYears: 3,
+              warrantyKm: 100000,
+              nextServiceDate: warranty.nextServiceDate,
+              nextServiceKm: warranty.nextServiceKm,
+            },
+            company,
+          );
+          attachments = [{ filename: `warranty-certificate-${order.orderNo}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }];
+        } catch (pdfError: any) {
+          console.error('[WARRANTY CERTIFICATE PDF ERROR]', pdfError.message);
+        }
+
         await dispatchNotification({
           type: 'warranty_registered',
           to: [order.customerEmail],
@@ -55,6 +87,7 @@ export const warrantyService = {
             warrantyKm: 100000,
             nextServiceDate: warranty.nextServiceDate?.toLocaleDateString(),
           },
+          attachments,
         });
       }
 
@@ -154,25 +187,40 @@ export const warrantyService = {
   },
 
   /**
-   * Check for warranties with upcoming service dates.
+   * Check for warranties with an upcoming service due — either by date
+   * (nextServiceDate falling within the window) or by mileage
+   * (nextServiceKm existed on the model but was never compared against
+   * anything until now: it's checked against the vehicle's latest known
+   * odometer reading, captured in CustomerVehicle.mileageLastKnown at every
+   * workshop visit and matched here by VIN).
    */
-  async getUpcomingServices(daysAhead: number = 30): Promise<{ ok: boolean; data?: any; error?: string }> {
+  async getUpcomingServices(daysAhead: number = 30, kmThreshold: number = 1000): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const now = new Date();
       const futureDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
 
-      const warranties = await prisma.warranty.findMany({
-        where: {
-          status: 'ACTIVE',
-          nextServiceDate: {
-            gte: now,
-            lte: futureDate,
-          },
-        },
+      const dateBased = await prisma.warranty.findMany({
+        where: { status: 'ACTIVE', nextServiceDate: { gte: now, lte: futureDate } },
         orderBy: { nextServiceDate: 'asc' },
       });
 
-      return { ok: true, data: warranties };
+      const kmCandidates = await prisma.warranty.findMany({
+        where: { status: 'ACTIVE', nextServiceKm: { not: null }, vin: { not: null } },
+      });
+      const vins = kmCandidates.map((w) => w.vin).filter((v): v is string => Boolean(v));
+      const vehicles = vins.length
+        ? await prisma.customerVehicle.findMany({ where: { vin: { in: vins } }, select: { vin: true, mileageLastKnown: true } })
+        : [];
+      const mileageByVin = new Map(vehicles.map((v) => [v.vin, v.mileageLastKnown]));
+      const mileageBased = kmCandidates.filter((w) => {
+        const mileage = w.vin ? mileageByVin.get(w.vin) : null;
+        return mileage != null && w.nextServiceKm != null && mileage >= w.nextServiceKm - kmThreshold;
+      });
+
+      const merged = new Map<string, (typeof dateBased)[number]>();
+      for (const w of [...dateBased, ...mileageBased]) merged.set(w.id, w);
+
+      return { ok: true, data: Array.from(merged.values()) };
     } catch (error: any) {
       console.error('[WARRANTY UPCOMING SERVICES ERROR]', error.message);
       return { ok: false, error: 'Failed to fetch upcoming services.' };
@@ -190,6 +238,7 @@ export const warrantyService = {
       let sentCount = 0;
       for (const warranty of upcoming.data) {
         if (warranty.customerEmail) {
+          const bookingUrl = `${env.urls.site}/service`;
           await dispatchNotification({
             type: 'service_reminder',
             to: [warranty.customerEmail],
@@ -200,6 +249,10 @@ export const warrantyService = {
               nextServiceDate: warranty.nextServiceDate?.toLocaleDateString(),
               nextServiceKm: warranty.nextServiceKm,
             },
+            ctas: [
+              { label: 'Book Service', url: bookingUrl },
+              { label: 'Check Status', url: `${env.urls.site}/status` },
+            ],
           });
           sentCount++;
         }

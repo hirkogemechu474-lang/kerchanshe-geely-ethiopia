@@ -37,7 +37,10 @@ export default async function NewsPage() {
   if (teamSetting) {
     try {
       const stored = JSON.parse(teamSetting.value);
-      if (Array.isArray(stored)) team = stored.filter((member) => member?.isActive !== false).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      const members = Array.isArray(stored) ? stored : stored?.members;
+      if (Array.isArray(members) && members.length > 0) {
+        team = members.filter((member) => member?.isActive !== false).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      }
     } catch { /* use fallback content */ }
   }
 

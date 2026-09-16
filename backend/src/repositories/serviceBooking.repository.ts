@@ -35,6 +35,13 @@ export const serviceBookingRepository = {
     });
   },
 
+  async updateStatus(id: string, status: string) {
+    return prisma.serviceBooking.update({
+      where: { id },
+      data: { status },
+    });
+  },
+
   async findByReferenceForStatus(reference: string) {
     return prisma.serviceBooking.findUnique({
       where: { reference },

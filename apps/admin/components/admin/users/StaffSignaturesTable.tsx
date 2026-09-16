@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { TableCard, THead, TBody, Tr, Th, Td, Badge, Button, EmptyTableRow } from '@/components/admin/ui';
-import { roleLabel } from '@geely/types';
+import { roleLabel } from '@/types';
 import { resolveDocumentUrl, isPdfUrl } from '@/lib/fileType';
 
 interface StaffUser {

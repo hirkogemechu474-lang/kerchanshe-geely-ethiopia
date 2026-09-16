@@ -112,7 +112,7 @@ export default function DeveloperPage() {
               <p className="text-sm font-semibold text-blue-600">Explore the platform</p>
               <h2 className="mt-2 text-2xl font-bold text-navy dark:text-ice">Your Geely journey starts here.</h2>
             </div>
-            <Link href="/configure" className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-3 font-semibold text-white transition hover:bg-blue-700">
+            <Link href="/configure" className="inline-flex items-center gap-2 bg-navy px-5 py-3 font-semibold text-white transition hover:bg-blue-700">
               Explore models <ArrowRight size={18} />
             </Link>
           </div>

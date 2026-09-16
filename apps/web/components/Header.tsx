@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Menu } from 'lucide-react';
-import { MegaMenu, type MenuSection } from './MegaMenu';
 import { VehicleDropdown } from './VehicleDropdown';
 import type { VehicleRecord } from '@/services/vehicleService';
 import { resolveNavIcon, type SiteNavItem } from '@/lib/navIcons';
@@ -26,8 +25,8 @@ interface HeaderProps {
 
 // A simple, static list of links shown in a compact dropdown card — for nav
 // items that are a category label rather than a page of their own (unlike
-// Models/After-Sales Services, which have real mega-menus backed by CMS
-// data). Href is a non-navigable sentinel (see SPECIAL_NAV_HREFS below).
+// Models, which has a real mega-menu backed by CMS data). Href is a
+// non-navigable sentinel (see SPECIAL_NAV_HREFS below).
 interface LinkGroup {
   title: string;
   links: { label: string; href: string }[];
@@ -38,7 +37,7 @@ const LINK_GROUPS: Record<string, LinkGroup> = {
     title: 'Shopping Tools',
     links: [
       { label: 'Configurator', href: '/configure' },
-      { label: 'Download Brochure', href: '/models' },
+      { label: 'Download Brochure', href: '/download-brochure' },
       { label: 'Electric vs. Fuel', href: '/ev-vs-fuel' },
       { label: 'Find a Dealer', href: '/dealers' },
       { label: 'Request a Quote', href: '/quote' },
@@ -59,9 +58,8 @@ const LINK_GROUPS: Record<string, LinkGroup> = {
 // dropdown attached, matching what the site actually has content systems for.
 // '/shopping-tools' and '/owners' are sentinel hrefs (not real pages) that
 // only ever trigger the static LINK_GROUPS panel above — see hasLinkGroup.
-const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasSubmenu?: boolean; hasLinkGroup?: keyof typeof LINK_GROUPS; category?: 'models' | 'services' }> = {
-  '/models': { hasDropdown: true, category: 'models' },
-  '/service': { hasSubmenu: true, category: 'services' },
+const SPECIAL_NAV_HREFS: Record<string, { hasDropdown?: boolean; hasLinkGroup?: keyof typeof LINK_GROUPS }> = {
+  '/models': { hasDropdown: true },
   '/shopping-tools': { hasLinkGroup: 'shopping-tools' },
   '/owners': { hasLinkGroup: 'owners' },
 };
@@ -97,13 +95,11 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const [megaMenuOpen, setMegaMenuOpen]     = useState<string | null>(null);
   const [modelsDropdownOpen, setModelsDropdownOpen] = useState(false);
   const [linkGroupOpen, setLinkGroupOpen]   = useState<keyof typeof LINK_GROUPS | null>(null);
 
   // Pre-loaded menu data — fetched once, reused on every hover
   const [vehicles, setVehicles]           = useState<VehicleRecord[]>([]);
-  const [servicesMenu, setServicesMenu]   = useState<MenuSection[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const prefetched = useRef(false);
 
@@ -111,16 +107,11 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
     if (prefetched.current) return;
     prefetched.current = true;
 
-    // Fire all requests in parallel
-    Promise.all([
-      fetchJSON<{ vehicles: VehicleRecord[] } | VehicleRecord[]>('/api/public/vehicles'),
-      fetchJSON<{ sections: MenuSection[] }>('/api/public/services/menu'),
-    ]).then(([vehiclesData, servicesData]) => {
+    fetchJSON<{ vehicles: VehicleRecord[] } | VehicleRecord[]>('/api/public/vehicles').then((vehiclesData) => {
       if (vehiclesData) {
         const list = Array.isArray(vehiclesData) ? vehiclesData : vehiclesData.vehicles ?? [];
         setVehicles(list);
       }
-      if (servicesData?.sections) setServicesMenu(servicesData.sections);
       setVehiclesLoading(false);
     });
   };
@@ -163,7 +154,7 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
 
   // Transparent-over-hero only while the overlay page is at rest, unscrolled
   // and with no menu open — a solid bar reads better under an open dropdown.
-  const transparent = overlay && !scrolled && !modelsDropdownOpen && !megaMenuOpen && !linkGroupOpen;
+  const transparent = overlay && !scrolled && !modelsDropdownOpen && !linkGroupOpen;
   const tone = transparent ? 'text-white' : 'text-ink dark:text-ice';
 
   const mainNavItems = React.useMemo(
@@ -176,9 +167,7 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
           href: item.href,
           openInNewTab: item.openInNewTab,
           hasDropdown: special?.hasDropdown,
-          hasSubmenu: special?.hasSubmenu,
           hasLinkGroup: special?.hasLinkGroup,
-          category: special?.category,
           icon: IconComponent ? <IconComponent size={16} className="shrink-0" /> : null,
         };
       }),
@@ -186,7 +175,6 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
   );
 
   const closeAllMenus = () => {
-    setMegaMenuOpen(null);
     setModelsDropdownOpen(false);
     setLinkGroupOpen(null);
   };
@@ -217,17 +205,10 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
         if (item.hasDropdown) {
           loadMenuData();
           setModelsDropdownOpen(true);
-          setMegaMenuOpen(null);
-          setLinkGroupOpen(null);
-        } else if (item.hasSubmenu) {
-          loadMenuData();
-          setMegaMenuOpen(item.category!);
-          setModelsDropdownOpen(false);
           setLinkGroupOpen(null);
         } else if (item.hasLinkGroup) {
           setLinkGroupOpen(item.hasLinkGroup);
           setModelsDropdownOpen(false);
-          setMegaMenuOpen(null);
         } else {
           closeAllMenus();
         }
@@ -240,7 +221,6 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
           onClick={() => {
             loadMenuData();
             setModelsDropdownOpen(!modelsDropdownOpen);
-            setMegaMenuOpen(null);
             setLinkGroupOpen(null);
           }}
         >
@@ -256,7 +236,6 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
           onClick={() => {
             setLinkGroupOpen(linkGroupOpen === item.hasLinkGroup ? null : item.hasLinkGroup!);
             setModelsDropdownOpen(false);
-            setMegaMenuOpen(null);
           }}
         >
           {item.label}
@@ -362,21 +341,6 @@ export function Header({ onMobileMenuToggle = () => {}, overlay = false, autoHid
               onClose={() => setModelsDropdownOpen(false)}
               vehicles={vehicles}
               loading={vehiclesLoading}
-            />
-          </div>
-        )}
-
-        {/* Mega Menu — data already loaded, no spinner */}
-        {megaMenuOpen && (
-          <div
-            className="absolute left-0 right-0 bg-white dark:bg-midnight-surface shadow-lg border-t border-line dark:border-midnight-line z-40"
-            onMouseEnter={cancelClose}
-            onMouseLeave={scheduleClose}
-          >
-          <MegaMenu
-              category={megaMenuOpen}
-              servicesMenu={servicesMenu}
-              vehicles={vehicles}
             />
           </div>
         )}

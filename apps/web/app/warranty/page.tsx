@@ -330,7 +330,7 @@ export default function WarrantyPage() {
               </Link>
               <a
                 href={contact.phoneHref}
-                className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white hover:text-geely-blue transition-all"
+                className="border-2 border-white text-white font-bold text-base px-8 py-4 hover:bg-white hover:text-geely-blue transition-all"
               >
                 Call Service Center
               </a>
@@ -389,7 +389,7 @@ export default function WarrantyPage() {
           </p>
           <Link
             href="/contact"
-            className="inline-block bg-geely-blue text-white font-bold text-base px-10 py-4 rounded-lg hover:bg-opacity-90 transition-all"
+            className="inline-block bg-geely-blue text-white font-bold text-base px-10 py-4 hover:bg-opacity-90 transition-all"
           >
             Contact Us
           </Link>

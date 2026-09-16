@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Loader2, Image as ImageIcon, Video } from 'lucide-react';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 export interface FileUploadProps {
   value?: string | string[];
@@ -63,9 +64,20 @@ export default function FileUpload({
     setError(null);
     setUploading(true);
     try {
+      const category = label.toLowerCase().replace(/\s+/g, '-');
+      const isImage = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'].includes(ext);
+      const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(ext);
+      if (isImage || isVideo) {
+        // Only image/video files are registered in the shared Media Library —
+        // MediaAsset.fileType only models "image" | "video", so a PDF (the
+        // other type this component accepts) stays a plain direct upload.
+        const asset = await uploadAndRegisterMedia(file, { category });
+        return asset.url;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('category', label.toLowerCase().replace(/\s+/g, '-'));
+      formData.append('category', category);
       const response = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await response.json();
       if (!response.ok || !data.url) {
@@ -73,8 +85,8 @@ export default function FileUpload({
         return null;
       }
       return data.url as string;
-    } catch {
-      setError('Upload failed. Please try again.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Upload failed. Please try again.');
       return null;
     } finally {
       setUploading(false);

@@ -142,7 +142,7 @@ export default function TestDriveConfirmPage() {
                 <button
                   onClick={confirm}
                   disabled={confirming}
-                  className="w-full bg-geely-blue text-white font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-geely-blue text-white font-bold py-3 hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {confirming ? 'Confirming…' : 'Confirm Test Drive'}
                 </button>

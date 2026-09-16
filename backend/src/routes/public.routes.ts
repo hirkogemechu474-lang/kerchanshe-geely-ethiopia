@@ -4,19 +4,27 @@ import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
 import { salesOrderRepository, vehicleRepository } from '../repositories';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
+import { orderService } from '../services/sales/order.service';
+import { orderInvoiceService } from '../services/sales/orderInvoice.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
 import { verifyLinkToken } from '../utils/secureLink';
+import { validateGenericIdOrLicense } from '../utils/idValidation';
+import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
+import { persistQuotationPdfSnapshot } from './quotations.routes';
+import { auditService } from '../services/audit/audit.service';
+import { serviceBookingService } from '../services/serviceBookings/serviceBooking.service';
+import { loyaltyService } from '../services/loyalty/loyalty.service';
 
 let cachedManagerEmails: string[] | null = null;
 let managerEmailsCachedAt = 0;
 const MANAGER_EMAIL_CACHE_TTL = 5 * 60 * 1000;
 
 // Combined draft/scheduled/published visibility gate (see `ContentStatus` in
-// prisma/schema.prisma) for HeroSection, FAQ, VehicleShowcase, SiteNavItem,
-// and ServicePage. This is ADDITIONAL to each model's own isActive/
+// prisma/schema.prisma) for HeroSection, FAQ, VehicleShowcase, and
+// SiteNavItem. This is ADDITIONAL to each model's own isActive/
 // isPublished kill-switch below, not a replacement — spread both into the
 // same `where`. PUBLISHED rows are always visible; SCHEDULED rows become
 // visible once `scheduledAt` has passed.
@@ -197,6 +205,20 @@ router.get('/about', async (req: Request, res: Response) => {
     res.json(setting?.value ? JSON.parse(setting.value) : {});
   } catch (error) {
     console.error('Get about error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Public counterpart of GET/PUT /api/admin/content/geely-team
+// (backend/src/routes/admin-content.routes.ts) — same `geely_team` Setting
+// key, same { members: [...] } shape, no auth.
+router.get('/geely-team', async (req: Request, res: Response) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'geely_team' } });
+    const parsed = setting?.value ? JSON.parse(setting.value) : { members: [] };
+    res.json({ members: parsed.members || [] });
+  } catch (error) {
+    console.error('Get public Geely Team error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -443,13 +465,34 @@ router.get('/financing-page-content', async (req: Request, res: Response) => {
 // GY-SQ-...) tells us which model to query — see utils/reference.ts's
 // REFERENCE_CATEGORY. Only categories with an actual `reference` column
 // are supported (Quotation/TestDrive/ServiceBooking/PartRequest/Lead/
-// Message) — Purchase (SalesOrder), Financing (FinancingApplication) and
-// Trade-In (TradeInEvaluation) have no reference column to look up by, so
+// Message), plus SalesOrder below by its own `orderNo` (format `SO-<n>`,
+// distinct from the `GY-<CAT>-...` reference shape the other categories
+// use — orderService.getStatusByOrderNo/salesOrderRepository.
+// findByOrderNoForStatus already existed correctly but had no route calling
+// them until now). Financing (FinancingApplication) and Trade-In
+// (TradeInEvaluation) still have no reference column to look up by, so
 // those categories report not-found rather than guessing.
 router.get('/status', async (req: Request, res: Response) => {
   try {
     const ref = (req.query.ref as string || '').trim();
     if (!ref) { res.json({ found: false, error: 'A reference number is required.' }); return; }
+
+    if (ref.startsWith('SO-')) {
+      const orderResult = await orderService.getStatusByOrderNo(ref);
+      if (!orderResult.ok || !orderResult.data) { res.json({ found: false, error: 'No order found for that reference number.' }); return; }
+      res.json({
+        found: true,
+        result: {
+          type: 'order',
+          label: 'Sales Order',
+          reference: ref,
+          status: orderResult.data.status,
+          createdAt: orderResult.data.createdAt,
+          vehicleModel: orderResult.data.vehicleModel,
+        },
+      });
+      return;
+    }
 
     const category = ref.split('-')[1] || '';
 
@@ -570,11 +613,19 @@ router.get('/news/:id', async (req: Request, res: Response) => {
 router.get('/promotions', async (req: Request, res: Response) => {
   try {
     const now = new Date();
+    const featuredOnly = req.query.featured === 'true';
+    const limit = parseInt(req.query.limit as string, 10);
     const promotions = await prisma.promotion.findMany({
-      where: { isActive: true, startDate: { lte: now }, endDate: { gte: now } },
+      where: {
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+        ...(featuredOnly ? { isFeatured: true } : {}),
+      },
       orderBy: [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }],
+      ...(Number.isFinite(limit) && limit > 0 ? { take: limit } : {}),
     });
-    res.json(promotions);
+    res.json({ success: true, promotions });
   } catch (error) {
     console.error('List public promotions error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -593,10 +644,18 @@ router.get('/testimonials', async (req: Request, res: Response) => {
 
 router.get('/parts', async (req: Request, res: Response) => {
   try {
-    const content = await prisma.partsPageContent.findFirst();
-    const brands = await prisma.partBrand.findMany({ where: { isActive: true } });
-    const categories = await prisma.partCategory.findMany({ where: { isActive: true } });
-    res.json({ content: content || {}, brands, categories });
+    const [content, brands, categories, benefits, parts] = await Promise.all([
+      prisma.partsPageContent.findFirst(),
+      prisma.partBrand.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }),
+      prisma.partCategory.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }),
+      prisma.partBenefit.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }),
+      prisma.sparePart.findMany({
+        where: { isActive: true },
+        include: { partCategory: true },
+        orderBy: [{ isFeatured: 'desc' }, { displayOrder: 'asc' }],
+      }),
+    ]);
+    res.json({ success: true, content: content || {}, brands, categories, benefits, parts });
   } catch (error) {
     console.error('Get parts page error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -616,12 +675,83 @@ router.post('/parts/requests', rateLimiters.contactForm, async (req: Request, re
 
 router.post('/trade-in', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    // NOTE: was `prisma.tradeIn` — no such model exists in schema.prisma.
     // Trade-in is one of the interest flags on the `Quotation` lead model
     // (tradeInInterest: Boolean), same as every other lead-capture flow in
-    // this file (see leadService/quotation.service.ts) — not a separate table.
-    const tradeIn = await prisma.quotation.create({ data: { ...req.body, tradeInInterest: true } });
-    res.status(201).json({ success: true, id: tradeIn.id });
+    // this file — but the actual vehicle-condition/mileage/photo detail the
+    // public /trade-in form collects (apps/web/app/trade-in/page.tsx) has no
+    // matching columns on Quotation itself, so it's captured on a linked
+    // TradeInEvaluation row instead (see Quotation.tradeInEvaluationId).
+    // Previously this spread the raw request body straight into
+    // prisma.quotation.create(), which has no `firstName`/`currentMake`/
+    // `currentMileage`/etc. columns — every real submission threw.
+    const {
+      firstName, lastName, email, phone, nationalId,
+      currentMake, currentModel, currentYear, currentMileage, currentCondition, vin,
+      hasAccidents, hasModifications, serviceHistory,
+      interestedModel, purchaseTimeframe, financingNeeded,
+      additionalInfo, photoUrls,
+    } = req.body || {};
+
+    if (nationalId) {
+      const idError = validateGenericIdOrLicense(nationalId);
+      if (idError) { res.status(400).json({ error: idError }); return; }
+    }
+
+    const customerName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    if (!customerName || !phone) {
+      res.status(400).json({ error: 'Name and phone number are required.' });
+      return;
+    }
+
+    const yearNum = parseInt(currentYear, 10);
+    const mileageNum = parseInt(currentMileage, 10);
+    // hasAccidents/hasModifications come from the public form as
+    // 'no' | 'minor' | 'major' selects, not raw booleans — the model's
+    // fields are a coarse yes/no flag, so the severity detail is folded
+    // into serviceHistoryNotes instead of being discarded.
+    const hadAccidents = Boolean(hasAccidents) && hasAccidents !== 'no';
+    const hadModifications = Boolean(hasModifications) && hasModifications !== 'no';
+    const historyNote = [
+      hadAccidents ? `Accidents: ${hasAccidents}` : null,
+      hadModifications ? `Modifications: ${hasModifications}` : null,
+      serviceHistory ? `Service history: ${serviceHistory}` : null,
+    ].filter(Boolean).join(' · ') || undefined;
+
+    const evaluation = await prisma.tradeInEvaluation.create({
+      data: {
+        vin: vin || undefined,
+        year: Number.isFinite(yearNum) ? yearNum : new Date().getFullYear(),
+        make: currentMake || undefined,
+        model: currentModel || undefined,
+        mileage: Number.isFinite(mileageNum) ? mileageNum : 0,
+        condition: currentCondition || 'good',
+        hasAccidents: hadAccidents,
+        hasModifications: hadModifications,
+        serviceHistoryNotes: historyNote,
+        photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
+      },
+    });
+
+    const reference = await generateReference(REFERENCE_CATEGORY.TRADE_IN);
+    const tradeIn = await prisma.quotation.create({
+      data: {
+        customerName,
+        phoneNumber: phone,
+        email: email || undefined,
+        nationalId: nationalId || undefined,
+        vehicleModel: interestedModel || undefined,
+        financingInterest: financingNeeded === 'yes',
+        tradeInInterest: true,
+        source: 'trade-in',
+        message: [additionalInfo, purchaseTimeframe ? `Purchase timeframe: ${purchaseTimeframe}` : null]
+          .filter(Boolean)
+          .join('\n') || undefined,
+        reference,
+        tradeInEvaluationId: evaluation.id,
+      },
+    });
+
+    res.status(201).json({ success: true, id: tradeIn.id, reference: tradeIn.reference });
   } catch (error) {
     console.error('Submit trade-in error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -670,11 +800,36 @@ router.post('/quotations/:reference/sign', rateLimiters.quotationSign, async (re
       res.status(409).json({ error: 'This quotation must be approved and sent before it can be signed.' });
       return;
     }
+    if (quotation.signedAt) {
+      res.status(409).json({ error: 'This quotation has already been signed.' });
+      return;
+    }
     if (!signatureData || typeof signatureData !== 'string') {
       res.status(400).json({ error: 'A signature is required.' });
       return;
     }
-    const updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { status: 'accepted', signedAt: new Date(), signedDocumentUrl: signatureData } });
+    let updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { status: 'accepted', signedAt: new Date(), signedDocumentUrl: signatureData } });
+
+    // Snapshot the fully-signed PDF (manager + customer signatures embedded)
+    // so pdfUrl holds the exact locked document, not just a live-render URL.
+    try {
+      const pdfResult = await quotationPdfService.generatePdf(quotation.id);
+      if (pdfResult.ok && pdfResult.data) {
+        const snapshotUrl = persistQuotationPdfSnapshot(quotation.id, pdfResult.data);
+        updated = await prisma.quotation.update({ where: { id: quotation.id }, data: { pdfUrl: snapshotUrl } });
+      }
+    } catch (snapshotError: any) {
+      console.error('[QUOTATION SIGN PDF SNAPSHOT ERROR]', snapshotError.message);
+    }
+
+    await auditService.log({
+      entityType: 'quotation',
+      entityId: quotation.id,
+      action: 'customer_signed_locked',
+      performedById: 'customer',
+      performedByName: quotation.customerName,
+    });
+
     const conversion = await convertQuotationToOrderService.convert(quotation.id);
     if (!conversion.ok || !conversion.data) {
       res.status(400).json({ error: conversion.error || 'Quotation signed, but the order could not be created.' });
@@ -698,6 +853,7 @@ router.post('/quotations/:reference/sign', rateLimiters.quotationSign, async (re
           nextStep: 'Sales agent review and approval is required before sending the sales agreement.',
           adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
         },
+        ctas: [{ label: 'View Sales Order', url: `${env.urls.admin}/admin/orders/${order.id}` }],
         inApp: {
           type: 'order_update',
           title: 'Customer Signed — Order Created',
@@ -764,21 +920,44 @@ router.get('/quotations/by-id/:id', async (req: Request, res: Response) => {
 
 router.post('/financing-applications', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    // NOTE: was `prisma.financingApplication` — no such model exists in
-    // schema.prisma. The Message model's own doc comment says it backs
-    // exactly this flow ("Message rows that back a customer-facing flow
-    // (financing applications, contact-derived leads)"), so submissions
-    // are recorded there.
-    const { customerName, customerEmail, customerPhone, vehicleModel, ...rest } = req.body || {};
-    const application = await prisma.message.create({
+    const { customerName, customerEmail, customerPhone, vehicleModel, vehiclePrice, requestedAmount, downPayment, tenureMonths, interestRate, ...rest } = req.body || {};
+
+    if (!customerName || !customerPhone || !vehicleModel) {
+      res.status(400).json({ error: 'customerName, customerPhone, and vehicleModel are required.' });
+      return;
+    }
+
+    // Create a Lead first (required by FinancingApplication.leadId)
+    const lead = await prisma.lead.create({
       data: {
-        from: customerName || 'Unknown',
-        email: customerEmail || '',
-        subject: vehicleModel ? `Financing Application - ${vehicleModel}` : 'Financing Application',
-        category: 'financing',
-        content: JSON.stringify({ customerPhone, vehicleModel, ...rest }),
+        customerName,
+        customerPhone,
+        customerEmail: customerEmail || null,
+        vehicleModel,
+        source: 'website',
+        financingInterest: true,
+        status: 'new',
+        ...rest,
       },
     });
+
+    // Create the FinancingApplication linked to this lead
+    const application = await prisma.financingApplication.create({
+      data: {
+        leadId: lead.id,
+        customerName,
+        customerPhone,
+        customerEmail: customerEmail || null,
+        vehicleModel,
+        vehiclePrice: vehiclePrice || 0,
+        requestedAmount: requestedAmount || 0,
+        downPayment: downPayment || 0,
+        tenureMonths: tenureMonths || 36,
+        interestRate: interestRate || 0,
+        status: 'PENDING',
+      },
+    });
+
     res.status(201).json({ success: true, id: application.id });
   } catch (error) {
     console.error('Submit financing application error:', error);
@@ -793,6 +972,11 @@ router.post('/test-drive', rateLimiters.contactForm, async (req: Request, res: R
       vehicleId, preferredDate, preferredTime, location,
       message, consentGiven,
     } = req.body;
+
+    if (nationalId) {
+      const idError = validateGenericIdOrLicense(nationalId);
+      if (idError) { res.status(400).json({ error: idError }); return; }
+    }
 
     if (!firstName || !lastName || !email || !phone || !vehicleId || !preferredDate || !preferredTime || !location) {
       res.status(400).json({ error: 'All required fields must be provided.' });
@@ -854,35 +1038,41 @@ router.post('/test-drives/:id/confirm', rateLimiters.contactForm, async (req: Re
 
 router.post('/service-bookings', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const booking = await prisma.serviceBooking.create({ data: req.body });
-    res.status(201).json({ success: true, id: booking.id });
+    if (req.body?.nationalId) {
+      const idError = validateGenericIdOrLicense(req.body.nationalId);
+      if (idError) { res.status(400).json({ error: idError }); return; }
+    }
+
+    const { firstName, lastName, email, phone, nationalId, vehicleModel, vehicleYear, mileage, vin, serviceType, preferredDate, preferredTime, location, description } = req.body;
+
+    const customerName = [firstName, lastName].filter(Boolean).join(' ') || req.body.customerName || '';
+    const customerPhone = phone || req.body.customerPhone || '';
+    const vehicleInfo = [vehicleModel, vehicleYear ? `(${vehicleYear})` : ''].filter(Boolean).join(' ') || req.body.vehicleInfo || '';
+
+    const result = await serviceBookingService.create({
+      customerName,
+      customerPhone,
+      customerEmail: email || '',
+      nationalId: nationalId || undefined,
+      serviceType: serviceType || '',
+      vehicleInfo,
+      date: preferredDate || req.body.date || new Date().toISOString(),
+      timeSlot: preferredTime || undefined,
+      vehicleYear: vehicleYear || undefined,
+      mileage: mileage || undefined,
+      vin: vin || undefined,
+      location: location || undefined,
+      notes: description || undefined,
+    });
+
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json({ success: true, reference: result.data.reference, bookingId: result.data.id });
   } catch (error) {
     console.error('Submit service booking error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.get('/services/menu', async (req: Request, res: Response) => {
-  try {
-    const sections = await prisma.serviceSection.findMany({
-      where: { isActive: true },
-      orderBy: { displayOrder: 'asc' },
-      include: { items: { where: { isActive: true }, orderBy: { displayOrder: 'asc' } } },
-    });
-    res.json(sections);
-  } catch (error) {
-    console.error('Get services menu error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.get('/services/pages/:slug', async (req: Request, res: Response) => {
-  try {
-    const page = await prisma.servicePage.findFirst({ where: { slug: req.params.slug, isPublished: true, ...publishedOrDue() } });
-    if (!page) { res.status(404).json({ error: 'Service page not found' }); return; }
-    res.json(page);
-  } catch (error) {
-    console.error('Get service page error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -954,6 +1144,10 @@ router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Re
     if (!fullName || !phone || !vehicleId) {
       res.status(400).json({ error: 'Missing required fields: fullName, phone, vehicleId' });
       return;
+    }
+    if (nationalId) {
+      const idError = validateGenericIdOrLicense(nationalId);
+      if (idError) { res.status(400).json({ error: idError }); return; }
     }
 
     // Fetch vehicle to get the model name
@@ -1081,11 +1275,12 @@ router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
   try {
     const order = await prisma.salesOrder.findUnique({
       where: { id: req.params.orderId },
-      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true, countersignedAt: true },
+      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true, amountPaid: true, countersignedAt: true },
     });
     if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
     const { countersignedAt, ...payment } = order!;
-    res.json(payment);
+    const outstandingAmount = (payment.totalPrice ?? 0) - (payment.amountPaid ?? 0);
+    res.json({ ...payment, outstandingAmount });
   } catch (error) {
     console.error('Get order payments error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -1107,14 +1302,109 @@ router.post('/orders/:orderId/payment/proof', rateLimiters.contactForm, async (r
 
 router.post('/orders/:orderId/payment/mock-pay', async (req: Request, res: Response) => {
   try {
-    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId }, select: { countersignedAt: true } });
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId }, select: { countersignedAt: true, totalPrice: true, amountPaid: true } });
     if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
     // Schema comment: "the online 'pay now' mock path skips straight to
-    // PAID" with no staff reviewer — exactly what this helper does.
-    const payment = await salesOrderRepository.updatePaymentStatusPaid(req.params.orderId);
+    // PAID" with no staff reviewer — exactly what this helper does. Record
+    // method/reference/amount atomically at the moment of success, instead
+    // of leaving them to be entered later, disconnected, during invoicing.
+    const outstanding = (order!.totalPrice ?? 0) - (order!.amountPaid ?? 0);
+    const payment = await salesOrderRepository.updatePaymentStatusPaid(req.params.orderId, {
+      paymentMethod: 'online',
+      paymentReferenceNo: `TXN-${Date.now()}`,
+      amountPaid: (order!.amountPaid ?? 0) + outstanding,
+    });
     res.json({ success: true, payment });
   } catch (error) {
     console.error('Mock payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/public/orders/:orderId/invoice?token=... — customer self-serve
+// download, same token-gated pattern as /payment and /agreement above.
+router.get('/orders/:orderId/invoice', async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!verifyLinkToken(typeof req.query.token === 'string' ? req.query.token : undefined, 'invoice', req.params.orderId)) {
+      res.status(403).json({ error: 'Invalid or expired link.' });
+      return;
+    }
+    if (!order.invoicedAt) { res.status(404).json({ error: 'Invoice not available yet.' }); return; }
+
+    const result = await orderInvoiceService.generateInvoicePdf(order.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate invoice PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${order.invoiceNo}.pdf"`);
+    res.send(result.data);
+  } catch (error) {
+    console.error('Get public invoice error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET/POST /api/public/orders/:orderId/delivery-schedule?token=... — customer
+// picks a handover date/time once the order is READY_FOR_DELIVERY, same
+// token-gated pattern as /payment and /agreement above.
+router.get('/orders/:orderId/delivery-schedule', async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({
+      where: { id: req.params.orderId },
+      select: { orderNo: true, customerName: true, vehicleModel: true, status: true, deliveryScheduledAt: true, deliveryLocation: true },
+    });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!verifyLinkToken(typeof req.query.token === 'string' ? req.query.token : undefined, 'delivery-schedule', req.params.orderId)) {
+      res.status(403).json({ error: 'Invalid or expired link.' });
+      return;
+    }
+    res.json(order);
+  } catch (error) {
+    console.error('Get delivery schedule error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/orders/:orderId/delivery-schedule', rateLimiters.contactForm, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!verifyLinkToken(typeof req.query.token === 'string' ? req.query.token : undefined, 'delivery-schedule', req.params.orderId)) {
+      res.status(403).json({ error: 'Invalid or expired link.' });
+      return;
+    }
+    if (order.status !== 'READY_FOR_DELIVERY') {
+      res.status(400).json({ error: 'This order is not yet ready for delivery scheduling.' });
+      return;
+    }
+    const { scheduledAt } = req.body ?? {};
+    const parsed = scheduledAt ? new Date(scheduledAt) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) { res.status(400).json({ error: 'A valid delivery date/time is required.' }); return; }
+
+    const updated = await prisma.salesOrder.update({ where: { id: order.id }, data: { deliveryScheduledAt: parsed } });
+
+    const managerEmails = await userRepository.findManagerEmails();
+    const agent = order.salesAgentId ? await userRepository.findById(order.salesAgentId) : null;
+    const recipients = [order.customerEmail, agent?.email, ...managerEmails].filter((e): e is string => Boolean(e));
+    if (recipients.length > 0) {
+      await dispatchNotification({
+        type: 'delivery_scheduled',
+        to: recipients,
+        subject: `Delivery Scheduled — ${order.orderNo}`,
+        data: {
+          orderNo: order.orderNo,
+          vehicleModel: order.vehicleModel,
+          customerName: order.customerName,
+          scheduledAt: parsed.toLocaleString(),
+          deliveryLocation: order.deliveryLocation ?? 'To be confirmed',
+        },
+      });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Schedule delivery error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1157,6 +1447,82 @@ router.post('/chatbot/message', rateLimiters.chatbotMessage, async (req: Request
     res.json(reply);
   } catch (error) {
     console.error('Chatbot message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Loyalty (public lookup by phone) ──────────────────────────────────────
+
+router.get('/loyalty/:phone', async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.params;
+    if (!phone) {
+      res.status(400).json({ error: 'Phone number is required.' });
+      return;
+    }
+
+    const result = await loyaltyService.getByPhone(phone);
+
+    if (!result.ok) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    if (!result.data) {
+      res.json({ exists: false, points: 0, tier: 'BRONZE', transactions: [] });
+      return;
+    }
+
+    res.json({
+      exists: true,
+      points: result.data.points,
+      tier: result.data.tier,
+      benefits: loyaltyService.getTierBenefits()[result.data.tier] || [],
+      transactions: result.data.transactions.map((t: any) => ({
+        points: t.points,
+        reason: t.reason,
+        sourceType: t.sourceType,
+        createdAt: t.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Public loyalty lookup error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Service history (public lookup by phone) ──────────────────────────────
+
+router.get('/service-history/:phone', async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.params;
+    if (!phone) {
+      res.status(400).json({ error: 'Phone number is required.' });
+      return;
+    }
+
+    const bookings = await prisma.serviceBooking.findMany({
+      where: { customerPhone: phone },
+      select: {
+        id: true,
+        reference: true,
+        serviceType: true,
+        vehicleInfo: true,
+        date: true,
+        timeSlot: true,
+        status: true,
+        technician: true,
+        location: true,
+        createdAt: true,
+        jobCard: { select: { id: true, jobCardNo: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    res.json({ bookings });
+  } catch (error) {
+    console.error('Public service history lookup error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

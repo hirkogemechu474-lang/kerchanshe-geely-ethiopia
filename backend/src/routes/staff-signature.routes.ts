@@ -16,7 +16,10 @@ router.get('/:token', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Token expired' });
       return;
     }
-    res.json({ user: { id: user.id, name: user.name, email: user.email } });
+    res.json({
+      name: user.name,
+      hasExistingSignature: !!user.signatureUrl,
+    });
   } catch (error) {
     console.error('Lookup signature token error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -26,8 +29,13 @@ router.get('/:token', async (req: Request, res: Response) => {
 // POST /api/staff-signature/:token/sign (complete setup)
 router.post('/:token/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { signatureData } = req.body;
-    const result = await staffSignatureService.completeSetup(req.params.token, signatureData);
+    const { signatureData, signatureDataUrl, photoUrl } = req.body;
+    const signatureUrl = signatureData || signatureDataUrl || photoUrl;
+    if (!signatureUrl) {
+      res.status(400).json({ error: 'Signature data is required.' });
+      return;
+    }
+    const result = await staffSignatureService.completeSetup(req.params.token, signatureUrl);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
     res.json({ success: true });
   } catch (error) {

@@ -114,7 +114,7 @@ export default function CookieBanner() {
             </button>
             <button
               onClick={() => handleAccept(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-geely-blue rounded-lg hover:bg-geely-blue/90 transition-colors w-full sm:w-auto"
+              className="px-4 py-2 text-sm font-medium text-white bg-geely-blue hover:bg-geely-blue/90 transition-colors w-full sm:w-auto"
             >
               {config.acceptText}
             </button>

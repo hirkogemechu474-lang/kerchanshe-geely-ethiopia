@@ -28,6 +28,19 @@ export interface FinancingApplicationResponse {
 }
 
 export class FinancingApplicationService {
+  static async getAll(): Promise<FinancingApplicationResponse> {
+    try {
+      const applications = await prisma.financingApplication.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: { lead: true },
+      });
+      return { ok: true, data: applications };
+    } catch (error: any) {
+      console.error('[GET ALL FINANCING APPLICATIONS ERROR]', error.message);
+      return { ok: false, error: 'Failed to fetch financing applications.' };
+    }
+  }
+
   static async create(data: FinancingApplicationCreationData): Promise<FinancingApplicationResponse> {
     try {
       const application = await prisma.financingApplication.create({

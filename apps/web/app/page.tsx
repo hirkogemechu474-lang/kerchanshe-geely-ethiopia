@@ -97,7 +97,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     client.get('/public/hero').then((r) => r.data).catch(() => []),
     client.get('/public/vehicles').then((r) => r.data).catch(() => []),
-    client.get('/public/promotions').then((r) => r.data).catch(() => []),
+    client.get('/public/promotions').then((r) => r.data?.promotions ?? []).catch(() => []),
     client.get('/public/showcase').then((r) => r.data).catch(() => []),
     client.get('/public/news', { params: { pageSize: 6 } }).then((r) => r.data).catch(() => ({ items: [] })),
     client.get('/public/testimonials').then((r) => r.data).catch(() => []),

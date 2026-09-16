@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, CreditCard, LoaderCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle, CreditCard, LoaderCircle, ShieldCheck, ExternalLink, ArrowRight } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
+import { validateGenericIdOrLicense } from "@/lib/idValidation";
 
 interface Vehicle {
   id: string;
@@ -20,6 +21,7 @@ interface Bank {
   id: string;
   name: string;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
 }
 
 interface QuoteSummary {
@@ -252,6 +254,11 @@ export default function VehiclePurchasePage() {
       setError("Please select a vehicle, select a bank, and accept the purchase terms.");
       return;
     }
+    const idError = validateGenericIdOrLicense(form.nationalId);
+    if (idError !== true) {
+      setError(idError);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -381,7 +388,7 @@ export default function VehiclePurchasePage() {
               )
             )}
             <p className="text-sm text-steel dark:text-steel-light mb-6">Our sales team will contact you with the next steps for vehicle delivery.</p>
-            <Link href="/" className="inline-block bg-geely-blue text-white font-bold px-8 py-3 rounded-lg hover:bg-navy transition-all">Back to Home</Link>
+            <Link href="/" className="inline-block bg-geely-blue text-white font-bold px-8 py-3 hover:bg-navy transition-all">Back to Home</Link>
           </div>
         </div>
       </MainLayout>
@@ -510,6 +517,27 @@ export default function VehiclePurchasePage() {
               <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 rounded-lg text-sm text-blue-900">
                 <CreditCard className="shrink-0 mt-0.5" size={18} />
                 <span>You will be directed to the selected bank payment service to authenticate and complete payment.</span>
+              </div>
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="font-medium text-amber-900 mb-2 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Prefer to apply directly with your bank?
+                </p>
+                <p className="text-sm text-amber-800 mb-3">
+                  Visit your selected bank's website to complete your finance application.
+                </p>
+                {form.bankId && banks.find(b => b.id === form.bankId)?.websiteUrl && (
+                  <a
+                    href={banks.find(b => b.id === form.bankId)!.websiteUrl!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-amber-600 text-white font-bold px-5 py-2.5 rounded-lg hover:bg-amber-700 transition-all"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Visit Bank Website
+                    <ArrowRight size={16} />
+                  </a>
+                )}
               </div>
             </div>
 

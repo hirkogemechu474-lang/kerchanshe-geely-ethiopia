@@ -9,12 +9,28 @@ import { quotationService } from '../services/sales/quotation.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
+import { validateTin, validateIdDocumentNumber } from '../utils/idValidation';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
-import { MAX_REASONABLE_PRICE_ETB } from '../config/pricing';
 import { auditService } from '../services/audit/audit.service';
+import fs from 'fs';
+import path from 'path';
+import { UPLOAD_ROOT } from './upload.routes';
 
 const router = Router();
+
+// Persists a rendered quotation PDF snapshot so `Quotation.pdfUrl` reflects
+// the exact document a manager approved or a customer signed, even if the
+// order's underlying fields change afterward (see the field's doc comment
+// on the Quotation model). Reuses the same uploads directory/URL convention
+// as backend/src/routes/upload.routes.ts.
+export function persistQuotationPdfSnapshot(quotationId: string, buffer: Buffer): string {
+  const folder = path.join(UPLOAD_ROOT, 'quotations');
+  fs.mkdirSync(folder, { recursive: true });
+  const filename = `${quotationId}-${Date.now()}.pdf`;
+  fs.writeFileSync(path.join(folder, filename), buffer);
+  return `/uploads/quotations/${filename}`;
+}
 
 let cachedManagerEmails: string[] | null = null;
 let managerEmailsCachedAt = 0;
@@ -105,6 +121,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   try {
     const quotation = await prisma.quotation.findUnique({
       where: { id: req.params.id },
+      include: { tradeInEvaluation: true },
     });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
     res.json(quotation);
@@ -135,8 +152,26 @@ router.get('/:id/prior-inquiries', requireAdminApiSession, async (req: Request, 
 });
 
 // PUT /api/quotations/:id (admin update)
+// Edit lock: once the customer has signed, the document is fully executed —
+// no silent edits, any correction needs a new version through the normal
+// quotation-pdf regenerate path (which itself is blocked below once signed).
+// While a generated quotation is awaiting manager approval, the agent is
+// blocked from unrestricted edits too (per the workflow spec) — but a
+// quotation that hasn't been priced/generated yet (quotationGeneratedAt
+// null) is exempt, since managerApprovalStatus defaults to PENDING from
+// creation and the agent must be able to freely edit before ever submitting.
 router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    const existing = await prisma.quotation.findUnique({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Quotation not found' }); return; }
+    if (existing.signedAt) {
+      res.status(423).json({ error: 'This quotation has been signed by the customer and is locked. Regenerate a new version to make a correction.' });
+      return;
+    }
+    if (existing.quotationGeneratedAt && existing.managerApprovalStatus === 'PENDING') {
+      res.status(423).json({ error: 'This quotation is pending manager approval and cannot be edited until the manager acts on it.' });
+      return;
+    }
     const quotation = await prisma.quotation.update({ where: { id: req.params.id }, data: req.body });
     res.json(quotation);
   } catch (error) {
@@ -194,6 +229,7 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
         ? [{ filename: `quotation-${quotation.reference || quotation.id}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }]
         : undefined;
 
+      const statusLink = quotation.reference ? `${env.urls.site}/status?ref=${encodeURIComponent(quotation.reference)}` : undefined;
       const result = await dispatchNotification({
         type: 'quotation',
         to: [quotation.email],
@@ -206,9 +242,35 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
           ...(link && { link }),
         },
         attachments,
+        ctas: [
+          ...(link ? [{ label: 'Review & Sign Quotation', url: link }] : []),
+          ...(statusLink ? [{ label: 'Check Status', url: statusLink }] : []),
+        ],
       });
       notificationSent = result.ok;
       notificationError = result.error;
+
+      // Notify the assigned sales agent that quotation was sent to customer
+      if (quotation.assignedTo) {
+        try {
+          const agent = await prisma.user.findUnique({ where: { id: quotation.assignedTo } });
+          if (agent?.email) {
+            await dispatchNotification({
+              type: 'quotation',
+              to: [agent.email],
+              subject: `Quotation Sent to Customer — ${quotation.reference || quotation.id}`,
+              data: {
+                quotationId: quotation.id,
+                quotationNo: quotation.reference,
+                customerName: quotation.customerName,
+                vehicleModel: quotation.vehicleModel,
+              },
+            });
+          }
+        } catch (agentNotifyError: any) {
+          console.error('[AGENT NOTIFICATION ERROR]', agentNotifyError.message);
+        }
+      }
     } else {
       notificationError = 'This quotation has no email address on file for the customer.';
     }
@@ -321,6 +383,10 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
   try {
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
+    if (quotation.signedAt) {
+      res.status(423).json({ error: 'This quotation has already been signed by the customer and is locked.' });
+      return;
+    }
 
     const {
       unitPrice, quantity, discountAmount, vehicleYear, vehicleColor, quotationValidUntil, paymentTerms, deliveryTerms,
@@ -329,13 +395,14 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
       registrationCharge, registrationResponsibility, insuranceResponsibility, chargingEquipmentDetails,
       depositAmount, depositDueDate, balanceDueDate, deliveryLocation, expectedHandoverNote,
     } = req.body;
+    const tinError = validateTin(customerTin);
+    if (tinError) {
+      res.status(400).json({ error: tinError });
+      return;
+    }
     const parsedUnitPrice = unitPrice != null && unitPrice !== '' ? Number(unitPrice) : null;
     if (parsedUnitPrice == null || Number.isNaN(parsedUnitPrice)) {
       res.status(400).json({ error: 'unitPrice is required' });
-      return;
-    }
-    if (parsedUnitPrice > MAX_REASONABLE_PRICE_ETB) {
-      res.status(400).json({ error: `Unit price looks too high (max ETB ${MAX_REASONABLE_PRICE_ETB.toLocaleString()}). Check for a typo.` });
       return;
     }
     const parsedQuantity = quantity != null && quantity !== '' ? Number(quantity) : 1;
@@ -402,6 +469,7 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
         nextStep: 'Review the pricing and approve or reject the quotation.',
         adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
       },
+      ctas: [{ label: 'Review & Approve', url: `${env.urls.admin}/admin/quotations/${quotation.id}` }],
       inApp: {
         type: 'approval_required',
         title: 'Quotation Needs Your Approval',
@@ -414,10 +482,17 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
       },
     });
 
-    // Generate PDF and persist it for consistent viewing/signing
+    // Generate PDF and persist a real snapshot (not just a viewer URL) so
+    // Quotation.pdfUrl actually holds the exact document a manager/customer
+    // saw, per the field's doc comment.
     const pdfResult = await quotationPdfService.generatePdf(updated.id);
+    let storedPdfUrl: string | null = null;
+    if (pdfResult.ok && pdfResult.data) {
+      storedPdfUrl = persistQuotationPdfSnapshot(updated.id, pdfResult.data);
+      await prisma.quotation.update({ where: { id: updated.id }, data: { pdfUrl: storedPdfUrl } });
+    }
 
-    res.json({ quotation: updated, pdfUrl: pdfResult.ok ? `/api/quotations/${updated.id}/quotation-pdf` : null });
+    res.json({ quotation: { ...updated, pdfUrl: storedPdfUrl }, pdfUrl: pdfResult.ok ? `/api/quotations/${updated.id}/quotation-pdf` : null });
   } catch (error) {
     console.error('Generate quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -574,8 +649,13 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
         toValue: { managerApprovalStatus: 'APPROVED', discountPercent },
       });
 
-      // Regenerate PDF so it includes the manager's signature
-      await quotationPdfService.generatePdf(req.params.id);
+      // Regenerate PDF so it includes the manager's signature, and persist a
+      // snapshot of the manager-approved document.
+      const discountPdfResult = await quotationPdfService.generatePdf(req.params.id);
+      if (discountPdfResult.ok && discountPdfResult.data) {
+        const snapshotUrl = persistQuotationPdfSnapshot(req.params.id, discountPdfResult.data);
+        await prisma.quotation.update({ where: { id: req.params.id }, data: { pdfUrl: snapshotUrl } });
+      }
 
       // Notify the assigned sales agent that the discount was approved
       const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
@@ -592,6 +672,7 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
             nextStep: 'The discount has been approved. Please review the quotation and send it to the customer.',
             adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
           },
+          ctas: [{ label: 'View Approved Quotation', url: `${env.urls.admin}/admin/quotations/${quotation.id}` }],
           inApp: {
             type: 'quotation_approved',
             title: 'Discount Approved',
@@ -628,8 +709,13 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
       toValue: { managerApprovalStatus: 'APPROVED' },
     });
 
-    // Regenerate PDF so it includes the manager's signature
-    await quotationPdfService.generatePdf(req.params.id);
+    // Regenerate PDF so it includes the manager's signature, and persist a
+    // snapshot of the manager-approved document.
+    const approvalPdfResult = await quotationPdfService.generatePdf(req.params.id);
+    if (approvalPdfResult.ok && approvalPdfResult.data) {
+      const snapshotUrl = persistQuotationPdfSnapshot(req.params.id, approvalPdfResult.data);
+      await prisma.quotation.update({ where: { id: req.params.id }, data: { pdfUrl: snapshotUrl } });
+    }
 
     const assignedAgent = quotation.assignedTo ? await userRepository.findById(quotation.assignedTo) : null;
     if (assignedAgent?.email) {
@@ -645,6 +731,7 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
           nextStep: 'Review the approved quotation and send it to the customer.',
           adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
         },
+        ctas: [{ label: 'View Approved Quotation', url: `${env.urls.admin}/admin/quotations/${quotation.id}` }],
         inApp: {
           type: 'quotation_approved',
           title: 'Quotation Approved',
@@ -668,6 +755,12 @@ router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Reques
 router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
     const { configuration, visitId: _visitId, ...body } = req.body;
+    if (body.nationalId) {
+      const idError = validateIdDocumentNumber(body.nationalId, body.idDocumentType);
+      if (idError) { res.status(400).json({ error: idError }); return; }
+    }
+    const tinError = validateTin(body.customerTin);
+    if (tinError) { res.status(400).json({ error: tinError }); return; }
     const result = await quotationService.create({
       title: body.title,
       customerName: body.customerName,

@@ -19,11 +19,16 @@ export default function CustomersList() {
   const [query, setQuery] = useState('');
 
   const load = useCallback(async (q: string) => {
-    const res = await fetch(`/api/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+    const res = await fetch(`/api/customers${q ? `?search=${encodeURIComponent(q)}` : ''}`);
     if (res.ok) {
       const data = await res.json();
-      setCustomers(data.customers);
-      setStats(data.stats);
+      const customersList = data.items || data.customers || [];
+      setCustomers(customersList);
+      setStats({
+        totalCustomers: data.total ?? customersList.length,
+        totalVehicles: customersList.reduce((sum: number, c: any) => sum + (c.vehicles?.length || 0), 0),
+        underWarranty: customersList.reduce((sum: number, c: any) => sum + (c.vehicles?.filter((v: any) => v.warrantyEndDate && new Date(v.warrantyEndDate) >= new Date()).length || 0), 0),
+      });
     }
   }, []);
 

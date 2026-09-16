@@ -1,9 +1,9 @@
 export {
   DEFAULT_FINANCING_PAGE_CONTENT,
   mergeFinancingPageContent,
-} from '@geely/types';
+} from '@/types/financingPage';
 export type {
   FinancingPageContent,
   FinancingPageStep,
   FinancingPageBenefit,
-} from '@geely/types';
+} from '@/types/financingPage';

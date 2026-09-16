@@ -8,6 +8,7 @@ export async function sendQuotationConfirmationEmail(params: {
   vehicleModel?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const modelsLink = `${env.urls.site}/models`;
+  const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(params.reference)}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -32,7 +33,8 @@ export async function sendQuotationConfirmationEmail(params: {
         </div>
 
         <div style="text-align: center; margin: 25px 0;">
-          <a href="${modelsLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Browse Our Models</a>
+          <a href="${statusLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block; margin: 0 6px 10px;">Check Status</a>
+          <a href="${modelsLink}" style="background: #fff; color: #194BFF; border: 2px solid #194BFF; text-decoration: none; padding: 10px 26px; border-radius: 6px; font-weight: bold; display: inline-block; margin: 0 6px 10px;">Browse Our Models</a>
         </div>
 
         <p style="color: #666;">If you have any questions, please don't hesitate to contact us.</p>
@@ -46,43 +48,6 @@ export async function sendQuotationConfirmationEmail(params: {
   return sendEmail({
     to: params.to,
     subject: `Quotation Request Received — ${params.reference}`,
-    html,
-  });
-}
-
-export async function sendOrderStatusEmail(params: {
-  to: string;
-  customerName: string;
-  orderNo: string;
-  status: string;
-  vehicleModel: string;
-}): Promise<{ ok: boolean; error?: string }> {
-  const statusLabels: Record<string, string> = {
-    QUOTED: 'Quoted',
-    BOOKED: 'Booked',
-    FINANCING_PENDING: 'Financing Pending',
-    ALLOCATED: 'Allocated',
-    INVOICE_GENERATED: 'Invoice Generated',
-    DELIVERED: 'Delivered',
-    CANCELLED: 'Cancelled',
-  };
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1a1a2e;">Order Status Update</h2>
-      <p>Dear ${params.customerName},</p>
-      <p>Your order <strong>${params.orderNo}</strong> for <strong>${params.vehicleModel}</strong> has been updated.</p>
-      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 0;"><strong>New Status:</strong> ${statusLabels[params.status] || params.status}</p>
-      </div>
-      <p>If you have any questions, please don't hesitate to contact us.</p>
-      <p>Best regards,<br/>${env.smtp.fromName}</p>
-    </div>
-  `;
-
-  return sendEmail({
-    to: params.to,
-    subject: `Order ${params.orderNo} - Status Updated`,
     html,
   });
 }

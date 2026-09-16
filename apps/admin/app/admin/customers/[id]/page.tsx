@@ -19,9 +19,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   if (!customer) notFound();
 
+  const history = await client.get(`/customers/${id}/history`).then((r) => r.data).catch(() => null);
+
   return (
     <div className="space-y-6 max-w-4xl">
-      <CustomerDetail customer={customer} permissions={session.user.permissions} />
+      <CustomerDetail customer={customer} history={history} permissions={session.user.permissions} />
     </div>
   );
 }

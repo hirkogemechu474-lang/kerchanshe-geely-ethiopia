@@ -20,6 +20,7 @@ import {
   X,
   AlertCircle,
   Settings,
+  FileText,
 } from 'lucide-react';
 
 interface Bank {
@@ -182,15 +183,16 @@ const emptyProgram = (): ProgramForm => ({
 });
 
 export default function FinancingManagementPage() {
-  const [activeTab, setActiveTab] = useState<'banks' | 'programs' | 'settings'>(() => {
+  const [activeTab, setActiveTab] = useState<'banks' | 'programs' | 'settings' | 'applications'>(() => {
     if (typeof window !== 'undefined') {
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (t === 'settings' || t === 'programs' || t === 'banks') return t;
+      if (t === 'settings' || t === 'programs' || t === 'banks' || t === 'applications') return t;
     }
     return 'banks';
   });
   const [banks, setBanks] = useState<Bank[]>([]);
   const [programs, setPrograms] = useState<FinancingProgram[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,13 +281,25 @@ export default function FinancingManagementPage() {
     }
   }, []);
 
+  const loadApplications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/financing-applications');
+      if (res.ok) {
+        const data = await res.json();
+        setApplications(Array.isArray(data) ? data : data.applications || []);
+      }
+    } catch {
+      console.error('Failed to load applications');
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([loadBanks(), loadPrograms(), loadVehicles(), loadCategories()]);
+      await Promise.all([loadBanks(), loadPrograms(), loadVehicles(), loadCategories(), loadApplications()]);
       setLoading(false);
     })();
-  }, [loadBanks, loadPrograms, loadVehicles, loadCategories]);
+  }, [loadBanks, loadPrograms, loadVehicles, loadCategories, loadApplications]);
 
   const openNewBank = () => {
     setEditingBank(emptyBank());
@@ -617,6 +631,19 @@ export default function FinancingManagementPage() {
         >
           <Settings size={16} /> Settings
         </button>
+        <button
+          onClick={() => setActiveTab('applications')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'applications'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          <FileText size={16} /> Applications
+          <span className={`px-2 py-0.5 text-xs rounded-full ${
+            activeTab === 'applications' ? 'bg-white/20' : 'bg-gray-100 text-gray-600'
+          }`}>{applications.length}</span>
+        </button>
       </div>
 
       {/* BANKS TAB */}
@@ -877,6 +904,134 @@ export default function FinancingManagementPage() {
       {/* SETTINGS TAB */}
       {activeTab === 'settings' && (
         <FinancingSettingsEditor />
+      )}
+
+      {/* APPLICATIONS TAB */}
+      {activeTab === 'applications' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loan Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {applications.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-16 text-center text-gray-500">
+                      <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-base mb-2">No financing applications yet</p>
+                      <p className="text-sm mb-4">Applications submitted from the website will appear here</p>
+                    </td>
+                  </tr>
+                ) : (
+                  applications.map((app: any) => (
+                    <tr key={app.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-900 truncate">{app.customerName}</div>
+                          <div className="text-sm text-gray-500">{app.customerPhone}</div>
+                          {app.customerEmail && <div className="text-xs text-gray-400 truncate">{app.customerEmail}</div>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{app.vehicleModel}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 space-y-0.5">
+                          <div>ETB {app.requestedAmount?.toLocaleString()}</div>
+                          <div className="text-xs text-gray-400">DP: ETB {app.downPayment?.toLocaleString()} | {app.tenureMonths}mo</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          app.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                          app.status === 'DECLINED' ? 'bg-red-100 text-red-700' :
+                          app.status === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-700' :
+                          app.status === 'SUBMITTED' ? 'bg-indigo-100 text-indigo-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {app.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                        {new Date(app.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          {app.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  await fetch(`/api/financing-applications/${app.id}/status`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'UNDER_REVIEW' }),
+                                  });
+                                  loadApplications();
+                                }}
+                                className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                              >
+                                Review
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await fetch(`/api/financing-applications/${app.id}/decline`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ rejectionReason: 'Declined by admin' }),
+                                  });
+                                  loadApplications();
+                                }}
+                                className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
+                              >
+                                Decline
+                              </button>
+                            </>
+                          )}
+                          {app.status === 'UNDER_REVIEW' && (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  await fetch(`/api/financing-applications/${app.id}/approve`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({}),
+                                  });
+                                  loadApplications();
+                                }}
+                                className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded hover:bg-green-100"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await fetch(`/api/financing-applications/${app.id}/decline`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ rejectionReason: 'Declined after review' }),
+                                  });
+                                  loadApplications();
+                                }}
+                                className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
+                              >
+                                Decline
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* BANK MODAL */}

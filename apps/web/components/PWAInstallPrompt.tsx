@@ -127,7 +127,7 @@ export function PWAInstallPrompt() {
         <div className="flex gap-3">
           <button
             onClick={handleInstall}
-            className="flex-1 bg-geely-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
+            className="flex-1 bg-geely-blue text-white font-bold py-3 px-4 hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
           >
             <Download size={18} />
             Install App

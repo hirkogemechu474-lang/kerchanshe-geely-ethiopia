@@ -3,6 +3,7 @@ import { signLinkToken, verifyLinkToken } from '../../utils/secureLink';
 import { generateSalesAgreementPdf, SalesAgreementPdfData } from '../pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { auditService } from '../audit/audit.service';
 import { env } from '../../config/env';
 
 async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData> {
@@ -34,6 +35,7 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     vatAmount: order.vatAmount,
     registrationCharge: order.registrationCharge,
     accessoriesAmount: order.accessoriesAmount,
+    purchaserTitle: order.purchaserTitle,
     purchaserTin: order.purchaserTin,
     purchaserAddress: order.purchaserAddress,
     purchaserAuthorizedRep: order.purchaserAuthorizedRep,
@@ -46,8 +48,10 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     estimatedDeliveryDate: order.estimatedDeliveryDate,
     deliveryLocation: order.deliveryLocation,
     customerSignatureUrl: order.signedDocumentUrl,
+    customerSignedAt: order.signedAt,
     managerSignatureUrl: managerSigner?.signatureUrl,
     countersignedByName: managerSigner?.name || sellerSigner?.name,
+    countersignedAt: order.countersignedAt,
   };
 }
 
@@ -114,6 +118,14 @@ export const orderAgreementService = {
         // Signature-log write failure should not block the customer sign flow.
       }
 
+      await auditService.log({
+        entityType: 'order',
+        entityId: orderId,
+        action: 'agreement_customer_signed',
+        performedById: 'customer',
+        performedByName: order.customerName,
+      });
+
       const assignedAgent = order.salesAgentId ? await userRepository.findById(order.salesAgentId) : null;
       const managerEmails = await userRepository.findManagerEmails();
       const recipients = [assignedAgent?.email, ...managerEmails].filter((email): email is string => Boolean(email));
@@ -129,6 +141,7 @@ export const orderAgreementService = {
             nextStep: 'Manager review and countersignature is required before payment.',
             adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
           },
+          ctas: [{ label: 'Review Agreement', url: `${env.urls.admin}/admin/orders/${order.id}` }],
           inApp: {
             type: 'signature_required',
             title: 'Customer Signed — Countersignature Required',

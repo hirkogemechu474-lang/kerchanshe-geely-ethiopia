@@ -4,6 +4,20 @@ import { FinancingApplicationService } from '../services/financing/financingAppl
 
 const router = Router();
 
+// GET /api/financing-applications (list all)
+router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const result = await FinancingApplicationService.getAll();
+    if (!result.ok) {
+      return res.status(500).json({ error: result.error });
+    }
+    res.json({ success: true, applications: result.data });
+  } catch (error) {
+    console.error('List financing applications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // POST /api/financing-applications (create from lead)
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {

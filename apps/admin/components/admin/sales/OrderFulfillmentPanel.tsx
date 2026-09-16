@@ -12,6 +12,7 @@ import { ClipboardCheck, Receipt, FileText } from 'lucide-react';
 // fulfillment steps handled together in practice.
 interface OrderFulfillmentData {
   id: string;
+  orderNo: string;
   registrationNumber: string | null;
   registeredAt: string | null;
   totalPrice: number | null;
@@ -56,7 +57,7 @@ export default function OrderFulfillmentPanel({
   const [registrationCharge, setRegistrationCharge] = useState('0');
   const [amountPaid, setAmountPaid] = useState(order.totalPrice?.toString() || '0');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
-  const [paymentReferenceNo, setPaymentReferenceNo] = useState('');
+  const [paymentReferenceNo, setPaymentReferenceNo] = useState(`PAY-${order.orderNo}-${Date.now().toString(36).toUpperCase()}`);
   const [odometerAtDelivery, setOdometerAtDelivery] = useState('0');
 
   const saveRegistration = async () => {

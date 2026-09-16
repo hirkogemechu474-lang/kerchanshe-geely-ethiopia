@@ -41,7 +41,9 @@ export default function DocumentSignaturesPage() {
         const res = await fetch('/api/settings/document-signatures');
         if (res.ok) {
           const json = await res.json();
-          setRequirements({ ...DEFAULT_REQUIREMENTS, ...json });
+          if (json && Object.keys(json).length > 0) {
+            setRequirements(json);
+          }
         }
       } catch {
         setRequirements(DEFAULT_REQUIREMENTS);

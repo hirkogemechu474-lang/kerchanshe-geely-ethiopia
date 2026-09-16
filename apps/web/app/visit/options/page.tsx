@@ -63,7 +63,7 @@ function WelcomeContent() {
       </p>
       <button
         onClick={() => router.push(`/models?visitId=${encodeURIComponent(visitId)}`)}
-        className="bg-geely-blue text-white px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-colors"
+        className="bg-geely-blue text-white px-8 py-4 font-bold hover:bg-opacity-90 transition-colors"
       >
         Browse Our Vehicles
       </button>

@@ -15,7 +15,8 @@
     "db:migrate:deploy": "tsx scripts/prisma-cli.ts migrate deploy",
     "db:push": "tsx scripts/prisma-cli.ts db push",
     "db:seed": "tsx prisma/seed/index.ts",
-    "db:seed:all": "tsx prisma/seed/seed-all.ts"
+    "db:backfill-media": "tsx scripts/backfill-media-assets.ts",
+    "db:repair-vehicle-media": "tsx scripts/repair-vehicle-media.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -31,6 +32,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "next-auth": "^4.24.15",
+    "node-cron": "^4.6.0",
     "nodemailer": "^9.0.5",
     "openai": "^7.10.0",
     "pdf-lib": "^1.17.1",
@@ -47,6 +49,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.14",
     "@types/qrcode": "^1.5.6",
     "prisma": "^5.22.0",

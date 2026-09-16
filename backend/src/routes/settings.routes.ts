@@ -272,7 +272,7 @@ const DEFAULT_FINANCING_SETTINGS = {
     balloonPaymentAvailable: false,
   },
   support: {
-    phone: '+251 11 000 0000',
+    phone: '+251 99 338 9874',
     email: 'financing@geely-ethiopia.com',
     whatsapp: '+251 99 338 9874',
     consultationAvailable: true,

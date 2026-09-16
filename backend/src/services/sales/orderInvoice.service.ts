@@ -7,11 +7,15 @@ import { getCompanyInfo } from '../pdf/companyInfo';
 async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
   const detail = await salesOrderRepository.findByIdWithDocumentDetail(order.id);
-  const sellerSigner = order.invoicedById ? await userRepository.findById(order.invoicedById) : null;
+  const [sellerSigner, managerSigner] = await Promise.all([
+    order.invoicedById ? userRepository.findById(order.invoicedById) : Promise.resolve(null),
+    order.countersignedById ? userRepository.findByIdSlim(order.countersignedById) : Promise.resolve(null),
+  ]);
 
   return {
     orderNo: order.orderNo,
     customerName: order.customerName,
+    purchaserTitle: order.purchaserTitle,
     vehicleModel: order.vehicleModel,
     totalPrice: order.invoiceAmount ?? order.totalPrice ?? 0,
     invoiceNo: order.invoiceNo,
@@ -38,6 +42,9 @@ async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
     deliveryLocation: order.deliveryLocation,
     itemsHandedOver: (order.itemsHandedOver as HandoverItemRow[] | null) ?? null,
     sellerSignerName: sellerSigner?.name ?? null,
+    customerSignatureUrl: order.signedDocumentUrl,
+    customerSignedAt: order.signedAt,
+    managerSignatureUrl: managerSigner?.signatureUrl,
   };
 }
 

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
+import { validateIdDocumentNumber, validateTin } from "@/lib/idValidation";
 import { CheckCircle, FileText, DollarSign, AlertCircle, Clock, ShieldCheck, RotateCcw, Calculator, Search, Eye, UserCheck, Mail, Copy, Check, Upload } from "lucide-react";
 
 const TIMEFRAME_LABELS: Record<string, string> = {
@@ -628,10 +629,15 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     </label>
                     <input
                       type="text"
-                      {...register("customerTin")}
-                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      {...register("customerTin", { validate: validateTin })}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
+                        errors.customerTin ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
+                      }`}
                       placeholder="Taxpayer Identification Number"
                     />
+                    {errors.customerTin && (
+                      <p className="text-red-500 text-xs mt-1">{errors.customerTin.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -657,6 +663,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                       type="text"
                       {...register("nationalId", {
                         required: "National ID or Driver's License number is required",
+                        validate: (v) => validateIdDocumentNumber(v, watch("idDocumentType")),
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
                         errors.nationalId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"

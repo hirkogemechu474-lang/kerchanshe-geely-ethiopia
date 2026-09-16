@@ -6,10 +6,11 @@ export const corsOptions: cors.CorsOptions = {
     const allowedOrigins = [
       env.cors.originWeb,
       env.cors.originAdmin,
-      'http://localhost:7500',
-      'http://localhost:7501',
-      'https://www.geelyauto.co.za',
-      'http://localhost:4000',
+      ...(env.nodeEnv !== 'production' ? [
+        'http://localhost:7500',
+        'http://localhost:7501',
+        'http://localhost:4000',
+      ] : []),
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {

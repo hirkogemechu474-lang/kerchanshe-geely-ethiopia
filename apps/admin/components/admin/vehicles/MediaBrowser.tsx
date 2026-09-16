@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Image as ImageIcon, Video, Search, Upload as UploadIcon } from 'lucide-react';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 interface MediaAsset {
   id: string;
@@ -35,6 +36,7 @@ export default function MediaBrowser({
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -47,11 +49,10 @@ export default function MediaBrowser({
   async function fetchMediaAssets() {
     try {
       setLoading(true);
-      const url = fileType === 'all' 
-        ? '/api/media'
-        : `/api/media?fileType=${fileType}`;
-      
-      const response = await fetch(url);
+      const params = new URLSearchParams({ pageSize: '200' });
+      if (fileType !== 'all') params.set('fileType', fileType);
+
+      const response = await fetch(`/api/media?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setMediaAssets(data.items || []);
@@ -73,54 +74,14 @@ export default function MediaBrowser({
       if ((fileType === 'image' && !isImage) || (fileType === 'video' && !isVideo)) {
         throw new Error(`Please select a valid ${fileType} file.`);
       }
-      
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-      uploadFormData.append('category', 'vehicle');
-      uploadFormData.append('altText', file.name);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
-        throw new Error(errorBody.error || errorBody.details || `Upload failed (${response.status})`);
-      }
-
-      const { url: uploadedUrl } = await response.json();
-      if (!uploadedUrl) {
-        throw new Error('Upload completed but the server did not return a media URL.');
-      }
-
-      // /api/upload only saves the file to disk and returns its URL — register
-      // it as a MediaAsset too, so it shows up in this browser's list on
-      // future opens (fetchMediaAssets() reads from /api/media, not the disk).
-      const registerResponse = await fetch('/api/media', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: uploadedUrl.split('/').pop(),
-          originalName: file.name,
-          fileType: isVideo ? 'video' : 'image',
-          mimeType: file.type,
-          fileSize: file.size,
-          url: uploadedUrl,
-          altText: file.name,
-          category: 'vehicle',
-        }),
-      });
-      if (!registerResponse.ok) {
-        throw new Error('File uploaded but could not be registered in the media library.');
-      }
-      const asset: MediaAsset = await registerResponse.json();
+      const asset = await uploadAndRegisterMedia(file, { category: 'vehicle' });
 
       // Refresh media list
       await fetchMediaAssets();
 
       // Auto-select the newly uploaded file
-      setSelectedAsset(asset);
+      setSelectedAsset(asset as MediaAsset);
 
       alert('File uploaded successfully!');
     } catch (error) {
@@ -131,7 +92,15 @@ export default function MediaBrowser({
     }
   }
 
+  const categories = useMemo(() => {
+    const distinct = new Set(mediaAssets.map((asset) => asset.category).filter((c): c is string => Boolean(c)));
+    return Array.from(distinct).sort();
+  }, [mediaAssets]);
+
   const filteredAssets = mediaAssets.filter(asset => {
+    if (categoryFilter !== 'all' && asset.category !== categoryFilter) {
+      return false;
+    }
     if (searchQuery) {
       return (
         asset.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -183,6 +152,22 @@ export default function MediaBrowser({
                 className="w-full pl-12 pr-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
               />
             </div>
+
+            {/* Category Filter */}
+            {categories.length > 0 && (
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="border border-line rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              >
+                <option value="all">All categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            )}
 
             {/* Upload Button */}
             <label className="flex items-center gap-2 bg-geely-blue text-white font-semibold px-6 py-3 rounded-lg cursor-pointer hover:bg-opacity-90 transition-all">

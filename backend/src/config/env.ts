@@ -1,5 +1,9 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+// Load .env.production when NODE_ENV=production, otherwise .env
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -51,7 +55,11 @@ export const env = {
   },
 
   urls: {
-    site: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.geelyauto.co.za',
+    site: process.env.NEXT_PUBLIC_SITE_URL || 'https://geely.com.et',
     admin: process.env.ADMIN_URL || 'http://localhost:7500',
+  },
+
+  commission: {
+    defaultRate: parseFloat(process.env.DEFAULT_COMMISSION_RATE || '5'),
   },
 };

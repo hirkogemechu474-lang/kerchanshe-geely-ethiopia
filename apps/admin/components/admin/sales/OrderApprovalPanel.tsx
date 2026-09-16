@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { FileCheck2, Upload, FileText } from 'lucide-react';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
+import { validateTin } from '@/lib/idValidation';
 
 // "Sales Quotation -> Approval by sales agent -> Generate Agreement ->
 // e-sign/attach" — approving unlocks a preview of the printable agreement
@@ -29,6 +30,7 @@ interface OrderApprovalData {
   salesType: string | null;
   vehicleType: string | null;
   motorBatterySerialNo: string | null;
+  purchaserTitle: string | null;
   purchaserTin: string | null;
   purchaserAddress: string | null;
   purchaserAuthorizedRep: string | null;
@@ -74,6 +76,7 @@ export default function OrderApprovalPanel({
   const [salesType, setSalesType] = useState(order.salesType || 'showroom');
   const [vehicleType, setVehicleType] = useState(order.vehicleType || 'BEV');
   const [motorBatterySerialNo, setMotorBatterySerialNo] = useState(order.motorBatterySerialNo || '');
+  const [purchaserTitle, setPurchaserTitle] = useState(order.purchaserTitle || '');
   const [purchaserTin, setPurchaserTin] = useState(order.purchaserTin || '');
   const [purchaserAddress, setPurchaserAddress] = useState(order.purchaserAddress || '');
   const [purchaserAuthorizedRep, setPurchaserAuthorizedRep] = useState(order.purchaserAuthorizedRep || '');
@@ -148,6 +151,11 @@ export default function OrderApprovalPanel({
   };
 
   const saveAgreementDetails = async () => {
+    const tinError = validateTin(purchaserTin);
+    if (tinError) {
+      setError(tinError);
+      return;
+    }
     setBusy(true);
     setError('');
     setDetailsSaved(false);
@@ -159,6 +167,7 @@ export default function OrderApprovalPanel({
           salesType,
           vehicleType,
           motorBatterySerialNo,
+          purchaserTitle,
           purchaserTin,
           purchaserAddress,
           purchaserAuthorizedRep,
@@ -347,6 +356,21 @@ export default function OrderApprovalPanel({
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Motor / battery serial no.</label>
                   <input value={motorBatterySerialNo} onChange={(e) => setMotorBatterySerialNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Purchaser title</label>
+                  <input
+                    value={purchaserTitle}
+                    onChange={(e) => setPurchaserTitle(e.target.value)}
+                    list="purchaser-title-options"
+                    placeholder="e.g. Ato, Miss, Dr"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <datalist id="purchaser-title-options">
+                    <option value="Ato" />
+                    <option value="Miss" />
+                    <option value="Dr" />
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Purchaser TIN</label>

@@ -105,7 +105,7 @@ async function getShowcase(vehicleId: string) {
   }
 }
 
-const FALLBACK_CONTACT_PHONE = "+251 11 000 0000";
+const FALLBACK_CONTACT_PHONE = "+251 99 338 9874";
 
 // Same admin-managed Contact Information data the footer reads
 // (web/components/Footer.tsx), so this page's "Call Us"/"WhatsApp" links
@@ -189,19 +189,16 @@ function FeatureStorySection({
   );
 }
 
-export const revalidate = 60
-
-export async function generateStaticParams() {
-  try {
-    const { data } = await apiClient.get("/public/vehicles");
-    const vehicles = Array.isArray(data) ? data : [];
-    return vehicles
-      .filter((vehicle: { status: string }) => vehicle.status === "published")
-      .map((vehicle: { slug: string }) => ({ id: vehicle.slug }));
-  } catch {
-    return [];
-  }
-}
+// Deliberately no generateStaticParams/revalidate here. This page previously
+// pre-rendered a static list of vehicle slugs at build/boot time — if the
+// backend was briefly unreachable at that moment (which happens routinely
+// in this dev environment under concurrent load), generateStaticParams
+// silently caught the error and returned an empty list, and every vehicle
+// detail page 404'd until the dev server was restarted at a moment the
+// backend happened to be up. getVehicle() below already fetches fresh data
+// per request and handles a genuinely-missing vehicle via notFound(), so
+// there's no need for the static-params layer at all — rendering this page
+// fully dynamically removes that whole failure mode.
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -543,11 +540,11 @@ export default async function VehicleDetailPage({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
             {(() => {
               const fromSpecs: [string, string][] = [
-                ["Engine", specs?.engine?.type || specs?.engine],
-                ["Transmission", specs?.engine?.transmission || specs?.transmission],
+                ["Engine", specs?.engine?.type],
+                ["Transmission", specs?.engine?.transmission],
                 ["0-100 km/h", specs?.engine?.acceleration],
-                ["Drivetrain / Power", specs?.engine?.drivetrain || specs?.engine?.power || specs?.power],
-              ].filter(([, value]) => Boolean(value)) as [string, string][];
+                ["Drivetrain / Power", specs?.engine?.drivetrain || specs?.engine?.power],
+              ].filter(([, value]) => Boolean(value) && typeof value !== "object") as [string, string][];
 
               // Specs aren't always filled in from the admin panel — fall
               // back to facts every vehicle always has, so the strip never
@@ -668,14 +665,26 @@ export default async function VehicleDetailPage({
         vehicleName={vehicle.name}
         heroImage={publicHeroImageUrl || undefined}
         colors={publicOptionColors}
-        interiors={optionInteriors.map((i: any) => ({ ...i, imageUrl: publicMediaUrl(i.imageUrl) }))}
-        wheels={optionWheels.map((w: any) => ({ ...w, imageUrl: publicMediaUrl(w.imageUrl) }))}
+        interiors={optionInteriors.map((i: any) => ({
+          ...i,
+          imageUrl: publicMediaUrl(i.imageUrl),
+          images: Array.isArray(i.images) ? i.images.map(publicMediaUrl) : i.images,
+        }))}
+        wheels={optionWheels.map((w: any) => ({
+          ...w,
+          imageUrl: publicMediaUrl(w.imageUrl),
+          images: Array.isArray(w.images) ? w.images.map(publicMediaUrl) : w.images,
+        }))}
         packages={optionPackages.map((p: any) => ({
           ...p,
           features: Array.isArray(p.features) ? (p.features as string[]) : [],
           imageUrl: publicMediaUrl(p.imageUrl),
         }))}
-        accessories={optionAccessories.map((a: any) => ({ ...a, imageUrl: publicMediaUrl(a.imageUrl) }))}
+        accessories={optionAccessories.map((a: any) => ({
+          ...a,
+          imageUrl: publicMediaUrl(a.imageUrl),
+          images: Array.isArray(a.images) ? a.images.map(publicMediaUrl) : a.images,
+        }))}
         specifications={specs}
         visitId={visitId}
       />
@@ -1015,6 +1024,8 @@ export default async function VehicleDetailPage({
         showcaseViews={showcaseViews}
         showcaseVideoUrl={showcaseVideoUrl}
         showcaseModelUrl={showcaseModelUrl}
+        showcaseTitle={showcase?.title}
+        showcaseSubtitle={showcase?.subtitle}
         colors={publicOptionColors}
       />
 
@@ -1028,29 +1039,35 @@ export default async function VehicleDetailPage({
               {
                 title: "Engine & Performance",
                 rows: [
-                  ["Engine", specs?.engine?.type || specs?.engine],
-                  ["Power", specs?.engine?.power || specs?.power],
-                  ["Transmission", specs?.engine?.transmission || specs?.transmission],
-                  ["Fuel Type", specs?.engine?.fuelType || specs?.fuelType],
-                  ["Drivetrain", specs?.engine?.drivetrain || specs?.drivetrain],
-                  ["Range (EV)", specs?.engine?.range || specs?.range],
-                  ["Battery", specs?.engine?.batteryCapacity || specs?.batteryCapacity],
+                  ["Engine", specs?.engine?.type || specs?.performance?.type || specs?.type || null],
+                  ["Power", specs?.engine?.power || specs?.performance?.power || specs?.power || null],
+                  ["Transmission", specs?.engine?.transmission || specs?.performance?.transmission || specs?.transmission || null],
+                  ["Fuel Type", specs?.engine?.fuelType || specs?.performance?.fuelType || specs?.fuelType || null],
+                  ["Drivetrain", specs?.engine?.drivetrain || specs?.performance?.drivetrain || specs?.drivetrain || null],
+                  ["Range (EV)", specs?.engine?.range || specs?.performance?.range || specs?.range || null],
+                  ["Battery", specs?.engine?.batteryCapacity || specs?.performance?.batteryCapacity || specs?.batteryCapacity || null],
                 ],
               },
               {
                 title: "Dimensions & Capacity",
                 rows: [
-                  ["Length", specs?.dimensions?.length],
-                  ["Width", specs?.dimensions?.width],
-                  ["Height", specs?.dimensions?.height],
-                  ["Wheelbase", specs?.dimensions?.wheelbase],
-                  ["Ground Clearance", specs?.dimensions?.groundClearance],
-                  ["Seating Capacity", specs?.dimensions?.seatingCapacity || specs?.seating],
-                  ["Cargo Volume", specs?.dimensions?.cargoVolume || specs?.dimensions?.bootSpace],
+                  ["Length", specs?.dimensions?.length || null],
+                  ["Width", specs?.dimensions?.width || null],
+                  ["Height", specs?.dimensions?.height || null],
+                  ["Wheelbase", specs?.dimensions?.wheelbase || null],
+                  ["Ground Clearance", specs?.dimensions?.groundClearance || null],
+                  ["Seating Capacity", specs?.dimensions?.seatingCapacity || specs?.seating || null],
+                  ["Cargo Volume", specs?.dimensions?.cargoVolume || specs?.dimensions?.bootSpace || null],
                 ],
               },
             ].map(({ title, rows }) => {
-              const filled = rows.filter(([, value]) => Boolean(value));
+              // Guard against a spec value that resolves to an object/array
+              // instead of a leaf scalar (a data-shape mismatch — e.g. a
+              // whole `engine`/`performance` section nested one level
+              // deeper than a given fallback path expects) — rendering it
+              // directly would throw "Objects are not valid as a React
+              // child" instead of just showing an empty/unlisted row.
+              const filled = rows.filter(([, value]) => Boolean(value) && typeof value !== "object");
               return (
                 <div key={title}>
                   <h3 className="text-base font-bold text-navy mb-4 uppercase tracking-wider">{title}</h3>
@@ -1232,13 +1249,9 @@ export default async function VehicleDetailPage({
                 <p className="mb-8 max-w-md text-base text-steel">
                   Download the full {vehicle.name} brochure for complete specifications, features, and imagery you can browse anytime, anywhere.
                 </p>
-                <a
-                  href={brochureUrl}
-                  download
-                  className="inline-flex w-fit items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-black px-8 py-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-active-blue md:text-base"
-                >
+                <Button href={brochureUrl} download size="lg" className="w-fit">
                   <Download size={18} /> Download Brochure
-                </a>
+                </Button>
               </div>
             </div>
           </div>
@@ -1292,7 +1305,7 @@ export default async function VehicleDetailPage({
                   <div className="h-[160px] bg-gradient-to-br from-brand-neutral-3 to-brand-neutral-4 flex items-center justify-center text-xs text-steel overflow-hidden">
                     {rv.heroImageUrl || (Array.isArray(rv.images) && rv.images[0]) ? (
                       <ImageWithFallback
-                        src={rv.heroImageUrl || (Array.isArray(rv.images) && typeof rv.images[0] === "string" ? rv.images[0] : "")}
+                        src={publicMediaUrl(rv.heroImageUrl || (Array.isArray(rv.images) && typeof rv.images[0] === "string" ? rv.images[0] : ""))}
                         alt={rv.name}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"

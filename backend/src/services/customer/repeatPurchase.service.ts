@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { quotationService } from '../sales/quotation.service';
 
 export const repeatPurchaseService = {
   /**
@@ -14,6 +15,7 @@ export const repeatPurchaseService = {
     source: string; // SERVICE_VISIT | FOLLOW_UP | MARKETING | SELF_REFERRAL
     assignedTo?: string;
     notes?: string;
+    promotionId?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
@@ -34,6 +36,7 @@ export const repeatPurchaseService = {
           status: 'IDENTIFIED',
           assignedTo: data.assignedTo || null,
           notes: data.notes || null,
+          promotionId: data.promotionId || null,
         },
       });
 
@@ -69,6 +72,16 @@ export const repeatPurchaseService = {
   async detectOpportunities(): Promise<{ ok: boolean; createdCount: number }> {
     try {
       const currentYear = new Date().getFullYear();
+      const now = new Date();
+
+      // Tag a detected opportunity with whatever campaign is currently
+      // running, if any — a light connective link between the existing
+      // age/mileage detection logic (unchanged below) and the plain-CMS
+      // Promotion model, rather than a new targeting engine.
+      const activePromotion = await prisma.promotion.findFirst({
+        where: { isActive: true, startDate: { lte: now }, endDate: { gte: now } },
+        orderBy: { displayOrder: 'asc' },
+      });
 
       // Find vehicles that might be upgrade candidates
       const vehicles = await prisma.customerVehicle.findMany({
@@ -99,6 +112,7 @@ export const repeatPurchaseService = {
           opportunityType: 'TRADE_IN',
           source: 'SERVICE_VISIT',
           notes: `Auto-detected: Vehicle ${vehicle.make} ${vehicle.model} (${vehicle.year}) - ${reason}`,
+          promotionId: activePromotion?.id,
         });
         createdCount++;
       }
@@ -120,7 +134,7 @@ export const repeatPurchaseService = {
     notes?: string
   ): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
-      const existing = await prisma.upgradeOpportunity.findUnique({ where: { id: opportunityId } });
+      const existing = await prisma.upgradeOpportunity.findUnique({ where: { id: opportunityId }, include: { customer: true } });
       if (!existing) return { ok: false, error: 'Opportunity not found.' };
 
       const updated = await prisma.upgradeOpportunity.update({
@@ -131,6 +145,26 @@ export const repeatPurchaseService = {
           ...(status === 'LOST' && { lostAt: new Date(), lostReason: notes }),
         },
       });
+
+      // Winning an upgrade opportunity starts a new lead/quotation while
+      // retaining the customer's existing history (spec: existing customer
+      // -> new interest -> new lead -> new quotation) — this previously
+      // only stamped wonAt/wonById with no actual downstream lead created.
+      if (status === 'WON') {
+        try {
+          await quotationService.create({
+            customerName: existing.customer.fullName,
+            phoneNumber: existing.customer.phone,
+            email: existing.customer.email ?? undefined,
+            vehicleModel: existing.targetModel ?? undefined,
+            source: 'repeat-purchase',
+            internalNotes: `Repeat-purchase opportunity ${existing.opportunityNo} (${existing.opportunityType}) marked WON.`,
+            autoAssign: true,
+          });
+        } catch (leadError: any) {
+          console.error('[REPEAT PURCHASE LEAD CREATE ERROR]', leadError.message);
+        }
+      }
 
       return { ok: true, data: updated };
     } catch (error: any) {
@@ -178,6 +212,7 @@ export const repeatPurchaseService = {
       const [opportunities, total] = await Promise.all([
         prisma.upgradeOpportunity.findMany({
           where,
+          include: { promotion: { select: { title: true } } },
           orderBy: { createdAt: 'desc' },
           skip,
           take: pageSize,

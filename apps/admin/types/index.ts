@@ -1,4 +1,5 @@
 export * from './admin';
-export * from '@geely/types';
-// AdminUser is defined in both - prefer the shared one
-export { type AdminUser } from '@geely/types';
+export * from '../lib/auth/types';
+export * from './financingPage';
+// AdminUser is defined in both - prefer the local auth one
+export { type AdminUser } from '../lib/auth/types';

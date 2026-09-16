@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Link2, X, Loader2, Trash2, FileImage } from 'lucide-react';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 /**
  * ImageUploader — reusable component with 3 modes:
@@ -96,21 +97,8 @@ export default function ImageUploader({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', category);
-
-      const res = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => 'Upload failed');
-        throw new Error(txt || `Upload failed: ${res.status}`);
-      }
-      const json = await res.json();
-      if (!json?.url) throw new Error('No URL returned from upload API');
-      onChange(json.url);
+      const asset = await uploadAndRegisterMedia(file, { category });
+      onChange(asset.url);
     } catch (e) {
       setError((e as Error).message || 'Failed to upload image');
     } finally {

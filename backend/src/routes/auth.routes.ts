@@ -6,6 +6,7 @@ import { env } from '../config/env';
 import { rateLimiters } from '../utils/rateLimit';
 import { requireAdminApiSession, requireCustomerSession } from '../middleware/auth';
 import { isAdminRole } from '../types/auth.types';
+import { passwordResetService } from '../services/auth/passwordReset.service';
 
 const router = Router();
 
@@ -119,15 +120,12 @@ router.post('/forgot-password', rateLimiters.login, async (req: Request, res: Re
     const { email } = req.body;
     if (!email) { res.status(400).json({ error: 'Email is required' }); return; }
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (!user) { res.json({ success: true }); return; } // Don't reveal if user exists
+    const result = await passwordResetService.requestReset(email);
+    if (!result.ok) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
 
-    const otpCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
-
-    await prisma.user.update({ where: { id: user.id }, data: { otpCode, otpExpiry } });
-
-    // TODO: Send email with OTP
     res.json({ success: true, message: 'If an account exists with this email, you will receive a password reset code.' });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -144,27 +142,11 @@ router.post('/reset-password', rateLimiters.login, async (req: Request, res: Res
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (!user || !user.otpCode || !user.otpExpiry) {
-      res.status(400).json({ error: 'Invalid reset code' });
+    const result = await passwordResetService.verifyOtpAndReset(email, code, newPassword);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
       return;
     }
-
-    if (user.otpCode !== code.toUpperCase()) {
-      res.status(400).json({ error: 'Invalid reset code' });
-      return;
-    }
-
-    if (new Date() > user.otpExpiry) {
-      res.status(400).json({ error: 'Reset code has expired' });
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, otpCode: null, otpExpiry: null },
-    });
 
     res.json({ success: true });
   } catch (error) {

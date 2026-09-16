@@ -30,6 +30,7 @@ interface Opp {
   assignedTo: string | null;
   notes: string | null;
   createdAt: string;
+  promotion: { title: string } | null;
 }
 
 interface ListResponse { opportunities: Opp[]; total: number; page: number; pageSize: number; totalPages: number }
@@ -162,6 +163,7 @@ export default function RepeatPurchaseList() {
             <Th>Target</Th>
             <Th>Budget</Th>
             <Th>Source</Th>
+            <Th>Campaign</Th>
             <Th>Status</Th>
             <Th>Created</Th>
             <Th>Actions</Th>
@@ -169,9 +171,9 @@ export default function RepeatPurchaseList() {
         </THead>
         <TBody>
           {loading ? (
-            <EmptyTableRow colSpan={8} message="Loading…" />
+            <EmptyTableRow colSpan={9} message="Loading…" />
           ) : !data || data.opportunities.length === 0 ? (
-            <EmptyTableRow colSpan={8} message='No upgrade opportunities. Run "Auto-detect" to scan service data for candidates.' />
+            <EmptyTableRow colSpan={9} message='No upgrade opportunities. Run "Auto-detect" to scan service data for candidates.' />
           ) : (
             data.opportunities.map((o) => (
               <Tr key={o.id}>
@@ -180,6 +182,7 @@ export default function RepeatPurchaseList() {
                 <Td>{o.targetModel || '—'}</Td>
                 <Td>{fmtMoney(o.estimatedBudget)}</Td>
                 <Td className="capitalize">{o.source.replace(/_/g, ' ').toLowerCase()}</Td>
+                <Td>{o.promotion?.title || '—'}</Td>
                 <Td><Badge tone={statusTone(o.status)}>{o.status.replace(/_/g, ' ')}</Badge></Td>
                 <Td>{fmtDate(o.createdAt)}</Td>
                 <Td>

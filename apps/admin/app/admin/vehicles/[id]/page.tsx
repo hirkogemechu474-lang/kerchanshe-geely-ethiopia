@@ -49,6 +49,15 @@ function getSpec(specifications: any, path: string, fallback = '—') {
     }
   }
 
+  // A path that resolves to an object/array (rather than a leaf scalar) is
+  // a data-shape mismatch, not a renderable value — e.g. a vehicle whose
+  // specifications JSON has a whole `performance`/`engine` section nested
+  // one level deeper than this path expects. Rendering it directly as JSX
+  // text throws "Objects are not valid as a React child"; fall back instead.
+  if (typeof value === 'object' && value !== null) {
+    return fallback;
+  }
+
   return value ?? fallback;
 }
 

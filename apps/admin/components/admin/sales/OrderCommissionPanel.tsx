@@ -36,10 +36,10 @@ export default function OrderCommissionPanel({
 }) {
   const router = useRouter();
   const [salesAgentId, setSalesAgentId] = useState(order.salesAgentId || '');
-  const [commissionRate, setCommissionRate] = useState(order.commissionRate?.toString() || '');
+  const [commissionRate, setCommissionRate] = useState(order.commissionRate?.toString() || '5');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [reps, setReps] = useState<{ id: string; name: string }[]>([]);
+  const [reps, setReps] = useState<{ id: string; name: string; isActive: boolean }[]>([]);
 
   useEffect(() => {
     // /api/admin/sales-reps doesn't exist — apps/admin/lib/assignSalesRep.ts's
@@ -50,14 +50,17 @@ export default function OrderCommissionPanel({
       .then((data) =>
         setReps(
           (data.items || [])
-            .filter((user: { isActive?: boolean }) => user.isActive !== false)
-            .map((user: { id: string; name: string }) => ({ id: user.id, name: user.name }))
+            .map((user: { id: string; name: string; isActive?: boolean }) => ({
+              id: user.id,
+              name: user.name,
+              isActive: user.isActive !== false,
+            }))
         )
       )
       .catch(() => setReps([]));
   }, []);
 
-  const dirty = salesAgentId !== (order.salesAgentId || '') || commissionRate !== (order.commissionRate?.toString() || '');
+  const dirty = salesAgentId !== (order.salesAgentId || '') || commissionRate !== (order.commissionRate?.toString() || '5');
 
   const save = async () => {
     setBusy(true);
@@ -121,14 +124,9 @@ export default function OrderCommissionPanel({
             <option value="">Unassigned</option>
             {/* Keep a stored name that no longer matches an active rep (e.g. deactivated)
                 selectable, rather than silently blanking it. */}
-            {salesAgentId && !reps.some((rep) => rep.name === salesAgentId) && (
-              <option value={salesAgentId} disabled>
-                {salesAgentId} (inactive)
-              </option>
-            )}
             {reps.map((rep) => (
               <option key={rep.id} value={rep.name}>
-                {rep.name}
+                {rep.name}{!rep.isActive ? ' (inactive)' : ''}
               </option>
             ))}
           </select>

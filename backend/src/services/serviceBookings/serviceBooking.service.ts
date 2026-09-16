@@ -27,11 +27,17 @@ export const serviceBookingService = {
     customerName: string;
     customerPhone: string;
     customerEmail?: string;
+    nationalId?: string;
     serviceType: string;
     vehicleInfo: string;
     date: string;
-    timeSlot: string;
+    timeSlot?: string;
+    vehicleYear?: string;
+    mileage?: string;
+    vin?: string;
+    location?: string;
     notes?: string;
+    createdById?: string;
   }): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const reference = await generateReference(REFERENCE_CATEGORY.SERVICE_BOOKING);
@@ -40,12 +46,19 @@ export const serviceBookingService = {
         customerName: data.customerName,
         customerPhone: data.customerPhone,
         customerEmail: data.customerEmail || '',
+        nationalId: data.nationalId || null,
         serviceType: data.serviceType,
         vehicleInfo: data.vehicleInfo,
         date: new Date(data.date),
-        notes: data.notes,
+        timeSlot: data.timeSlot || null,
+        vehicleYear: data.vehicleYear || null,
+        mileage: data.mileage || null,
+        vin: data.vin || null,
+        location: data.location || null,
+        notes: data.notes || null,
         reference,
         status: 'PENDING',
+        createdById: data.createdById || null,
       });
 
       if (data.customerEmail) {
@@ -55,7 +68,7 @@ export const serviceBookingService = {
           reference,
           serviceType: data.serviceType,
           date: data.date,
-          timeSlot: data.timeSlot,
+          timeSlot: data.timeSlot || '',
           vehicleInfo: data.vehicleInfo,
         });
       }
@@ -72,8 +85,10 @@ export const serviceBookingService = {
       const booking = await serviceBookingRepository.findByIdWithJobCard(id);
       if (!booking) return { ok: false, error: 'Service booking not found.' };
 
-      return { ok: true, data: booking };
+      const updated = await serviceBookingRepository.updateStatus(id, status);
+      return { ok: true, data: updated };
     } catch (error: any) {
+      console.error('[SERVICE BOOKING UPDATE STATUS ERROR]', error.message);
       return { ok: false, error: 'Failed to update service booking.' };
     }
   },

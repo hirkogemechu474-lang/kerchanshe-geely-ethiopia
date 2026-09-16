@@ -65,7 +65,7 @@ export default function CategoryPage() {
         }
 
         const data = await response.json();
-        setCategory(data.category);
+        setCategory(data);
       } catch (err) {
         console.error('Error fetching category:', err);
         setError('Failed to load category');
@@ -99,7 +99,7 @@ export default function CategoryPage() {
             <p className="text-steel dark:text-steel-light mb-6">The category you're looking for doesn't exist.</p>
             <Link
               href="/models"
-              className="inline-block bg-geely-blue text-white px-6 py-3 rounded-lg hover:bg-opacity-90"
+              className="inline-block bg-geely-blue text-white px-6 py-3 hover:bg-opacity-90"
             >
               Browse All Models
             </Link>
@@ -115,7 +115,19 @@ export default function CategoryPage() {
     <MainLayout>
       {/* Hero Section */}
       <div className="relative bg-navy text-white py-20">
-        {category.heroImageUrl && (
+        {category.heroVideoUrl ? (
+          <div className="absolute inset-0 opacity-20">
+            <video
+              src={category.heroVideoUrl}
+              poster={category.heroImageUrl || undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : category.heroImageUrl ? (
           <div className="absolute inset-0 opacity-20">
             <ImageWithFallback
               src={category.heroImageUrl}
@@ -123,7 +135,7 @@ export default function CategoryPage() {
               className="w-full h-full object-cover"
             />
           </div>
-        )}
+        ) : null}
         <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="text-[13px] tracking-[0.14em] text-gold font-bold mb-3">
             {category.name.toUpperCase()}
@@ -265,7 +277,7 @@ export default function CategoryPage() {
                         <Link
                           href={`/models/${vehicle.slug}`}
                           aria-label={`View details for ${vehicle.name}`}
-                          className="flex-1 bg-geely-blue text-white text-center font-semibold text-sm py-3 rounded hover:bg-opacity-90 transition-all"
+                          className="flex-1 bg-geely-blue text-white text-center font-semibold text-sm py-3 hover:bg-opacity-90 transition-all"
                         >
                           View Details
                         </Link>
@@ -359,7 +371,7 @@ export default function CategoryPage() {
               </Link>
               <Link
                 href="/quote"
-                className="border-2 border-white text-white font-bold text-base px-8 py-4 rounded-lg hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:text-geely-blue transition-all"
+                className="border-2 border-white text-white font-bold text-base px-8 py-4 hover:bg-white dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface dark:hover:bg-midnight-surface hover:text-geely-blue transition-all"
               >
                 Request Quote
               </Link>

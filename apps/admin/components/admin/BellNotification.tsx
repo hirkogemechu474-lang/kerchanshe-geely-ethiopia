@@ -67,11 +67,15 @@ export default function BellNotification() {
     }
   }, []);
 
-  // Poll unread count every 30 seconds
+  // Poll unread count every 30 seconds — small initial delay to avoid
+  // firing before the session cookie is set on first page load.
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    const timer = setTimeout(() => {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [fetchUnreadCount]);
 
   // Fetch full list when panel opens

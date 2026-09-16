@@ -45,13 +45,32 @@ export default function OrderAllocationPanel({ orderId, allocation, canManage }:
     finally { setBusy(false); }
   };
 
+  const allocate = async () => {
+    setBusy(true); setNotice('');
+    try {
+      const response = await fetch(`/api/orders/${orderId}/allocation/allocate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vin: vin || undefined }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Allocation failed');
+      setNotice('Vehicle allocated — VIN locked to this order.');
+      window.location.reload();
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Allocation failed'); }
+    finally { setBusy(false); }
+  };
+
+  const isReserved = allocation && allocation.status === 'RESERVED';
+  const isAllocated = allocation && allocation.status === 'ALLOCATED';
+
   return <Card className="space-y-4">
-    <div><h2 className="font-semibold text-gray-900">Vehicle Allocation</h2><p className="text-sm text-gray-500 mt-1">Reserve a stock unit now. ERP reference fields are ready for a future connector.</p></div>
-    {allocation && allocation.status !== 'RELEASED' ? <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">Reserved: {allocation.vehicle?.name || allocation.vehicleId}{allocation.vin ? ` · VIN ${allocation.vin}` : ''} <span className="font-semibold">({allocation.status})</span></div> : null}
+    <div><h2 className="font-semibold text-gray-900">Vehicle Allocation</h2><p className="text-sm text-gray-500 mt-1">Reserve a stock unit now; allocate (lock a VIN) once payment is verified. ERP reference fields are ready for a future connector.</p></div>
+    {allocation && allocation.status !== 'RELEASED' ? <div className={`rounded-lg border px-4 py-3 text-sm ${isAllocated ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-green-50 border-green-200 text-green-800'}`}>{isAllocated ? 'Allocated' : 'Reserved'}: {allocation.vehicle?.name || allocation.vehicleId}{allocation.vin ? ` · VIN ${allocation.vin}` : ''} <span className="font-semibold">({allocation.status})</span></div> : null}
     {canManage && <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-      <label className="text-sm text-gray-700">Vehicle<select value={vehicleId} onChange={(event) => setVehicleId(event.target.value)} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">Select vehicle</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name} · {vehicle.stock} available</option>)}</select></label>
-      <label className="text-sm text-gray-700">VIN (optional)<input value={vin} onChange={(event) => setVin(event.target.value)} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Vehicle identification number" /></label>
-      <div className="flex gap-2"><Button onClick={reserve} disabled={busy || !vehicleId}>Reserve</Button>{allocation && allocation.status !== 'RELEASED' && <Button variant="secondary" onClick={release} disabled={busy}>Release</Button>}</div>
+      <label className="text-sm text-gray-700">Vehicle<select value={vehicleId} onChange={(event) => setVehicleId(event.target.value)} disabled={isAllocated} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">Select vehicle</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name} · {vehicle.stock} available</option>)}</select></label>
+      <label className="text-sm text-gray-700">VIN (optional)<input value={vin} onChange={(event) => setVin(event.target.value)} disabled={isAllocated} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Vehicle identification number" /></label>
+      <div className="flex gap-2">
+        {!isAllocated && <Button onClick={reserve} disabled={busy || !vehicleId}>Reserve</Button>}
+        {isReserved && <Button onClick={allocate} disabled={busy}>Allocate</Button>}
+        {allocation && allocation.status !== 'RELEASED' && <Button variant="secondary" onClick={release} disabled={busy}>Release</Button>}
+      </div>
     </div>}
     {notice && <p className="text-sm text-gray-600">{notice}</p>}
   </Card>;

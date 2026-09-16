@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { ShieldCheck, Upload } from 'lucide-react';
+import { validateIdDocumentNumber } from '@/lib/idValidation';
 
 // FR-104: digital ID capture at the point the customer arrives for their
 // test drive. Mirrors the upload pattern already established in
@@ -42,6 +43,12 @@ export default function TestDriveIdCapture({ testDrive, canManage }: { testDrive
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const idError = documentNumber ? validateIdDocumentNumber(documentNumber, documentType) : null;
+    if (idError) {
+      setError(idError);
+      e.target.value = '';
+      return;
+    }
     setUploading(true);
     setError('');
     try {
@@ -68,6 +75,11 @@ export default function TestDriveIdCapture({ testDrive, canManage }: { testDrive
   };
 
   const saveDetails = async () => {
+    const idError = documentNumber ? validateIdDocumentNumber(documentNumber, documentType) : null;
+    if (idError) {
+      setError(idError);
+      return;
+    }
     setBusy(true);
     setError('');
     try {

@@ -6,6 +6,7 @@ import { requirePermission } from '@/lib/auth/middleware';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import QuotationPdfPanel from '@/components/admin/sales/QuotationPdfPanel';
 import QuotationApprovalPanel from '@/components/admin/sales/QuotationApprovalPanel';
+import TradeInEvaluationPanel from '@/components/admin/sales/TradeInEvaluationPanel';
 import AssignedToPanel from '@/components/admin/sales/AssignedToPanel';
 import { env } from '@/lib/env';
 import { listSalesReps } from '@/lib/assignSalesRep';
@@ -207,6 +208,11 @@ export default async function QuotationDetailPage({
           managerRejectionReason: quotation.managerRejectionReason,
         }}
         canApprove={session.user.permissions.canCountersignAgreements}
+      />
+
+      <TradeInEvaluationPanel
+        evaluation={quotation.tradeInEvaluation}
+        canManage={session.user.permissions.canManageQuotations}
       />
 
       {priorInquiries.length > 0 && (

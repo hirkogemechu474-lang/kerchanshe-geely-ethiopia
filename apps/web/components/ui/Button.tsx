@@ -26,7 +26,7 @@ type ButtonAsLink = SharedProps &
 export type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const BASE_CLASSES =
-  "inline-flex items-center justify-center gap-2 font-sans font-semibold rounded-lg transition-colors duration-200 whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-active-blue focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 font-sans font-semibold transition-colors duration-200 whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-active-blue focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none";
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: "text-xs px-5 py-2.5 min-h-[2.5rem]",
@@ -49,7 +49,8 @@ function variantClasses(variant: ButtonVariant, tone: ButtonTone): string {
  * guideline — `solid` (black, hovers to Active Blue) and `outline`
  * (transparent + border, hovers to Active Blue). `tone` picks the outline
  * border/text color so it stays visible on light vs. dark/photo surfaces —
- * the guideline's own mockup only shows the dark-surface case.
+ * the guideline's own mockup only shows the dark-surface case. No rounded
+ * corners — the guideline's button mockups are sharp rectangles.
  */
 export default function Button({
   variant = "solid",

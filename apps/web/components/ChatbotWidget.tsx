@@ -21,7 +21,16 @@ interface ChatMessage {
   showWhatsAppCta?: boolean;
 }
 
-const QUICK_REPLIES = ['Our models', 'Book a test drive', 'Current promotions', 'Find a dealer'];
+const QUICK_REPLIES = [
+  'Our models',
+  'Book a test drive',
+  'Book a service',
+  'Browse spare parts',
+  'Financing options',
+  'Current promotions',
+  'Find a dealer',
+  'Contact us',
+];
 const SESSION_KEY = 'geely_chatbot_session';
 
 function getSessionId(): string {
@@ -49,6 +58,10 @@ function ctaForIntent(intent?: string): { label: string; href: string } | null {
       return { label: 'Find a Dealer', href: '/dealers' };
     case 'contact':
       return { label: 'Contact Us', href: '/contact' };
+    case 'service':
+      return { label: 'Book a Service', href: '/service' };
+    case 'parts':
+      return { label: 'Browse Spare Parts', href: '/parts' };
     default:
       return null;
   }
@@ -116,11 +129,14 @@ export default function ChatbotWidget() {
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-24 right-6 z-50 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all animate-bounce-slow"
+          className="fixed bottom-24 right-6 z-50 text-white p-3.5 rounded-full shadow-2xl hover:shadow-3xl hover:scale-105 transition-all animate-bounce-slow"
           style={{ backgroundColor: config.primaryColor }}
           aria-label="Open Geely Assistant chat"
         >
-          <img src={withBasePath(config.logoUrl)} alt="" className="h-7 w-7 rounded-full bg-white object-contain" />
+          <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-inner">
+            <img src={withBasePath(config.logoUrl)} alt="" className="h-9 w-9 rounded-full object-contain" />
+            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-400 border-2 border-white" />
+          </span>
         </button>
       )}
 
@@ -128,12 +144,17 @@ export default function ChatbotWidget() {
         <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] h-[32rem] max-h-[calc(100vh-8rem)] bg-white dark:bg-midnight-surface rounded-2xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
           <div className="p-4 flex items-center justify-between text-white" style={{ backgroundColor: config.primaryColor }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                <img src={withBasePath(config.logoUrl)} alt="" className="h-7 w-7 object-contain" />
+              <div className="relative w-14 h-14 shrink-0 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-md ring-2 ring-white/40">
+                <img src={withBasePath(config.logoUrl)} alt="Kerchanshe Geely Ethiopia" className="h-11 w-11 object-contain" />
+                <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-400 border-2 border-white" />
               </div>
               <div>
-                <h3 className="font-bold text-sm">Geely Assistant</h3>
-                <p className="text-xs opacity-80">Ask about models, test drives & more</p>
+                <h3 className="font-bold text-base leading-tight">Geely Assistant</h3>
+                <p className="text-[11px] font-medium leading-tight opacity-90">Kerchanshe Geely Ethiopia</p>
+                <p className="text-xs leading-tight opacity-80 flex items-center gap-1 mt-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />
+                  Online now &middot; Replies instantly
+                </p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors" aria-label="Close">
@@ -179,26 +200,26 @@ export default function ChatbotWidget() {
             })}
             {sending && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-midnight-surface border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-2 text-sm text-steel dark:text-steel-light">
-                  Typing...
+                <div className="bg-white dark:bg-midnight-surface border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 flex items-center gap-1" aria-label="Geely Assistant is typing">
+                  <span className="h-1.5 w-1.5 rounded-full bg-steel dark:bg-steel-light animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-steel dark:bg-steel-light animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-steel dark:bg-steel-light animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             )}
           </div>
 
-          {messages.length <= 1 && (
-            <div className="px-4 pb-2 flex flex-wrap gap-2 bg-gray-50 dark:bg-midnight">
-              {QUICK_REPLIES.map((reply) => (
-                <button
-                  key={reply}
-                  onClick={() => sendMessage(reply)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-white dark:bg-midnight-surface border border-gray-200 dark:border-white/10 text-navy dark:text-ice hover:bg-gray-100 transition-colors"
-                >
-                  {reply}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="px-4 pb-2 flex flex-wrap gap-2 bg-gray-50 dark:bg-midnight border-t border-gray-100 dark:border-white/5 pt-2">
+            {QUICK_REPLIES.map((reply) => (
+              <button
+                key={reply}
+                onClick={() => sendMessage(reply)}
+                className="text-xs px-3 py-1.5 rounded-full bg-white dark:bg-midnight-surface border border-gray-200 dark:border-white/10 text-navy dark:text-ice hover:bg-gray-100 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
 
           <form
             onSubmit={(e) => {

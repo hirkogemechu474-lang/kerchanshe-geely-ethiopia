@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { orderService } from '../services/sales/order.service';
+import { vehicleAllocationService } from '../services/sales/vehicleAllocation.service';
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
 import { orderInvoiceService } from '../services/sales/orderInvoice.service';
@@ -9,12 +10,13 @@ import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { generateSalesAgreementPdf } from '../services/pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
-import { vehicleAllocationRepository, vehicleRepository, userRepository, documentSignatureRepository } from '../repositories';
+import { vehicleRepository, userRepository, documentSignatureRepository, salesOrderRepository } from '../repositories';
 import { signLinkToken } from '../utils/secureLink';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
+import { validateTin } from '../utils/idValidation';
 import { env } from '../config/env';
 import { rateLimiters } from '../utils/rateLimit';
-import { MAX_REASONABLE_PRICE_ETB } from '../config/pricing';
+import { auditService } from '../services/audit/audit.service';
 
 const router = Router();
 
@@ -117,22 +119,124 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
   }
 });
 
+// Fields that feed the rendered Sales Agreement PDF (see buildAgreementPdfData
+// in orderAgreement.service.ts) — locked once the manager has countersigned,
+// since the agreement renders live from these fields and a post-execution
+// edit would silently change what the "fully executed" document shows.
+const AGREEMENT_LOCKED_FIELDS = new Set([
+  'totalPrice', 'salesType', 'vehicleType', 'motorBatterySerialNo', 'accessoriesDescription',
+  'proformaInvoiceNo', 'proformaInvoiceDate', 'vatAmount', 'registrationCharge', 'accessoriesAmount',
+  'purchaserTitle', 'purchaserTin', 'purchaserAddress', 'purchaserAuthorizedRep', 'depositAmount', 'depositDueDate',
+  'otherPaymentAmount', 'otherPaymentNote', 'otherPaymentDueDate', 'estimatedDeliveryDate',
+  'deliveryLocation', 'exteriorColor', 'interiorColor', 'customerName', 'customerPhone',
+  'customerEmail', 'vehicleModel', 'configurationJson',
+]);
+
 // PATCH /api/orders/:id (admin update fields)
 router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { totalPrice, commissionRate } = req.body;
-    if (totalPrice != null && (typeof totalPrice !== 'number' || !Number.isFinite(totalPrice) || totalPrice < 0 || totalPrice > MAX_REASONABLE_PRICE_ETB)) {
-      res.status(400).json({ error: `Total price must be a number between 0 and ETB ${MAX_REASONABLE_PRICE_ETB.toLocaleString()}.` });
+    const { totalPrice, commissionRate, purchaserTin } = req.body;
+    if (totalPrice != null && (typeof totalPrice !== 'number' || !Number.isFinite(totalPrice) || totalPrice < 0)) {
+      res.status(400).json({ error: 'Total price must be a positive number.' });
       return;
     }
     if (commissionRate != null && (typeof commissionRate !== 'number' || !Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100)) {
       res.status(400).json({ error: 'Commission rate must be a number between 0 and 100.' });
       return;
     }
-    const order = await prisma.salesOrder.update({ where: { id: req.params.id }, data: req.body });
+    const tinError = validateTin(purchaserTin);
+    if (tinError) { res.status(400).json({ error: tinError }); return; }
+
+    const existing = await prisma.salesOrder.findUnique({ where: { id: req.params.id }, select: { countersignedAt: true, registeredAt: true } });
+    if (!existing) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (existing.countersignedAt) {
+      const touchesLockedField = Object.keys(req.body).some((key) => AGREEMENT_LOCKED_FIELDS.has(key));
+      if (touchesLockedField) {
+        res.status(423).json({ error: 'The sales agreement has been fully executed and its terms are locked. A correction requires a new version.' });
+        return;
+      }
+    }
+
+    const data: Record<string, unknown> = { ...req.body };
+
+    // Coerce numeric fields that arrive as strings from form inputs
+    const numericFields = [
+      'totalPrice', 'commissionRate', 'vatAmount', 'registrationCharge',
+      'accessoriesAmount', 'depositAmount', 'otherPaymentAmount',
+      'commissionAmount', 'commissionSplitPercent', 'odometerAtDelivery',
+    ];
+    for (const field of numericFields) {
+      if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+        const num = Number(data[field]);
+        data[field] = Number.isFinite(num) ? num : null;
+      } else if (data[field] === '') {
+        data[field] = null;
+      }
+    }
+
+    // Coerce date fields that arrive as "YYYY-MM-DD" strings
+    const dateFields = [
+      'proformaInvoiceDate', 'depositDueDate', 'otherPaymentDueDate',
+      'estimatedDeliveryDate', 'approvedAt', 'agreementSentAt', 'signedAt',
+      'countersignedAt', 'rejectedAt', 'orderDate', 'deliveredAt',
+      'handoverExpectedCompletionDate',
+    ];
+    for (const field of dateFields) {
+      if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+        const d = new Date(data[field] as string);
+        data[field] = isNaN(d.getTime()) ? null : d;
+      } else if (data[field] === '') {
+        data[field] = null;
+      }
+    }
+
+    // Saving a registration number is what "records the vehicle registration"
+    // for the DELIVERED gate in getTransitionBlockReason — that gate checks
+    // registeredAt, which this route never set on its own, so a recorded
+    // number never actually cleared the gate. Stamp it (once) the first time
+    // a non-empty number is saved, and clear it if the number is removed.
+    if (Object.prototype.hasOwnProperty.call(data, 'registrationNumber')) {
+      if (data.registrationNumber) {
+        if (!existing.registeredAt) {
+          data.registeredAt = new Date();
+          data.registeredById = req.adminSession!.user.id;
+        }
+      } else {
+        data.registeredAt = null;
+        data.registeredById = null;
+      }
+    }
+
+    const order = await prisma.salesOrder.update({ where: { id: req.params.id }, data });
     res.json(order);
   } catch (error) {
     console.error('Update order error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/delivery-hold ({ hold: boolean, reason?: string }) —
+// manager "Approve Delivery"/"Hold Delivery" gate, distinct from the generic
+// status PATCH: a manager can hold a READY_FOR_DELIVERY-eligible order back
+// even once every other gate (PDI/agreement/payment/allocation) is clear.
+router.post('/:id/delivery-hold', requireAdminApiSession, requirePermission('canCountersignAgreements'), async (req: Request, res: Response) => {
+  try {
+    const { hold, reason } = req.body ?? {};
+    if (hold && !reason) { res.status(400).json({ error: 'A reason is required to hold delivery.' }); return; }
+    const order = await prisma.salesOrder.update({
+      where: { id: req.params.id },
+      data: { deliveryHold: Boolean(hold), deliveryHoldReason: hold ? reason : null },
+    });
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: hold ? 'delivery_held' : 'delivery_hold_released',
+      performedById: req.adminSession!.user.id,
+      reason: hold ? reason : undefined,
+    });
+    res.json(order);
+  } catch (error) {
+    console.error('Delivery hold error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -166,6 +270,12 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
       where: { id: req.params.id },
       data: { approvedAt: new Date(), approvedById: req.adminSession!.user.id },
     });
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'agreement_approved',
+      performedById: req.adminSession!.user.id,
+    });
     res.json(order);
   } catch (error) {
     console.error('Approve order error:', error);
@@ -173,37 +283,59 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
   }
 });
 
-// PUT /api/orders/:id/allocation (allocate vehicle)
+// PUT /api/orders/:id/allocation (reserve a stock unit — RESERVED only; use
+// POST .../allocation/allocate below to lock a specific VIN once payment is
+// verified). Delegates to vehicleAllocationService so stock accounting
+// stays correct and consistent with the automatic-conversion path.
 router.put('/:id/allocation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const { vehicleId, vin } = req.body;
     if (!vehicleId) { res.status(400).json({ error: 'vehicleId is required' }); return; }
 
-    const existing = await vehicleAllocationRepository.findByOrderId(req.params.id);
-    const allocation = existing
-      ? await vehicleAllocationRepository.update(req.params.id, {
-          vehicleId, vin: vin || null, status: 'RESERVED', releasedAt: null,
-          allocatedById: req.adminSession!.user.id, allocatedAt: new Date(),
-        })
-      : await vehicleAllocationRepository.create({
-          orderId: req.params.id, vehicleId, vin: vin || null,
-          allocatedById: req.adminSession!.user.id,
-        });
-
-    res.json(allocation);
+    const result = await vehicleAllocationService.allocate(req.params.id, vehicleId, { vin: vin || null, allocatedById: req.adminSession!.user.id });
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    res.json(result.data);
   } catch (error) {
     console.error('Allocate vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// DELETE /api/orders/:id/allocation (release allocation)
+// POST /api/orders/:id/allocation/allocate (RESERVED -> ALLOCATED — the
+// point a specific VIN gets locked to this order, only once finance has
+// verified payment).
+router.post('/:id/allocation/allocate', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id }, select: { paymentVerifiedAt: true } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!order.paymentVerifiedAt) {
+      res.status(400).json({ error: 'Payment must be verified before a vehicle can be allocated.' });
+      return;
+    }
+    const result = await vehicleAllocationService.lockAllocation(req.params.id, req.body?.vin);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    await auditService.log({
+      entityType: 'order',
+      entityId: req.params.id,
+      action: 'vehicle_allocated',
+      performedById: req.adminSession!.user.id,
+      toValue: { vehicleId: result.data.vehicleId, vin: result.data.vin },
+    });
+    res.json(result.data);
+  } catch (error) {
+    console.error('Allocate step error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/orders/:id/allocation (release allocation — flips to RELEASED
+// and gives the stock unit back, rather than deleting the row, so
+// allocation history survives).
 router.delete('/:id/allocation', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const existing = await vehicleAllocationRepository.findByOrderId(req.params.id);
-    if (!existing) { res.status(404).json({ error: 'No allocation found for this order' }); return; }
-    await vehicleAllocationRepository.delete(req.params.id);
-    res.json({ success: true });
+    const result = await vehicleAllocationService.deallocate(req.params.id);
+    if (!result.ok) { res.status(404).json({ error: result.error }); return; }
+    res.json({ success: true, allocation: result.data });
   } catch (error) {
     console.error('Release allocation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -277,6 +409,14 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
       data: { countersignedAt: new Date(), countersignedById: req.adminSession!.user.id },
     });
 
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'agreement_fully_executed',
+      performedById: req.adminSession!.user.id,
+      toValue: { countersignedAt: updated.countersignedAt },
+    });
+
     try {
       const manager = await userRepository.findByIdSlim(req.adminSession!.user.id);
       await documentSignatureRepository.upsert('SALES_AGREEMENT', order.id, 'manager', {
@@ -322,6 +462,13 @@ router.post('/:id/send-agreement', requireAdminApiSession, async (req: Request, 
 
     const updated = await prisma.salesOrder.update({ where: { id: req.params.id }, data: { agreementSentAt: new Date() } });
 
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'agreement_sent',
+      performedById: req.adminSession!.user.id,
+    });
+
     let notificationSent = false;
     let notificationError: string | undefined;
     if (order.customerEmail) {
@@ -338,12 +485,17 @@ router.post('/:id/send-agreement', requireAdminApiSession, async (req: Request, 
         // PDF generation failure should not block the email
       }
 
+      const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(order.orderNo)}`;
       const result = await dispatchNotification({
         type: 'order_status',
         to: [order.customerEmail],
         subject: `Sales Agreement Ready to Sign — ${order.orderNo}`,
         data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
         attachments,
+        ctas: [
+          { label: 'Review & Sign Agreement', url: link },
+          { label: 'Check Order Status', url: statusLink },
+        ],
       });
       notificationSent = result.ok;
       notificationError = result.error;
@@ -372,20 +524,27 @@ router.post('/:id/reject-agreement', requireAdminApiSession, async (req: Request
   }
 });
 
-// PATCH /api/orders/:id/pdi (toggle PDI item)
+// PATCH /api/orders/:id/pdi (set PDI item result: PENDING/PASS/FAIL/NA,
+// optionally with failure-evidence photos/notes)
 router.patch('/:id/pdi', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const { itemId, isChecked } = req.body;
-    if (!itemId || typeof isChecked !== 'boolean') { res.status(400).json({ error: 'itemId and isChecked are required' }); return; }
+    const { itemId, result: itemResult, photoUrls, notes } = req.body;
+    const VALID_RESULTS = ['PENDING', 'PASS', 'FAIL', 'NA'];
+    if (!itemId || !VALID_RESULTS.includes(itemResult)) {
+      res.status(400).json({ error: 'itemId and a valid result (PENDING/PASS/FAIL/NA) are required' });
+      return;
+    }
 
     const result = await orderService.updatePdiItem(itemId, req.params.id, {
-      isChecked,
+      result: itemResult,
+      photoUrls: Array.isArray(photoUrls) ? photoUrls : undefined,
+      notes: typeof notes === 'string' ? notes : undefined,
       checkedById: req.adminSession!.user.id,
     });
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
     res.json(result.data);
   } catch (error) {
-    console.error('Toggle PDI error:', error);
+    console.error('Update PDI item error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -441,11 +600,29 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
     let notificationSent = false;
     let notificationError: string | undefined;
     if (order.customerEmail) {
+      let attachments;
+      try {
+        const pdfResult = await orderInvoiceService.generateInvoicePdf(order.id);
+        if (pdfResult.ok && pdfResult.data) {
+          attachments = [{ filename: `invoice-${updated.invoiceNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+        }
+      } catch (_) {
+        // PDF generation failure should not block the email
+      }
+
+      const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(order.orderNo)}`;
+      const invoiceToken = signLinkToken('invoice', order.id);
+      const invoiceLink = `${env.urls.site}/api/public/orders/${order.id}/invoice?token=${encodeURIComponent(invoiceToken)}`;
       const result = await dispatchNotification({
         type: 'order_status',
         to: [order.customerEmail],
         subject: `Sales Invoice — ${order.orderNo}`,
         data: { orderNo: order.orderNo, invoiceNo: updated.invoiceNo, invoiceAmount: updated.invoiceAmount, customerName: order.customerName },
+        attachments,
+        ctas: [
+          { label: 'View Invoice', url: invoiceLink },
+          { label: 'Check Order Status', url: statusLink },
+        ],
       });
       notificationSent = result.ok;
       notificationError = result.error;
@@ -484,6 +661,33 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
     res.json(updated);
   } catch (error) {
     console.error('Confirm payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/payment/verify (finance/manager review of an already
+// "PAID" payment — distinct from paymentConfirmedAt, which an unreviewed
+// online mock-pay success also sets. Delivery requires this, not just
+// paymentStatus === 'PAID', per the workflow spec's explicit call-out that
+// delivery shouldn't proceed on an unverified payment notification alone.)
+router.post('/:id/payment/verify', requireAdminApiSession, requirePermission('canCountersignAgreements'), async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (order.paymentStatus !== 'PAID') {
+      res.status(400).json({ error: 'Payment must be marked PAID before it can be verified.' });
+      return;
+    }
+    const updated = await salesOrderRepository.verifyPayment(order.id, req.adminSession!.user.id);
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'payment_verified',
+      performedById: req.adminSession!.user.id,
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error('Verify payment error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -556,11 +760,23 @@ router.post('/:id/handover-email', requireAdminApiSession, async (req: Request, 
     let notificationSent = false;
     let notificationError: string | undefined;
     if (order.customerEmail) {
+      // Generate handover PDF attachment
+      let attachments;
+      try {
+        const pdfResult = await orderHandoverService.generateHandoverPdfForStaff(order.id);
+        if (pdfResult.ok && pdfResult.data) {
+          attachments = [{ filename: `handover-${order.orderNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+        }
+      } catch (_) {
+        // PDF generation failure should not block the email
+      }
+
       const result = await dispatchNotification({
         type: 'order_status',
         to: [order.customerEmail],
         subject: `Your ${order.vehicleModel} Has Been Delivered — ${order.orderNo}`,
         data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
+        attachments,
       });
       notificationSent = result.ok;
       notificationError = result.error;
@@ -607,16 +823,54 @@ router.post('/:id/send-handover-signoff', requireAdminApiSession, async (req: Re
     if (!order.customerEmail) { res.status(400).json({ error: 'No customer email is on file for this order.' }); return; }
 
     const link = `${env.urls.site}${orderHandoverService.generateHandoverLink(order.id)}`;
+
+    // Generate handover PDF attachment
+    let attachments;
+    try {
+      const pdfResult = await orderHandoverService.generateHandoverPdfForStaff(order.id);
+      if (pdfResult.ok && pdfResult.data) {
+        attachments = [{ filename: `handover-${order.orderNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+      }
+    } catch (_) {
+      // PDF generation failure should not block the email
+    }
+
     const result = await dispatchNotification({
       type: 'order_status',
       to: [order.customerEmail],
       subject: `Confirm Vehicle Handover — ${order.orderNo}`,
       data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
+      attachments,
     });
 
     res.json({ notificationSent: result.ok, notificationError: result.error });
   } catch (error) {
     console.error('Send handover signoff error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/send-handover-countersign-link (email manager countersign link)
+router.post('/:id/send-handover-countersign-link', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+
+    const managerEmails = await userRepository.findManagerEmails();
+    if (managerEmails.length === 0) { res.status(400).json({ error: 'No manager emails found.' }); return; }
+
+    const link = `${env.urls.site}${orderHandoverService.generateManagerCountersignLink(order.id)}`;
+
+    const result = await dispatchNotification({
+      type: 'order_status',
+      to: managerEmails,
+      subject: `Countersign Handover — ${order.orderNo}`,
+      data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
+    });
+
+    res.json({ notificationSent: result.ok, notificationError: result.error });
+  } catch (error) {
+    console.error('Send handover countersign link error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

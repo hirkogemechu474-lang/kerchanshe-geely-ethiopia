@@ -23,7 +23,7 @@ export const salesOrderRepository = {
   },
 
   async findByIdWithPdiItems(id: string) {
-    return prisma.salesOrder.findUnique({ where: { id }, include: { pdiItems: true } });
+    return prisma.salesOrder.findUnique({ where: { id }, include: { pdiItems: true, vehicleAllocation: true } });
   },
 
   async findPatchGuardFields(id: string) {
@@ -106,8 +106,21 @@ export const salesOrderRepository = {
     return prisma.salesOrder.update({ where: { id }, data: { financingStatus } });
   },
 
-  async updatePaymentStatusPaid(id: string) {
-    return prisma.salesOrder.update({ where: { id }, data: { paymentStatus: 'PAID', paymentConfirmedAt: new Date() } });
+  async updatePaymentStatusPaid(id: string, details?: { paymentMethod?: string; paymentReferenceNo?: string; amountPaid?: number }) {
+    return prisma.salesOrder.update({
+      where: { id },
+      data: {
+        paymentStatus: 'PAID',
+        paymentConfirmedAt: new Date(),
+        ...(details?.paymentMethod && { paymentMethod: details.paymentMethod }),
+        ...(details?.paymentReferenceNo && { paymentReferenceNo: details.paymentReferenceNo }),
+        ...(details?.amountPaid != null && { amountPaid: details.amountPaid }),
+      },
+    });
+  },
+
+  async verifyPayment(id: string, verifiedById: string) {
+    return prisma.salesOrder.update({ where: { id }, data: { paymentVerifiedAt: new Date(), paymentVerifiedById: verifiedById } });
   },
 
   async updatePaymentProof(id: string, proofUrl: string) {

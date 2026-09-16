@@ -30,7 +30,11 @@ export const translations: Record<string, Record<string, string>> = {
     back: 'Back',
     next: 'Next',
     previous: 'Previous',
-   页: 'Page',
+    page: 'Page',
+    'footer.stayConnected': 'Stay Connected',
+    'footer.newsletter': 'Subscribe for updates on new models, offers, and service reminders.',
+    'footer.emailPlaceholder': 'Enter your email',
+    'footer.subscribe': 'Subscribe',
   },
   am: {
     home: 'መነሻ',

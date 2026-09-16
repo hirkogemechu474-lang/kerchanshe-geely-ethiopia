@@ -63,7 +63,7 @@ export default function TechnologyCTA() {
             
             <Link
               href="/models"
-              className="group inline-flex items-center justify-center gap-3 bg-white dark:bg-midnight-surface/10 backdrop-blur-md text-white font-bold text-lg px-10 py-5 rounded-xl hover:bg-white/20 transition-all duration-300 border-2 border-white/30 hover:border-white/60"
+              className="group inline-flex items-center justify-center gap-3 bg-white dark:bg-midnight-surface/10 backdrop-blur-md text-white font-bold text-lg px-10 py-5 hover:bg-white/20 transition-all duration-300 border-2 border-white/30 hover:border-white/60"
             >
               <Car className="w-6 h-6" />
               <span>Explore Models</span>

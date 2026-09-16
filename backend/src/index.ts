@@ -1,6 +1,7 @@
 import { app } from './app';
 import { env } from './config/env';
 import { prisma } from './config/database';
+import { startServiceReminderCron } from './jobs/serviceReminders.cron';
 
 async function main() {
   try {
@@ -11,6 +12,8 @@ async function main() {
       console.log(`🚀 Backend server running on http://0.0.0.0:${env.port}`);
       console.log(`📊 Environment: ${env.nodeEnv}`);
     });
+
+    startServiceReminderCron();
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

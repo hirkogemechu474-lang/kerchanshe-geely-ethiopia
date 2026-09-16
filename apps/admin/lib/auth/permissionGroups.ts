@@ -1,4 +1,4 @@
-import type { AdminRole } from '@geely/types';
+import type { AdminRole } from './types';
 
 export const PERMISSION_GROUPS = {
   users: { label: 'User Management', permissions: ['canManageUsers', 'canViewUsers', 'canManageRoles'] },

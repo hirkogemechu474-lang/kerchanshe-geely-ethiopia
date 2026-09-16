@@ -9,7 +9,7 @@ import {
   ORDER_STATUS_LABELS,
   FINANCING_STATUS_LABELS,
 } from '@/lib/services/sales/orderStateMachine';
-import { AdminRole, type AdminPermissions } from '@geely/types';
+import { AdminRole, type AdminPermissions } from '@/types';
 import { Card, Button, Badge, type Tone } from '@/components/admin/ui';
 import { ConfigurationSummary } from '@/components/admin/sales/ConfigurationSummary';
 import OrderApprovalPanel from '@/components/admin/sales/OrderApprovalPanel';
@@ -25,6 +25,10 @@ interface PdiItem {
   id: string;
   label: string;
   isChecked: boolean;
+  result: 'PENDING' | 'PASS' | 'FAIL' | 'NA';
+  photoUrls: string[] | null;
+  notes: string | null;
+  resolvedAt: string | null;
   checkedAt: string | null;
 }
 
@@ -69,6 +73,10 @@ interface OrderData {
   paymentProofUrl: string | null;
   paymentSubmittedAt: string | null;
   paymentConfirmedAt: string | null;
+  paymentVerifiedAt: string | null;
+  deliveryHold: boolean;
+  deliveryHoldReason: string | null;
+  deliveryScheduledAt: string | null;
   registrationNumber: string | null;
   registeredAt: string | null;
   invoiceNo: string | null;
@@ -91,6 +99,7 @@ interface OrderData {
   salesType: string | null;
   vehicleType: string | null;
   motorBatterySerialNo: string | null;
+  purchaserTitle: string | null;
   purchaserTin: string | null;
   purchaserAddress: string | null;
   purchaserAuthorizedRep: string | null;
@@ -229,20 +238,56 @@ export default function OrderDetail({
     }
   };
 
-  const togglePdi = async (itemId: string, isChecked: boolean) => {
+  const setPdiResult = async (itemId: string, result: string, extra?: { photoUrls?: string[]; notes?: string }) => {
     setBusy(true);
     setError('');
     try {
       const res = await fetch(`/api/orders/${state.id}/pdi`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId, isChecked }),
+        body: JSON.stringify({ itemId, result, ...extra }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyPayment = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/orders/${state.id}/payment/verify`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setDeliveryHold = async (hold: boolean) => {
+    const reason = hold ? window.prompt('Reason for holding delivery?') ?? '' : undefined;
+    if (hold && !reason) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/orders/${state.id}/delivery-hold`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hold, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      setState(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setBusy(false);
     }
@@ -267,7 +312,7 @@ export default function OrderDetail({
     }
   };
 
-  const pdiComplete = state.pdiItems.length > 0 && state.pdiItems.every((p) => p.isChecked);
+  const pdiComplete = (state.pdiItems?.length ?? 0) > 0 && state.pdiItems?.every((p) => p.result === 'PASS' || p.result === 'NA');
   const agreementComplete = Boolean(state.approvedAt) && Boolean(state.signedDocumentUrl);
   const paymentComplete = state.paymentStatus === 'PAID';
   const registrationComplete = Boolean(state.registeredAt);
@@ -278,6 +323,10 @@ export default function OrderDetail({
     paymentComplete,
     registrationComplete,
     invoiceComplete,
+    countersigned: Boolean(state.countersignedAt),
+    paymentVerified: Boolean(state.paymentVerifiedAt),
+    vehicleAllocated: state.vehicleAllocation?.status === 'ALLOCATED',
+    deliveryHold: Boolean(state.deliveryHold),
   });
 
   return (
@@ -370,20 +419,18 @@ export default function OrderDetail({
       <Card className="space-y-3">
         <h2 className="font-semibold text-gray-900">Pre-Delivery Inspection (PDI)</h2>
         <p className="text-xs text-gray-500">
-          Every item must be checked before this order can move to Ready for Delivery.
+          Every item must be marked Pass or N/A before this order can move to Ready for Delivery.
+          A Failed item blocks delivery until it's resolved and reinspected back to Pass.
         </p>
         <ul className="divide-y divide-gray-100">
           {state.pdiItems.map((item) => (
-            <li key={item.id} className="flex items-center gap-3 py-2">
-              <input
-                type="checkbox"
-                checked={item.isChecked}
-                onChange={(e) => togglePdi(item.id, e.target.checked)}
-                disabled={!permissions.canManageQuotations || busy}
-                className="w-4 h-4"
-              />
-              <span className={`text-sm ${item.isChecked ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{item.label}</span>
-            </li>
+            <PdiItemRow
+              key={item.id}
+              item={item}
+              canManage={permissions.canManageQuotations}
+              busy={busy}
+              onSetResult={setPdiResult}
+            />
           ))}
         </ul>
         <p className="text-xs font-medium">
@@ -391,7 +438,8 @@ export default function OrderDetail({
             <span className="text-green-600">All items complete</span>
           ) : (
             <span className="text-orange-600">
-              {state.pdiItems.filter((p) => p.isChecked).length} / {state.pdiItems.length} complete
+              {state.pdiItems?.filter((p) => p.result === 'PASS' || p.result === 'NA').length ?? 0} / {state.pdiItems?.length ?? 0} complete
+              {state.pdiItems?.some((p) => p.result === 'FAIL') && ' — some items failed'}
             </span>
           )}
         </p>
@@ -403,6 +451,7 @@ export default function OrderDetail({
           signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt,
           rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason,
           salesType: state.salesType, vehicleType: state.vehicleType, motorBatterySerialNo: state.motorBatterySerialNo,
+          purchaserTitle: state.purchaserTitle,
           purchaserTin: state.purchaserTin, purchaserAddress: state.purchaserAddress, purchaserAuthorizedRep: state.purchaserAuthorizedRep,
           accessoriesDescription: state.accessoriesDescription, proformaInvoiceNo: state.proformaInvoiceNo, proformaInvoiceDate: state.proformaInvoiceDate,
           vatAmount: state.vatAmount, registrationCharge: state.registrationCharge, accessoriesAmount: state.accessoriesAmount,
@@ -454,6 +503,9 @@ export default function OrderDetail({
         {state.paymentStatus === 'PAID' && state.paymentConfirmedAt && (
           <p className="text-xs text-green-600">Confirmed {new Date(state.paymentConfirmedAt).toLocaleString()}</p>
         )}
+        {state.paymentVerifiedAt && (
+          <p className="text-xs text-green-600">Verified by finance {new Date(state.paymentVerifiedAt).toLocaleString()}</p>
+        )}
 
         {permissions.canManageQuotations && state.paymentStatus === 'PENDING_REVIEW' && (
           <div className="flex gap-2">
@@ -464,6 +516,12 @@ export default function OrderDetail({
               Reject
             </Button>
           </div>
+        )}
+
+        {canCountersign && state.paymentStatus === 'PAID' && !state.paymentVerifiedAt && (
+          <Button onClick={verifyPayment} disabled={busy}>
+            Verify Payment
+          </Button>
         )}
       </Card>
 
@@ -477,6 +535,7 @@ export default function OrderDetail({
       <OrderFulfillmentPanel
         order={{
           id: state.id,
+          orderNo: state.orderNo,
           registrationNumber: state.registrationNumber,
           registeredAt: state.registeredAt,
           totalPrice: state.totalPrice,
@@ -511,6 +570,10 @@ export default function OrderDetail({
           handoverSignedDocumentUrl: state.handoverSignedDocumentUrl,
           handoverSignedAt: state.handoverSignedAt,
           handoverCountersignedAt: state.handoverCountersignedAt,
+          registrationNumber: state.registrationNumber,
+          registeredAt: state.registeredAt,
+          invoiceNo: state.invoiceNo,
+          invoicedAt: state.invoicedAt,
           deliveryNoteNo: state.deliveryNoteNo,
           odometerAtDelivery: state.odometerAtDelivery,
           customerTitle: state.customerTitle,
@@ -537,19 +600,34 @@ export default function OrderDetail({
               </Button>
             ))}
           </div>
-          {state.status === 'BOOKED' && !pdiComplete && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && !pdiComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Complete the PDI checklist above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {state.status === 'BOOKED' && pdiComplete && !agreementComplete && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && !agreementComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Approve the order and attach the signed agreement above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {state.status === 'BOOKED' && pdiComplete && agreementComplete && !paymentComplete && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && !Boolean(state.countersignedAt) && (
+            <p className="text-xs text-orange-600 mt-2">
+              Get the manager&apos;s countersignature to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && !paymentComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Confirm payment above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && !Boolean(state.paymentVerifiedAt) && (
+            <p className="text-xs text-orange-600 mt-2">
+              Finance must verify the payment above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && Boolean(state.paymentVerifiedAt) && state.vehicleAllocation?.status !== 'ALLOCATED' && (
+            <p className="text-xs text-orange-600 mt-2">
+              Allocate a specific vehicle (VIN) above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
           {state.status === 'READY_FOR_DELIVERY' && (!registrationComplete || !invoiceComplete) && (
@@ -561,6 +639,21 @@ export default function OrderDetail({
                 : 'Generate the sales invoice above to unlock "Delivered".'}
             </p>
           )}
+        </Card>
+      )}
+
+      {canCountersign && (state.status === 'BOOKED' || state.status === 'READY_FOR_DELIVERY') && (
+        <Card className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Delivery Approval</h2>
+            <Badge tone={state.deliveryHold ? 'orange' : 'green'}>{state.deliveryHold ? 'On Hold' : 'Approved'}</Badge>
+          </div>
+          {state.deliveryHold && state.deliveryHoldReason && (
+            <p className="text-sm text-orange-700">Held: {state.deliveryHoldReason}</p>
+          )}
+          {state.deliveryHold
+            ? <Button onClick={() => setDeliveryHold(false)} disabled={busy}>Release Hold</Button>
+            : <Button variant="secondary" onClick={() => setDeliveryHold(true)} disabled={busy}>Hold Delivery</Button>}
         </Card>
       )}
 
@@ -579,5 +672,133 @@ export default function OrderDetail({
         </ol>
       </Card>
     </div>
+  );
+}
+
+// One PDI checklist row: a Pass/Fail/N/A/Pending result selector, plus a
+// notes + photo-evidence capture that appears when an item is FAILed (or
+// already has evidence attached) — the fail -> repair -> reinspect -> pass
+// loop the workflow spec describes. Kept as a local component since each
+// row needs its own draft-notes/uploading state independent of the others.
+function PdiItemRow({
+  item,
+  canManage,
+  busy,
+  onSetResult,
+}: {
+  item: PdiItem;
+  canManage: boolean;
+  busy: boolean;
+  onSetResult: (itemId: string, result: string, extra?: { photoUrls?: string[]; notes?: string }) => Promise<void>;
+}) {
+  const [notes, setNotes] = useState(item.notes ?? '');
+  const [photoUrls, setPhotoUrls] = useState<string[]>(item.photoUrls ?? []);
+  const [uploading, setUploading] = useState(false);
+  const [showFailDetails, setShowFailDetails] = useState(item.result === 'FAIL');
+
+  const resultTone: Record<PdiItem['result'], Tone> = {
+    PENDING: 'gray',
+    PASS: 'green',
+    NA: 'blue',
+    FAIL: 'red',
+  };
+
+  const setResult = async (result: PdiItem['result']) => {
+    if (result === 'FAIL') {
+      setShowFailDetails(true);
+      return;
+    }
+    setShowFailDetails(false);
+    await onSetResult(item.id, result);
+  };
+
+  const saveFailDetails = async () => {
+    await onSetResult(item.id, 'FAIL', { notes, photoUrls });
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', 'pdi-evidence');
+        const res = await fetch('/api/upload/image', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) uploaded.push(data.url);
+      }
+      setPhotoUrls((prev) => [...prev, ...uploaded]);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <li className="py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className={`text-sm ${item.result === 'PASS' || item.result === 'NA' ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+          {item.label}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge tone={resultTone[item.result]}>{item.result}</Badge>
+          {canManage && (
+            <div className="flex gap-1">
+              {(['PASS', 'FAIL', 'NA'] as const).map((r) => (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={item.result === r ? 'primary' : 'ghost'}
+                  onClick={() => setResult(r)}
+                  disabled={busy}
+                >
+                  {r === 'NA' ? 'N/A' : r.charAt(0) + r.slice(1).toLowerCase()}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {item.resolvedAt && item.result !== 'FAIL' && (
+        <p className="mt-1 text-xs text-gray-400">Reinspected and resolved {new Date(item.resolvedAt).toLocaleString()}</p>
+      )}
+
+      {(showFailDetails || item.result === 'FAIL') && (
+        <div className="mt-2 ml-0 space-y-2 rounded-lg bg-red-50 border border-red-200 p-3">
+          <label className="block text-xs font-medium text-red-800">Failure notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            disabled={!canManage}
+            className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm"
+            placeholder="What's wrong, and what needs to happen before this can pass reinspection?"
+          />
+          {photoUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {photoUrls.map((url) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={url} src={url} alt="PDI evidence" className="h-16 w-16 rounded object-cover border border-red-200" />
+              ))}
+            </div>
+          )}
+          {canManage && (
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} className="text-xs" />
+              <Button onClick={saveFailDetails} disabled={busy || uploading}>
+                Save Failure Details
+              </Button>
+              <span className="text-xs text-red-700">
+                Once repaired, mark Pass above to reinspect and clear this failure.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
   );
 }

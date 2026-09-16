@@ -3,8 +3,8 @@
 import { Fragment, useEffect, useMemo, useState, useCallback } from 'react';
 import { Check, X, Lock, RotateCcw, Search, Loader2 } from 'lucide-react';
 import { Card, Button } from '@/components/admin/ui';
-import { roleLabel } from '@geely/types';
-import { ADMIN_ROLES } from '@geely/types';
+import { roleLabel } from '@/types';
+import { ADMIN_ROLES } from '@/types';
 
 interface PermissionGroup {
   label: string;
@@ -91,9 +91,9 @@ function AssignRoleWidget() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin/users')
+    fetch('/api/admin/users?pageSize=1000')
       .then((res) => res.json())
-      .then((data) => setUsers(data.users ?? []));
+      .then((data) => setUsers(data.items ?? []));
   }, []);
 
   const results = useMemo(() => {
@@ -243,7 +243,14 @@ export default function RolesPermissionsManager() {
     }
   };
 
-  if (!data) return <div className="text-gray-400 text-sm">Loading permissions…</div>;
+  if (!data) {
+    return (
+      <div className="flex items-center gap-2 text-gray-400 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading permissions…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

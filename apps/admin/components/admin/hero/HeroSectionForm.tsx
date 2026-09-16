@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Save, Eye, ArrowLeft, Image as ImageIcon, Video, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { Card, Button, LinkButton } from '@/components/admin/ui';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 interface HeroSectionFormProps {
   heroId?: string;
@@ -90,26 +91,13 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
     if (!file) return;
 
     setUploading(field);
-    
+
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFormData(prev => ({ ...prev, [field]: data.url }));
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to upload file');
-      }
+      const asset = await uploadAndRegisterMedia(file, { category: 'hero' });
+      setFormData(prev => ({ ...prev, [field]: asset.url }));
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file');
+      alert(error instanceof Error ? error.message : 'Failed to upload file');
     } finally {
       setUploading(null);
     }

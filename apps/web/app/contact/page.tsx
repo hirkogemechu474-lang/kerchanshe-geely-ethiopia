@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Mail, MapPin, Phone, Send, MessageCircle } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
 import { useCRMSubmit } from "@/hooks/useCRMSubmit";
+import { validateGenericIdOrLicense } from "@/lib/idValidation";
 
 const FALLBACK_CONTACT = {
-  phone: "+251 11 000 0000",
+  phone: "+251 99 338 9874",
   email: "info@geelyethiopia.com",
   whatsapp: "+251 99 338 9874",
 };
@@ -49,6 +50,11 @@ export default function ContactPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    const idError = validateGenericIdOrLicense(form.nationalId);
+    if (idError !== true) {
+      setError(idError);
+      return;
+    }
     try {
       await submitLead({
         firstName: form.firstName,
@@ -86,7 +92,7 @@ export default function ContactPage() {
             <a href={`https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-navy dark:text-ice hover:text-geely-blue"><MessageCircle className="text-geely-blue" size={20} /> WhatsApp support</a>
             <div className="flex items-start gap-3 text-steel dark:text-steel-light"><MapPin className="text-geely-blue mt-0.5" size={20} /><span>Kerchanshe Group Geely showroom, Sarbet, Addis Ababa</span></div>
             <div className="pt-4 flex flex-wrap gap-3">
-              <Link href="/test-drive" className="bg-geely-blue text-white px-4 py-2 rounded font-semibold">Book a test drive</Link>
+              <Link href="/test-drive" className="bg-geely-blue text-white px-4 py-2 font-semibold">Book a test drive</Link>
               <Link href="/dealers" className="border border-line dark:border-midnight-line text-navy dark:text-ice px-4 py-2 rounded font-semibold">Find a dealer</Link>
             </div>
           </div>
@@ -114,7 +120,7 @@ export default function ContactPage() {
                 <textarea required rows={6} value={form.message} onChange={(e) => update("message", e.target.value)} placeholder="How can we help? *" className="w-full border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg px-4 py-3" />
                 <label className="flex items-start gap-3 text-sm text-steel dark:text-steel-light"><input required type="checkbox" checked={form.consentGiven} onChange={(e) => update("consentGiven", e.target.checked)} className="mt-1" /> I agree that Geely Ethiopia may use my details to respond to this enquiry.</label>
                 {error && <p className="text-red-600 text-sm">{error}</p>}
-                <button disabled={loading} className="inline-flex items-center gap-2 bg-geely-blue text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50"><Send size={17} />{loading ? "Sending..." : "Send enquiry"}</button>
+                <button disabled={loading} className="inline-flex items-center gap-2 bg-geely-blue text-white px-6 py-3 font-bold disabled:opacity-50"><Send size={17} />{loading ? "Sending..." : "Send enquiry"}</button>
               </form>
             )}
           </div>

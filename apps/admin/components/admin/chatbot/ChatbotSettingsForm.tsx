@@ -18,7 +18,7 @@ interface ChatbotAiStatus {
 
 const DEFAULT_CONFIG: ChatbotConfig = {
   enabled: true,
-  greeting: "Hi! I'm the Geely Assistant. Ask me about our models, test drives, promotions, financing, or dealer locations.",
+  greeting: "Hello, and welcome to Kerchanshe Geely Ethiopia! 👋 I'm the Geely Assistant — I can help with our models, test drives, financing, workshop servicing, genuine parts, promotions, or finding your nearest dealer. What can I help you with today?",
   logoUrl: '/assets/logos/geely-logo.png',
   primaryColor: '#194BFF',
   fallbackMessage: "I couldn't find an answer to that. Our team is happy to help you directly on WhatsApp.",
@@ -214,7 +214,7 @@ export default function ChatbotSettingsForm() {
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-end">
               <div className="w-80 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-3 flex items-center gap-2 text-white" style={{ backgroundColor: config.primaryColor }}>
-                  <img src={config.logoUrl} alt="" className="h-6 w-6 rounded-full bg-white object-contain" />
+                  <img src={config.logoUrl} alt="" className="h-9 w-9 rounded-full bg-white object-contain p-0.5" />
                   <span className="font-semibold text-sm">Geely Assistant</span>
                 </div>
                 <div className="p-3 text-sm text-gray-700 bg-gray-50">{config.greeting}</div>

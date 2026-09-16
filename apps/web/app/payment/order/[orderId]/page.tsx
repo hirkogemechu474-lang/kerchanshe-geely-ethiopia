@@ -11,6 +11,8 @@ interface OrderPaymentSummary {
   customerName: string;
   vehicleModel: string;
   totalPrice: number | null;
+  amountPaid: number | null;
+  outstandingAmount: number | null;
   paymentStatus: 'UNPAID' | 'PENDING_REVIEW' | 'PAID';
   paymentProofUrl: string | null;
 }
@@ -128,6 +130,20 @@ export default function OrderPaymentPage() {
             <p className="text-steel dark:text-steel-light text-sm mb-6">
               {order.customerName} · {order.vehicleModel}
             </p>
+
+            {order.paymentStatus !== 'PAID' && order.outstandingAmount != null && (
+              <div className="mb-6 rounded-lg bg-ice dark:bg-midnight border border-line dark:border-midnight-line px-4 py-3">
+                <p className="text-xs text-steel dark:text-steel-light">Amount Due</p>
+                <p className="text-2xl font-bold text-navy dark:text-ice">
+                  ETB {order.outstandingAmount.toLocaleString()}
+                </p>
+                {order.amountPaid ? (
+                  <p className="text-xs text-steel dark:text-steel-light mt-1">
+                    ETB {order.amountPaid.toLocaleString()} already paid of ETB {(order.totalPrice ?? 0).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            )}
 
             {submitError && <p className="text-sm text-red-600 mb-4">{submitError}</p>}
 

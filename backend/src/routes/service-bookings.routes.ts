@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { convertToJobCardService } from '../services/serviceBookings/convertToJobCard.service';
+import { serviceBookingService } from '../services/serviceBookings/serviceBooking.service';
 
 const router = Router();
 
@@ -33,14 +34,14 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/service-bookings/stats (admin aggregate stats — global counts the
-// paginated list above can't provide on its own)
+// GET /api/service-bookings/stats (admin aggregate stats)
 router.get('/stats', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const [scheduled, inProgress, completed, technicians] = await Promise.all([
-      prisma.serviceBooking.count({ where: { status: 'scheduled' } }),
-      prisma.serviceBooking.count({ where: { status: 'in_progress' } }),
-      prisma.serviceBooking.count({ where: { status: 'completed' } }),
+    const [scheduled, inProgress, completed, pending, technicians] = await Promise.all([
+      prisma.serviceBooking.count({ where: { status: { in: ['scheduled', 'SCHEDULED'] } } }),
+      prisma.serviceBooking.count({ where: { status: { in: ['in_progress', 'IN_PROGRESS'] } } }),
+      prisma.serviceBooking.count({ where: { status: { in: ['completed', 'COMPLETED'] } } }),
+      prisma.serviceBooking.count({ where: { status: { in: ['pending', 'PENDING'] } } }),
       prisma.serviceBooking.findMany({
         where: { technician: { not: null } },
         select: { technician: true },
@@ -48,7 +49,7 @@ router.get('/stats', requireAdminApiSession, async (req: Request, res: Response)
       }),
     ]);
 
-    res.json({ scheduled, inProgress, completed, technicianCount: technicians.length });
+    res.json({ scheduled: scheduled + pending, inProgress, completed, technicianCount: technicians.length });
   } catch (error) {
     console.error('Service booking stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -58,10 +59,31 @@ router.get('/stats', requireAdminApiSession, async (req: Request, res: Response)
 // POST /api/service-bookings (admin create)
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
-    const booking = await prisma.serviceBooking.create({
-      data: { ...req.body, createdById: req.adminSession!.user.id },
+    const { customerName, customerPhone, customerEmail, nationalId, vehicleInfo, serviceType, date, timeSlot, vehicleYear, mileage, vin, location, notes } = req.body;
+
+    const result = await serviceBookingService.create({
+      customerName: customerName || '',
+      customerPhone: customerPhone || '',
+      customerEmail: customerEmail || '',
+      nationalId,
+      serviceType: serviceType || '',
+      vehicleInfo: vehicleInfo || '',
+      date: date || new Date().toISOString(),
+      timeSlot,
+      vehicleYear,
+      mileage,
+      vin,
+      location,
+      notes,
+      createdById: req.adminSession!.user.id,
     });
-    res.status(201).json(booking);
+
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json(result.data);
   } catch (error) {
     console.error('Create service booking error:', error);
     res.status(500).json({ error: 'Internal server error' });

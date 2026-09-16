@@ -94,7 +94,7 @@ export default async function FAQPage() {
             </a>
             <Link
               href="/dealers"
-              className="inline-flex items-center justify-center bg-white dark:bg-midnight-surface/10 text-white border border-white/30 px-8 py-4 rounded-lg font-bold hover:bg-white/20 transition-colors"
+              className="inline-flex items-center justify-center bg-white dark:bg-midnight-surface/10 text-white border border-white/30 px-8 py-4 font-bold hover:bg-white/20 transition-colors"
             >
               Find a Dealer
             </Link>

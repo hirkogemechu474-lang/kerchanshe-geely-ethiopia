@@ -152,7 +152,7 @@ export default async function NewsArticlePage({ params }: Props) {
       <div className="py-12 text-center">
         <Link
           href="/news"
-          className="inline-block bg-navy text-white font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-colors"
+          className="inline-block bg-navy text-white font-bold px-8 py-3 hover:bg-opacity-90 transition-colors"
         >
           View All News
         </Link>

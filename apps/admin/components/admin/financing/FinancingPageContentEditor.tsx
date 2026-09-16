@@ -20,7 +20,7 @@ import {
 import {
   mergeFinancingPageContent,
   type FinancingPageContent,
-} from '@geely/types';
+} from '@/types';
 
 function mergeDeep<T>(base: T, patch: T): T {
   if (Array.isArray(base) || Array.isArray(patch)) {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar, User, Eye, Tag, Edit, Trash2, ArrowLeft, Globe, Save, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { Card, Button, Badge, type Tone } from "@/components/admin/ui";
+import { uploadAndRegisterMedia } from "@/lib/mediaUpload";
 
 interface NewsArticle {
   id: string;
@@ -102,24 +103,10 @@ export default function NewsDetailPage({ params }: { params: Promise<{ id: strin
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('category', 'news');
-
     try {
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload image');
-      }
-
-      setEditData(prev => ({ ...prev, image: data.url }));
-      setImagePreview(data.url);
+      const asset = await uploadAndRegisterMedia(file, { category: 'news' });
+      setEditData(prev => ({ ...prev, image: asset.url }));
+      setImagePreview(asset.url);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to upload image');

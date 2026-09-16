@@ -97,7 +97,7 @@ const FALLBACK_CONTACT: ContactInfo = {
     },
   },
   phone: {
-    primary: '+251 11 000 0000',
+    primary: '+251 99 338 9874',
     sales: '+251 11 000 0001',
     service: '+251 11 000 0002',
     parts: '+251 11 000 0003',

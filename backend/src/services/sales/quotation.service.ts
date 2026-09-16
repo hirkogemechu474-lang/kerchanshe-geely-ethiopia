@@ -37,6 +37,7 @@ export const quotationService = {
     tradeInInterest?: boolean;
     source?: string;
     configurationJson?: any;
+    internalNotes?: string;
     assignedTo?: string;
     autoAssign?: boolean;
     assignmentFactors?: AssignmentFactors;
@@ -67,6 +68,7 @@ export const quotationService = {
         tradeInInterest: data.tradeInInterest,
         source: data.source,
         configurationJson: data.configurationJson,
+        internalNotes: data.internalNotes,
         reference,
         status: 'new',
         managerApprovalStatus: 'PENDING',
@@ -129,6 +131,7 @@ export const quotationService = {
             assignedTo: assignedUser.name,
             adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
           };
+          const ctas = [{ label: 'View Quotation', url: data.adminLink }];
           // Two separate dispatches — not one email BCC'd to everyone — so the
           // "Hello {name}," greeting actually addresses the assigned agent
           // instead of also appearing on the managers' copy.
@@ -138,6 +141,7 @@ export const quotationService = {
             subject,
             greetingName: assignedUser.name,
             data,
+            ctas,
             inApp: {
               type: 'lead_assignment',
               title: 'New Quotation Assigned',
@@ -156,6 +160,7 @@ export const quotationService = {
               to: managerEmails,
               subject,
               data,
+              ctas,
               inApp: {
                 type: 'lead_assignment',
                 title: 'New Quotation Assigned',
@@ -239,7 +244,7 @@ export const quotationService = {
                 vehicleModel: quotation.vehicleModel,
                 reason: `Auto-escalation after ${timeoutMinutes} minutes without a response from the previous assignee.`,
                 nextStep: 'Please contact the customer as soon as possible.',
-                adminLink: `${process.env.ADMIN_URL || 'http://localhost:7500'}/admin/quotations/${quotation.id}`,
+                adminLink: `${env.urls.admin}/admin/quotations/${quotation.id}`,
               },
               inApp: {
                 type: 'lead_assignment',

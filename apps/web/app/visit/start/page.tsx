@@ -195,7 +195,7 @@ export default function VisitStartPage() {
                     <Link
                       href={`/dealers/${dealer.id}`}
                       aria-label={`View details for ${dealer.name}`}
-                      className="flex-1 text-center bg-geely-blue text-white text-xs font-bold py-2 px-3 rounded hover:bg-opacity-90 transition-all"
+                      className="flex-1 text-center bg-geely-blue text-white text-xs font-bold py-2 px-3 hover:bg-opacity-90 transition-all"
                     >
                       View Details
                     </Link>

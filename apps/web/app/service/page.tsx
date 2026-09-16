@@ -6,7 +6,8 @@ import Image from "next/image";
 import imageLoader from "@/lib/imageLoader";
 import { MainLayout } from "@/components/MainLayout";
 import { getDealers, type Dealer } from "@/lib/api";
-import { CheckCircle, Wrench, Clock, Shield } from "lucide-react";
+import { validateGenericIdOrLicense } from "@/lib/idValidation";
+import { CheckCircle, Wrench, Clock, Shield, User, Car, CalendarClock, ArrowRight, CalendarCheck } from "lucide-react";
 
 interface ServiceFormData {
   firstName: string;
@@ -32,6 +33,13 @@ export default function ServicePage() {
   const [submitError, setSubmitError] = useState('');
   const [serviceCenters, setServiceCenters] = useState<Dealer[]>([]);
   const [bookingReference, setBookingReference] = useState<string | null>(null);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+
+  useEffect(() => {
+    if (showBookingForm) {
+      document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [showBookingForm]);
 
   // Fetch service centers from CMS
   useEffect(() => {
@@ -108,8 +116,8 @@ export default function ServicePage() {
       <MainLayout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-10 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="text-green-600" size={40} />
+            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="text-green-600 dark:text-green-400" size={40} />
             </div>
             <h1 className="disp text-4xl font-bold text-navy dark:text-ice mb-4">
               Service Appointment Confirmed!
@@ -137,7 +145,7 @@ export default function ServicePage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
               >
                 Book Another Service
               </button>
@@ -163,10 +171,12 @@ export default function ServicePage() {
 
   return (
     <MainLayout>
+      {!showBookingForm && (
+      <>
       {/* Hero */}
-      <div className="relative min-h-[420px] md:h-[480px] bg-white overflow-hidden">
+      <div className="relative min-h-[460px] md:h-[520px] bg-white dark:bg-midnight-surface overflow-hidden">
         <Image
-          src="/images/vehicles/atlas-real.jpg"
+          src="/uploads/seed/models/global/images/global-kv-1.jpg"
           alt="Geely vehicle ready for service"
           loader={imageLoader}
           fill
@@ -174,7 +184,7 @@ export default function ServicePage() {
           sizes="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/75 to-white/10 dark:from-midnight-surface dark:via-midnight-surface/75 dark:to-midnight-surface/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/20 dark:from-midnight-surface dark:via-midnight-surface/85 dark:to-midnight-surface/20" />
         <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 h-full flex flex-col justify-center py-16">
           <div className="text-[13px] tracking-[0.14em] text-geely-blue font-bold mb-3">
             PROFESSIONAL SERVICE
@@ -189,8 +199,8 @@ export default function ServicePage() {
             Owning a Geely is a long-term relationship built on trust, quality, and care. Our maintenance plans, genuine parts, and nationwide support keep your vehicle running the way it was built to, wherever you are in Ethiopia.
           </p>
           <button
-            onClick={() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" })}
-            className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all w-fit"
+            onClick={() => setShowBookingForm(true)}
+            className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all w-fit"
           >
             Book Service
           </button>
@@ -201,14 +211,14 @@ export default function ServicePage() {
       <section className="py-16 bg-ice dark:bg-midnight">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative rounded-lg overflow-hidden shadow-lg aspect-[4/3] bg-black">
+            <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
               <Image
-                src="/images/vehicles/coolray-studio.png"
-                alt="Geely vehicle at a certified service center"
+                src="/uploads/seed/models/ex2/images/interior/interior-horizon-gray-front.jpg"
+                alt="Advanced diagnostics inside a Geely cockpit"
                 loader={imageLoader}
                 fill
                 sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-contain"
+                className="object-cover"
               />
             </div>
             <div>
@@ -264,30 +274,68 @@ export default function ServicePage() {
         </div>
       </section>
 
+      {/* Booking CTA */}
+      <section className="relative overflow-hidden text-white py-24">
+        <Image
+          src="/uploads/seed/models/ex2/images/lifestyle/lifestyle-1.jpg"
+          alt=""
+          loader={imageLoader}
+          fill
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-navy/80" />
+        <div className="relative max-w-[1280px] mx-auto px-4 text-center">
+          <div className="text-[13px] tracking-[0.14em] text-white/70 font-bold mb-3">
+            SCHEDULE YOUR VISIT
+          </div>
+          <h2 className="disp text-3xl md:text-4xl font-bold mb-4">Ready to Book Your Service?</h2>
+          <p className="text-[#d8e4f5] max-w-xl mx-auto mb-8 leading-relaxed">
+            Tell us about your vehicle and preferred time, and our team will confirm your appointment within 24 hours.
+          </p>
+          <button
+            onClick={() => setShowBookingForm(true)}
+            className="inline-flex items-center gap-2 bg-white text-navy px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-colors"
+          >
+            <CalendarCheck size={20} />
+            Book a Service
+            <ArrowRight size={20} />
+          </button>
+        </div>
+      </section>
+      </>
+      )}
+
       {/* Form Section */}
-      <section id="booking-form" className="py-16">
+      {showBookingForm && (
+      <section id="booking-form" className="py-16 bg-ice dark:bg-midnight">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
-            {submitError && <div className="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</div>}
-            <div className="bg-ice p-6 border-b border-line">
-              <h2 className="text-2xl font-bold text-navy">Book Your Service</h2>
-              <p className="text-sm text-steel mt-1">Fill in the details below to schedule your service appointment</p>
+          <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line shadow-xl overflow-hidden">
+            {submitError && <div className="mx-6 mt-6 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">{submitError}</div>}
+            <div className="bg-ice dark:bg-midnight p-6 border-b border-line dark:border-midnight-line">
+              <h2 className="text-2xl font-bold text-navy dark:text-ice">Book Your Service</h2>
+              <p className="text-sm text-steel dark:text-steel-light mt-1">Fill in the details below to schedule your service appointment</p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-8">
               {/* Personal Information */}
               <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Personal Information</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-geely-blue text-white flex items-center justify-center shrink-0">
+                    <User size={16} />
+                  </div>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice">Personal Information</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("firstName", { required: "First name is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.firstName ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.firstName ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="Enter your first name"
                     />
@@ -297,14 +345,14 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("lastName", { required: "Last name is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.lastName ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.lastName ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="Enter your last name"
                     />
@@ -314,7 +362,7 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -326,8 +374,8 @@ export default function ServicePage() {
                           message: "Invalid email address",
                         },
                       })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.email ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.email ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="your.email@example.com"
                     />
@@ -337,7 +385,7 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -349,8 +397,8 @@ export default function ServicePage() {
                           message: "Invalid phone number",
                         },
                       })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.phone ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.phone ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="+251 99 338 9874"
                     />
@@ -360,16 +408,17 @@ export default function ServicePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       National ID / Driver&apos;s License <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("nationalId", {
                         required: "National ID or Driver's License number is required",
+                        validate: validateGenericIdOrLicense,
                       })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.nationalId ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.nationalId ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="Enter your ID or license number"
                     />
@@ -381,18 +430,23 @@ export default function ServicePage() {
               </div>
 
               {/* Vehicle Information */}
-              <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Vehicle Information</h3>
+              <div className="pt-6 border-t border-line dark:border-midnight-line">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-geely-blue text-white flex items-center justify-center shrink-0">
+                    <Car size={16} />
+                  </div>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice">Vehicle Information</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Vehicle Model <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("vehicleModel", { required: "Vehicle model is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleModel ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.vehicleModel ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="e.g., Geely Coolray"
                     />
@@ -402,7 +456,7 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Year <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -412,8 +466,8 @@ export default function ServicePage() {
                         min: { value: 2015, message: "Year must be 2015 or later" },
                         max: { value: 2027, message: "Invalid year" },
                       })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleYear ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.vehicleYear ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="2024"
                     />
@@ -423,14 +477,14 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Current Mileage <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
                       {...register("mileage", { required: "Mileage is required" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.mileage ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.mileage ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="e.g., 25000"
                     />
@@ -440,13 +494,13 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       VIN (Optional)
                     </label>
                     <input
                       type="text"
                       {...register("vin")}
-                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue"
                       placeholder="Vehicle Identification Number"
                     />
                   </div>
@@ -454,17 +508,22 @@ export default function ServicePage() {
               </div>
 
               {/* Service Details */}
-              <div>
-                <h3 className="text-lg font-bold text-navy mb-4">Service Details</h3>
+              <div className="pt-6 border-t border-line dark:border-midnight-line">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-geely-blue text-white flex items-center justify-center shrink-0">
+                    <CalendarClock size={16} />
+                  </div>
+                  <h3 className="text-lg font-bold text-navy dark:text-ice">Service Details</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Service Type <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("serviceType", { required: "Please select a service type" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.serviceType ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.serviceType ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Choose service type</option>
@@ -480,7 +539,7 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Preferred Date <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -495,8 +554,8 @@ export default function ServicePage() {
                         },
                       })}
                       min={new Date().toISOString().split("T")[0]}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredDate ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.preferredDate ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                     />
                     {errors.preferredDate && (
@@ -505,13 +564,13 @@ export default function ServicePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Preferred Time <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("preferredTime", { required: "Please select a time slot" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.preferredTime ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.preferredTime ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Choose a time slot</option>
@@ -527,13 +586,13 @@ export default function ServicePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Service Center <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...register("location", { required: "Please select a location" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.location ? "border-red-500" : "border-line"
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
+                        errors.location ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                     >
                       <option value="">Choose a service center</option>
@@ -549,13 +608,13 @@ export default function ServicePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Description of Issue / Service Needed
                     </label>
                     <textarea
                       {...register("description")}
                       rows={4}
-                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue"
                       placeholder="Please describe any issues or specific service requirements..."
                     ></textarea>
                   </div>
@@ -563,7 +622,7 @@ export default function ServicePage() {
               </div>
 
               {/* Consent */}
-              <div className="flex items-start gap-3 p-4 bg-ice rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-ice dark:bg-midnight rounded-lg">
                 <input
                   type="checkbox"
                   {...register("consent", {
@@ -572,7 +631,7 @@ export default function ServicePage() {
                   className="mt-1 w-4 h-4 accent-geely-blue"
                 />
                 <div>
-                  <label className="text-sm text-navy">
+                  <label className="text-sm text-navy dark:text-ice">
                     <span className="text-red-500">* </span>
                     I agree to be contacted by Geely Ethiopia regarding my service appointment and consent to the collection of my personal information as per the{" "}
                     <a href="/privacy" className="text-geely-blue hover:underline">
@@ -591,7 +650,7 @@ export default function ServicePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 rounded-lg transition-all ${
+                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 shadow-lg shadow-geely-blue/20 transition-all ${
                     isSubmitting
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-opacity-90"
@@ -599,16 +658,15 @@ export default function ServicePage() {
                 >
                   {isSubmitting ? "Submitting..." : "Schedule Service"}
                 </button>
-                <p className="text-xs text-steel text-center mt-3">
+                <p className="text-xs text-steel dark:text-steel-light text-center mt-3">
                   We'll confirm your appointment within 24 hours
                 </p>
               </div>
             </div>
           </form>
-
-        
         </div>
       </section>
+      )}
     </MainLayout>
   );
 }

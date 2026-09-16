@@ -17,7 +17,7 @@ import { randomBytes } from 'crypto';
 // own rewrite (proxying to the admin origin) and the backend's own upload
 // handler already agree on that location.
 const UPLOAD_ROOT = path.resolve(process.cwd(), '..', 'admin', 'public', 'uploads');
-const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024;
 
 function sanitizeSegment(name: unknown): string {
   if (typeof name !== 'string' || !name) return '';
@@ -41,7 +41,7 @@ export async function handleLocalUpload(req: NextRequest): Promise<NextResponse>
     return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: 'File is too large. Maximum upload size is 100MB.' }, { status: 413 });
+    return NextResponse.json({ error: 'File is too large. Maximum upload size is 1GB.' }, { status: 413 });
   }
 
   try {

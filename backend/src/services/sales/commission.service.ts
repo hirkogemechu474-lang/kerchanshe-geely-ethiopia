@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
+import { env } from '../../config/env';
 
 export const commissionService = {
   /**
@@ -18,7 +19,8 @@ export const commissionService = {
           originalSalesAgentId: agentId,
           salesAgentId: agentId,
           commissionSplitPercent: 100,
-          commissionStatus: 'NOT_APPLICABLE',
+          commissionRate: env.commission.defaultRate,
+          commissionStatus: 'PENDING',
         },
       });
 
@@ -123,7 +125,7 @@ export const commissionService = {
       if (!order.salesAgentId) return { ok: false, error: 'No sales agent assigned to this order.' };
 
       // Calculate commission amount based on split
-      const rate = order.commissionRate ?? 0;
+      const rate = order.commissionRate ?? env.commission.defaultRate;
       const totalCommission = (order.totalPrice ?? 0) * rate / 100;
       const agentCommission = totalCommission * (order.commissionSplitPercent ?? 100) / 100;
 

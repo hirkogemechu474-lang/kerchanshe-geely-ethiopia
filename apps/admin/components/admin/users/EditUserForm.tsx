@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Mail, Shield, Building, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Shield, Building, UserX, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
-import { ROLE_OPTIONS } from '@geely/types';
+import { ROLE_OPTIONS } from '@/types';
 
 export default function EditUserForm({ id }: { id: string }) {
   const router = useRouter();
@@ -28,10 +28,12 @@ export default function EditUserForm({ id }: { id: string }) {
   });
   const [brandIds, setBrandIds] = useState<string[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [dealers, setDealers] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     fetchUser();
     fetchBrands();
+    fetchDealers();
   }, [id]);
 
   const fetchUser = async () => {
@@ -67,6 +69,18 @@ export default function EditUserForm({ id }: { id: string }) {
       if (response.ok) setBrands(await response.json());
     } catch {
       // Non-fatal — specialization multi-select just stays empty.
+    }
+  };
+
+  const fetchDealers = async () => {
+    try {
+      const response = await fetch('/api/dealers?pageSize=1000');
+      if (response.ok) {
+        const data = await response.json();
+        setDealers(data.dealers ?? []);
+      }
+    } catch {
+      // Non-fatal — dealer dropdown just stays unavailable.
     }
   };
 
@@ -110,8 +124,8 @@ export default function EditUserForm({ id }: { id: string }) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const handleDeactivate = async () => {
+    if (!confirm('Deactivate this user? They will no longer be able to log in, but their record and history are kept — you can reactivate them here at any time.')) {
       return;
     }
 
@@ -126,12 +140,12 @@ export default function EditUserForm({ id }: { id: string }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete user');
+        throw new Error(data.error || 'Failed to deactivate user');
       }
 
       router.push('/admin/users');
     } catch (err: any) {
-      setError(err.message || 'Failed to delete user');
+      setError(err.message || 'Failed to deactivate user');
       setDeleting(false);
     }
   };
@@ -166,14 +180,16 @@ export default function EditUserForm({ id }: { id: string }) {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-          User updated successfully! Redirecting...
+        <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>User updated successfully! Redirecting...</span>
         </div>
       )}
 
@@ -237,21 +253,24 @@ export default function EditUserForm({ id }: { id: string }) {
             <RolePermissionPreview role={formData.role} />
           </div>
 
-          {/* Dealer ID (Optional) */}
+          {/* Dealer (Optional) */}
           <div>
             <label htmlFor="dealerId" className="block text-sm font-medium text-gray-700 mb-2">
               <Building className="w-4 h-4 inline mr-2" />
-              Dealer ID (Optional)
+              Dealer Location (Optional)
             </label>
-            <input
-              type="text"
+            <select
               id="dealerId"
               name="dealerId"
               value={formData.dealerId}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
-              placeholder="Leave empty for headquarters staff"
-            />
+            >
+              <option value="">Headquarters (no dealer)</option>
+              {dealers.map((dealer) => (
+                <option key={dealer.id} value={dealer.id}>{dealer.name}</option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-gray-500">
               Assign this user to a specific dealer location (for dealer-specific staff)
             </p>
@@ -362,9 +381,15 @@ export default function EditUserForm({ id }: { id: string }) {
 
         {/* Footer */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
-          <Button type="button" variant="danger" onClick={handleDelete} disabled={deleting || saving}>
-            <Trash2 className="w-4 h-4" />
-            {deleting ? 'Deleting...' : 'Delete User'}
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleDeactivate}
+            disabled={deleting || saving || !formData.isActive}
+            title={!formData.isActive ? 'Already deactivated — toggle "active" above and save to reactivate' : undefined}
+          >
+            <UserX className="w-4 h-4" />
+            {deleting ? 'Deactivating...' : formData.isActive ? 'Deactivate User' : 'Already Deactivated'}
           </Button>
           <div className="flex items-center gap-3">
             <Link

@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
 import apiClient from '@/lib/apiClient';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 
 type FeatureCard = { icon: string; title: string; description: string; image?: string };
 type HighlightItem = { value: string; label: string };
@@ -272,9 +273,9 @@ function LabelField(props: { label: string; required?: boolean; children: React.
 const baseInput =
   'w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-geely-blue/30 focus:border-blue-500 transition';
 
-// Uploads through the generic /api/upload endpoint (not /api/upload/image,
-// which server-side is identical but the ImageUploader component hardcodes
-// an `image/*` client-side check that would reject video files).
+// Uses the shared Media Library upload+register utility instead of posting
+// to /api/upload directly, since ImageUploader hardcodes an `image/*`
+// client-side check that would reject these video files.
 function VideoUploader({
   value, onChange, hint, maxSizeMB = 100,
 }: { value: string; onChange: (url: string) => void; hint?: string; maxSizeMB?: number }) {
@@ -293,14 +294,8 @@ function VideoUploader({
     }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', 'about');
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      const json = await res.json();
-      if (!json?.url) throw new Error('No URL returned from upload API');
-      onChange(json.url);
+      const asset = await uploadAndRegisterMedia(file, { category: 'about' });
+      onChange(asset.url);
     } catch (e) {
       setError((e as Error).message || 'Failed to upload video');
     } finally {

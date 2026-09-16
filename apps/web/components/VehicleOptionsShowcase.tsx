@@ -23,6 +23,7 @@ interface InteriorOption {
   materialType: string;
   imageUrl: string;
   isDefault: boolean;
+  images?: string[] | null;
 }
 
 interface WheelOption {
@@ -31,6 +32,7 @@ interface WheelOption {
   size: string;
   imageUrl: string;
   isDefault: boolean;
+  images?: string[] | null;
 }
 
 interface PackageOption {
@@ -49,6 +51,7 @@ interface AccessoryOption {
   description: string | null;
   category: string;
   imageUrl: string;
+  images?: string[] | null;
 }
 
 interface VehicleOptionsShowcaseProps {
@@ -277,13 +280,29 @@ export function VehicleOptionsShowcase({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {wheels.map((w) => (
-                    <div
+                    <button
                       key={w.id}
-                      className="p-3 rounded-xl border border-line dark:border-midnight-line bg-white dark:bg-midnight-surface text-center"
+                      type="button"
+                      onClick={() =>
+                        w.imageUrl &&
+                        setLightbox({
+                          title: `${w.name} (${w.size})`,
+                          images: [w.imageUrl, ...(w.images || [])].filter(Boolean) as string[],
+                        })
+                      }
+                      disabled={!w.imageUrl}
+                      className="rounded-xl border border-line dark:border-midnight-line bg-white dark:bg-midnight-surface text-center overflow-hidden"
                     >
-                      <div className="text-xs text-navy font-semibold">{w.size}</div>
-                      <div className="text-[10px] text-steel dark:text-steel-light mt-0.5">{w.name}</div>
-                    </div>
+                      {w.imageUrl ? (
+                        <div className="w-full aspect-square bg-mesh-blue">
+                          <ImageWithFallback src={w.imageUrl} alt={w.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : null}
+                      <div className="p-2">
+                        <div className="text-xs text-navy font-semibold">{w.size}</div>
+                        <div className="text-[10px] text-steel dark:text-steel-light mt-0.5">{w.name}</div>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -367,12 +386,34 @@ export function VehicleOptionsShowcase({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {interiors.map((i) => (
-                    <div key={i.id} className="p-4 rounded-xl border border-line bg-white">
-                      <div className="font-bold text-navy text-sm">{i.name}</div>
-                      <div className="text-xs text-steel mt-0.5">{i.materialType}</div>
-                      {i.description && (
-                        <div className="text-xs text-steel mt-1">{i.description}</div>
+                    <div key={i.id} className="rounded-xl border border-line bg-white overflow-hidden">
+                      {i.imageUrl && (
+                        <div className="w-full aspect-[16/9] bg-mesh-blue relative group">
+                          <ImageWithFallback src={i.imageUrl} alt={i.name} className="w-full h-full object-cover" />
+                          {Array.isArray(i.images) && i.images.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLightbox({
+                                  title: i.name,
+                                  images: [i.imageUrl, ...i.images!].filter(Boolean) as string[],
+                                })
+                              }
+                              aria-label={`View more photos of ${i.name}`}
+                              className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md hover:bg-black/80 transition-colors"
+                            >
+                              <Camera size={12} /> View Photos
+                            </button>
+                          )}
+                        </div>
                       )}
+                      <div className="p-4">
+                        <div className="font-bold text-navy text-sm">{i.name}</div>
+                        <div className="text-xs text-steel mt-0.5">{i.materialType}</div>
+                        {i.description && (
+                          <div className="text-xs text-steel mt-1">{i.description}</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -386,14 +427,36 @@ export function VehicleOptionsShowcase({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {accessories.map((a) => (
-                    <div key={a.id} className="p-4 rounded-xl border border-line bg-white">
-                      <div className="text-[10px] text-active-blue font-bold mb-1 uppercase tracking-wide">
-                        {a.category}
-                      </div>
-                      <div className="font-bold text-navy text-sm">{a.name}</div>
-                      {a.description && (
-                        <div className="text-xs text-steel mt-1">{a.description}</div>
+                    <div key={a.id} className="rounded-xl border border-line bg-white overflow-hidden">
+                      {a.imageUrl && (
+                        <div className="w-full aspect-[16/9] bg-mesh-blue relative group">
+                          <ImageWithFallback src={a.imageUrl} alt={a.name} className="w-full h-full object-cover" />
+                          {Array.isArray(a.images) && a.images.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLightbox({
+                                  title: a.name,
+                                  images: [a.imageUrl, ...a.images!].filter(Boolean) as string[],
+                                })
+                              }
+                              aria-label={`View more photos of ${a.name}`}
+                              className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md hover:bg-black/80 transition-colors"
+                            >
+                              <Camera size={12} /> View Photos
+                            </button>
+                          )}
+                        </div>
                       )}
+                      <div className="p-4">
+                        <div className="text-[10px] text-active-blue font-bold mb-1 uppercase tracking-wide">
+                          {a.category}
+                        </div>
+                        <div className="font-bold text-navy text-sm">{a.name}</div>
+                        {a.description && (
+                          <div className="text-xs text-steel mt-1">{a.description}</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

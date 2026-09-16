@@ -19,6 +19,9 @@ export function getTransporter(): nodemailer.Transporter {
       user: env.smtp.user,
       pass: env.smtp.pass,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
   });
 
   return transporter;

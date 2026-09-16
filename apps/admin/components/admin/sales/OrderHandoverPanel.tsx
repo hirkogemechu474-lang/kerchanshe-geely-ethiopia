@@ -60,6 +60,10 @@ interface OrderHandoverData {
   handoverSignedDocumentUrl: string | null;
   handoverSignedAt: string | null;
   handoverCountersignedAt: string | null;
+  registrationNumber: string | null;
+  registeredAt: string | null;
+  invoiceNo: string | null;
+  invoicedAt: string | null;
   // Delivery & Handover Note format fields (Kerchanshe Trading PLC draft).
   deliveryNoteNo: string | null;
   odometerAtDelivery: number | null;
@@ -102,6 +106,8 @@ export default function OrderHandoverPanel({
   const [signOffError, setSignOffError] = useState('');
   const [signOffNotice, setSignOffNotice] = useState('');
   const [managerSignature, setManagerSignature] = useState<{ signedByName: string | null; signatureUrl: string | null } | null>(null);
+  const [managerLinkBusy, setManagerLinkBusy] = useState(false);
+  const [managerLinkNotice, setManagerLinkNotice] = useState('');
   const [itemsHandedOver, setItemsHandedOver] = useState<HandoverItemRow[]>(order.itemsHandedOver?.length ? order.itemsHandedOver : DEFAULT_ITEMS_HANDED_OVER);
   const [inspectionChecklist, setInspectionChecklist] = useState<InspectionRow[]>(order.inspectionChecklist?.length ? order.inspectionChecklist : DEFAULT_INSPECTION_CHECKLIST);
   const [evGuidanceChecklist, setEvGuidanceChecklist] = useState<EvGuidanceRow[]>(order.evGuidanceChecklist?.length ? order.evGuidanceChecklist : DEFAULT_EV_GUIDANCE_CHECKLIST);
@@ -169,6 +175,25 @@ export default function OrderHandoverPanel({
       setSignOffError(err.message);
     } finally {
       setSignOffBusy(false);
+    }
+  };
+
+  const sendManagerCountersignLink = async () => {
+    setManagerLinkBusy(true);
+    setManagerLinkNotice('');
+    try {
+      const res = await fetch(`/api/orders/${order.id}/send-handover-countersign-link`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Unable to send countersign link.');
+      setManagerLinkNotice(
+        data.notificationSent
+          ? 'Manager countersign link emailed successfully.'
+          : `Could not send email${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
+      );
+    } catch (err: any) {
+      setSignOffError(err.message);
+    } finally {
+      setManagerLinkBusy(false);
     }
   };
 
@@ -464,11 +489,35 @@ export default function OrderHandoverPanel({
                   {managerSignature?.signatureUrl && <p className="mt-1 text-green-700">Manager signature is on file.</p>}
                 </div>
               ) : canCountersign ? (
-                <Button onClick={countersign} disabled={signOffBusy}>
-                  {signOffBusy ? 'Countersigning…' : 'Countersign Handover'}
-                </Button>
+                <div className="space-y-2">
+                  <Button onClick={countersign} disabled={signOffBusy}>
+                    {signOffBusy ? 'Countersigning…' : 'Countersign Handover'}
+                  </Button>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Or email a countersign link to the manager so they can sign remotely.
+                    </p>
+                    <Button variant="secondary" onClick={sendManagerCountersignLink} disabled={managerLinkBusy}>
+                      {managerLinkBusy ? 'Sending…' : 'Send Manager Countersign Link'}
+                    </Button>
+                    {managerLinkNotice && <p className="text-xs text-blue-700 mt-1">{managerLinkNotice}</p>}
+                  </div>
+                </div>
               ) : (
-                <p className="text-orange-600">Awaiting manager countersignature.</p>
+                <div>
+                  <p className="text-orange-600">Awaiting manager countersignature.</p>
+                  {canManage && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Email a countersign link to the manager so they can sign remotely.
+                      </p>
+                      <Button variant="secondary" onClick={sendManagerCountersignLink} disabled={managerLinkBusy}>
+                        {managerLinkBusy ? 'Sending…' : 'Send Manager Countersign Link'}
+                      </Button>
+                      {managerLinkNotice && <p className="text-xs text-blue-700 mt-1">{managerLinkNotice}</p>}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

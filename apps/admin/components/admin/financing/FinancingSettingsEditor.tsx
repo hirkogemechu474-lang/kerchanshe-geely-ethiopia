@@ -159,7 +159,7 @@ const DEFAULT_SETTINGS: FinancingSettings = {
     balloonPaymentAvailable: false,
   },
   support: {
-    phone: '+251 11 000 0000',
+    phone: '+251 99 338 9874',
     email: 'financing@geely-ethiopia.com',
     whatsapp: '+251 99 338 9874',
     consultationAvailable: true,
@@ -1105,7 +1105,7 @@ export function FinancingSettingsEditor() {
                   value={settings.support.phone}
                   onChange={e => setSettings(s => ({ ...s, support: { ...s.support, phone: e.target.value } }))}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="+251 11 000 0000"
+                  placeholder="+251 99 338 9874"
                 />
               </div>
               <div>

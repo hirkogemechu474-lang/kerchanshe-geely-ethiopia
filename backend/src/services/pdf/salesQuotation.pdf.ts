@@ -40,8 +40,10 @@ export interface QuotationPdfData {
   validUntil?: Date | string | null;
   issuedAt?: Date | string | null;
   customerSignatureUrl?: string | null;
+  customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
   managerSignerName?: string | null;
+  managerSignedAt?: Date | string | null;
 }
 
 function salesTypeLabel(salesType?: string | null): string {
@@ -217,12 +219,18 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   ctx = ensureSpace(ctx, 100);
   drawSignatureBlock(
     ctx,
-    { heading: 'CUSTOMER', name: data.customerName, signatureImage: customerSignatureImage },
+    {
+      heading: 'CUSTOMER',
+      name: data.customerName,
+      signatureImage: customerSignatureImage,
+      date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+    },
     {
       heading: company.legalName.toUpperCase(),
       name: data.managerSignerName || data.salesExecutiveName,
       showStamp: true,
       signatureImage: managerSignatureImage,
+      date: data.managerSignedAt ? new Date(data.managerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );
 

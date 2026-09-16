@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
-import type { AdminRole, AdminPermissions, AdminSession as SharedAdminSession } from '@geely/types';
+import type { AdminRole, AdminPermissions, AdminSession as SharedAdminSession } from './types';
+import { ROLE_PERMISSIONS } from './types';
 import { serverApiClient } from '@/lib/serverApiClient';
 
 export interface AdminSession {
@@ -36,15 +37,19 @@ export const getSession = cache(async (): Promise<AdminSession | null> => {
     const user = data?.user;
     if (!user) return null;
 
+    // Backend JWT only carries { id, email, name, role }.
+    // Derive the full permission set from the role on the admin side.
+    const permissions: AdminPermissions = ROLE_PERMISSIONS[user.role as AdminRole] ?? ({} as AdminPermissions);
+
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
-      permissions: user.permissions,
+      permissions,
       expires,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, permissions: user.permissions, expires },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, permissions, expires },
     };
   } catch {
     return null;

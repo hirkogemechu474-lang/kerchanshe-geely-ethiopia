@@ -249,7 +249,7 @@ export default function DealersPage() {
                           <Link
                             href={`/dealers/${dealer.id}`}
                             aria-label={`View details for ${dealer.name}`}
-                            className="flex-1 text-center bg-geely-blue text-white text-sm font-bold py-2 px-4 rounded hover:bg-opacity-90 transition-all"
+                            className="flex-1 text-center bg-geely-blue text-white text-sm font-bold py-2 px-4 hover:bg-opacity-90 transition-all"
                           >
                             View Details
                           </Link>
@@ -304,7 +304,7 @@ export default function DealersPage() {
 href={`https://www.google.com/maps?q=${selectedDealer.coordinates.latitude},${selectedDealer.coordinates.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-center bg-geely-blue text-white text-xs font-bold py-2 px-4 rounded hover:bg-opacity-90 transition-all"
+                      className="block text-center bg-geely-blue text-white text-xs font-bold py-2 px-4 hover:bg-opacity-90 transition-all"
                     >
                       Get Directions
                     </a>
@@ -348,7 +348,7 @@ href={`https://www.google.com/maps?q=${selectedDealer.coordinates.latitude},${se
             </Link>
             <Link
               href="/service"
-              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 rounded hover:bg-white hover:bg-opacity-10 transition-all"
+              className="border border-white border-opacity-50 text-white font-semibold text-sm px-8 py-4 hover:bg-white hover:bg-opacity-10 transition-all"
             >
               Schedule Service
             </Link>

@@ -26,7 +26,10 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/reviews (submit review)
 router.post('/', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const review = await prisma.review.create({ data: req.body });
+    const { fullName, email, vehicleModel, rating, reviewTitle, reviewMessage, profileImage } = req.body;
+    const review = await prisma.review.create({
+      data: { fullName, email, vehicleModel, rating, reviewTitle, reviewMessage, profileImage },
+    });
     res.status(201).json(review);
   } catch (error) {
     console.error('Submit review error:', error);

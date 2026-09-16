@@ -63,7 +63,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
   },
   [AdminRole.SALES]: {
     canManageContent: false, canViewContent: true,
-    canManageVehicles: false, canViewVehicles: true,
+    canManageVehicles: true, canViewVehicles: true,
     canManageTestDrives: true, canViewTestDrives: true,
     canManageQuotations: true, canViewQuotations: true, canCountersignAgreements: false,
     canManageDealers: false, canViewDealers: true,

@@ -1,18 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Mail, Lock, Shield, Building } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Lock, Shield, Building, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import RolePermissionPreview from '@/components/admin/users/RolePermissionPreview';
-import { ROLE_OPTIONS } from '@geely/types';
+import { ROLE_OPTIONS } from '@/types';
+
+const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 
 export default function NewUserForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [dealers, setDealers] = useState<{ id: string; name: string }[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +28,15 @@ export default function NewUserForm() {
     dealerId: '',
     isActive: true,
   });
+
+  useEffect(() => {
+    fetch('/api/dealers?pageSize=1000')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setDealers(data.dealers ?? []))
+      .catch(() => {
+        // Non-fatal — dealer assignment just stays unavailable.
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +52,8 @@ export default function NewUserForm() {
     }
 
     // Validate password strength
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    if (!PASSWORD_RULE.test(formData.password)) {
+      setError('Password must be at least 8 characters long and include letters and numbers');
       setLoading(false);
       return;
     }
@@ -97,14 +111,16 @@ export default function NewUserForm() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-          User created successfully! Redirecting...
+        <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>User created successfully! Redirecting...</span>
         </div>
       )}
 
@@ -154,17 +170,28 @@ export default function NewUserForm() {
                 <Lock className="w-4 h-4 inline mr-2" />
                 Password *
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={8}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
-                placeholder="Min. 8 characters"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                  placeholder="Min. 8 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -172,17 +199,28 @@ export default function NewUserForm() {
                 <Lock className="w-4 h-4 inline mr-2" />
                 Confirm Password *
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                minLength={8}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
-                placeholder="Re-enter password"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                  placeholder="Re-enter password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -211,21 +249,24 @@ export default function NewUserForm() {
             <RolePermissionPreview role={formData.role} />
           </div>
 
-          {/* Dealer ID (Optional) */}
+          {/* Dealer (Optional) */}
           <div>
             <label htmlFor="dealerId" className="block text-sm font-medium text-gray-700 mb-2">
               <Building className="w-4 h-4 inline mr-2" />
-              Dealer ID (Optional)
+              Dealer Location (Optional)
             </label>
-            <input
-              type="text"
+            <select
               id="dealerId"
               name="dealerId"
               value={formData.dealerId}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
-              placeholder="Leave empty for headquarters staff"
-            />
+            >
+              <option value="">Headquarters (no dealer)</option>
+              {dealers.map((dealer) => (
+                <option key={dealer.id} value={dealer.id}>{dealer.name}</option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-gray-500">
               Assign this user to a specific dealer location (for dealer-specific staff)
             </p>

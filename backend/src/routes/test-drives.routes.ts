@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
 import { sendTestDriveApprovalEmail } from '../services/email/statusEmail';
 import { settingRepository } from '../repositories';
+import { validateIdDocumentNumber } from '../utils/idValidation';
 
 const router = Router();
 
@@ -127,6 +128,10 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
 // PATCH /api/test-drives/:id (admin update)
 router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    if (req.body?.idDocumentNumber) {
+      const idError = validateIdDocumentNumber(req.body.idDocumentNumber, req.body.idDocumentType);
+      if (idError) { res.status(400).json({ error: idError }); return; }
+    }
     const testDrive = await prisma.testDrive.update({ where: { id: req.params.id }, data: req.body });
     res.json(testDrive);
   } catch (error) {

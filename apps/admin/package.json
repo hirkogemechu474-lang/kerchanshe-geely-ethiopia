@@ -13,7 +13,6 @@
     "check": "npm run typecheck && npm run lint"
   },
   "dependencies": {
-    "@geely/types": "workspace:*",
     "@google/model-viewer": "^4.3.1",
     "axios": "^1.7.0",
     "lucide-react": "0.468.0",

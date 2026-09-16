@@ -27,6 +27,7 @@ export interface SalesAgreementPdfData {
   vatAmount?: number | null;
   registrationCharge?: number | null;
   accessoriesAmount?: number | null;
+  purchaserTitle?: string | null; // salutation, e.g. "Ato", "Miss", "Dr" — printed before customerName
   purchaserTin?: string | null;
   purchaserAddress?: string | null;
   purchaserAuthorizedRep?: string | null;
@@ -41,6 +42,7 @@ export interface SalesAgreementPdfData {
   countersignedByName?: string | null;
   countersignedAt?: Date | string | null;
   customerSignatureUrl?: string | null;
+  customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
 }
 
@@ -69,6 +71,8 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
   drawHeaderFooter(ctx, title, company);
 
   // ── Page 1: header, intro, Parties ──────────────────────────────────────
+  const purchaserDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');
+
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawLabelValue(ctx, 'Contract No.', data.orderNo, PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Type', data.salesType === 'order' ? 'Order / To Be Imported' : 'Showroom / In Stock', PDF_MARGIN + 220, ctx.y);
@@ -88,7 +92,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     ['Seller TIN', company.tin || '—'],
     ['Seller Address', company.address],
     ['Seller Tel / Email', `${company.phone || '—'} / ${company.email || '—'}`],
-    ['Purchaser', data.customerName || '—'],
+    ['Purchaser', purchaserDisplayName],
     ['Purchaser TIN', data.purchaserTin || '—'],
     ['Purchaser Address', data.purchaserAddress || '—'],
     ['Purchaser Tel / Email', `${data.customerPhone || '—'} / ${data.customerEmail || '—'}`],
@@ -244,13 +248,15 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
       name: data.sellerAuthorizedRep,
       showStamp: true,
       signatureImage: managerSignatureImage,
+      date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
     {
       heading: 'FOR THE PURCHASER',
-      name: data.customerName,
+      name: purchaserDisplayName,
       title: data.purchaserAuthorizedRep,
       showStamp: true,
       signatureImage: customerSignatureImage,
+      date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );
   ctx.y -= 30;

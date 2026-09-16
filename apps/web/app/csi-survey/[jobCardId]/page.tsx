@@ -140,7 +140,7 @@ export default function CsiSurveyPage({ params }: { params: Promise<{ jobCardId:
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-2 bg-geely-blue text-white px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-geely-blue text-white px-8 py-4 font-bold hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>

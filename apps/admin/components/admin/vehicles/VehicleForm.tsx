@@ -48,9 +48,9 @@ function numberValue(value: unknown, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-// Same convention as CategoryForm.tsx / ServicePageForm.tsx / the News "new"
-// page's generateSlug — lowercase, non-alphanumeric runs become a single
-// hyphen, trim leading/trailing hyphens.
+// Same convention as CategoryForm.tsx / the News "new" page's generateSlug —
+// lowercase, non-alphanumeric runs become a single hyphen, trim
+// leading/trailing hyphens.
 function generateSlug(name: string) {
   return name
     .toLowerCase()

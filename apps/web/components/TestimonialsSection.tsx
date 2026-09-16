@@ -245,7 +245,7 @@ export default function TestimonialsSection({
             <p className="text-steel dark:text-steel-light mb-6">
               Help other customers by sharing your experience with your Geely vehicle.
             </p>
-            <button className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all">
+            <button className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all">
               Write a Review
             </button>
           </div>

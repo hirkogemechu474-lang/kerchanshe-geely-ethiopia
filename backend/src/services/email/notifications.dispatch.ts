@@ -4,13 +4,15 @@ import { inAppNotificationRepository } from '../../repositories/inAppNotificatio
 import { userRepository } from '../../repositories';
 
 export interface NotificationPayload {
-  type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'complaint_created' | 'upgrade_opportunity' | 'sla_breach';
+  type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'complaint_created' | 'upgrade_opportunity' | 'sla_breach' | 'delivery_ready' | 'delivery_scheduled' | 'delivered';
   to: string[];
   subject: string;
   data: Record<string, any>;
   attachments?: EmailAttachment[];
   /** When set, the email opens with "Hello {greetingName}," above the data table. */
   greetingName?: string;
+  /** One or more labeled call-to-action buttons rendered below the data table (e.g. "Check Status", "Review & Sign"). Any `link`/`adminLink` in `data` still renders too — use ctas for the buttons the workflow spec calls out explicitly. */
+  ctas?: { label: string; url: string }[];
   /** In-app notification — if provided, creates a bell notification for each recipient */
   inApp?: {
     type: string;
@@ -130,6 +132,10 @@ function buildNotificationHtml(payload: NotificationPayload): string {
     .map(([key, value]) => `<p style="margin: 4px 0;"><strong>${formatKey(key)}:</strong> ${formatValue(value)}</p>`)
     .join('');
 
+  const ctaButtons = (payload.ctas ?? [])
+    .map((cta) => `<a href="${cta.url}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; display: inline-block; margin: 0 6px 10px;">${cta.label}</a>`)
+    .join('');
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1a1a2e;">${payload.subject}</h2>
@@ -137,6 +143,7 @@ function buildNotificationHtml(payload: NotificationPayload): string {
       <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
         ${dataEntries}
       </div>
+      ${ctaButtons ? `<div style="text-align: center; margin: 20px 0;">${ctaButtons}</div>` : ''}
     </div>
   `;
 }

@@ -43,7 +43,7 @@ export default function OfflinePage() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-geely-blue mt-1">✓</span>
-                <span>Contact us directly at +251 11 000 0000</span>
+                <span>Contact us directly at +251 99 338 9874</span>
               </li>
             </ul>
           </div>
@@ -52,7 +52,7 @@ export default function OfflinePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center justify-center gap-2 bg-geely-blue text-white font-bold px-8 py-4 rounded-lg hover:bg-opacity-90 transition-all"
+              className="flex items-center justify-center gap-2 bg-geely-blue text-white font-bold px-8 py-4 hover:bg-opacity-90 transition-all"
             >
               <RefreshCw size={20} />
               Try Again
@@ -77,7 +77,7 @@ export default function OfflinePage() {
                 href="tel:+251110000000"
                 className="text-geely-blue hover:underline font-semibold"
               >
-                📞 Call Us: +251 11 000 0000
+                📞 Call Us: +251 99 338 9874
               </a>
               <span className="hidden sm:inline text-gray-300">|</span>
               <a

@@ -1,5 +1,7 @@
 import { warrantyClaimRepository, counterRepository } from '../../repositories';
 import { auditService } from '../audit/audit.service';
+import { dispatchNotification } from '../email/notifications.dispatch';
+import { prisma } from '../../config/database';
 
 export const warrantyClaimService = {
   async list(status?: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -98,6 +100,38 @@ export const warrantyClaimService = {
         toValue: { status: toStatus },
         reason: reasonCode,
       });
+
+      // Send notification on key status changes
+      if (toStatus === 'APPROVED' || toStatus === 'REJECTED') {
+        try {
+          // Find the job card's associated customer via service booking or order
+          const jobCard = await prisma.jobCard.findUnique({
+            where: { id: claim.jobCardId },
+            select: { customerName: true, customerPhone: true, customerEmail: true, jobCardNo: true },
+          });
+
+          if (jobCard?.customerEmail) {
+            const subject = toStatus === 'APPROVED'
+              ? `Warranty Claim Approved — ${claim.claimNo}`
+              : `Warranty Claim Update — ${claim.claimNo}`;
+
+            await dispatchNotification({
+              type: 'warranty_claim',
+              to: [jobCard.customerEmail],
+              subject,
+              data: {
+                claimNo: claim.claimNo,
+                jobCardNo: jobCard.jobCardNo,
+                customerName: jobCard.customerName,
+                status: toStatus,
+                defectCode: claim.defectCode,
+              },
+            });
+          }
+        } catch (notifyError: any) {
+          console.error('[WARRANTY CLAIM NOTIFICATION ERROR]', notifyError.message);
+        }
+      }
 
       return { ok: true, data: result };
     } catch (error: any) {

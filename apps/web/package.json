@@ -14,7 +14,6 @@
     "check": "npm run typecheck && npm run lint"
   },
   "dependencies": {
-    "@geely/types": "workspace:*",
     "@google/model-viewer": "^4.3.1",
     "axios": "^1.7.0",
     "bcryptjs": "^2.4.3",

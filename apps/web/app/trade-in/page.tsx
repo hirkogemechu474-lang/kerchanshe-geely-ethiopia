@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
+import { validateGenericIdOrLicense } from "@/lib/idValidation";
 import { CheckCircle, Car, DollarSign, FileText, TrendingUp, AlertCircle } from "lucide-react";
 
 interface TradeInFormData {
@@ -43,6 +44,11 @@ export default function TradeInPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  // Vehicle condition photos — same upload-then-store-URL pattern as the
+  // quote form's ID-photo capture (/api/upload/image), just multi-file.
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const {
     register,
@@ -70,6 +76,33 @@ export default function TradeInPage() {
     };
   }, []);
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setPhotoUploading(true);
+    setPhotoError(null);
+    try {
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "trade-in");
+        const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+        uploaded.push(data.url);
+      }
+      setPhotoUrls((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Failed to upload photo(s). Please try again.");
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removePhoto = (url: string) => setPhotoUrls((prev) => prev.filter((u) => u !== url));
+
   const onSubmit = async (data: TradeInFormData) => {
     setIsSubmitting(true);
     setSubmitError(null);
@@ -78,7 +111,7 @@ export default function TradeInPage() {
       const response = await fetch("/api/public/trade-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, consentGiven: data.consent }),
+        body: JSON.stringify({ ...data, consentGiven: data.consent, photoUrls }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) {
@@ -87,6 +120,7 @@ export default function TradeInPage() {
 
       setIsSubmitted(true);
       reset();
+      setPhotoUrls([]);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("Failed to submit trade-in request:", err);
@@ -124,7 +158,7 @@ export default function TradeInPage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 rounded hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
               >
                 Submit Another Vehicle
               </button>
@@ -304,6 +338,7 @@ export default function TradeInPage() {
                       type="text"
                       {...register("nationalId", {
                         required: "National ID or Driver's License number is required",
+                        validate: validateGenericIdOrLicense,
                       })}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
                         errors.nationalId ? "border-red-500" : "border-line"
@@ -485,6 +520,43 @@ export default function TradeInPage() {
                       <p className="text-red-500 text-xs mt-1">{errors.serviceHistory.message}</p>
                     )}
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-navy mb-2">
+                      Vehicle Photos (Optional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoChange}
+                      disabled={photoUploading}
+                      className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:border-geely-blue text-sm"
+                    />
+                    <p className="text-xs text-steel mt-1">
+                      Photos of the exterior, interior, and any damage help us give you a more accurate offer.
+                    </p>
+                    {photoUploading && <p className="text-xs text-steel mt-1">Uploading…</p>}
+                    {photoError && <p className="text-red-500 text-xs mt-1">{photoError}</p>}
+                    {photoUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {photoUrls.map((url) => (
+                          <div key={url} className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt="Trade-in vehicle" className="h-20 w-20 rounded-lg object-cover border border-line" />
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(url)}
+                              className="absolute -top-2 -right-2 bg-white border border-line rounded-full w-5 h-5 flex items-center justify-center text-xs text-steel hover:text-red-500"
+                              aria-label="Remove photo"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -609,7 +681,7 @@ export default function TradeInPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 rounded-lg transition-all ${
+                  className={`w-full bg-geely-blue text-white font-bold text-base py-4 transition-all ${
                     isSubmitting
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-opacity-90"

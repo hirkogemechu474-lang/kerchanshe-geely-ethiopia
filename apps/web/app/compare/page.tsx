@@ -178,7 +178,12 @@ export default function ComparePage() {
       }
     }
 
-    return value ?? defaultValue;
+    // Ensure we only return scalar values (string, number, boolean), not objects
+    const finalValue = value ?? defaultValue;
+    if (typeof finalValue === "object" && finalValue !== null) {
+      return defaultValue;
+    }
+    return finalValue;
   };
 
   const hasDifference = (values: Array<string | number>) => {
@@ -377,7 +382,7 @@ export default function ComparePage() {
                           <Link
                             href={`/models/${vehicle.id}`}
                             aria-label={`View details for ${vehicle.name}`}
-                            className="block rounded bg-navy px-4 py-2 text-center text-xs font-bold text-white transition-all hover:bg-opacity-90"
+                            className="block bg-navy px-4 py-2 text-center text-xs font-bold text-white transition-all hover:bg-opacity-90"
                           >
                             View Details
                           </Link>

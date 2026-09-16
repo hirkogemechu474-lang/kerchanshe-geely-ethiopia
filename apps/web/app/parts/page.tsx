@@ -111,13 +111,13 @@ export default function PartsPage() {
       try {
       const response = await fetch("/api/public/parts");
       const payload = await response.json();
-      if (payload.success) {
+      if (response.ok) {
         setData({
-          content: payload.content,
-          categories: payload.categories,
-          parts: payload.parts,
-          brands: payload.brands,
-          benefits: payload.benefits,
+          content: payload.content ?? null,
+          categories: payload.categories ?? [],
+          parts: payload.parts ?? [],
+          brands: payload.brands ?? [],
+          benefits: payload.benefits ?? [],
         });
       }
       } catch (error) {
@@ -419,7 +419,7 @@ export default function PartsPage() {
             {cartCount > 0 && (
               <button
                 onClick={() => setCartOpen(true)}
-                className="bg-geely-blue text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all"
+                className="bg-geely-blue text-white px-4 py-2 text-sm font-semibold hover:bg-opacity-90 transition-all"
               >
                 <ShoppingCart className="inline w-4 h-4 mr-1" /> Parts Request ({cartCount} items)
               </button>
@@ -568,7 +568,7 @@ export default function PartsPage() {
                   </button>
                   <button
                     onClick={() => setQuoteOpen(true)}
-                    className="flex-1 text-sm font-bold py-3 px-4 bg-geely-blue text-white rounded-lg hover:bg-opacity-90 transition-all"
+                    className="flex-1 text-sm font-bold py-3 px-4 bg-geely-blue text-white hover:bg-opacity-90 transition-all"
                   >
                     Request Quote
                   </button>
@@ -602,7 +602,7 @@ export default function PartsPage() {
                 </p>
                 <button
                   onClick={() => { setQuoteOpen(false); setQuoteSuccess(false); }}
-                  className="bg-geely-blue text-white font-bold px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
+                  className="bg-geely-blue text-white font-bold px-6 py-3 hover:bg-opacity-90 transition-all"
                 >
                   Done
                 </button>
@@ -662,7 +662,7 @@ export default function PartsPage() {
                 </div>
 
                 <button type="submit" disabled={quoteSubmitting}
-                  className="w-full flex items-center justify-center gap-2 bg-geely-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="w-full flex items-center justify-center gap-2 bg-geely-blue text-white font-bold py-3 px-4 hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                   {quoteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
                   {quoteSubmitting ? 'Submitting...' : 'Submit Quote Request'}
                 </button>

@@ -230,13 +230,13 @@ export default function EvVsFuelPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/test-drive"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-geely-blue dark:bg-blue-bright text-white dark:text-midnight font-display font-bold px-6 py-3 rounded hover:bg-opacity-90 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-geely-blue dark:bg-blue-bright text-white dark:text-midnight font-display font-bold px-6 py-3 hover:bg-opacity-90 transition-all"
             >
               Book a Test Drive <ArrowRight size={16} />
             </Link>
             <Link
               href="/quote"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/30 text-white font-display font-bold px-6 py-3 rounded hover:bg-white/10 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/30 text-white font-display font-bold px-6 py-3 hover:bg-white/10 transition-all"
             >
               Request a Quote
             </Link>

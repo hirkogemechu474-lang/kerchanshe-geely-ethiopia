@@ -144,7 +144,7 @@ export default function PurchasePage() {
               </a>
               <a
                 href="#vehicles"
-                className="inline-flex items-center gap-2 bg-white/10 text-white border border-white/25 font-bold px-8 py-4 rounded-xl hover:bg-white/15 transition-all"
+                className="inline-flex items-center gap-2 bg-white/10 text-white border border-white/25 font-bold px-8 py-4 hover:bg-white/15 transition-all"
               >
                 {hero.secondaryCtaLabel} <CreditCard size={20} />
               </a>
@@ -235,7 +235,9 @@ export default function PurchasePage() {
               {banks.map((bank) => (
                 <Link
                   key={bank.id}
-                  href={vehicles[0] ? `/quote?model=${vehicles[0].id}` : "/quote"}
+                  href={bank.websiteUrl || (vehicles[0] ? `/quote?model=${vehicles[0].id}` : "/quote")}
+                  target={bank.websiteUrl ? "_blank" : undefined}
+                  rel={bank.websiteUrl ? "noopener noreferrer" : undefined}
                   className="group bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line p-6 flex flex-col items-center justify-center gap-4 text-center hover:border-geely-blue hover:shadow-xl hover:shadow-active-blue/10 hover:-translate-y-1 transition-all min-h-[150px]"
                 >
                   <div className="h-14 w-full flex items-center justify-center">
@@ -251,7 +253,7 @@ export default function PurchasePage() {
                       </div>
                     )}
                     <div className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-geely-blue opacity-0 group-hover:opacity-100 transition-opacity">
-                      Begin application <ArrowRight size={13} />
+                      {bank.websiteUrl ? "Visit Website" : "Begin application"} <ArrowRight size={13} />
                     </div>
                   </div>
                 </Link>
@@ -330,7 +332,7 @@ export default function PurchasePage() {
                       </h3>
                       <Link
                         href={`/financing/apply?vehicle=${vehicle.id}`}
-                        className="block text-center bg-geely-blue text-white font-bold text-sm py-3 rounded-xl hover:bg-navy transition-all"
+                        className="block text-center bg-geely-blue text-white font-bold text-sm py-3 hover:bg-navy transition-all"
                       >
                         {vehiclesSection.ctaLabel}
                       </Link>
@@ -417,13 +419,13 @@ export default function PurchasePage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <a
                 href="/contact"
-                className="inline-flex items-center justify-center gap-2 bg-geely-blue text-white font-bold px-6 py-3 rounded-xl hover:bg-navy transition-all"
+                className="inline-flex items-center justify-center gap-2 bg-geely-blue text-white font-bold px-6 py-3 hover:bg-navy transition-all"
               >
                 {contactStrip.callLabel} <Phone size={17} />
               </a>
               <a
                 href="/quote"
-                className="inline-flex items-center justify-center gap-2 border border-geely-blue text-geely-blue font-bold px-6 py-3 rounded-xl hover:bg-active-blue/10 transition-all"
+                className="inline-flex items-center justify-center gap-2 border border-geely-blue text-geely-blue font-bold px-6 py-3 hover:bg-active-blue/10 transition-all"
               >
                 {contactStrip.ctaLabel} <ExternalLink size={17} />
               </a>

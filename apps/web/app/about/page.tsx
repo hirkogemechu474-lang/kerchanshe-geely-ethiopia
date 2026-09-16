@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Award, Users, Globe, TrendingUp, Factory, Shield, Zap, Heart, Target, Sparkles, Cpu, DollarSign, Star,
-  ArrowRight,
+  ArrowRight, ChevronLeft, ChevronRight, Phone,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,7 +11,7 @@ import Image from 'next/image';
 type FeatureCard = { icon: string; title: string; description: string };
 type HighlightItem = { value: string; label: string };
 type StatsCard = { icon: string; title: string; description: string; gradient: string };
-type ValueItem = { icon: string; title: string; description: string };
+type ValueItem = { icon: string; title: string; description: string; image?: string };
 
 interface AboutContent {
   sectionHero: {
@@ -59,7 +59,7 @@ function iconFor(name: string) {
 const FALLBACK: AboutContent = {
   sectionHero: {
     eyebrow: 'ABOUT US',
-    title: 'About Geely Ethiopia',
+    title: 'A future shaped by innovation, driven by the vision of Geely Ethiopia and powered by people.',
     subtitle:
       'Bringing global automotive excellence to Ethiopia through the trusted partnership of Zhejiang Geely Holding Group and Kerchanshe Group.',
     backgroundImage: '',
@@ -76,11 +76,11 @@ const FALLBACK: AboutContent = {
     ],
   },
   designPhilosophy: {
-    eyebrow: 'DESIGN PHILOSOPHY',
+    eyebrow: 'OVERVIEW',
     title: 'Inspired by Nature, Engineered for Tomorrow',
     paragraphs: [
-      "Every Geely vehicle is inspired by nature's energy, from Stonehenge-inspired Matrix LED headlight designs to bold Icefall vertical grilles and lava-flow LED taillights.",
-      "This design language carries through every model Kerchanshe Group Geely brings to Ethiopia, pairing striking presence with world-class engineering and safety.",
+      "Every Geely vehicle is inspired by nature's energy, from Stonehenge-inspired Matrix LED headlight designs to bold Icefall vertical grilles and lava-flow LED taillights, combining elegance with dynamic presence.",
+      "This design language carries through every model Kerchanshe Group Geely brings to Ethiopia, pairing striking presence with world-class engineering and safety. Every curve and detail reflects confidence, innovation, and the timeless design philosophy of Geely Automobile.",
     ],
     image: '',
   },
@@ -104,28 +104,29 @@ const FALLBACK: AboutContent = {
     eyebrow: 'OUR PURPOSE',
     mission: {
       title: 'Our Mission',
-      text: "Geely's mission is to design vehicles and technologies that put people first, combining innovation, safety, and smart engineering to make every journey better, brought to Ethiopia through Kerchanshe Group Geely's local expertise and support.",
+      text: "Geely's mission is to design vehicles and technologies that put people first, combining innovation, safety, and smart engineering to deliver mobility that is accessible, reliable, and environmentally responsible. Every Geely model reflects our commitment to progress and our belief that exceptional mobility should empower every journey, brought to Ethiopia through Kerchanshe Group Geely's local expertise and support.",
     },
     vision: {
       title: 'Our Vision',
       text: 'To be the most competitive and respected global automotive brand, leading the transformation of the industry through innovation, sustainability, and human-centered design, with Kerchanshe Group Geely driving that vision forward in Ethiopia.',
     },
     values: [
-      { icon: 'Zap', title: 'Innovation', description: 'We challenge limits with new ideas, smart technology, and forward-thinking design in every vehicle we bring to Ethiopia.' },
-      { icon: 'Award', title: 'Quality', description: "Every detail matters. We uphold Geely's global standards of precision, durability, and craftsmanship on every vehicle we sell and support." },
-      { icon: 'Heart', title: 'Responsibility', description: 'We drive progress with integrity, prioritizing safety, sustainability, and a positive impact on Ethiopian communities.' },
+      { icon: 'Star', title: 'Value', description: 'Our commitment to offering high value to our users is reflected in every strategic decision.', image: '/images/about-value.jpg' },
+      { icon: 'Zap', title: 'Innovation', description: 'We continue to demonstrate our pursuit of the most advanced technological innovations.', image: '/images/about-innovation.jpg' },
+      { icon: 'Heart', title: 'New Energy', description: 'Our early adoption of new energy development underscores our dedication to sustainable solutions.', image: '/images/about-new-energy.jpg' },
+      { icon: 'Globe', title: 'Globalization', description: 'Our journey into globalization, beginning in 2002, shapes our identity.', image: '/images/about-globalization.jpg' },
     ],
     image: '',
   },
   historyTimeline: {
     eyebrow: 'OUR JOURNEY',
     title: 'Milestones',
-    subtitle: 'From a coffee export business to Ethiopia\'s official Geely distributor.',
+    subtitle: 'From a coffee export business to Ethiopia\'s official Geely distributor — a journey of growth, innovation, and partnership.',
     milestones: [
-      { year: '2003', title: 'Kerchanshe Group Founded', description: "Began as a coffee export business and grew into one of Ethiopia's most diversified conglomerates, spanning manufacturing, construction, heavy equipment, and logistics." },
-      { year: 'April 2025', title: 'Exclusive Geely Partnership Signed', description: 'Kerchanshe Group and Zhejiang Geely Holding Group announce an exclusive agreement making Kerchanshe Group Geely the official distributor of Geely vehicles in Ethiopia.' },
-      { year: '2025', title: 'Kerchanshe Group Geely Launches', description: 'Opens its showroom in Sarbet, Addis Ababa, bringing genuine manufacturer-backed Geely vehicles and after-sales support to Ethiopian customers.' },
-      { year: 'In Progress', title: 'Local Assembly & Technology Transfer', description: 'Plans underway for local vehicle assembly in Ethiopia, creating jobs and building long-term industrial capacity.' },
+      { year: '2003', title: 'Kerchanshe Group Founded', description: "Began as a coffee export business and grew into one of Ethiopia's most diversified conglomerates.", image: '' },
+      { year: 'April 2025', title: 'Exclusive Geely Partnership Signed', description: 'Kerchanshe Group and Zhejiang Geely Holding Group announce an exclusive distribution agreement.', image: '' },
+      { year: '2025', title: 'Kerchanshe Group Geely Launches', description: 'Opens its showroom in Sarbet, Addis Ababa, bringing genuine Geely vehicles to Ethiopian customers.', image: '' },
+      { year: 'In Progress', title: 'Local Assembly & Technology Transfer', description: 'Plans underway for local vehicle assembly in Ethiopia, creating jobs and building industrial capacity.', image: '' },
     ],
   },
   geelyGlobal: {
@@ -173,11 +174,11 @@ const FALLBACK: AboutContent = {
     ],
   },
   cta: {
-    title: 'Ready to Experience Geely?',
+    title: 'Need Assistance?',
     subtitle:
-      'Visit our showroom in Sarbet, Addis Ababa, or book a test drive to experience the perfect combination of global excellence and local trust.',
-    primaryButton: { label: 'Book a Test Drive', href: '/test-drive' },
-    secondaryButton: { label: 'Find Our Showroom', href: '/dealers' },
+      'Have a question or need support? Our dedicated team is ready to provide the guidance you need. Connect with us to experience the professional service and cutting-edge innovation that define the Geely brand.',
+    primaryButton: { label: 'Contact Us', href: '/contact' },
+    secondaryButton: { label: 'Book a Test Drive', href: '/test-drive' },
   },
 };
 
@@ -204,7 +205,12 @@ function mergeFallback(d: Partial<AboutContent> | null | undefined): AboutConten
       ...(d.missionVisionValues ?? {}),
       mission: { ...FALLBACK.missionVisionValues.mission, ...(d.missionVisionValues?.mission ?? {}) },
       vision: { ...FALLBACK.missionVisionValues.vision, ...(d.missionVisionValues?.vision ?? {}) },
-      values: d.missionVisionValues?.values?.length ? d.missionVisionValues.values : FALLBACK.missionVisionValues.values,
+      values: d.missionVisionValues?.values?.length
+        ? d.missionVisionValues.values.map((v: ValueItem, i: number) => ({
+            ...v,
+            image: v.image || FALLBACK.missionVisionValues.values[i]?.image || '',
+          }))
+        : FALLBACK.missionVisionValues.values,
     },
     historyTimeline: {
       ...FALLBACK.historyTimeline,
@@ -237,6 +243,60 @@ function mergeFallback(d: Partial<AboutContent> | null | undefined): AboutConten
   };
 }
 
+function HistoryCarousel({ milestones }: { milestones: { year: string; title: string; description: string; image?: string }[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(direction: 'left' | 'right') {
+    if (!scrollRef.current) return;
+    const amount = scrollRef.current.offsetWidth * 0.75;
+    scrollRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {milestones.map((m, i) => (
+          <div
+            key={i}
+            className="shrink-0 w-[320px] sm:w-[400px] snap-start"
+          >
+            {m.image ? (
+              <div className="relative rounded-2xl overflow-hidden aspect-[16/10] mb-4 shadow-lg">
+                <Image src={m.image} alt={m.title} fill sizes="400px" className="object-cover" />
+              </div>
+            ) : (
+              <div className="relative rounded-2xl overflow-hidden aspect-[16/10] mb-4 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-midnight-surface dark:to-midnight flex items-center justify-center">
+                <span className="text-5xl font-black text-geely-blue/20">{m.year}</span>
+              </div>
+            )}
+            <div className="text-sm font-black text-geely-blue uppercase tracking-wide mb-1">{m.year}</div>
+            <h4 className="font-extrabold text-lg text-navy dark:text-ice mb-1.5">{m.title}</h4>
+            <p className="text-steel dark:text-steel-light text-sm leading-relaxed">{m.description}</p>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => scroll('left')}
+        className="absolute left-0 top-1/3 -translate-y-1/2 -translate-x-3 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-slate-50 transition-colors border border-slate-200 z-10"
+        aria-label="Previous"
+      >
+        <ChevronLeft size={20} className="text-navy" />
+      </button>
+      <button
+        onClick={() => scroll('right')}
+        className="absolute right-0 top-1/3 -translate-y-1/2 translate-x-3 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-slate-50 transition-colors border border-slate-200 z-10"
+        aria-label="Next"
+      >
+        <ChevronRight size={20} className="text-navy" />
+      </button>
+    </div>
+  );
+}
+
 export default function AboutPage() {
   const [data, setData] = useState<AboutContent>(FALLBACK);
   const [loaded, setLoaded] = useState(false);
@@ -250,7 +310,6 @@ export default function AboutPage() {
       .finally(() => setLoaded(true));
   }, []);
 
-  // Let the LCP paint (poster/text) happen before fetching the hero video.
   useEffect(() => {
     const id = requestAnimationFrame(() => setVideoReady(true));
     return () => cancelAnimationFrame(id);
@@ -261,425 +320,270 @@ export default function AboutPage() {
 
   return (
     <>
-        {/* 1. Hero section */}
-        <section
-          className="relative min-h-[min(760px,88vh)] overflow-hidden bg-black text-white"
-          style={
-            !isVideoHero && data.sectionHero.backgroundImage
-              ? {
-                  backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.78), rgba(0,0,0,0.16)), url(${data.sectionHero.backgroundImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }
-              : undefined
-          }
-        >
-          {isVideoHero ? (
-            <>
-              {heroPoster && (
-                <div
-                  className="absolute inset-0"
-                  style={{ backgroundImage: `url(${heroPoster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                />
-              )}
-              {/* Deferring the <video> mount until after first paint keeps the
-                  file fetch from competing with the LCP text/poster render.
-                  No `poster` attribute here: the background div above already
-                  shows it, and repeating it would both re-fetch the same
-                  image and give the browser a second LCP candidate. */}
-              {videoReady && (
-                <video
-                  key={data.sectionHero.videoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  className="absolute inset-0 w-full h-full object-cover"
-                >
-                  <source src={data.sectionHero.videoUrl} type="video/mp4" />
-                  <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
-                </video>
-              )}
+      {/* 1. Hero section */}
+      <section
+        className="relative min-h-[min(680px,80vh)] overflow-hidden bg-black text-white flex items-center"
+        style={
+          !isVideoHero && data.sectionHero.backgroundImage
+            ? {
+                backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.82), rgba(0,0,0,0.45)), url(${data.sectionHero.backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+      >
+        {isVideoHero ? (
+          <>
+            {heroPoster && (
               <div
                 className="absolute inset-0"
-                style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.78), rgba(0,0,0,0.16))' }}
+                style={{ backgroundImage: `url(${heroPoster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               />
-            </>
-          ) : (
-            <div
-              className={
-                data.sectionHero.backgroundImage
-                  ? ''
-                  : 'absolute inset-0 bg-gradient-to-br from-black via-[#101318] to-[#194bff]'
-              }
-            />
-          )}
+            )}
+            {videoReady && (
+              <video
+                key={data.sectionHero.videoUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src={data.sectionHero.videoUrl} type="video/mp4" />
+                <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+              </video>
+            )}
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        ) : (
+          <div
+            className={
+              data.sectionHero.backgroundImage
+                ? ''
+                : 'absolute inset-0 bg-gradient-to-br from-black via-[#101318] to-[#194bff]'
+            }
+          />
+        )}
 
-          <div className="relative flex min-h-[min(760px,88vh)] items-end max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16 pb-16 sm:pb-24">
-            <div className="max-w-5xl">
-              <div className="text-xs font-bold tracking-[0.28em] uppercase text-[#7ea2ff] mb-7">
-                {data.sectionHero.eyebrow}
+        <div className="relative max-w-[1280px] mx-auto px-5 sm:px-10 lg:px-16 py-24 sm:py-32">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="text-xs font-bold tracking-[0.28em] uppercase text-[#7ea2ff] mb-6">
+              {data.sectionHero.eyebrow}
+            </div>
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black mb-8 tracking-tight leading-[1.1] text-balance">
+              {data.sectionHero.title}
+            </h1>
+            <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
+              {data.sectionHero.subtitle}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 1b. Stats bar */}
+      <section className="bg-black text-white border-b border-white/15 relative">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/20">
+            {data.statsBar.items.map((s, i) => (
+              <div key={i} className="py-8 sm:py-10 px-4 sm:px-8 first:pl-0">
+                <div className="text-3xl sm:text-5xl font-black tracking-tight mb-2">{s.value}</div>
+                <div className="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-[0.16em]">{s.label}</div>
               </div>
-              <h1 className="text-5xl sm:text-7xl lg:text-[clamp(4.5rem,10vw,9.5rem)] font-black mb-7 tracking-[-0.04em] leading-[0.88] text-balance uppercase">
-                {data.sectionHero.title}
-              </h1>
-              <p className="text-base sm:text-xl text-white/80 leading-relaxed max-w-2xl border-l-2 border-[#194bff] pl-5">
-                {data.sectionHero.subtitle}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Overview / Design Philosophy */}
+      <section className="py-24 sm:py-32 bg-white dark:bg-midnight-surface transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {data.designPhilosophy.image && (
+              <div className="relative overflow-hidden rounded-2xl aspect-video lg:aspect-square bg-slate-100 shadow-xl">
+                <Image
+                  src={data.designPhilosophy.image}
+                  alt={data.designPhilosophy.title}
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className={data.designPhilosophy.image ? '' : 'lg:col-span-2 max-w-3xl mx-auto text-center'}>
+              <div className={`inline-block text-geely-blue text-xs font-bold tracking-[0.2em] uppercase mb-6 ${data.designPhilosophy.image ? '' : 'mx-auto'}`}>
+                {data.designPhilosophy.eyebrow}
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-black dark:text-ice tracking-tight mb-8 leading-[1.05] text-balance">
+                {data.designPhilosophy.title}
+              </h2>
+              <div className="space-y-5">
+                {data.designPhilosophy.paragraphs.map((p, i) => (
+                  <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Our Mission — clean beige style with image */}
+      <section className="bg-[#f0ebe3] dark:bg-midnight transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div>
+              <p className="text-steel dark:text-steel-light text-lg sm:text-xl mb-4">
+                A Commitment to Excellence and Sustainability
+              </p>
+              <h2 className="text-5xl sm:text-6xl lg:text-[5rem] font-black text-black dark:text-ice tracking-tight leading-[1.05] uppercase mb-10">
+                {data.missionVisionValues.mission.title}
+              </h2>
+              <p className="text-steel dark:text-steel-light text-lg sm:text-xl leading-relaxed max-w-xl">
+                {data.missionVisionValues.mission.text}
+              </p>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl aspect-[4/3] bg-slate-200 dark:bg-midnight-surface shadow-xl">
+              {data.missionVisionValues.image ? (
+                <img
+                  src={data.missionVisionValues.image}
+                  alt="Our Mission"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-midnight-surface dark:to-midnight-line flex items-center justify-center">
+                  <span className="text-6xl font-black text-slate-300 dark:text-midnight-line/50">M</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Our Vision — clean beige style with image */}
+      <section className="bg-[#f0ebe3] dark:bg-midnight transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div className="order-2 lg:order-1 relative overflow-hidden rounded-2xl aspect-[4/3] bg-slate-200 dark:bg-midnight-surface shadow-xl">
+              {data.missionVisionValues.image ? (
+                <img
+                  src={data.missionVisionValues.image}
+                  alt="Our Vision"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-midnight-surface dark:to-midnight-line flex items-center justify-center">
+                  <span className="text-6xl font-black text-slate-300 dark:text-midnight-line/50">V</span>
+                </div>
+              )}
+            </div>
+            <div className="order-1 lg:order-2">
+              <p className="text-steel dark:text-steel-light text-lg sm:text-xl mb-4">
+                Driving the Future of Mobility
+              </p>
+              <h2 className="text-5xl sm:text-6xl lg:text-[5rem] font-black text-black dark:text-ice tracking-tight leading-[1.05] uppercase mb-10">
+                {data.missionVisionValues.vision.title}
+              </h2>
+              <p className="text-steel dark:text-steel-light text-lg sm:text-xl leading-relaxed max-w-xl">
+                {data.missionVisionValues.vision.text}
               </p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 1b. Stats bar */}
-        <section className="bg-black text-white border-b border-white/15 relative">
-          <div className="max-w-[1440px] mx-auto px-5 sm:px-10 lg:px-16">
-            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/20">
-              {data.statsBar.items.map((s, i) => (
-                <div key={i} className="py-8 sm:py-10 px-4 sm:px-8 first:pl-0">
-                  <div className="text-3xl sm:text-5xl font-black tracking-tight mb-2">{s.value}</div>
-                  <div className="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-[0.16em]">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 1c. Design Philosophy / Overview */}
-        <section className="py-24 sm:py-32 bg-white dark:bg-midnight-surface transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {data.designPhilosophy.image && (
-                <div className="order-2 lg:order-1 relative overflow-hidden aspect-video lg:aspect-square bg-slate-100">
-                  <Image
-                    src={data.designPhilosophy.image}
-                    alt={data.designPhilosophy.title}
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <div className={data.designPhilosophy.image ? 'order-1 lg:order-2' : 'lg:col-span-2 max-w-3xl mx-auto text-center'}>
-                <div className={`inline-block text-geely-blue text-xs font-bold tracking-[0.2em] uppercase mb-6 ${data.designPhilosophy.image ? '' : 'mx-auto'}`}>
-                  {data.designPhilosophy.eyebrow}
-                </div>
-                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-black dark:text-ice tracking-tight mb-8 leading-[0.95] text-balance">
-                  {data.designPhilosophy.title}
-                </h2>
-                <div className="space-y-5">
-                  {data.designPhilosophy.paragraphs.map((p, i) => (
-                    <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
-                      {p}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 2. Partnership story */}
-        <section className="py-24 sm:py-32 bg-[#f1f3f5] dark:bg-midnight-surface relative transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Text */}
-              <div>
-                <div className="inline-block text-geely-blue px-0 py-1.5 text-xs font-bold tracking-[0.2em] uppercase mb-6">
-                  {data.partnership.eyebrow}
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-6 leading-tight text-balance">
-                  {data.partnership.title}
-                </h2>
-                <div className="space-y-5">
-                  {data.partnership.paragraphs.map((p, i) => (
-                    <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
-                      {p}
-                    </p>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right: 2x2 stat grid OR image */}
-              {data.partnership.rightImage ? (
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-navy/15 aspect-square">
-                  <Image
-                    src={data.partnership.rightImage}
-                    alt={data.partnership.title}
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {data.partnership.highlights.map((h, i) => (
-                    <div
-                      key={i}
-                      className="group relative rounded-2xl p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-midnight dark:to-midnight-surface border border-slate-100 dark:border-midnight-line overflow-hidden hover:-translate-y-1 transition-all hover:shadow-lg hover:shadow-blue-500/10"
-                    >
-                      <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br from-gold/20 to-transparent blur-2xl" />
-                      <div className="relative">
-                        <div className="text-3xl sm:text-4xl font-extrabold text-geely-blue mb-2 tracking-tight">
-                          {h.value}
-                        </div>
-                        <div className="text-sm font-medium text-steel dark:text-steel-light">{h.label}</div>
-                      </div>
+      {/* 5. Our Values — image cards */}
+      <section className="py-24 sm:py-32 bg-[#f0ebe3] dark:bg-midnight transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {data.missionVisionValues.values.map((v, i) => (
+              <div
+                key={i}
+                className="group bg-white dark:bg-midnight-surface rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {v.image ? (
+                    <Image
+                      src={v.image}
+                      alt={v.title}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-midnight dark:to-midnight-surface flex items-center justify-center">
+                      {(() => { const Icon = iconFor(v.icon); return <Icon size={48} className="text-geely-blue/30" />; })()}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* 2b. Mission, Vision & Core Values */}
-        <section className="py-24 sm:py-32 bg-white dark:bg-midnight transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14 max-w-3xl mx-auto">
-              <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
-                {data.missionVisionValues.eyebrow}
-              </div>
-            </div>
-
-            {data.missionVisionValues.image && (
-             <div className="relative w-full aspect-[21/9] overflow-hidden mb-14">
-  <Image
-    src={data.missionVisionValues.image}
-    alt={data.missionVisionValues.eyebrow}
-    fill
-    sizes="100vw"
-    className="object-cover"
-  />
-</div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-14">
-              <div className="p-8 sm:p-10 bg-[#f1f3f5] dark:bg-midnight-surface border-t-2 border-geely-blue">
-                <h3 className="text-2xl font-extrabold text-navy dark:text-ice mb-4 tracking-tight">
-                  {data.missionVisionValues.mission.title}
-                </h3>
-                <p className="text-steel dark:text-steel-light text-lg leading-relaxed">
-                  {data.missionVisionValues.mission.text}
-                </p>
-              </div>
-              <div className="p-8 sm:p-10 bg-[#f1f3f5] dark:bg-midnight-surface border-t-2 border-geely-blue">
-                <h3 className="text-2xl font-extrabold text-navy dark:text-ice mb-4 tracking-tight">
-                  {data.missionVisionValues.vision.title}
-                </h3>
-                <p className="text-steel dark:text-steel-light text-lg leading-relaxed">
-                  {data.missionVisionValues.vision.text}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
-              {data.missionVisionValues.values.map((v, i) => {
-                const Icon = iconFor(v.icon);
-                return (
-                  <div
-                    key={i}
-                    className="text-center p-8 bg-white dark:bg-midnight-surface border border-slate-200 dark:border-midnight-line hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
-                  >
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-geely-blue/10 text-geely-blue mb-5">
-                      <Icon size={26} />
-                    </div>
-                    <h4 className="font-extrabold text-xl text-navy dark:text-ice mb-3">{v.title}</h4>
-                    <p className="text-steel dark:text-steel-light leading-relaxed">{v.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* 3. Geely Global — dark section */}
-        <section className="py-24 sm:py-32 bg-black text-white relative overflow-hidden">
-          <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14 max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight text-balance">
-                {data.geelyGlobal.title}
-              </h2>
-              <p className="text-blue-100 text-lg text-balance">{data.geelyGlobal.subtitle}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-              {data.geelyGlobal.features.map((f, i) => {
-                const Icon = iconFor(f.icon);
-                return (
-                  <div
-                    key={i}
-                    className="group relative p-8 bg-white/[0.04] border border-white/15 hover:bg-white/[0.09] hover:-translate-y-1 transition-all text-center"
-                  >
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-geely-blue to-blue-500 mb-6 shadow-lg shadow-blue-700/30 group-hover:scale-110 transition-transform">
-                      <Icon className="w-7 h-7" />
-                    </div>
-                    <h3 className="font-extrabold text-xl mb-3">{f.title}</h3>
-                    <p className="text-blue-100 text-sm leading-relaxed">{f.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Kerchanshe Group */}
-        <section className="py-24 sm:py-32 bg-[#f1f3f5] dark:bg-midnight transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Left: 2x2 cards */}
-              <div className="order-2 lg:order-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
-                  {data.kerchansheGroup.statsCards.map((c, i) => {
-                    const Icon = iconFor(c.icon);
-                    return (
-                      <div
-                        key={i}
-                        className="p-6 text-black bg-white border-l-4 border-geely-blue relative overflow-hidden group"
-                      >
-                        <Icon size={30} className="mb-4 relative text-geely-blue" />
-                        <h4 className="font-extrabold text-lg text-black mb-2 relative">{c.title}</h4>
-                        <p className="text-sm text-steel leading-relaxed relative">{c.description}</p>
-                      </div>
-                    );
-                  })}
+                <div className="p-6">
+                  <h3 className="font-extrabold text-xl text-navy dark:text-ice mb-3 uppercase tracking-wide">
+                    {v.title}
+                  </h3>
+                  <p className="text-steel dark:text-steel-light leading-relaxed text-[15px]">
+                    {v.description}
+                  </p>
                 </div>
               </div>
-
-              {/* Right: narrative */}
-              <div className="order-1 lg:order-2">
-                <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
-                  {data.kerchansheGroup.eyebrow}
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice mb-6 tracking-tight leading-tight text-balance">
-                  {data.kerchansheGroup.title}
-                </h2>
-                <div className="space-y-5 mb-6">
-                  {data.kerchansheGroup.paragraphs.map((p, i) => (
-                    <p key={i} className="text-steel dark:text-steel-light text-lg leading-relaxed">
-                      {p}
-                    </p>
-                  ))}
-                </div>
-                <ul className="space-y-3">
-                  {data.kerchansheGroup.sectors.map((s, i) => (
-                    <li key={i} className="flex items-start gap-3 text-steel dark:text-steel-light text-lg">
-                      <span className="text-gold font-bold mt-0.5">✓</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 4b. History Timeline */}
-        <section className="py-20 sm:py-24 bg-white dark:bg-midnight-surface transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14 max-w-3xl mx-auto">
-              <div className="inline-block bg-gold/10 text-gold px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
-                {data.historyTimeline.eyebrow}
-              </div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-4 text-balance">
-                {data.historyTimeline.title}
-              </h2>
-              <p className="text-steel dark:text-steel-light text-lg text-balance">{data.historyTimeline.subtitle}</p>
-              <div className="mt-10 flex gap-6 overflow-x-auto border-y border-slate-200 dark:border-midnight-line py-4 text-left scrollbar-hide">
-                {data.historyTimeline.milestones.map((milestone, i) => (
-                  <span key={`${milestone.year}-${i}`} className="shrink-0 text-sm font-black tracking-wide text-geely-blue">
-                    {milestone.year}
-                  </span>
-                ))}
-              </div>
+      {/* 6. History — OUR JOURNEY section */}
+      <section className="py-24 sm:py-32 bg-[#f8f9fa] dark:bg-midnight transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <div className="inline-block bg-geely-blue/10 text-geely-blue px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6">
+              {data.historyTimeline.eyebrow}
             </div>
-
-            <div className="relative max-w-3xl mx-auto">
-              <div className="absolute left-4 sm:left-1/2 top-0 bottom-0 w-px bg-geely-blue/40 sm:-translate-x-1/2" />
-              <div className="space-y-10">
-                {data.historyTimeline.milestones.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`relative flex flex-col sm:flex-row items-start gap-4 sm:gap-8 ${
-                      i % 2 === 1 ? 'sm:flex-row-reverse sm:text-right' : ''
-                    }`}
-                  >
-                    <div className="absolute left-4 sm:left-1/2 top-1.5 w-3 h-3 rounded-full bg-geely-blue border-4 border-white dark:border-midnight-surface sm:-translate-x-1/2 shadow" />
-                    <div className="flex-1 pl-10 sm:pl-0" />
-                    <div className="flex-1 pl-10 sm:pl-0">
-                      {m.image && (
-                        <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-navy/10 aspect-video mb-3">
-                          <Image src={m.image} alt={m.title} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover" />
-                        </div>
-                      )}
-                      <div className="text-3xl font-black text-geely-blue uppercase tracking-tight mb-2">{m.year}</div>
-                      <h4 className="font-extrabold text-lg text-black dark:text-ice mb-1.5">{m.title}</h4>
-                      <p className="text-steel dark:text-steel-light leading-relaxed">{m.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Why Choose */}
-        <section className="py-20 sm:py-24 bg-white dark:bg-midnight-surface transition-colors">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14 max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-4 text-balance">
-                {data.whyChoose.title}
-              </h2>
-              <p className="text-steel dark:text-steel-light text-lg text-balance">{data.whyChoose.subtitle}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {data.whyChoose.features.map((f, i) => {
-                const Icon = iconFor(f.icon);
-                return (
-                  <div
-                    key={i}
-                    className="group relative rounded-3xl p-8 bg-white dark:bg-midnight border border-slate-100 dark:border-midnight-line hover:border-transparent hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-geely-blue/10 text-geely-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform group-hover:bg-geely-blue group-hover:text-white">
-                      <Icon size={26} />
-                    </div>
-                    <h3 className="font-extrabold text-xl text-navy dark:text-ice mb-3">{f.title}</h3>
-                    <p className="text-steel dark:text-steel-light leading-relaxed">{f.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* 6. CTA */}
-        <section className="py-24 sm:py-32 bg-black text-white relative overflow-hidden">
-          <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight text-balance">
-              {data.cta.title}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy dark:text-ice tracking-tight mb-6">
+              {data.historyTimeline.title}
             </h2>
-            <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed text-balance">
-              {data.cta.subtitle}
+            <p className="text-steel dark:text-steel-light text-lg leading-relaxed">
+              {data.historyTimeline.subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href={data.cta.primaryButton.href}
-                className="group inline-flex items-center justify-center gap-2 bg-[#194bff] text-white px-8 py-4 rounded-none font-extrabold text-lg hover:bg-[#476fff] transition-colors"
-              >
-                {data.cta.primaryButton.label}
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <Link
-                href={data.cta.secondaryButton.href}
-                className="inline-flex items-center justify-center gap-2 border border-white/40 text-white px-8 py-4 rounded-none font-extrabold text-lg hover:bg-white hover:text-black transition-colors"
-              >
-                {data.cta.secondaryButton.label}
-              </Link>
+          </div>
+
+          <HistoryCarousel milestones={data.historyTimeline.milestones} />
+        </div>
+      </section>
+
+      {/* 7. CTA — Let's Talk Now */}
+      <section className="py-24 sm:py-32 bg-white dark:bg-midnight-surface transition-colors">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-[#0a1628] via-[#101d35] to-[#194bff] rounded-3xl p-10 sm:p-16 text-center text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">
+                {data.cta.title}
+              </h2>
+              <p className="text-white/70 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+                {data.cta.subtitle}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href={data.cta.primaryButton.href}
+                  className="group inline-flex items-center justify-center gap-2 bg-white text-[#0a1628] px-8 py-4 font-extrabold text-lg hover:bg-white/90 transition-colors rounded-full"
+                >
+                  <Phone size={18} />
+                  {data.cta.primaryButton.label}
+                </Link>
+                <Link
+                  href={data.cta.secondaryButton.href}
+                  className="inline-flex items-center justify-center gap-2 border-2 border-white/40 text-white px-8 py-4 font-extrabold text-lg hover:bg-white/10 transition-colors rounded-full"
+                >
+                  {data.cta.secondaryButton.label}
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
             </div>
           </div>
-          {!loaded && null}
-        </section>
+        </div>
+      </section>
     </>
   );
 }

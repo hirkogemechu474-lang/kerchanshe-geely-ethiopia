@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 import {
   Save,
   Settings,
@@ -364,25 +365,11 @@ export default function VehicleSettingsPage() {
     setUploadingIndex(index);
 
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const imageUrl = data.success ? data.url : data.url;
-        updateView(index, 'imageUrl', imageUrl);
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to upload image');
-      }
+      const asset = await uploadAndRegisterMedia(file, { category: 'vehicle-360' });
+      updateView(index, 'imageUrl', asset.url);
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload image');
+      alert(error instanceof Error ? error.message : 'Failed to upload image');
     } finally {
       setUploadingIndex(null);
     }

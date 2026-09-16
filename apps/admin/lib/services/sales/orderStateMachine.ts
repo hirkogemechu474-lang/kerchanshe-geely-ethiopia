@@ -60,6 +60,10 @@ export interface OrderTransitionGates {
   paymentComplete: boolean;
   registrationComplete: boolean;
   invoiceComplete: boolean;
+  countersigned: boolean;
+  paymentVerified: boolean;
+  vehicleAllocated: boolean;
+  deliveryHold: boolean;
 }
 
 // BR: "An order cannot be marked 'ready for delivery' until the PDI
@@ -71,7 +75,15 @@ export function getAllowedOrderTransitions(currentStatus: string, gates: OrderTr
   const transitions = VALID_ORDER_TRANSITIONS[currentStatus] || [];
   return transitions.filter((to) => {
     if (to === 'READY_FOR_DELIVERY') {
-      return gates.pdiComplete && gates.agreementComplete && gates.paymentComplete;
+      return (
+        gates.pdiComplete &&
+        gates.agreementComplete &&
+        gates.countersigned &&
+        gates.paymentComplete &&
+        gates.paymentVerified &&
+        gates.vehicleAllocated &&
+        !gates.deliveryHold
+      );
     }
     if (to === 'DELIVERED') {
       return gates.registrationComplete && gates.invoiceComplete;

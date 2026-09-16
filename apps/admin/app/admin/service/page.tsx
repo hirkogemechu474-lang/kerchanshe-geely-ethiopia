@@ -10,7 +10,7 @@ export default async function ServicePage() {
 
   const client = await serverApiClient();
   const [{ data: bookingsPage }, { data: stats }] = await Promise.all([
-    client.get('/service-bookings', { params: { pageSize: 100 } }),
+    client.get('/service-bookings', { params: { pageSize: 50 } }),
     client.get('/service-bookings/stats'),
   ]);
   const bookings = bookingsPage.items;
