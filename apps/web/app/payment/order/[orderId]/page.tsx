@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
-import { CreditCard, Upload, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle, Clock, AlertCircle, FileText, X } from 'lucide-react';
 
 interface OrderPaymentSummary {
   id: string;
@@ -30,6 +30,11 @@ export default function OrderPaymentPage() {
   const [payingOnline, setPayingOnline] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  // Selected-but-not-yet-sent receipt file — reviewed in a preview before
+  // the customer explicitly confirms, instead of uploading the instant a
+  // file is chosen (a mis-picked file used to be un-undoable).
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -66,14 +71,35 @@ export default function OrderPaymentPage() {
     }
   };
 
-  const uploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Step 1: just stage the file for review — nothing is sent yet, so
+  // picking the wrong file by mistake costs nothing.
+  const selectProof = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSubmitError('');
+    setPendingFile(file);
+    setPendingPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+    });
+  };
+
+  const clearPendingProof = () => {
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(null);
+    setPendingPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Step 2: only actually uploads and submits once the customer has seen
+  // the preview and explicitly confirmed it's the right receipt.
+  const confirmAndSendProof = async () => {
+    if (!pendingFile) return;
     setUploading(true);
     setSubmitError('');
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', pendingFile);
       formData.append('category', 'payment-proofs');
       const uploadRes = await fetch('/api/upload/document', { method: 'POST', body: formData });
       const uploadData = await uploadRes.json().catch(() => null);
@@ -87,11 +113,11 @@ export default function OrderPaymentPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Unable to submit your receipt.');
       setOrder((prev) => (prev ? { ...prev, paymentStatus: data.paymentStatus, paymentProofUrl: data.paymentProofUrl } : prev));
+      clearPendingProof();
     } catch (err: any) {
       setSubmitError(err.message || 'Unable to submit your receipt.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -148,7 +174,19 @@ export default function OrderPaymentPage() {
 
             {submitError && <p className="text-sm text-red-600 mb-4">{submitError}</p>}
 
-            {order.paymentStatus === 'PAID' ? (
+            {order.paymentStatus === 'UNPAID' && order.outstandingAmount != null && order.outstandingAmount <= 0 ? (
+              // amountPaid already covers the total (e.g. entered by staff while
+              // preparing the invoice) but paymentStatus hasn't been confirmed by
+              // our team yet — showing "Pay Now" here would be confusing/could
+              // invite a duplicate payment for a balance that isn't actually due.
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <Clock className="w-10 h-10 text-geely-blue mx-auto mb-3" />
+                <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Payment Recorded</h2>
+                <p className="text-sm text-steel dark:text-steel-light">
+                  Your balance is fully covered. We're finalizing confirmation on our end — no further payment is needed.
+                </p>
+              </div>
+            ) : order.paymentStatus === 'PAID' ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                 <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                 <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Payment Received</h2>
@@ -191,18 +229,51 @@ export default function OrderPaymentPage() {
                   <p className="text-xs text-gray-500 mb-3">
                     Transferred to our bank account directly? Upload a photo or PDF of your receipt for our team to confirm.
                   </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={uploadProof}
-                    disabled={uploading}
-                    className="block w-full text-sm border border-line dark:border-midnight-line rounded-lg p-3"
-                  />
-                  {uploading && (
-                    <p className="text-xs text-steel dark:text-steel-light mt-2 flex items-center gap-1">
-                      <Upload className="w-3 h-3" /> Uploading…
-                    </p>
+
+                  {!pendingFile ? (
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={selectProof}
+                      className="block w-full text-sm border border-line dark:border-midnight-line rounded-lg p-3"
+                    />
+                  ) : (
+                    <div className="rounded-lg border border-line dark:border-midnight-line p-4 space-y-3">
+                      <p className="text-xs font-medium text-steel dark:text-steel-light">Review before sending</p>
+                      <div className="flex items-center gap-3">
+                        {pendingPreviewUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={pendingPreviewUrl} alt="Receipt preview" className="w-24 h-24 object-cover rounded-lg border border-line dark:border-midnight-line" />
+                        ) : (
+                          <div className="w-24 h-24 flex flex-col items-center justify-center gap-1 rounded-lg border border-line dark:border-midnight-line text-steel dark:text-steel-light">
+                            <FileText className="w-6 h-6" />
+                            <span className="text-[10px]">PDF</span>
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm text-navy dark:text-ice truncate">{pendingFile.name}</p>
+                          <p className="text-xs text-steel dark:text-steel-light">{(pendingFile.size / 1024).toFixed(0)} KB</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => void confirmAndSendProof()}
+                          disabled={uploading}
+                          className="inline-flex items-center gap-2 bg-geely-blue text-white font-bold px-5 py-2.5 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <Upload className="w-4 h-4" />
+                          {uploading ? 'Sending…' : 'Confirm & Send Receipt'}
+                        </button>
+                        <button
+                          onClick={clearPendingProof}
+                          disabled={uploading}
+                          className="inline-flex items-center gap-2 text-sm font-semibold text-steel dark:text-steel-light border border-line dark:border-midnight-line px-4 py-2.5 rounded-lg hover:bg-ice dark:hover:bg-midnight disabled:opacity-60"
+                        >
+                          <X className="w-4 h-4" /> Choose Different File
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

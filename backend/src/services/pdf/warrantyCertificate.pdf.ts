@@ -70,7 +70,7 @@ export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePd
   ]);
 
   // ── Warranty Coverage ──
-  ctx.y -= 12;
+  ctx.y -= 16;
   drawSectionTitle(ctx, 'Warranty Coverage');
   ctx = drawFieldTable(ctx, [
     ['Warranty Start', dateValue(data.warrantyStartDate)],
@@ -83,7 +83,7 @@ export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePd
 
   // ── What's Covered (from warranty page settings) ──
   if (covered.length > 0) {
-    ctx.y -= 16;
+    ctx.y -= 20;
     drawSectionTitle(ctx, "What's Covered");
     for (const item of covered) {
       ctx = ensureSpace(ctx, 28);
@@ -95,7 +95,7 @@ export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePd
 
   // ── What's Not Covered (from warranty page settings) ──
   if (notCovered.length > 0) {
-    ctx.y -= 16;
+    ctx.y -= 20;
     drawSectionTitle(ctx, "What's Not Covered");
     for (const item of notCovered) {
       ctx = ensureSpace(ctx, 28);
@@ -106,7 +106,7 @@ export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePd
   }
 
   // ── Terms & Conditions ──
-  ctx.y -= 16;
+  ctx.y -= 20;
   drawSectionTitle(ctx, 'Terms & Conditions');
   const terms = DEFAULT_TERMS;
   terms.forEach((term, i) => {
@@ -118,7 +118,7 @@ export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePd
   // ── Referenced Documents ──
   const docs = settings.documents ?? [];
   if (docs.length > 0) {
-    ctx.y -= 16;
+    ctx.y -= 20;
     drawSectionTitle(ctx, 'Referenced Documents');
     for (const doc of docs) {
       ctx = ensureSpace(ctx, 20);

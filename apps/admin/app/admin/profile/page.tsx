@@ -1,10 +1,17 @@
 import { requireAuth } from '@/lib/auth/middleware';
 import { Mail, Shield, Clock3 } from 'lucide-react';
 import { PageHeader, Card } from '@/components/admin/ui';
+import { serverApiClient } from '@/lib/serverApiClient';
+import ProfileTitleForm from '@/components/admin/profile/ProfileTitleForm';
 
 export default async function ProfilePage() {
   const session = await requireAuth();
   const user = session.user;
+
+  // AdminUser (the session shape) doesn't carry `title` — fetch the full
+  // record so the form below starts from the real saved value.
+  const client = await serverApiClient();
+  const fullUser = await client.get(`/admin/users/${user.id}`).then((r) => r.data.user).catch(() => null);
 
   return (
     <div className="space-y-6">
@@ -29,8 +36,11 @@ export default async function ProfilePage() {
         </Card>
 
         <Card className="space-y-4">
-          <h2 className="font-semibold text-gray-900">Session Summary</h2>
-          <p className="text-sm text-gray-600">This screen is a lightweight profile landing page for the admin shell.</p>
+          <h2 className="font-semibold text-gray-900">Signing Details</h2>
+          <p className="text-sm text-gray-600">
+            Your job title is printed alongside your name whenever you sign or approve a document.
+          </p>
+          <ProfileTitleForm userId={user.id} initialTitle={fullUser?.title || ''} />
         </Card>
       </div>
     </div>

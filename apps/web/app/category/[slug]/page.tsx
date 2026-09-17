@@ -218,7 +218,7 @@ export default function CategoryPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {category.vehicles.map((vehicle) => {
                 const images = Array.isArray(vehicle.images) ? vehicle.images : [];
-                const mainImage = vehicle.heroImageUrl || images[0] || '/placeholder-vehicle.jpg';
+                const mainImage = vehicle.heroImageUrl || images[0] || '/placeholder-vehicle.svg';
                 const specs = (vehicle.specifications || {}) as any;
                 const range = specs.engine?.range || specs.performance?.range || null;
                 const battery = specs.engine?.batteryCapacity || specs.performance?.batteryCapacity || null;

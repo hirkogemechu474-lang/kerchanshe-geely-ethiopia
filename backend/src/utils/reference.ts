@@ -14,6 +14,8 @@ export const REFERENCE_CATEGORY = {
   SHOWROOM_VISIT: 'SV',
   LEAD: 'LD',
   DELIVERY: 'DN',
+  PROFORMA: 'PI',
+  PAYMENT: 'PY',
 } as const;
 
 export type ReferenceCategory = (typeof REFERENCE_CATEGORY)[keyof typeof REFERENCE_CATEGORY];

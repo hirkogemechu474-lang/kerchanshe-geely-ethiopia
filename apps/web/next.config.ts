@@ -68,12 +68,7 @@ const nextConfig: NextConfig = {
     const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:7500";
 
     return {
-      beforeFiles: [
-        {
-          source: "/uploads/:path*",
-          destination: `${adminUrl.replace(/\/$/, "")}/uploads/:path*`,
-        },
-      ],
+      beforeFiles: [],
       // /api/upload* is handled locally by this app's own app/api/upload*
       // route handlers (see lib/localUpload.ts): Next's rewrite proxy fails
       // on large multipart bodies, so those routes must win over this catch-
@@ -81,6 +76,12 @@ const nextConfig: NextConfig = {
       // rather than `beforeFiles` lets them do that while every other
       // /api/* request still falls through to the backend here.
       afterFiles: [
+        // Serve uploads from the local public/uploads first.  Only proxy to
+        // the admin origin when the file is NOT found locally (fallback).
+        {
+          source: "/uploads/:path*",
+          destination: `${adminUrl.replace(/\/$/, "")}/uploads/:path*`,
+        },
         {
           source: "/api/:path*",
           destination: `${backendUrl}/api/:path*`,

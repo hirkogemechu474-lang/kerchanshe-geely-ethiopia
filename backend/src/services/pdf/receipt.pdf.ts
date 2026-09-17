@@ -44,7 +44,7 @@ export async function generateReceiptPdf(data: ReceiptPdfData, company: CompanyI
     ['Phone', data.customerPhone || '—'],
     ['Email', data.customerEmail || '—'],
   ]);
-  ctx.y -= 6;
+  ctx.y -= 10;
 
   ctx = ensureSpace(ctx, 90);
   drawSectionTitle(ctx, 'Vehicle');
@@ -52,7 +52,7 @@ export async function generateReceiptPdf(data: ReceiptPdfData, company: CompanyI
     ['Brand / Model', formatBrandModel(data.vehicleModel)],
     ['VIN / Chassis No.', data.vin || '—'],
   ]);
-  ctx.y -= 6;
+  ctx.y -= 10;
 
   ctx = ensureSpace(ctx, 150);
   drawSectionTitle(ctx, 'Payment Details');
@@ -63,7 +63,7 @@ export async function generateReceiptPdf(data: ReceiptPdfData, company: CompanyI
     ['Total Order Price', fillValue(data.totalPrice)],
     ['Balance Due', balanceDue > 0 ? fillValue(balanceDue) : 'Paid in Full'],
   ]);
-  ctx.y -= 6;
+  ctx.y -= 10;
 
   ctx = ensureSpace(ctx, 90);
   drawSectionTitle(ctx, 'Verification');
@@ -71,7 +71,7 @@ export async function generateReceiptPdf(data: ReceiptPdfData, company: CompanyI
     ['Verified By', [data.verifiedByName, data.verifiedByTitle].filter(Boolean).join(', ') || '—'],
     ['Verified At', dateValue(data.paymentVerifiedAt)],
   ]);
-  ctx.y -= 16;
+  ctx.y -= 20;
 
   ctx = ensureSpace(ctx, 40);
   ctx = wrapText(

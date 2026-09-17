@@ -93,7 +93,7 @@ export const complaintService = {
                 category: data.category,
                 priority: data.priority,
                 subject: data.subject,
-                adminLink: `${env?.urls?.admin || ''}/admin/customers/complaints`,
+                adminLink: `${env?.urls?.admin || ''}/admin/complaints`,
               },
               greetingName: assignedUser.name,
               inApp: {
@@ -129,7 +129,7 @@ export const complaintService = {
             type: 'complaint_created',
             title: `[${data.priority}] New Customer Complaint`,
             body: `A new ${data.priority.toLowerCase()} priority complaint has been created by ${data.customerName}: "${data.subject}" (${data.category}). Case No: ${caseNo}. Please review and assign action.`,
-            link: `/admin/customers/complaints`,
+            link: `/admin/complaints`,
             relatedModel: 'complaint',
             relatedId: caseRecord.id,
             priority: data.priority === 'CRITICAL' ? 'urgent' : 'high',
@@ -188,6 +188,58 @@ export const complaintService = {
         toValue: { status },
         reason: note,
       });
+
+      // Notify the customer, the assigned staff member, and the relevant
+      // managers (workshop-side for vehicle/service complaints, sales-side
+      // otherwise) that the case status has changed — resolve/close/reopen/
+      // escalate previously notified nobody.
+      try {
+        const recipients: string[] = [];
+        if (updated.customerEmail) recipients.push(updated.customerEmail);
+        if (updated.assignedTo) {
+          const assignedUser = await prisma.user.findUnique({ where: { id: updated.assignedTo } });
+          if (assignedUser?.email) recipients.push(assignedUser.email);
+        }
+        const isWorkshopRelated = updated.category === 'VEHICLE_ISSUE' || updated.category === 'SERVICE_QUALITY';
+        const managerEmails = isWorkshopRelated
+          ? await userRepository.findWorkshopManagerEmails()
+          : await userRepository.findManagerEmails();
+        recipients.push(...managerEmails);
+
+        const uniqueRecipients = [...new Set(recipients)];
+        if (uniqueRecipients.length > 0) {
+          const statusLabels: Record<string, string> = {
+            OPEN: 'Open', IN_PROGRESS: 'In Progress', PENDING_CUSTOMER: 'Pending Customer',
+            PENDING_INTERNAL: 'Pending Internal', RESOLVED: 'Resolved', CLOSED: 'Closed', REOPENED: 'Reopened',
+          };
+          const statusLabel = statusLabels[status] || status;
+          await dispatchNotification({
+            type: 'complaint_status_changed',
+            to: uniqueRecipients,
+            subject: `Complaint ${statusLabel} — ${existing.caseNo}`,
+            data: {
+              caseNo: existing.caseNo,
+              customerName: existing.customerName,
+              category: existing.category,
+              priority: existing.priority,
+              status: statusLabel,
+              ...(note && { note }),
+            },
+            greetingName: existing.customerName,
+            inApp: {
+              type: 'complaint_status_changed',
+              title: `Complaint ${statusLabel}`,
+              body: `Complaint ${existing.caseNo} (${existing.customerName}) has been ${statusLabel.toLowerCase()}.`,
+              link: `/admin/complaints`,
+              relatedModel: 'complaint',
+              relatedId: caseId,
+              priority: status === 'REOPENED' ? 'high' : 'normal',
+            },
+          });
+        }
+      } catch (notifyError: any) {
+        console.error('[COMPLAINT STATUS NOTIFICATION ERROR]', notifyError.message);
+      }
 
       return { ok: true, data: updated };
     } catch (error: any) {

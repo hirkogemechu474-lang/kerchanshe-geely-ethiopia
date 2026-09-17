@@ -47,6 +47,10 @@ interface QuotationPdfData {
   balanceDueDate: string | null;
   deliveryLocation: string | null;
   expectedHandoverNote: string | null;
+  // The customer's own configurator selection (see ConfigurationSummary.tsx) —
+  // used to default Unit price / Vehicle color to what the customer actually
+  // requested, rather than leaving staff to retype it.
+  configurationJson: { color?: string | null; price?: number | null } | null;
 }
 
 async function parseJsonResponse(res: Response): Promise<any> {
@@ -66,31 +70,54 @@ export default function QuotationPdfPanel({
   publicSignUrl,
   webAppUrl,
   assignedRepName,
+  assignedAgentName,
 }: {
   quotation: QuotationPdfData;
   canManage: boolean;
   publicPdfUrl: string | null;
   publicSignUrl: string | null;
   webAppUrl: string;
-  /** Name of whoever the quotation is actually assigned to (Assigned To panel) — the
-   *  default for the name printed on the document, so it doesn't drift from the real
-   *  assignment. */
+  /** Name of the quotation's assignee (Assigned To panel), but only when that
+   *  assignee holds a manager-tier role — null when it's assigned to a plain
+   *  sales agent, or unassigned (see MANAGER_ROLES in assignSalesRep.ts).
+   *  "Sales executive" on the printed document defaults to a manager's name
+   *  only; a sales agent's name is never auto-filled here, by design. */
   assignedRepName?: string | null;
+  /** Name of the assignee when it's a plain sales agent (the complement of
+   *  assignedRepName — never both set). Only used to detect and discard a
+   *  quotation.salesExecutiveName that was auto-saved from an agent
+   *  assignment before this manager-only rule existed. */
+  assignedAgentName?: string | null;
 }) {
   const router = useRouter();
-  const [unitPrice, setUnitPrice] = useState(quotation.unitPrice?.toString() || '');
+  // Defaults to the price the customer already saw on the configurator
+  // (configurationJson.price, includes trim/color add-ons) — falling back to
+  // the vehicle's DB list price (fetched below) only when this quotation has
+  // no configurator snapshot (e.g. a general enquiry).
+  const [unitPrice, setUnitPrice] = useState(quotation.unitPrice?.toString() || quotation.configurationJson?.price?.toString() || '');
   const [quantity, setQuantity] = useState(quotation.quantity?.toString() || '1');
   const [discountAmount, setDiscountAmount] = useState(quotation.discountAmount?.toString() || '0');
   const [vehicleYear, setVehicleYear] = useState(quotation.vehicleYear || '');
-  const [vehicleColor, setVehicleColor] = useState(quotation.vehicleColor || '');
+  // Defaults to the color the customer actually requested on the
+  // configurator (configurationJson.color) — still editable/clearable if the
+  // printed color needs to differ (e.g. requested color went out of stock).
+  const [vehicleColor, setVehicleColor] = useState(quotation.vehicleColor || quotation.configurationJson?.color || '');
   const [validUntil, setValidUntil] = useState(quotation.quotationValidUntil?.slice(0, 10) || '');
   const [paymentTerms, setPaymentTerms] = useState(quotation.paymentTerms || '');
   const [deliveryTerms, setDeliveryTerms] = useState(quotation.deliveryTerms || '');
   const [salesType, setSalesType] = useState(quotation.salesType || 'showroom');
-  // Defaults to whoever the quotation is currently assigned to (manager or rep) —
-  // not a separate manual pick — but stays editable in case the printed name needs
-  // to differ from the live assignment.
-  const [salesExecutiveName, setSalesExecutiveName] = useState(quotation.salesExecutiveName || assignedRepName || '');
+  // Defaults to the assigned manager's name (assignedRepName is already
+  // null unless the assignee holds a manager-tier role — see page.tsx) —
+  // never a sales agent's name. A saved salesExecutiveName that exactly
+  // matches the currently-assigned agent's name is a leftover auto-fill from
+  // before this rule existed, so it's discarded rather than trusted; any
+  // other saved value (a manager's name, or a genuinely different manually
+  // typed name) is kept. Left blank for manual typing otherwise.
+  const [salesExecutiveName, setSalesExecutiveName] = useState(
+    (quotation.salesExecutiveName && quotation.salesExecutiveName !== assignedAgentName ? quotation.salesExecutiveName : null) ||
+      assignedRepName ||
+      ''
+  );
   const [customerTin, setCustomerTin] = useState(quotation.customerTin || '');
   const [customerAddress, setCustomerAddress] = useState(quotation.customerAddress || '');
   const [vehicleVariant, setVehicleVariant] = useState(quotation.vehicleVariant || '');
@@ -133,6 +160,11 @@ export default function QuotationPdfPanel({
   // Vehicle.id, so this resolves by name (see /api/admin/vehicle-colors's
   // vehicleName fallback) and simply leaves colorOptions null — falling
   // back to the free-text input below — if no vehicle or no colors match.
+  // The same lookup also returns the vehicle's real model year and list
+  // price. Year defaults the "Vehicle year" field instead of leaving it a
+  // guessed placeholder. Price only fills Unit price when this quotation has
+  // neither a saved unitPrice nor a configurator snapshot to draw from.
+  // Still editable in case the printed values should differ.
   useEffect(() => {
     if (!quotation.vehicleModel) return;
     let active = true;
@@ -141,8 +173,15 @@ export default function QuotationPdfPanel({
         const res = await fetch(`/api/admin/vehicle-colors?vehicleName=${encodeURIComponent(quotation.vehicleModel!)}`);
         if (!res.ok) return;
         const data = await res.json();
-        if (active && data.success && Array.isArray(data.colors) && data.colors.length > 0) {
+        if (!active || !data.success) return;
+        if (Array.isArray(data.colors) && data.colors.length > 0) {
           setColorOptions(data.colors);
+        }
+        if (!quotation.vehicleYear && data.year) {
+          setVehicleYear(String(data.year));
+        }
+        if (!quotation.unitPrice && !quotation.configurationJson?.price && data.price) {
+          setUnitPrice(String(data.price));
         }
       } catch {
         // Leave colorOptions null — the free-text input still works.
@@ -151,7 +190,7 @@ export default function QuotationPdfPanel({
     return () => {
       active = false;
     };
-  }, [quotation.vehicleModel]);
+  }, [quotation.vehicleModel, quotation.vehicleYear, quotation.unitPrice, quotation.configurationJson]);
 
   const generate = async () => {
     setBusy(true);
@@ -325,6 +364,7 @@ export default function QuotationPdfPanel({
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Unit price (ETB)</label>
               <input type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <p className="mt-1 text-[11px] text-gray-400">Defaults to the customer's configured price, or the vehicle's list price — adjust for the final negotiated price.</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
@@ -336,7 +376,7 @@ export default function QuotationPdfPanel({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle year</label>
-              <input value={vehicleYear} onChange={(e) => setVehicleYear(e.target.value)} placeholder="2026" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <input value={vehicleYear} onChange={(e) => setVehicleYear(e.target.value)} placeholder="Auto-filled from vehicle" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle color</label>
@@ -355,6 +395,9 @@ export default function QuotationPdfPanel({
                 </select>
               ) : (
                 <input value={vehicleColor} onChange={(e) => setVehicleColor(e.target.value)} placeholder="e.g. Pearl White" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              )}
+              {quotation.configurationJson?.color && (
+                <p className="mt-1 text-[11px] text-gray-400">Defaults to the color the customer requested — change it if that color isn't available.</p>
               )}
             </div>
             <div>
@@ -387,7 +430,7 @@ export default function QuotationPdfPanel({
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sales executive</label>
                 <input value={salesExecutiveName} onChange={(e) => setSalesExecutiveName(e.target.value)} placeholder="Name printed on the quotation" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                <p className="mt-1 text-[11px] text-gray-400">Defaults to whoever this quotation is assigned to — edit only if the printed name should differ.</p>
+                <p className="mt-1 text-[11px] text-gray-400">Defaults to the assigned manager's name — type it in if this is assigned to a sales agent instead.</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Delivery location</label>

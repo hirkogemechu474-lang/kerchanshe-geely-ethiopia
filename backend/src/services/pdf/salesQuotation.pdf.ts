@@ -12,6 +12,7 @@ export interface QuotationPdfData {
   vehicleModel: string;
   totalPrice: number;
   reference?: string | null;
+  purchaserTitle?: string | null; // salutation, e.g. "Ato", "Miss", "Dr" — printed before customerName
   customerEmail?: string | null;
   customerPhone?: string | null;
   customerTin?: string | null;
@@ -102,6 +103,7 @@ const QUOTATION_CONDITIONS = [
 
 export async function generateSalesQuotationPdf(data: QuotationPdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
+  const customerDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');
   const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
   const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
   const managerStampImage = await embedSignatureImage(doc.doc, data.managerStampUrl);
@@ -113,36 +115,32 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   drawLabelValue(ctx, 'Quotation No.', data.quotationNo, PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Type', salesTypeLabel(data.salesType), PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Date', dateValue(data.issuedAt ?? new Date()), PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Valid Until', dateValue(data.validUntil), PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Executive', data.salesExecutiveName || '—', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Currency', 'ETB', PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
-  drawLabelValue(ctx, 'Customer', data.customerName || '—', PDF_MARGIN, ctx.y);
+  drawLabelValue(ctx, 'Customer', customerDisplayName, PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'TIN', data.customerTin || '—', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Phone', data.customerPhone || '—', PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
-  // Email and address each get a full-width row — the narrow columns used
-  // above (~64-118px before the page edge) truncate a realistic email
-  // address or a multi-part Ethiopian address when squeezed next to
-  // another field on the same line.
   drawLabelValue(ctx, 'Email', data.customerEmail || '—', PDF_MARGIN, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Address', data.customerAddress || '—', PDF_MARGIN, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Brand / Model', data.vehicleModel ? formatBrandModel(data.vehicleModel) : 'General enquiry', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Variant / Battery', data.vehicleVariant || '—', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Model Year', data.vehicleYear ? String(data.vehicleYear) : '—', PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Colour', data.vehicleColor || '—', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'VIN / Chassis No.', data.vehicleVin || '—', PDF_MARGIN + 220, ctx.y);
-  ctx.y -= 30;
+  ctx.y -= 36;
 
   drawSectionTitle(ctx, 'Price Summary');
   const summaryX = PDF_MARGIN + PDF_CONTENT_WIDTH - 220;
@@ -169,12 +167,12 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   ctx.page.drawLine({ start: { x: summaryX, y: ctx.y + 4 }, end: { x: rightCol, y: ctx.y + 4 }, thickness: 1, color: COLORS.border });
   ctx.page.drawText('TOTAL PAYABLE', { x: summaryX, y: ctx.y, size: 11, font: ctx.bold, color: COLORS.dark });
   drawRightText(ctx, fillValue(data.totalPrice), rightCol, ctx.y, 11, ctx.bold, COLORS.dark);
-  ctx.y -= 28;
+  ctx.y -= 32;
 
   ctx = ensureSpace(ctx, 180);
   drawSectionTitle(ctx, "What's Included");
   ctx = drawWhatsIncludedTable(ctx, data);
-  ctx.y -= 16;
+  ctx.y -= 20;
 
   ctx = ensureSpace(ctx, 110);
   drawSectionTitle(ctx, 'Payment & Delivery');
@@ -194,9 +192,9 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
     ? `Order — expected arrival/handover: ${data.expectedHandoverNote || '—'}`
     : `Showroom / Stock — expected handover: ${data.expectedHandoverNote || '—'}`;
   ctx.page.drawText(deliveryLine, { x: PDF_MARGIN, y: ctx.y, size: 9, font: ctx.font, color: COLORS.dark });
-  ctx.y -= 14;
+  ctx.y -= 18;
   ctx.page.drawText(`Delivery location: ${data.deliveryLocation || '—'}`, { x: PDF_MARGIN, y: ctx.y, size: 9, font: ctx.font, color: COLORS.dark });
-  ctx.y -= 20;
+  ctx.y -= 24;
 
   // Page 2 — Quotation Conditions + Customer Confirmation, per the draft.
   ctx = addPage(doc);
@@ -226,7 +224,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
     ctx,
     {
       heading: 'CUSTOMER',
-      name: data.customerName,
+      name: customerDisplayName,
       signatureImage: customerSignatureImage,
       stampImage: customerStampImage,
       date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,

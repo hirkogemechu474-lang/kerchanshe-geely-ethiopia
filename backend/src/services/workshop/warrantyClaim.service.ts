@@ -1,4 +1,4 @@
-import { warrantyClaimRepository, counterRepository } from '../../repositories';
+import { warrantyClaimRepository, counterRepository, userRepository } from '../../repositories';
 import { auditService } from '../audit/audit.service';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { prisma } from '../../config/database';
@@ -131,7 +131,12 @@ export const warrantyClaimService = {
 
           // Step 21: Also notify service team about warranty claim status change
           const serviceTeam = await prisma.user.findMany({ where: { role: { in: ['service', 'service_manager', 'service_advisor', 'technician', 'admin'] }, isActive: true }, select: { email: true } });
-          const serviceEmails = serviceTeam.map(s => s.email).filter(Boolean);
+          // Also broadcast to the workshop-manager roles (workshop_manager,
+          // service_manager, after_sales_manager, admin) as an additional
+          // recipient list, alongside the existing technician/service_advisor
+          // lookup above — not a replacement for it.
+          const workshopManagerEmails = await userRepository.findWorkshopManagerEmails();
+          const serviceEmails = [...new Set([...serviceTeam.map(s => s.email).filter(Boolean), ...workshopManagerEmails])];
           if (serviceEmails.length > 0) {
             const serviceSubject = toStatus === 'APPROVED'
               ? `Warranty Claim Approved — ${claim.claimNo}`

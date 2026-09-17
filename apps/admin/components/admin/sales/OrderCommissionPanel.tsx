@@ -18,6 +18,12 @@ interface OrderCommissionData {
   commissionStatus: string;
 }
 
+// Same assignable-role set as apps/admin/lib/assignSalesRep.ts's
+// ASSIGNABLE_ROLES, duplicated here because that module imports
+// next/headers (server-only) and can't be pulled into this client
+// component. Keep the two lists in sync.
+const ASSIGNABLE_ROLES = ['sales', 'sales_manager', 'general_manager', 'admin', 'sales_representative', 'super_admin'];
+
 const STATUS_TONE: Record<string, Tone> = {
   NOT_APPLICABLE: 'gray',
   PENDING: 'orange',
@@ -44,20 +50,28 @@ export default function OrderCommissionPanel({
   useEffect(() => {
     // /api/admin/sales-reps doesn't exist — apps/admin/lib/assignSalesRep.ts's
     // listSalesReps() (used server-side for AssignedToPanel) hits this same
-    // /api/admin/users?role=sales endpoint instead.
-    fetch('/api/admin/users?role=sales&pageSize=100')
-      .then((res) => (res.ok ? res.json() : { items: [] }))
-      .then((data) =>
-        setReps(
-          (data.items || [])
-            .map((user: { id: string; name: string; isActive?: boolean }) => ({
-              id: user.id,
-              name: user.name,
-              isActive: user.isActive !== false,
-            }))
-        )
+    // /api/admin/users endpoint instead. That backend route only filters by
+    // a single exact role (no "in" support), so fetch each assignable role
+    // in parallel and merge — same approach as listSalesReps().
+    Promise.all(
+      ASSIGNABLE_ROLES.map((role) =>
+        fetch(`/api/admin/users?role=${role}&pageSize=100`)
+          .then((res) => (res.ok ? res.json() : { items: [] }))
+          .catch(() => ({ items: [] }))
       )
-      .catch(() => setReps([]));
+    ).then((results) => {
+      const seen = new Set<string>();
+      const merged: { id: string; name: string; isActive: boolean }[] = [];
+      for (const data of results) {
+        for (const user of (data.items || []) as { id: string; name: string; isActive?: boolean }[]) {
+          if (seen.has(user.id)) continue;
+          seen.add(user.id);
+          merged.push({ id: user.id, name: user.name, isActive: user.isActive !== false });
+        }
+      }
+      merged.sort((a, b) => a.name.localeCompare(b.name));
+      setReps(merged);
+    });
   }, []);
 
   const dirty = salesAgentId !== (order.salesAgentId || '') || commissionRate !== (order.commissionRate?.toString() || '5');
@@ -122,10 +136,8 @@ export default function OrderCommissionPanel({
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           >
             <option value="">Unassigned</option>
-            {/* Keep a stored name that no longer matches an active rep (e.g. deactivated)
-                selectable, rather than silently blanking it. */}
             {reps.map((rep) => (
-              <option key={rep.id} value={rep.name}>
+              <option key={rep.id} value={rep.id}>
                 {rep.name}{!rep.isActive ? ' (inactive)' : ''}
               </option>
             ))}

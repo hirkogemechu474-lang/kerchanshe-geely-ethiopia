@@ -63,7 +63,7 @@ export const userRepository = {
       where: { id },
       select: {
         id: true, email: true, name: true, role: true, title: true, isActive: true, dealerId: true,
-        signatureUrl: true,
+        signatureUrl: true, stampUrl: true,
         lastLogin: true, createdAt: true, updatedAt: true,
         isAvailableForLeads: true, leadHoursStart: true, leadHoursEnd: true,
         brandSpecializations: { select: { brandId: true } },
@@ -131,11 +131,27 @@ export const userRepository = {
   },
 
   async findManagerEmails(): Promise<string[]> {
+    // 'manager' and 'gm_geely' added alongside the original three roles —
+    // several call sites used their own inline role lists that included
+    // these (plus 'general_manager', which isn't a real role in
+    // VALID_STAFF_ROLES/users.routes.ts and could never match any user; kept
+    // here only in case older seed data still has it) before being
+    // consolidated onto this shared helper, and dropping them here would
+    // have silently stopped notifying those managers.
     const managers = await prisma.user.findMany({
-      where: { isActive: true, role: { in: ['sales_manager', 'admin', 'general_manager'] } },
+      where: { isActive: true, role: { in: ['sales_manager', 'admin', 'general_manager', 'manager', 'gm_geely'] } },
       select: { email: true },
     });
     const emails = managers.map((m) => m.email).filter((e): e is string => Boolean(e));
     return emails.length > 0 ? emails : ['manager@geelyethiopia.com'];
+  },
+
+  async findWorkshopManagerEmails(): Promise<string[]> {
+    const managers = await prisma.user.findMany({
+      where: { isActive: true, role: { in: ['workshop_manager', 'service_manager', 'after_sales_manager', 'admin'] } },
+      select: { email: true },
+    });
+    const emails = managers.map((m) => m.email).filter((e): e is string => Boolean(e));
+    return emails.length > 0 ? emails : ['workshop@geelyethiopia.com'];
   },
 };

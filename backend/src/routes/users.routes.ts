@@ -49,7 +49,13 @@ router.get('/', async (req: Request, res: Response) => {
     const [items, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        select: { id: true, name: true, email: true, role: true, title: true, isActive: true, createdAt: true, lastLogin: true },
+        select: {
+          id: true, name: true, email: true, role: true, title: true, isActive: true,
+          dealerId: true, createdAt: true, lastLogin: true, avatarUrl: true,
+          signatureUrl: true, stampUrl: true,
+          isAvailableForLeads: true, leadHoursStart: true, leadHoursEnd: true,
+          brandSpecializations: { select: { brandId: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,

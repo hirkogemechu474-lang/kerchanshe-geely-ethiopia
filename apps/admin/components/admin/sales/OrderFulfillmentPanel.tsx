@@ -53,10 +53,17 @@ export default function OrderFulfillmentPanel({
   const [accessoriesAmount, setAccessoriesAmount] = useState('0');
   const [otherDescription, setOtherDescription] = useState('');
   const [otherAmount, setOtherAmount] = useState('0');
-  const [vatAmount, setVatAmount] = useState('0');
+  // Defaults to 15% of the vehicle price — this used to default to '0',
+  // which generateInvoice() converts to null (`Number(vatAmount) || null`),
+  // so an invoice generated without someone remembering to fill it in
+  // printed the VAT row blank ('—' via fillValue in salesInvoice.pdf.ts).
+  // Still editable/clearable for the rare VAT-exempt sale.
+  const [vatAmount, setVatAmount] = useState(order.totalPrice ? Math.round(order.totalPrice * 0.15).toString() : '0');
   const [registrationCharge, setRegistrationCharge] = useState('0');
   const [amountPaid, setAmountPaid] = useState(order.totalPrice?.toString() || '0');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  // Auto-generated immediately so the rep never has to type one — mirrors
+  // the same "system creates it" behavior as proformaInvoiceNo below.
   const [paymentReferenceNo, setPaymentReferenceNo] = useState(`PAY-${order.orderNo}-${Date.now().toString(36).toUpperCase()}`);
   const [odometerAtDelivery, setOdometerAtDelivery] = useState('0');
 
@@ -104,6 +111,9 @@ export default function OrderFulfillmentPanel({
       });
       const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Failed to generate invoice');
+      // A blank payment reference no. gets auto-generated server-side —
+      // reflect it back into the field so the sales rep sees what was stamped.
+      setPaymentReferenceNo(data.paymentReferenceNo || '');
       setInvoiceNotice(
         order.invoicedAt
           ? ''
@@ -201,6 +211,7 @@ export default function OrderFulfillmentPanel({
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">VAT (ETB)</label>
                   <input type="number" min={0} value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  <p className="mt-1 text-[11px] text-gray-400">Defaults to 15% of the vehicle price — clear it only if this sale is VAT-exempt.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Registration / plate / other charge (ETB)</label>
@@ -220,7 +231,11 @@ export default function OrderFulfillmentPanel({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Payment reference no.</label>
-                  <input value={paymentReferenceNo} onChange={(e) => setPaymentReferenceNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  <input
+                    value={paymentReferenceNo}
+                    onChange={(e) => setPaymentReferenceNo(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Odometer at delivery (km)</label>

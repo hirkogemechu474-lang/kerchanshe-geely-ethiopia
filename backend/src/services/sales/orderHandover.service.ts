@@ -4,6 +4,7 @@ import { generateHandoverPdf, HandoverPdfData, HandoverItemRow, InspectionRow, E
 import { getCompanyInfo } from '../pdf/companyInfo';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { env } from '../../config/env';
+import { roleLabel } from '../../utils/roleLabels';
 
 async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
@@ -17,11 +18,13 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   let countersignerName: string | null = null;
   let countersignerTitle: string | null = null;
   let countersignerSignatureUrl: string | null = null;
+  let countersignerStampUrl: string | null = null;
   if (order.handoverCountersignedById) {
     const countersigner = await userRepository.findByIdSlim(order.handoverCountersignedById);
     countersignerName = countersigner?.name ?? null;
-    countersignerTitle = countersigner?.title ?? null;
+    countersignerTitle = countersigner?.title || roleLabel(countersigner?.role);
     countersignerSignatureUrl = countersigner?.signatureUrl ?? null;
+    countersignerStampUrl = countersigner?.stampUrl ?? null;
   } else if (order.handoverCountersignedAt) {
     const signatures = await documentSignatureRepository.findMany('HANDOVER', order.id);
     const managerSignature = signatures.find((s: any) => s.role === 'manager');
@@ -29,7 +32,8 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
     countersignerSignatureUrl = managerSignature?.signatureUrl ?? null;
     if (managerSignature?.signedByUserId) {
       const countersigner = await userRepository.findByIdSlim(managerSignature.signedByUserId);
-      countersignerTitle = countersigner?.title ?? null;
+      countersignerTitle = countersigner?.title || roleLabel(countersigner?.role);
+      countersignerStampUrl = countersigner?.stampUrl ?? null;
     }
   }
 
@@ -71,6 +75,7 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
     countersignedAt: order.handoverCountersignedAt,
     customerSignatureUrl: order.handoverSignedDocumentUrl ?? null,
     managerSignatureUrl: countersignerSignatureUrl,
+    managerStampUrl: countersignerStampUrl,
   };
 }
 

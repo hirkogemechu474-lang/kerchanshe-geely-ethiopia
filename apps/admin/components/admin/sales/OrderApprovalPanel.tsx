@@ -16,6 +16,7 @@ import { validateTin } from '@/lib/idValidation';
 // TestDriveIdCapture.tsx.
 interface OrderApprovalData {
   id: string;
+  orderNo: string;
   customerEmail: string | null;
   approvedAt: string | null;
   agreementSentAt: string | null;
@@ -37,6 +38,7 @@ interface OrderApprovalData {
   accessoriesDescription: string | null;
   proformaInvoiceNo: string | null;
   proformaInvoiceDate: string | null;
+  totalPrice: number | null;
   vatAmount: number | null;
   registrationCharge: number | null;
   accessoriesAmount: number | null;
@@ -81,9 +83,19 @@ export default function OrderApprovalPanel({
   const [purchaserAddress, setPurchaserAddress] = useState(order.purchaserAddress || '');
   const [purchaserAuthorizedRep, setPurchaserAuthorizedRep] = useState(order.purchaserAuthorizedRep || '');
   const [accessoriesDescription, setAccessoriesDescription] = useState(order.accessoriesDescription || '');
-  const [proformaInvoiceNo, setProformaInvoiceNo] = useState(order.proformaInvoiceNo || '');
+  // Auto-generated immediately so the rep never has to type one — mirrors
+  // the same "system creates it" behavior as paymentReferenceNo in
+  // OrderFulfillmentPanel.
+  const [proformaInvoiceNo, setProformaInvoiceNo] = useState(order.proformaInvoiceNo || `PI-${order.orderNo}-${Date.now().toString(36).toUpperCase()}`);
   const [proformaInvoiceDate, setProformaInvoiceDate] = useState(order.proformaInvoiceDate?.slice(0, 10) || '');
-  const [vatAmount, setVatAmount] = useState(order.vatAmount?.toString() || '');
+  // Defaults to 15% of the total price — this used to default to '', which
+  // saveAgreementDetails() passes through as `vatAmount || null`, so an
+  // agreement saved without someone remembering to type a VAT figure
+  // printed the VAT row blank ('—' via fillValue in salesAgreement.pdf.ts).
+  // Still editable/clearable for the rare VAT-exempt sale.
+  const [vatAmount, setVatAmount] = useState(
+    order.vatAmount != null ? order.vatAmount.toString() : order.totalPrice ? Math.round(order.totalPrice * 0.15).toString() : ''
+  );
   const [registrationCharge, setRegistrationCharge] = useState(order.registrationCharge?.toString() || '');
   const [accessoriesAmount, setAccessoriesAmount] = useState(order.accessoriesAmount?.toString() || '');
   const [depositAmount, setDepositAmount] = useState(order.depositAmount?.toString() || '');
@@ -190,6 +202,9 @@ export default function OrderApprovalPanel({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save agreement details');
+      // A blank proforma invoice no. gets auto-generated server-side — reflect
+      // it back into the field so the sales rep sees what was stamped.
+      setProformaInvoiceNo(data.proformaInvoiceNo || '');
       setDetailsSaved(true);
       onUpdated();
       router.refresh();
@@ -398,7 +413,11 @@ export default function OrderApprovalPanel({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Proforma invoice no.</label>
-                  <input value={proformaInvoiceNo} onChange={(e) => setProformaInvoiceNo(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  <input
+                    value={proformaInvoiceNo}
+                    onChange={(e) => setProformaInvoiceNo(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Proforma invoice date</label>
@@ -411,6 +430,7 @@ export default function OrderApprovalPanel({
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">VAT (ETB)</label>
                   <input type="number" min={0} value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  <p className="mt-1 text-[11px] text-gray-400">Defaults to 15% of the total price — clear it only if this sale is VAT-exempt.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Registration / plate charge (ETB)</label>

@@ -19,6 +19,7 @@ router.get('/:token', async (req: Request, res: Response) => {
     res.json({
       name: user.name,
       hasExistingSignature: !!user.signatureUrl,
+      hasExistingStamp: !!user.stampUrl,
     });
   } catch (error) {
     console.error('Lookup signature token error:', error);
@@ -29,13 +30,13 @@ router.get('/:token', async (req: Request, res: Response) => {
 // POST /api/staff-signature/:token/sign (complete setup)
 router.post('/:token/sign', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
-    const { signatureData, signatureDataUrl, photoUrl } = req.body;
+    const { signatureData, signatureDataUrl, photoUrl, stampUrl } = req.body;
     const signatureUrl = signatureData || signatureDataUrl || photoUrl;
     if (!signatureUrl) {
       res.status(400).json({ error: 'Signature data is required.' });
       return;
     }
-    const result = await staffSignatureService.completeSetup(req.params.token, signatureUrl);
+    const result = await staffSignatureService.completeSetup(req.params.token, signatureUrl, stampUrl || undefined);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
     res.json({ success: true });
   } catch (error) {

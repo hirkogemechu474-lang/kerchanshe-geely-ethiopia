@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { dispatchNotification } from '../email/notifications.dispatch';
 
 export const jobCardPartsService = {
   async requestParts(jobCardId: string, items: Array<{
@@ -58,6 +59,32 @@ export const jobCardPartsService = {
           data: { stock: { decrement: part.quantity } },
         }),
       ]);
+
+      try {
+        if (part.requestedById) {
+          const requester = await prisma.user.findUnique({ where: { id: part.requestedById } });
+          if (requester?.email) {
+            const jobCard = await prisma.jobCard.findUnique({
+              where: { id: part.jobCardId },
+              select: { jobCardNo: true, customerName: true, vehicleModel: true },
+            });
+            await dispatchNotification({
+              type: 'job_card_status',
+              to: [requester.email],
+              subject: `Part Issued — ${part.sparePart.name} (${jobCard?.jobCardNo ?? 'N/A'})`,
+              data: {
+                jobCardNo: jobCard?.jobCardNo ?? 'N/A',
+                partName: part.sparePart.name,
+                quantity: part.quantity,
+                customerName: jobCard?.customerName,
+                vehicleModel: jobCard?.vehicleModel,
+              },
+            });
+          }
+        }
+      } catch (notifyError: any) {
+        console.error('[JOB CARD PART ISSUED NOTIFICATION ERROR]', notifyError.message);
+      }
 
       return { ok: true, data: updatedPart };
     } catch (error: any) {

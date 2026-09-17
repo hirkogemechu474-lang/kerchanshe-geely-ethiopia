@@ -179,16 +179,16 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
   drawLabelValue(ctx, 'Delivery Note No.', data.deliveryNoteNo || '—', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Delivery Date', dateValue(data.handoverDate || data.handoverSignedAt || new Date()), PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Sales Agreement No.', data.orderNo, PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Invoice No.', data.invoiceNo || '—', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Quotation No.', data.quotationNo || '—', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Sales Type', data.salesType === 'order' ? 'Order' : 'Showroom / Stock', PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Delivery Location', data.deliveryLocation || '—', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Executive', data.salesExecutiveName || '—', PDF_MARGIN + 220, ctx.y);
-  ctx.y -= 30;
+  ctx.y -= 36;
 
   ctx = ensureSpace(ctx, 110);
   drawSectionTitle(ctx, '1. Customer Details');
@@ -198,7 +198,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
     ['Address', data.customerAddress || '—'],
     ['Tel.', data.customerPhone || '—'],
   ]);
-  ctx.y -= 10;
+  ctx.y -= 14;
 
   const registrationStatus = data.registeredAt ? 'Completed' : data.registrationNumber ? 'Completed' : 'Pending';
   ctx = ensureSpace(ctx, 180);
@@ -216,13 +216,13 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
     ['Pre-Delivery Inspection', data.pdiComplete ? 'Completed' : 'Pending'],
     ['Delivery Status', 'Ready for Handover'],
   ]);
-  ctx.y -= 10;
+  ctx.y -= 14;
 
   const itemsHandedOver = data.itemsHandedOver?.length ? data.itemsHandedOver : DEFAULT_ITEMS_HANDED_OVER;
   ctx = ensureSpace(ctx, 40 + itemsHandedOver.length * 20);
   drawSectionTitle(ctx, '3. Items Handed Over');
   ctx = drawItemsHandedOverTable(ctx, itemsHandedOver);
-  ctx.y -= 12;
+  ctx.y -= 16;
 
   ctx = ensureSpace(ctx, 50);
   drawSectionTitle(ctx, '4. Customer Pre-Handover Confirmation');
@@ -240,7 +240,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
   const inspectionChecklist = data.inspectionChecklist?.length ? data.inspectionChecklist : DEFAULT_INSPECTION_CHECKLIST;
   drawSectionTitle(ctx, '5. Vehicle Inspection & Condition');
   ctx = drawInspectionTable(ctx, inspectionChecklist);
-  ctx.y -= 12;
+  ctx.y -= 16;
 
   const evGuidance = data.evGuidanceChecklist?.length ? data.evGuidanceChecklist : DEFAULT_EV_GUIDANCE_CHECKLIST;
   ctx = ensureSpace(ctx, 40 + evGuidance.length * 18);
@@ -258,7 +258,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
     'EV NOTE: Driving range and charging time can vary with speed, weather, terrain, load, traffic, tyre pressure, driving style, charging conditions and use of heating or air conditioning.',
     PDF_MARGIN, ctx.y, 8.5, PDF_CONTENT_WIDTH,
   );
-  ctx.y -= 14;
+  ctx.y -= 18;
 
   ctx = ensureSpace(ctx, 100);
   drawSectionTitle(ctx, '7. Remarks / Outstanding Items');
@@ -268,7 +268,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
     ['Action / Responsible Person', data.handoverResponsiblePerson || '—'],
     ['Expected Completion Date', dateValue(data.handoverExpectedCompletionDate)],
   ]);
-  ctx.y -= 14;
+  ctx.y -= 18;
 
   ctx = ensureSpace(ctx, 60);
   drawSectionTitle(ctx, '8. Final Acknowledgement');

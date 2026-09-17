@@ -19,7 +19,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/uploads/')) {
-    const response = NextResponse.next();
+    // Rewritten (not just passed through) to
+    // app/internal-uploads/[...path]/route.ts — see that file for why: Next
+    // always prefers a public/uploads/ static file over an app route at the
+    // same /uploads path, which silently made a route registered at
+    // /uploads itself dead code. Rewriting to a differently-named path
+    // sidesteps that collision while keeping the public-facing URL
+    // unchanged. (Not /_uploads — a leading underscore makes Next treat a
+    // folder as private and exclude it from routing entirely, which was
+    // the first version of this fix and silently never matched anything.)
+    const rewritten = request.nextUrl.clone();
+    rewritten.pathname = `/internal-uploads${pathname.slice('/uploads'.length)}`;
+    const response = NextResponse.rewrite(rewritten);
     const origin = request.headers.get('origin');
     if (origin && allowedOrigins().includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);

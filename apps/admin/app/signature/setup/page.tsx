@@ -8,6 +8,7 @@ import { PenLine, Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-rea
 interface SignatureLinkSummary {
   name: string;
   hasExistingSignature: boolean;
+  hasExistingStamp: boolean;
 }
 
 export default function SignatureSetupPage() {
@@ -37,11 +38,18 @@ function SignatureSetupContent() {
   const [submitting, setSubmitting] = useState(false);
   const [signError, setSignError] = useState('');
   const [done, setDone] = useState(false);
+  // Company stamp/seal — optional (not every signatory has one), uploaded
+  // alongside the signature in this same trusted email-link session so it's
+  // attached everywhere the signature is (see drawSignatureBlock's stamp
+  // support in backend/src/services/pdf/pdfLayout.ts).
+  const [stampFile, setStampFile] = useState<File | null>(null);
+  const [stampPreviewUrl, setStampPreviewUrl] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stampInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!token) {
@@ -104,6 +112,27 @@ function SignatureSetupContent() {
     setHasSignature(false);
   };
 
+  const pickStamp = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setStampFile(file);
+    setStampPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
+
+  // Uploads the selected stamp image, if any — shared by both signature
+  // submit paths below. Returns undefined (not null) when nothing was
+  // picked, so the /sign call omits stampUrl entirely and leaves whatever
+  // stamp is already on file untouched, rather than clearing it.
+  const uploadStampIfSelected = async (): Promise<string | undefined> => {
+    if (!stampFile) return undefined;
+    const formData = new FormData();
+    formData.append('file', stampFile);
+    formData.append('category', 'staff-stamps');
+    const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: formData });
+    const uploadData = await uploadRes.json().catch(() => null);
+    if (!uploadRes.ok) throw new Error(uploadData?.error || 'Stamp upload failed.');
+    return uploadData.url as string;
+  };
+
   const submitDrawnSignature = async () => {
     if (!canvasRef.current) return;
     setSubmitting(true);
@@ -120,10 +149,12 @@ function SignatureSetupContent() {
       const uploadData = await uploadRes.json().catch(() => null);
       if (!uploadRes.ok) throw new Error(uploadData?.error || 'Signature upload failed.');
 
+      const stampUrl = await uploadStampIfSelected();
+
       const res = await fetch(`/api/staff-signature/${token}/sign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'drawn', photoUrl: uploadData.url }),
+        body: JSON.stringify({ type: 'drawn', photoUrl: uploadData.url, stampUrl }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Unable to save your signature.');
@@ -148,10 +179,12 @@ function SignatureSetupContent() {
       const uploadData = await uploadRes.json().catch(() => null);
       if (!uploadRes.ok) throw new Error(uploadData?.error || 'Upload failed.');
 
+      const stampUrl = await uploadStampIfSelected();
+
       const res = await fetch(`/api/staff-signature/${token}/sign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'photo', photoUrl: uploadData.url }),
+        body: JSON.stringify({ type: 'photo', photoUrl: uploadData.url, stampUrl }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Unable to save your signature.');
@@ -240,6 +273,29 @@ function SignatureSetupContent() {
                   {signError}
                 </div>
               )}
+
+              <div className="mb-6 pb-6 border-b border-gray-100">
+                <label className="block text-sm font-semibold text-gray-900 mb-1">Company Stamp (Optional)</label>
+                <p className="text-xs text-gray-500 mb-3">
+                  If you sign with a company stamp/seal, upload a clear photo of it here — it will be attached
+                  next to your signature on documents automatically.
+                  {info.hasExistingStamp && !stampFile && ' A stamp is already on file; upload a new one only to replace it.'}
+                </p>
+                <div className="flex items-center gap-4">
+                  <input
+                    ref={stampInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={pickStamp}
+                    disabled={submitting}
+                    className="block flex-1 text-sm border border-gray-300 rounded-lg p-3"
+                  />
+                  {stampPreviewUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={stampPreviewUrl} alt="Stamp preview" className="w-16 h-16 object-contain border border-gray-200 rounded-lg bg-white" />
+                  )}
+                </div>
+              </div>
 
               {mode === 'draw' ? (
                 <div>

@@ -207,6 +207,14 @@ router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response)
       }
     }
 
+    // Proforma invoice no. is optional on the agreement form — leave it
+    // blank (see the input's placeholder) and saving stamps a GY-PI-...
+    // reference automatically, same numbering scheme as quotationNo/
+    // deliveryNoteNo via generateReference().
+    if (Object.prototype.hasOwnProperty.call(data, 'proformaInvoiceNo') && !data.proformaInvoiceNo) {
+      data.proformaInvoiceNo = await generateReference(REFERENCE_CATEGORY.PROFORMA);
+    }
+
     const order = await prisma.salesOrder.update({ where: { id: req.params.id }, data });
     res.json(order);
   } catch (error) {
@@ -266,9 +274,15 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
       res.status(403).json({ error: 'Only the assigned sales agent can approve this order.' });
       return;
     }
+    // The "Sales Agreement format details" editor (OrderApprovalPanel) only
+    // renders pre-approval — once approvedAt is set there's no UI left to
+    // fill this in, so guarantee it's stamped here rather than leaving it
+    // blank on the printed agreement forever.
+    const proformaInvoiceNo = existing.proformaInvoiceNo || (await generateReference(REFERENCE_CATEGORY.PROFORMA));
+
     const order = await prisma.salesOrder.update({
       where: { id: req.params.id },
-      data: { approvedAt: new Date(), approvedById: req.adminSession!.user.id },
+      data: { approvedAt: new Date(), approvedById: req.adminSession!.user.id, proformaInvoiceNo },
     });
     await auditService.log({
       entityType: 'order',
@@ -331,8 +345,7 @@ router.post('/:id/allocation/allocate', requireAdminApiSession, async (req: Requ
           const agent = await prisma.user.findUnique({ where: { id: fullOrder.salesAgentId } });
           if (agent?.email) staffEmails.push(agent.email);
         }
-        const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
-        staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+        staffEmails.push(...(await userRepository.findManagerEmails()));
         const uniqueEmails = [...new Set(staffEmails)];
         if (uniqueEmails.length > 0) {
           await dispatchNotification({
@@ -345,9 +358,9 @@ router.post('/:id/allocation/allocate', requireAdminApiSession, async (req: Requ
               vehicleModel: fullOrder.vehicleModel,
               vin: result.data.vin || 'N/A',
               nextStep: 'Vehicle has been allocated. PDI checklist can now be completed.',
-              adminLink: `${env.urls.admin}/orders/${fullOrder.id}`,
+              adminLink: `${env.urls.admin}/admin/orders/${fullOrder.id}`,
             },
-            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${fullOrder.id}` }],
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${fullOrder.id}` }],
             inApp: {
               type: 'order_update',
               title: 'Vehicle Allocated',
@@ -501,9 +514,9 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
               customerName: order.customerName,
               vehicleModel: order.vehicleModel,
               nextStep: 'Payment link has been sent to the customer. Monitor payment status.',
-              adminLink: `${env.urls.admin}/orders/${order.id}`,
+              adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
             },
-            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` }],
             inApp: {
               type: 'order_update',
               title: 'Agreement Countersigned',
@@ -676,6 +689,14 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
     // absent fields fall back to the pre-existing single-total behavior.
     const { lineItems, vatAmount, registrationCharge, amountPaid, paymentMethod, paymentReferenceNo, odometerAtDelivery } = req.body ?? {};
 
+    // A blank payment reference no. (see the "create it" placeholder in
+    // OrderFulfillmentPanel) is stamped automatically here, same GY-PY-...
+    // numbering scheme as the other generateReference() document numbers.
+    // A caller that omits the field entirely still leaves it untouched.
+    const resolvedPaymentReferenceNo = paymentReferenceNo !== undefined && !paymentReferenceNo
+      ? await generateReference(REFERENCE_CATEGORY.PAYMENT)
+      : paymentReferenceNo;
+
     const updated = await prisma.salesOrder.update({
       where: { id: req.params.id },
       data: {
@@ -688,7 +709,7 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
         ...(registrationCharge !== undefined ? { registrationCharge } : {}),
         ...(amountPaid !== undefined ? { amountPaid } : {}),
         ...(paymentMethod !== undefined ? { paymentMethod } : {}),
-        ...(paymentReferenceNo !== undefined ? { paymentReferenceNo } : {}),
+        ...(resolvedPaymentReferenceNo !== undefined ? { paymentReferenceNo: resolvedPaymentReferenceNo } : {}),
         ...(odometerAtDelivery !== undefined ? { odometerAtDelivery } : {}),
       },
     });
@@ -764,7 +785,7 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
             to: emails,
             subject,
             data,
-            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` }],
           });
         } catch (err: any) {
           console.error('[PAYMENT CONFIRM STAFF NOTIFICATION ERROR]', err.message);
@@ -780,8 +801,7 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
         if (agent?.email) staffEmails.push(agent.email);
       }
       // Managers
-      const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
-      const managerEmails = managers.map(m => m.email).filter(Boolean);
+      const managerEmails = await userRepository.findManagerEmails();
       staffEmails.push(...managerEmails);
       // Finance
       const financeUsers = await prisma.user.findMany({ where: { role: 'finance', isActive: true }, select: { email: true } });
@@ -857,8 +877,7 @@ router.post('/:id/payment/verify', requireAdminApiSession, requirePermission('ca
         const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId } });
         if (agent?.email) staffEmails.push(agent.email);
       }
-      const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
-      staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+      staffEmails.push(...(await userRepository.findManagerEmails()));
       const uniqueEmails = [...new Set(staffEmails)];
       if (uniqueEmails.length > 0) {
         await dispatchNotification({
@@ -870,9 +889,9 @@ router.post('/:id/payment/verify', requireAdminApiSession, requirePermission('ca
             vehicleModel: order.vehicleModel,
             customerName: order.customerName,
             nextStep: 'Payment has been verified. Vehicle can now be allocated and delivery can proceed.',
-            adminLink: `${env.urls.admin}/orders/${order.id}`,
+            adminLink: `${env.urls.admin}/admin/orders/${order.id}`,
           },
-          ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+          ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` }],
           inApp: {
             type: 'order_update',
             title: 'Payment Verified',

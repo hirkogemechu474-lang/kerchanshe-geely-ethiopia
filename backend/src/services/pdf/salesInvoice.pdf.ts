@@ -19,6 +19,7 @@ export interface SalesInvoicePdfData {
   orderNo: string;
   customerName: string;
   purchaserTitle?: string | null; // salutation, e.g. "Ato", "Miss", "Dr" — printed before customerName
+  purchaserAuthorizedRep?: string | null; // job title, for a company purchaser's signing representative
   vehicleModel: string;
   totalPrice: number;
   invoiceNo?: string | null;
@@ -50,6 +51,7 @@ export interface SalesInvoicePdfData {
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
   managerStampUrl?: string | null;
+  managerSignedAt?: Date | string | null;
   customerStampUrl?: string | null;
 }
 
@@ -82,12 +84,12 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
   drawLabelValue(ctx, 'Invoice No.', data.invoiceNo || data.orderNo, PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Invoice Date', dateValue(data.orderDate ?? new Date()), PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Sales Agreement No.', data.orderNo, PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 34;
+  ctx.y -= 40;
 
   drawLabelValue(ctx, 'Quotation No.', data.quotationNo || '—', PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Type', data.salesType === 'order' ? 'Order' : 'Showroom / Stock', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Payment Status', data.paymentStatus || '—', PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 30;
+  ctx.y -= 36;
 
   ctx = ensureSpace(ctx, 130);
   drawSectionTitle(ctx, 'Seller & Customer');
@@ -107,7 +109,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
   const custX = PDF_MARGIN + half + 16;
   const customerDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');
   const custBottom = drawParty(custX, 'CUSTOMER', customerDisplayName, data.customerTin || '—', data.customerAddress || '—', `Tel: ${data.customerPhone || '—'}  Email: ${data.customerEmail || '—'}`);
-  ctx.y = Math.min(sellerBottom, custBottom) - 14;
+  ctx.y = Math.min(sellerBottom, custBottom) - 18;
 
   ctx = ensureSpace(ctx, 150);
   drawSectionTitle(ctx, 'Vehicle Details');
@@ -120,7 +122,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
     ['Odometer at Delivery', data.odometerAtDelivery != null ? `${data.odometerAtDelivery} km` : '—'],
     ['Quantity', '1 Unit'],
   ]);
-  ctx.y -= 10;
+  ctx.y -= 14;
 
   const lineItems: InvoiceLineItem[] = data.lineItems?.length
     ? data.lineItems
@@ -214,6 +216,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
     {
       heading: 'CUSTOMER / AUTHORIZED REPRESENTATIVE',
       name: customerDisplayName,
+      title: data.purchaserAuthorizedRep,
       showStamp: true,
       signatureImage: customerSignatureImage,
       stampImage: customerStampImage,
@@ -226,6 +229,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
       showStamp: true,
       signatureImage: managerSignatureImage,
       stampImage: managerStampImage,
+      date: data.managerSignedAt ? new Date(data.managerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );
 

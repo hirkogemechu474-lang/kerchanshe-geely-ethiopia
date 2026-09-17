@@ -1,5 +1,6 @@
-import { serviceBookingRepository, jobCardRepository, customerRepository } from '../../repositories';
+import { serviceBookingRepository, jobCardRepository, customerRepository, userRepository } from '../../repositories';
 import { prisma } from '../../config/database';
+import { dispatchNotification } from '../email/notifications.dispatch';
 
 export const convertToJobCardService = {
   async convert(bookingId: string, createdById: string, data?: {
@@ -46,6 +47,32 @@ export const convertToJobCardService = {
 
         return jc;
       });
+
+      try {
+        // Technician (unlike a User) has no email/login of its own — see the
+        // schema note in workshop.routes.ts's /job-cards/:id/assign route —
+        // so this notifies workshop managers instead, naming the technician
+        // for context rather than emailing them directly.
+        const technician = data?.technicianId
+          ? await prisma.technician.findUnique({ where: { id: data.technicianId } })
+          : null;
+        const notifyEmails = await userRepository.findWorkshopManagerEmails();
+        if (notifyEmails.length > 0) {
+          await dispatchNotification({
+            type: 'job_card_status',
+            to: [...new Set(notifyEmails)],
+            subject: `Job Card Assigned — ${jobCard.jobCardNo}`,
+            data: {
+              jobCardNo: jobCard.jobCardNo,
+              customerName: booking.customerName,
+              vehicleInfo: booking.vehicleInfo,
+              ...(technician?.name && { technicianName: technician.name }),
+            },
+          });
+        }
+      } catch (notifyError: any) {
+        console.error('[CONVERT TO JOB CARD NOTIFICATION ERROR]', notifyError.message);
+      }
 
       return { ok: true, data: jobCard };
     } catch (error: any) {

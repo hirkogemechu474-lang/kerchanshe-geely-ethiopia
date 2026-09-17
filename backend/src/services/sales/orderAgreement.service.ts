@@ -5,6 +5,7 @@ import { getCompanyInfo } from '../pdf/companyInfo';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { auditService } from '../audit/audit.service';
 import { env } from '../../config/env';
+import { roleLabel } from '../../utils/roleLabels';
 
 async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
@@ -39,8 +40,17 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     purchaserTin: order.purchaserTin,
     purchaserAddress: order.purchaserAddress,
     purchaserAuthorizedRep: order.purchaserAuthorizedRep,
-    sellerAuthorizedRep: sellerSigner?.name ?? null,
-    sellerAuthorizedRepTitle: managerSigner?.title || sellerSigner?.title || null,
+    // The printed name/title must match whoever's signature/stamp image is
+    // actually shown below them (managerSignatureUrl/managerStampUrl, from
+    // managerSigner) — this used to print the order-approving rep's name
+    // (sellerSigner, e.g. a sales_representative) next to the countersigning
+    // manager's own signature, a mismatched pairing. Falls back to the rep
+    // only when no manager has countersigned yet. Title falls back further
+    // to a role-derived label (e.g. "Sales Executive") when neither signer's
+    // own User.title is set, so the printed Title line isn't left blank on
+    // a document the customer signs.
+    sellerAuthorizedRep: managerSigner?.name || sellerSigner?.name || null,
+    sellerAuthorizedRepTitle: managerSigner?.title || sellerSigner?.title || roleLabel(managerSigner?.role) || roleLabel(sellerSigner?.role) || null,
     depositAmount: order.depositAmount,
     depositDueDate: order.depositDueDate,
     otherPaymentAmount: order.otherPaymentAmount,
@@ -51,6 +61,7 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     customerSignatureUrl: order.signedDocumentUrl,
     customerSignedAt: order.signedAt,
     managerSignatureUrl: managerSigner?.signatureUrl,
+    managerStampUrl: managerSigner?.stampUrl,
     countersignedByName: managerSigner?.name || sellerSigner?.name,
     countersignedAt: order.countersignedAt,
   };

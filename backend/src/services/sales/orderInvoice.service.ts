@@ -4,6 +4,7 @@ import { generateSalesInvoicePdf, InvoiceLineItem, SalesInvoicePdfData } from '.
 import { generateReceiptPdf, ReceiptPdfData } from '../pdf/receipt.pdf';
 import { HandoverItemRow } from '../pdf/handover.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
+import { roleLabel } from '../../utils/roleLabels';
 
 async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
   const config = (order.configurationJson as Record<string, any> | null) || {};
@@ -17,6 +18,7 @@ async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
     orderNo: order.orderNo,
     customerName: order.customerName,
     purchaserTitle: order.purchaserTitle,
+    purchaserAuthorizedRep: order.purchaserAuthorizedRep,
     vehicleModel: order.vehicleModel,
     totalPrice: order.invoiceAmount ?? order.totalPrice ?? 0,
     invoiceNo: order.invoiceNo,
@@ -42,11 +44,23 @@ async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
     deliveryDate: order.deliveredAt ?? order.handoverSignedAt,
     deliveryLocation: order.deliveryLocation,
     itemsHandedOver: (order.itemsHandedOver as HandoverItemRow[] | null) ?? null,
-    sellerSignerName: sellerSigner?.name ?? null,
-    sellerSignerTitle: sellerSigner?.title ?? null,
+    // The printed name/title must match whoever's signature/stamp image is
+    // actually shown below them (managerSignatureUrl/managerStampUrl, from
+    // managerSigner) — this used to print the invoice-generating rep's name
+    // (sellerSigner, e.g. a sales_representative) next to the countersigning
+    // manager's own signature, a mismatched pairing. Falls back to the rep
+    // only when no manager has countersigned yet.
+    sellerSignerName: managerSigner?.name || sellerSigner?.name || null,
+    sellerSignerTitle: managerSigner?.title || sellerSigner?.title || roleLabel(managerSigner?.role) || roleLabel(sellerSigner?.role) || null,
     customerSignatureUrl: order.signedDocumentUrl,
     customerSignedAt: order.signedAt,
     managerSignatureUrl: managerSigner?.signatureUrl,
+    managerStampUrl: managerSigner?.stampUrl,
+    // The manager's signature/stamp shown here is the same countersignature
+    // captured on the Sales Agreement (same managerSigner, from
+    // order.countersignedById) — not a separate invoice-specific signing —
+    // so its date is that same countersignedAt, not left blank.
+    managerSignedAt: order.countersignedAt,
   };
 }
 

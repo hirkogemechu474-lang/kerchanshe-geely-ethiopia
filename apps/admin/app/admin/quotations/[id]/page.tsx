@@ -9,7 +9,7 @@ import QuotationApprovalPanel from '@/components/admin/sales/QuotationApprovalPa
 import TradeInEvaluationPanel from '@/components/admin/sales/TradeInEvaluationPanel';
 import AssignedToPanel from '@/components/admin/sales/AssignedToPanel';
 import { env } from '@/lib/env';
-import { listSalesReps } from '@/lib/assignSalesRep';
+import { listSalesReps, MANAGER_ROLES } from '@/lib/assignSalesRep';
 
 function formatDate(value: Date | string) {
   return new Intl.DateTimeFormat('en-ET', {
@@ -51,15 +51,29 @@ export default async function QuotationDetailPage({
   if (!quotation) notFound();
 
   const salesReps = await listSalesReps();
-  const assignedRepName = quotation.assignedTo
-    ? salesReps.find((r) => r.id === quotation.assignedTo)?.name ?? null
-    : null;
+  const assignedRep = quotation.assignedTo ? salesReps.find((r) => r.id === quotation.assignedTo) ?? null : null;
+  // "Sales executive" on the printed quotation should default to a manager's
+  // name, never a plain sales agent's — so only pass it through when the
+  // assignee actually holds a manager-tier role; otherwise leave it for
+  // someone to type in manually (see QuotationPdfPanel.tsx).
+  const assignedManagerName = assignedRep && MANAGER_ROLES.includes(assignedRep.role) ? assignedRep.name : null;
+  // Quotations generated before this rule existed already saved the
+  // then-assigned agent's name into salesExecutiveName, so that stale value
+  // would otherwise keep winning over the new manager-only default forever.
+  // Passing the current agent's name too lets the panel detect and discard
+  // an exact match (a leftover auto-fill), while still respecting a
+  // genuinely different, manually-typed name.
+  const assignedAgentName = assignedRep && !MANAGER_ROLES.includes(assignedRep.role) ? assignedRep.name : null;
   const escalatedByUser = quotation.escalatedById
     ? await client.get(`/admin/users/${quotation.escalatedById}`).then((r) => r.data).catch(() => null)
     : null;
   const managerApprover = quotation.managerApprovedById
     ? await client.get(`/admin/users/${quotation.managerApprovedById}`).then((r) => r.data).catch(() => null)
     : null;
+  // The approving manager (set only by the actual approval action) is a
+  // better default than the assignee once the quotation's been approved —
+  // that's the real signatory, regardless of who it's currently assigned to.
+  const salesExecutiveDefaultName = managerApprover?.name ?? assignedManagerName;
 
   const status = quotation.status || 'new';
   const webAppUrl = env.app.url.replace(/\/$/, '');
@@ -147,7 +161,8 @@ export default async function QuotationDetailPage({
       <ConfigurationSummary configuration={quotation.configurationJson} />
 
       <QuotationPdfPanel
-        assignedRepName={assignedRepName}
+        assignedRepName={salesExecutiveDefaultName}
+        assignedAgentName={assignedAgentName}
         quotation={{
           id: quotation.id,
           vehicleModel: quotation.vehicleModel,
@@ -181,6 +196,7 @@ export default async function QuotationDetailPage({
           balanceDueDate: quotation.balanceDueDate || null,
           deliveryLocation: quotation.deliveryLocation || null,
           expectedHandoverNote: quotation.expectedHandoverNote || null,
+          configurationJson: quotation.configurationJson || null,
         }}
         canManage={session.user.permissions.canManageQuotations}
         publicPdfUrl={publicPdfUrl}

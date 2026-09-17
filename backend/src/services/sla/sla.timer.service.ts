@@ -9,25 +9,30 @@ export interface SLADefinition {
   notifyEmails?: string[];
   /** If true, resolve notifyEmails dynamically from manager users instead of using static list */
   useManagerRole?: boolean;
+  /** If true, resolve notifyEmails dynamically from workshop/service manager roles instead of using a static list */
+  useWorkshopManagerRole?: boolean;
 }
 
 export const slaDefinitions: SLADefinition[] = [
   { stage: 'LEAD_RESPONSE', maxMinutes: 60, escalateAfterMinutes: 45, useManagerRole: true },
   { stage: 'QUOTATION_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, useManagerRole: true },
-  { stage: 'QUOTATION_SENT', maxMinutes: 1440, escalateAfterMinutes: 1200 }, // 24h / 20h
+  { stage: 'QUOTATION_SENT', maxMinutes: 1440, escalateAfterMinutes: 1200, useManagerRole: true }, // 24h / 20h
   { stage: 'PAYMENT_CONFIRMATION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['finance@geelyethiopia.com'] },
   { stage: 'DISCOUNT_APPROVAL', maxMinutes: 240, escalateAfterMinutes: 180, useManagerRole: true },
   { stage: 'AGREEMENT_REVIEW', maxMinutes: 480, escalateAfterMinutes: 360, useManagerRole: true },
-  { stage: 'PDI_COMPLETION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['workshop@geelyethiopia.com'] },
-  { stage: 'REGISTRATION', maxMinutes: 1440, escalateAfterMinutes: 1200 },
+  { stage: 'PDI_COMPLETION', maxMinutes: 480, escalateAfterMinutes: 360, useWorkshopManagerRole: true },
+  { stage: 'REGISTRATION', maxMinutes: 1440, escalateAfterMinutes: 1200, useManagerRole: true },
   { stage: 'INVOICE_GENERATION', maxMinutes: 480, escalateAfterMinutes: 360, notifyEmails: ['finance@geelyethiopia.com'] },
-  { stage: 'DELIVERY_SCHEDULING', maxMinutes: 480, escalateAfterMinutes: 360 },
-  { stage: 'FOLLOW_UP', maxMinutes: 10080, escalateAfterMinutes: 7200 }, // 7 days / 5 days
+  { stage: 'DELIVERY_SCHEDULING', maxMinutes: 480, escalateAfterMinutes: 360, useManagerRole: true },
+  { stage: 'FOLLOW_UP', maxMinutes: 10080, escalateAfterMinutes: 7200, useManagerRole: true }, // 7 days / 5 days
 ];
 
 async function resolveNotifyEmails(definition: SLADefinition): Promise<string[]> {
   if (definition.useManagerRole) {
     return userRepository.findManagerEmails();
+  }
+  if (definition.useWorkshopManagerRole) {
+    return userRepository.findWorkshopManagerEmails();
   }
   return definition.notifyEmails || [];
 }

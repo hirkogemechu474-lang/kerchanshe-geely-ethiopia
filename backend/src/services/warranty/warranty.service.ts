@@ -3,6 +3,7 @@ import { dispatchNotification } from '../email/notifications.dispatch';
 import { generateWarrantyCertificatePdf } from '../pdf/warrantyCertificate.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
 import { env } from '../../config/env';
+import { userRepository } from '../../repositories';
 
 export const warrantyService = {
   /**
@@ -73,9 +74,12 @@ export const warrantyService = {
           console.error('[WARRANTY CERTIFICATE PDF ERROR]', pdfError.message);
         }
 
+        // Notify the customer and the workshop/after-sales managers who own
+        // ongoing service visibility for this vehicle — not customer-only.
+        const workshopManagerEmails = await userRepository.findWorkshopManagerEmails();
         await dispatchNotification({
           type: 'warranty_registered',
-          to: [order.customerEmail],
+          to: [...new Set([order.customerEmail, ...workshopManagerEmails])],
           subject: `Warranty Registered - ${order.vehicleModel}`,
           data: {
             customerName: order.customerName,

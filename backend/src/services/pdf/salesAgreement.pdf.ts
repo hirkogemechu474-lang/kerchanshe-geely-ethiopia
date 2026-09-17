@@ -82,13 +82,13 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
   drawLabelValue(ctx, 'Contract No.', data.orderNo, PDF_MARGIN, ctx.y);
   drawLabelValue(ctx, 'Sales Type', data.salesType === 'order' ? 'Order / To Be Imported' : 'Showroom / In Stock', PDF_MARGIN + 220, ctx.y);
   drawLabelValue(ctx, 'Date', dateValue(data.orderDate ?? new Date()), PDF_MARGIN + 440, ctx.y);
-  ctx.y -= 30;
+  ctx.y -= 36;
 
   ctx = paragraphs(ctx, [
     'This Agreement is a practical sales contract for the purchase of a new GEELY electric vehicle (EV) from ' +
       `${company.legalName} in Ethiopia. It should be read together with the Proforma Invoice / Vehicle Specification Sheet attached to it.`,
   ]);
-  ctx.y -= 6;
+  ctx.y -= 10;
 
   ctx = ensureSpace(ctx, 140);
   drawSectionTitle(ctx, '1. Parties');
@@ -122,12 +122,12 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     ['Accessories / Inclusions', data.accessoriesDescription || '—'],
     ['Proforma Invoice No. / Date', `${data.proformaInvoiceNo || '—'} / ${dateValue(data.proformaInvoiceDate)}`],
   ]);
-  ctx.y -= 4;
+  ctx.y -= 8;
   ctx = paragraphs(ctx, [
     'For an order sale, the VIN/chassis number may be completed when the vehicle is allocated to the Purchaser. The final vehicle must materially match the agreed model and specification.',
   ]);
 
-  ctx.y -= 6;
+  ctx.y -= 10;
   ctx = ensureSpace(ctx, 140);
   drawSectionTitle(ctx, '3. Price and What It Includes');
   ctx = paragraphs(ctx, ['The total purchase price is the amount shown in the signed Proforma Invoice / Vehicle Specification Sheet. That document forms part of this Agreement.']);
@@ -138,7 +138,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     ['Accessories / Optional Items', fillValue(data.accessoriesAmount)],
     ['TOTAL PAYABLE', fillValue(data.totalPrice)],
   ]);
-  ctx.y -= 4;
+  ctx.y -= 8;
   ctx = paragraphs(ctx, [
     "Unless expressly included in the Proforma Invoice, government registration/plate fees and optional accessories are payable by the Purchaser. The Seller will identify material additional charges before they are incurred.",
   ]);
@@ -163,12 +163,12 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     ['Account No.', company.bank.accountNumber || '—'],
     ['Branch', company.bank.branch || '—'],
   ]);
-  ctx.y -= 4;
+  ctx.y -= 8;
   ctx = paragraphs(ctx, [
     "For a showroom vehicle, the Seller may reserve the identified vehicle after receiving the agreed deposit. For an order vehicle, the deposit confirms the Purchaser's order subject to the agreed specification, price and delivery terms.",
   ]);
 
-  ctx.y -= 6;
+  ctx.y -= 10;
   ctx = ensureSpace(ctx, 160);
   drawSectionTitle(ctx, '5. Order Sales and Price Changes');
   ctx = paragraphs(ctx, [
@@ -190,7 +190,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     'Ownership and risk pass to the Purchaser upon delivery and acceptance, provided the purchase price has been fully paid. If the vehicle remains unpaid, ownership does not pass unless the parties expressly agree otherwise in writing.',
   ]);
 
-  ctx.y -= 6;
+  ctx.y -= 10;
   ctx = ensureSpace(ctx, 100);
   drawSectionTitle(ctx, '7. EV-Specific Handover');
   ctx = paragraphs(ctx, [
@@ -198,7 +198,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     'The Purchaser acknowledges that EV range can vary with driving speed, temperature, terrain, load, traffic, tyre pressure, use of heating/air conditioning and charging conditions. Advertised range is not a guarantee of a fixed real-world distance.',
   ]);
 
-  ctx.y -= 6;
+  ctx.y -= 10;
   ctx = ensureSpace(ctx, 160);
   drawSectionTitle(ctx, '8. Warranty and Service');
   ctx = paragraphs(ctx, [

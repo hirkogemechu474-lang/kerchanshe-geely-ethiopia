@@ -447,13 +447,14 @@ export default function OrderDetail({
 
       <OrderApprovalPanel
         order={{
-          id: state.id, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt,
+          id: state.id, orderNo: state.orderNo, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt,
           signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt,
           rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason,
           salesType: state.salesType, vehicleType: state.vehicleType, motorBatterySerialNo: state.motorBatterySerialNo,
           purchaserTitle: state.purchaserTitle,
           purchaserTin: state.purchaserTin, purchaserAddress: state.purchaserAddress, purchaserAuthorizedRep: state.purchaserAuthorizedRep,
           accessoriesDescription: state.accessoriesDescription, proformaInvoiceNo: state.proformaInvoiceNo, proformaInvoiceDate: state.proformaInvoiceDate,
+          totalPrice: state.totalPrice,
           vatAmount: state.vatAmount, registrationCharge: state.registrationCharge, accessoriesAmount: state.accessoriesAmount,
           depositAmount: state.depositAmount, depositDueDate: state.depositDueDate, otherPaymentAmount: state.otherPaymentAmount,
           otherPaymentNote: state.otherPaymentNote, otherPaymentDueDate: state.otherPaymentDueDate,

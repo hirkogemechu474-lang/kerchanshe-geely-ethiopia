@@ -1,6 +1,7 @@
-import { serviceBookingRepository } from '../../repositories';
+import { serviceBookingRepository, userRepository } from '../../repositories';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { sendServiceBookingConfirmationEmail } from '../email/statusEmail';
+import { dispatchNotification } from '../email/notifications.dispatch';
 
 export const serviceBookingService = {
   async list(params?: { status?: string; serviceType?: string }): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -71,6 +72,24 @@ export const serviceBookingService = {
           timeSlot: data.timeSlot || '',
           vehicleInfo: data.vehicleInfo,
         });
+      }
+
+      try {
+        const notifyEmails = await userRepository.findWorkshopManagerEmails();
+        await dispatchNotification({
+          type: 'service_booking',
+          to: [...new Set(notifyEmails)],
+          subject: `New Service Booking — ${reference}`,
+          data: {
+            reference,
+            customerName: data.customerName,
+            serviceType: data.serviceType,
+            date: data.date,
+            vehicleInfo: data.vehicleInfo,
+          },
+        });
+      } catch (notifyError: any) {
+        console.error('[SERVICE BOOKING STAFF NOTIFICATION ERROR]', notifyError.message);
       }
 
       return { ok: true, data: booking };

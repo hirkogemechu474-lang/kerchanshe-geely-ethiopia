@@ -1,4 +1,4 @@
-import { salesOrderRepository, quotationRepository, vehicleRepository } from '../../repositories';
+import { salesOrderRepository, quotationRepository, vehicleRepository, userRepository } from '../../repositories';
 import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { commissionService } from './commission.service';
 import { warrantyService } from '../warranty/warranty.service';
@@ -260,7 +260,7 @@ export const orderService = {
                 subject: `Delivery Ready for Scheduling — ${order.orderNo}`,
                 data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
                 ctas: [
-                  { label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` },
+                  { label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` },
                 ],
               });
             }
@@ -268,10 +268,9 @@ export const orderService = {
             console.error('[DELIVERY AGENT NOTIFICATION ERROR]', err.message);
           }
         }
-        // Notify managers
+        // Notify managers (sales-side: delivery scheduling, not a workshop event)
         try {
-          const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true } });
-          const managerEmails = managers.map(m => m.email).filter(Boolean);
+          const managerEmails = await userRepository.findManagerEmails();
           if (managerEmails.length) {
             await dispatchNotification({
               type: 'delivery_ready',
@@ -279,7 +278,7 @@ export const orderService = {
               subject: `Vehicle Ready for Delivery — ${order.orderNo}`,
               data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
               ctas: [
-                { label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` },
+                { label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` },
               ],
             });
           }
@@ -349,13 +348,9 @@ export const orderService = {
           }
         }
 
-        // Notify managers of delivery
+        // Notify managers of delivery (sales-side, not a workshop event)
         try {
-          const managers = await prisma.user.findMany({
-            where: { role: { in: ['manager', 'sales_manager', 'admin', 'gm_geely'] }, isActive: true },
-            select: { email: true },
-          });
-          const managerEmails = managers.map((m) => m.email).filter(Boolean);
+          const managerEmails = await userRepository.findManagerEmails();
           if (managerEmails.length > 0) {
             await dispatchNotification({
               type: 'delivered',
@@ -421,8 +416,10 @@ export const orderService = {
                 const agent = await prisma.user.findUnique({ where: { id: fullOrder.salesAgentId } });
                 if (agent?.email) staffEmails.push(agent.email);
               }
-              const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
-              staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+              // PDI is a workshop event, so notify the workshop-manager roles
+              // (workshop_manager, service_manager, after_sales_manager, admin)
+              // instead of the sales-side manager list.
+              staffEmails.push(...(await userRepository.findWorkshopManagerEmails()));
               const serviceUsers = await prisma.user.findMany({ where: { role: { in: ['service', 'service_advisor', 'technician'] }, isActive: true }, select: { email: true } });
               staffEmails.push(...serviceUsers.map(s => s.email).filter(Boolean));
               const uniqueEmails = [...new Set(staffEmails)];
@@ -436,9 +433,9 @@ export const orderService = {
                     customerName: fullOrder.customerName,
                     vehicleModel: fullOrder.vehicleModel,
                     nextStep: 'All PDI items have passed. Order is ready for delivery preparation.',
-                    adminLink: `${env.urls.admin}/orders/${fullOrder.id}`,
+                    adminLink: `${env.urls.admin}/admin/orders/${fullOrder.id}`,
                   },
-                  ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${fullOrder.id}` }],
+                  ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${fullOrder.id}` }],
                   inApp: {
                     type: 'order_update',
                     title: 'PDI Complete',

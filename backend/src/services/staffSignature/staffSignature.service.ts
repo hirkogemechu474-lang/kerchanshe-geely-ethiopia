@@ -37,7 +37,7 @@ export const staffSignatureService = {
     }
   },
 
-  async completeSetup(token: string, signatureUrl: string): Promise<{ ok: boolean; data?: any; error?: string }> {
+  async completeSetup(token: string, signatureUrl: string, stampUrl?: string | null): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const user = await staffSignatureRepository.findByToken(token);
       if (!user) return { ok: false, error: 'Invalid or expired token.' };
@@ -46,7 +46,7 @@ export const staffSignatureService = {
         return { ok: false, error: 'Token has expired.' };
       }
 
-      const updated = await staffSignatureRepository.completeSetup(user.id, signatureUrl);
+      const updated = await staffSignatureRepository.completeSetup(user.id, signatureUrl, stampUrl);
       return { ok: true, data: updated };
     } catch (error: any) {
       console.error('[SIGNATURE COMPLETE ERROR]', error.message);

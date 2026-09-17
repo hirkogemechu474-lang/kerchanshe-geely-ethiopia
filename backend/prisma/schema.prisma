@@ -543,12 +543,14 @@ model SalesOrder {
   invoiceAmount                  Float?
   invoicedAt                     DateTime?
   invoicedById                   String?
-  // Commission tracking — salesAgentId is a free-text field, matching
-  // Quotation.assignedTo's existing convention (no user-picker UI exists
-  // for this anywhere in the codebase to reuse). commissionAmount is
-  // computed (totalPrice * commissionRate / 100) and stamped automatically
-  // when the order reaches DELIVERED; commissionStatus PAID is a separate
-  // manual step (accounting pays the agent on their own schedule).
+  // Commission tracking — salesAgentId holds a real User.id (no formal
+  // relation since every writer/reader treats it as a plain string, same
+  // convention as Quotation.assignedTo), NOT free text — every backend
+  // reader resolves it via prisma.user.findUnique/userRepository.findById.
+  // commissionAmount is computed (totalPrice * commissionRate / 100) and
+  // stamped automatically when the order reaches DELIVERED; commissionStatus
+  // PAID is a separate manual step (accounting pays the agent on their own
+  // schedule).
   salesAgentId                   String?
   commissionRate                 Float?
   commissionAmount               Float?

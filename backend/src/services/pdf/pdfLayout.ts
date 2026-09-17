@@ -7,27 +7,40 @@ import type { CompanyInfo } from './companyInfo';
 export const PDF_MARGIN = 54;
 export const PDF_CONTENT_WIDTH = 612 - PDF_MARGIN * 2;
 
-// Logo cache — loaded once per process, reused across all PDFs.
-let _logoCache: PDFImage | null = null;
-let _logoLoaded = false;
+// Logo file bytes — read from disk once per process and reused. NOT the
+// embedded PDFImage itself: a pdf-lib PDFImage is bound to the specific
+// PDFDocument it was embedded into (embedPng/embedJpg registers it in that
+// document's own ref table), so caching that object and reusing it across
+// separate generateXPdf() calls — each opening its own new PDFDocument —
+// silently produced no image at all on every document after the first one
+// generated in the server process's lifetime. Every call to loadLogo() now
+// re-embeds these same cached bytes into its own doc, which is cheap.
+let _logoBytes: { bytes: Buffer; kind: 'png' | 'jpg' } | null | undefined;
 
 async function loadLogo(doc: PDFDocument): Promise<PDFImage | null> {
-  if (_logoLoaded) return _logoCache;
-  _logoLoaded = true;
-  try {
-    const candidatePaths = [
-      path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', 'assets', 'logos', 'geely-logo.png'),
-      path.resolve(process.cwd(), 'uploads', 'logo.png'),
-    ];
-    const logoPath = candidatePaths.find((p) => fs.existsSync(p));
-    if (!logoPath) return null;
-    const bytes = fs.readFileSync(logoPath);
-    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-      _logoCache = await doc.embedPng(bytes);
-    } else if (bytes[0] === 0xff && bytes[1] === 0xd8) {
-      _logoCache = await doc.embedJpg(bytes);
+  if (_logoBytes === undefined) {
+    _logoBytes = null;
+    try {
+      const candidatePaths = [
+        path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', 'assets', 'logos', 'geely-logo.png'),
+        path.resolve(process.cwd(), 'uploads', 'logo.png'),
+      ];
+      const logoPath = candidatePaths.find((p) => fs.existsSync(p));
+      if (logoPath) {
+        const bytes = fs.readFileSync(logoPath);
+        if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+          _logoBytes = { bytes, kind: 'png' };
+        } else if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+          _logoBytes = { bytes, kind: 'jpg' };
+        }
+      }
+    } catch {
+      _logoBytes = null;
     }
-    return _logoCache;
+  }
+  if (!_logoBytes) return null;
+  try {
+    return _logoBytes.kind === 'png' ? await doc.embedPng(_logoBytes.bytes) : await doc.embedJpg(_logoBytes.bytes);
   } catch {
     return null;
   }
@@ -322,7 +335,15 @@ export function drawSignatureBlock(ctx: PagedContext, left: SignatureEntry, righ
     ctx.page.drawText(sanitizePdfText(entry.name || '____________________________'), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
     ey -= 16;
     ctx.page.drawText('Title:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
-    ctx.page.drawText(sanitizePdfText(entry.title || '____________________________'), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
+    // Unlike Name/Date, no blank-line placeholder here when there's no
+    // value — a job title genuinely doesn't apply to most individual
+    // customers signing for themselves (it's only meaningful for a
+    // signatory's own job title, or an authorized company representative's),
+    // so leaving an underscored "fill this in" line under every private
+    // customer's signature looked like an unfinished document.
+    if (entry.title) {
+      ctx.page.drawText(sanitizePdfText(entry.title), { x: x + 40, y: ey, size: 10, font: ctx.font, color: COLORS.dark });
+    }
     ey -= 16;
     ctx.page.drawText('Signature:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
     if (entry.signatureImage) {
@@ -415,6 +436,16 @@ export function fillValue(value: TValue, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback;
   if (typeof value === 'number') return formatCurrency(value);
   return String(value);
+}
+
+// Filter helper: skip label/value rows where the value is empty or the
+// fallback '—' — used by every PDF generator so blank fields don't waste
+// vertical space.
+export function nonEmptyRow(label: string, value: TValue): [string, string] | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number' && value === 0) return null;
+  const display = typeof value === 'number' ? formatCurrency(value) : String(value);
+  return [label, display];
 }
 
 export function dateValue(value: any): string {

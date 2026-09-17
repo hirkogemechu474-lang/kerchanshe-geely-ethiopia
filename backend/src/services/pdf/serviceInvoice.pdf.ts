@@ -48,7 +48,7 @@ export async function generateServiceInvoicePdf(data: ServiceInvoicePdfData, com
     ['Reported Issue', fillValue(data.complaintText)],
   ]);
 
-  ctx.y -= 12;
+  ctx.y -= 16;
   ctx = ensureSpace(ctx, 40 + data.parts.length * 20);
   drawSectionTitle(ctx, 'Parts');
   if (data.parts.length > 0) {
@@ -64,7 +64,7 @@ export async function generateServiceInvoicePdf(data: ServiceInvoicePdfData, com
     ctx.y -= 20;
   }
 
-  ctx.y -= 12;
+  ctx.y -= 16;
   ctx = ensureSpace(ctx, 100);
   drawSectionTitle(ctx, 'Totals');
   ctx = drawFieldTable(ctx, [

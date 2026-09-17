@@ -44,6 +44,13 @@ function requiredVehicleId(req: Request, res: Response): string | null {
 // not a real Vehicle.id — so it resolves the vehicle by name (best effort,
 // case-insensitive) first. No match / no vehicleName just yields an empty list;
 // the panel falls back to its free-text color input.
+//
+// The response also carries the resolved vehicle's `year` (Vehicle.year) and
+// `price` (Vehicle.finalPrice || Vehicle.basePrice, the same "effective
+// price" convention used everywhere else — see VehicleManagementClient.tsx,
+// apps/web/app/configurator/page.tsx) — QuotationPdfPanel uses these to
+// default the "Vehicle year" / "Unit price" fields from the database instead
+// of a hardcoded guess or a blank input.
 router.get('/vehicle-colors', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
     const vehicleId = req.query.vehicleId as string | undefined;
@@ -55,18 +62,26 @@ router.get('/vehicle-colors', requireAdminApiSession, async (req: Request, res: 
     }
 
     let resolvedVehicleId = vehicleId;
+    let vehicleYear: number | null = null;
+    let vehiclePrice: number | null = null;
     if (!resolvedVehicleId && vehicleName) {
       const vehicle = await prisma.vehicle.findFirst({
         where: { name: { equals: vehicleName, mode: 'insensitive' } },
-        select: { id: true },
+        select: { id: true, year: true, basePrice: true, finalPrice: true },
       });
-      if (!vehicle) { res.json({ success: true, colors: [] }); return; }
+      if (!vehicle) { res.json({ success: true, colors: [], year: null, price: null }); return; }
       resolvedVehicleId = vehicle.id;
+      vehicleYear = vehicle.year;
+      vehiclePrice = vehicle.finalPrice || vehicle.basePrice;
+    } else if (resolvedVehicleId) {
+      const vehicle = await prisma.vehicle.findUnique({ where: { id: resolvedVehicleId }, select: { year: true, basePrice: true, finalPrice: true } });
+      vehicleYear = vehicle?.year ?? null;
+      vehiclePrice = vehicle ? (vehicle.finalPrice || vehicle.basePrice) : null;
     }
 
     const result = await vehicleService.getColors(resolvedVehicleId!);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
-    res.json({ success: true, colors: result.data });
+    res.json({ success: true, colors: result.data, year: vehicleYear, price: vehiclePrice });
   } catch (error) {
     console.error('List vehicle colors error:', error);
     res.status(500).json({ error: 'Internal server error' });
