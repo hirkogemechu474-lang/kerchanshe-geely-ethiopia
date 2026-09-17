@@ -54,6 +54,7 @@ const PERMISSION_LABELS: Record<keyof AdminPermissions, string> = {
   canViewAnalytics: 'View Analytics',
   canExportReports: 'Export Reports',
   canViewReports: 'View Reports',
+  canViewExecutiveDashboards: 'View Executive Dashboards',
   canManageUsers: 'Manage Users',
   canViewUsers: 'View Users',
   canManageSettings: 'Manage Settings',
@@ -76,7 +77,7 @@ const PERMISSION_GROUP_KEYS: { label: string; keys: (keyof AdminPermissions)[] }
   { label: 'Service Bookings', keys: ['canManageServiceBookings', 'canViewServiceBookings', 'canManageService'] },
   { label: 'Spare Parts', keys: ['canManageSpareParts', 'canViewSpareParts', 'canManagePartsIssue'] },
   { label: 'Messages', keys: ['canManageMessages', 'canViewMessages'] },
-  { label: 'Analytics & Reports', keys: ['canViewAnalytics', 'canExportReports', 'canViewReports'] },
+  { label: 'Analytics & Reports', keys: ['canViewAnalytics', 'canExportReports', 'canViewReports', 'canViewExecutiveDashboards'] },
   { label: 'Users & Settings', keys: ['canManageUsers', 'canViewUsers', 'canManageSettings', 'canViewSettings'] },
   { label: 'Workshop', keys: ['canViewJobCards', 'canManageJobCards', 'canManageBays', 'canManageTechnicians', 'canPerformQC', 'canApproveWarrantyClaims'] },
 ];

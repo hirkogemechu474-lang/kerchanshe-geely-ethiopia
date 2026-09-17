@@ -47,6 +47,13 @@ export interface AdminPermissions {
   canViewAnalytics: boolean;
   canExportReports: boolean;
   canViewReports: boolean;
+  // Gates CRM Dashboard and Workshop BI (nav + routes), and branches the
+  // Analytics/"Executive Overview" page's content between the light,
+  // individual-contributor view and the full dashboard — manager-tier and up
+  // only, unlike canViewReports (kept true for every staff role; still used
+  // by Report Export, Manage Workflow, Audit Log). Mirrors
+  // backend/src/types/auth.types.ts's field of the same name.
+  canViewExecutiveDashboards: boolean;
   canManageUsers: boolean;
   canViewUsers: boolean;
   canManageSettings: boolean;
@@ -125,6 +132,7 @@ const defaultPermissions: AdminPermissions = {
   canManageNews: false, canViewNews: false,
   canManageMessages: false, canViewMessages: false,
   canViewAnalytics: false, canExportReports: false, canViewReports: false,
+  canViewExecutiveDashboards: false,
   canManageUsers: false, canViewUsers: false,
   canManageSettings: false, canViewSettings: false,
   canViewJobCards: false, canManageJobCards: false,
@@ -183,6 +191,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: true, canViewMessages: true,
     // Analytics & reports
     canViewAnalytics: true, canViewReports: true, canExportReports: true,
+    canViewExecutiveDashboards: true,
     // Purchases
     canManagePurchases: true,
     // Permissions NOT granted: finance, settings, signatures, site nav, roles
@@ -208,6 +217,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageShowroomVisits: true,
     // Analytics
     canViewAnalytics: true, canViewReports: true, canExportReports: true,
+    canViewExecutiveDashboards: true,
     // Purchases
     canManagePurchases: true,
     // Messages
@@ -267,6 +277,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageMessages: true, canViewMessages: true,
     // Analytics
     canViewAnalytics: true, canViewReports: true, canExportReports: true,
+    canViewExecutiveDashboards: true,
   },
 
   // ── Service Manager: manages workshop operations ──
@@ -280,6 +291,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageInventory: true,
     canManageWarrantyClaims: true, canApproveWarrantyClaims: true,
     canViewAnalytics: true, canViewReports: true,
+    canViewExecutiveDashboards: true,
   },
 
   // ── Workshop Manager: day-to-day workshop operations ──
@@ -293,6 +305,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageInventory: true,
     canManageWarrantyClaims: true, canApproveWarrantyClaims: true,
     canViewAnalytics: true,
+    canViewExecutiveDashboards: true,
   },
 
   // ── Service: technician-level workshop access ──

@@ -117,9 +117,13 @@ const navSections: NavSection[] = [
     subgroups: [
       {
         items: [
-          { name: 'Analytics', href: '/admin/analytics', icon: LayoutDashboard, permission: 'canViewReports' },
-          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
-          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: Gauge, permission: 'canViewReports' },
+          // No permission gate: this is every role's post-login landing page
+          // (see app/admin/dashboard/page.tsx and the login redirect) — the
+          // page itself branches internally on canViewExecutiveDashboards to
+          // show the light 3-tile view vs. the full executive dashboard.
+          { name: 'Executive Overview', href: '/admin/analytics', icon: LayoutDashboard },
+          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewExecutiveDashboards' },
+          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: Gauge, permission: 'canViewExecutiveDashboards' },
         ],
       },
     ],
@@ -236,7 +240,7 @@ const navSections: NavSection[] = [
       {
         label: 'Workshop',
         items: [
-          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewExecutiveDashboards' },
           { name: 'Manage Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
           { name: 'Manage Customers', href: '/admin/customers', icon: Users, permission: 'canViewCustomers' },
           { name: 'Manage Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },
@@ -256,7 +260,7 @@ const navSections: NavSection[] = [
       {
         label: 'CRM & Post-Sales',
         items: [
-          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewReports' },
+          { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewExecutiveDashboards' },
           { name: 'Manage Workflow', href: '/admin/workflow', icon: GitBranch, permission: 'canViewReports' },
           { name: 'Manage Commissions', href: '/admin/commissions', icon: BadgeDollarSign, permission: 'canManageOrders' },
           { name: 'Manage Warranty Register', href: '/admin/warranty', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },

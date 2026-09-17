@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { resolveBiMonthRange, computeWorkshopBiMetrics, WorkshopBiMetrics } from '../services/workshop/biSummary.service';
 import { jobCardPartsService } from '../services/workshop/jobCardParts.service';
-import { jobCardRepository } from '../repositories';
+import { jobCardRepository, userRepository } from '../repositories';
 import { loyaltyService } from '../services/loyalty/loyalty.service';
 import { generateServiceInvoicePdf } from '../services/pdf/serviceInvoice.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
@@ -108,6 +108,35 @@ router.post('/job-cards', async (req: Request, res: Response) => {
     // JobCard has no `createdById` column — this always threw an "Unknown
     // argument" error before reaching the database.
     const jobCard = await prisma.jobCard.create({ data: req.body });
+
+    try {
+      const notifyEmails: string[] = await userRepository.findWorkshopManagerEmails();
+      // JobCard.technicianId is a Technician, not a User — Technician has no
+      // email/login of its own (name/phone/skillLevel only, see
+      // schema.prisma), so there's no inbox to notify directly. Still look
+      // it up for the technician's name in the manager-facing notification.
+      const technician = jobCard.technicianId
+        ? await prisma.technician.findUnique({ where: { id: jobCard.technicianId } })
+        : null;
+      const uniqueEmails = [...new Set(notifyEmails)];
+      await dispatchNotification({
+        type: 'job_card_status',
+        to: uniqueEmails,
+        subject: `New Job Card Opened — ${jobCard.jobCardNo}`,
+        data: {
+          jobCardNo: jobCard.jobCardNo,
+          customerName: jobCard.customerName,
+          vehicleModel: jobCard.vehicleModel,
+          ...(technician?.name && { technicianName: technician.name }),
+        },
+        ctas: [
+          { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${jobCard.id}` },
+        ],
+      });
+    } catch (notifyError: any) {
+      console.error('[JOB CARD CREATED NOTIFICATION ERROR]', notifyError.message);
+    }
+
     res.status(201).json(jobCard);
   } catch (error) {
     console.error('Create job card error:', error);
@@ -221,14 +250,15 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
           INVOICED_CLOSED: 'Invoiced & Closed', RELEASED: 'Released', CANCELLED: 'Cancelled',
         };
         const notifyEmails: string[] = [current.customerEmail];
-        // Also notify the assigned technician/service advisor
-        if (current.technicianId) {
-          const tech = await prisma.user.findUnique({ where: { id: current.technicianId } });
-          if (tech?.email) notifyEmails.push(tech.email);
-        }
-        // Notify service managers
-        const serviceManagers = await prisma.user.findMany({ where: { role: { in: ['manager', 'service_manager', 'admin'] }, isActive: true }, select: { email: true } });
-        notifyEmails.push(...serviceManagers.map(m => m.email).filter(Boolean));
+        // Technician (unlike a User) has no email/login of its own — see the
+        // schema note on the /job-cards/:id/assign route above — so it can
+        // only supply a name for context here, not another recipient.
+        const technician = current.technicianId
+          ? await prisma.technician.findUnique({ where: { id: current.technicianId } })
+          : null;
+        // Notify workshop/service managers
+        const workshopManagerEmails = await userRepository.findWorkshopManagerEmails();
+        notifyEmails.push(...workshopManagerEmails);
         const uniqueEmails = [...new Set(notifyEmails)];
         await dispatchNotification({
           type: 'job_card_status',
@@ -239,6 +269,7 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
             customerName: current.customerName,
             vehicleModel: current.vehicleModel,
             status: statusLabels[nextStatus] || nextStatus,
+            ...(technician?.name && { technicianName: technician.name }),
           },
           ctas: [
             { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${current.id}` },
@@ -297,6 +328,37 @@ router.patch('/job-cards/:id/assign', async (req: Request, res: Response) => {
       where: { id: req.params.id },
       data: { technicianId, bayId, scheduledStart, scheduledEnd },
     });
+
+    if (technicianId) {
+      try {
+        // Technician (unlike a User) has no email/login of its own — there's
+        // no inbox to notify the technician directly, so this tells the
+        // workshop managers who a job card was just assigned to instead.
+        const tech = await prisma.technician.findUnique({ where: { id: technicianId } });
+        const notifyEmails = await userRepository.findWorkshopManagerEmails();
+        if (notifyEmails.length > 0) {
+          await dispatchNotification({
+            type: 'job_card_status',
+            to: [...new Set(notifyEmails)],
+            subject: `Job Card Assigned — ${jobCard.jobCardNo}`,
+            data: {
+              jobCardNo: jobCard.jobCardNo,
+              customerName: jobCard.customerName,
+              vehicleModel: jobCard.vehicleModel,
+              ...(tech?.name && { technicianName: tech.name }),
+              ...(jobCard.bayId && { bay: jobCard.bayId }),
+              ...(jobCard.scheduledStart && { scheduledStart: jobCard.scheduledStart.toISOString() }),
+            },
+            ctas: [
+              { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${jobCard.id}` },
+            ],
+          });
+        }
+      } catch (notifyError: any) {
+        console.error('[JOB CARD ASSIGNMENT NOTIFICATION ERROR]', notifyError.message);
+      }
+    }
+
     res.json(jobCard);
   } catch (error) {
     console.error('Assign job card error:', error);
@@ -441,6 +503,26 @@ router.post('/job-cards/:id/payment', async (req: Request, res: Response) => {
       where: { id: req.params.id },
       data: { paymentStatus: 'PAID', paidAt: new Date() },
     });
+
+    try {
+      const notifyEmails: string[] = [];
+      if (jobCard.customerEmail) notifyEmails.push(jobCard.customerEmail);
+      notifyEmails.push(...(await userRepository.findWorkshopManagerEmails()));
+      const uniqueEmails = [...new Set(notifyEmails)];
+      await dispatchNotification({
+        type: 'job_card_status',
+        to: uniqueEmails,
+        subject: `Payment Received — ${jobCard.jobCardNo}`,
+        data: {
+          jobCardNo: jobCard.jobCardNo,
+          customerName: jobCard.customerName,
+          invoiceAmount: jobCard.invoiceAmount,
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[JOB CARD PAYMENT NOTIFICATION ERROR]', notifyError.message);
+    }
+
     res.json(updated);
   } catch (error) {
     console.error('Record service payment error:', error);
@@ -566,6 +648,31 @@ router.get('/warranty-claims', async (req: Request, res: Response) => {
 router.post('/warranty-claims', async (req: Request, res: Response) => {
   try {
     const claim = await prisma.warrantyClaim.create({ data: req.body });
+
+    try {
+      const jobCard = await prisma.jobCard.findUnique({
+        where: { id: claim.jobCardId },
+        select: { jobCardNo: true, customerName: true, vehicleModel: true },
+      });
+      const notifyEmails = await userRepository.findWorkshopManagerEmails();
+      await dispatchNotification({
+        type: 'warranty_claim',
+        to: [...new Set(notifyEmails)],
+        subject: `New Warranty Claim Drafted — ${claim.claimNo}`,
+        data: {
+          claimNo: claim.claimNo,
+          defectCode: claim.defectCode,
+          ...(jobCard?.customerName && { customerName: jobCard.customerName }),
+          ...(jobCard?.vehicleModel && { vehicleModel: jobCard.vehicleModel }),
+        },
+        ctas: [
+          { label: 'Review Claim', url: `${env.urls.admin}/admin/workshop/warranty-claims/${claim.id}` },
+        ],
+      });
+    } catch (notifyError: any) {
+      console.error('[WARRANTY CLAIM CREATED NOTIFICATION ERROR]', notifyError.message);
+    }
+
     res.status(201).json(claim);
   } catch (error) {
     console.error('Create warranty claim error:', error);
@@ -682,7 +789,10 @@ function buildWorkshopBiCsv(payload: {
 }
 
 // GET /api/admin/workshop/bi-dashboard (monthly BI dashboard — KPI derivations live in biSummary.service.ts)
-router.get('/bi-dashboard', async (req: Request, res: Response) => {
+// requirePermission here too (not just the Next.js page) — this Express
+// route had only been session-gated, so any authenticated staff member could
+// hit it directly regardless of the page-level manager-only restriction.
+router.get('/bi-dashboard', requirePermission('canViewExecutiveDashboards'), async (req: Request, res: Response) => {
   try {
     const { start, end, monthValue, label } = resolveBiMonthRange(req.query.month as string | undefined);
     const metrics = await computeWorkshopBiMetrics(start, end);
@@ -711,7 +821,7 @@ router.get('/bi-dashboard', async (req: Request, res: Response) => {
 
 // GET /api/admin/workshop/bi-dashboard/trend (last N months, oldest first — same
 // per-month derivations as /bi-dashboard via computeWorkshopBiMetrics)
-router.get('/bi-dashboard/trend', async (req: Request, res: Response) => {
+router.get('/bi-dashboard/trend', requirePermission('canViewExecutiveDashboards'), async (req: Request, res: Response) => {
   try {
     const months = Math.max(1, Math.min(24, parseInt(req.query.months as string) || 6));
     const now = new Date();

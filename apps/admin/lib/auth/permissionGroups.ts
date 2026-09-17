@@ -9,7 +9,7 @@ export const PERMISSION_GROUPS = {
   workshop: { label: 'Workshop Management', permissions: ['canManageWorkshop', 'canViewJobCards', 'canManageJobCards', 'canManageBays', 'canManageTechnicians', 'canPerformQC', 'canManagePartsIssue', 'canManageWarrantyClaims', 'canApproveWarrantyClaims'] },
   finance: { label: 'Finance Management', permissions: ['canManageFinance', 'canManagePurchases'] },
   content: { label: 'Content Management', permissions: ['canManageContent', 'canViewContent', 'canManagePromotions', 'canViewPromotions', 'canModerateReviews', 'canViewReviews', 'canManageNews', 'canViewNews'] },
-  analytics: { label: 'Analytics', permissions: ['canViewAnalytics', 'canExportReports', 'canViewReports'] },
+  analytics: { label: 'Analytics', permissions: ['canViewAnalytics', 'canExportReports', 'canViewReports', 'canViewExecutiveDashboards'] },
   settings: { label: 'Settings', permissions: ['canManageSettings', 'canViewSettings', 'canManageSiteNavigation'] },
   dealers: { label: 'Dealer Management', permissions: ['canManageDealers', 'canViewDealers'] },
   testDrives: { label: 'Test Drive Management', permissions: ['canManageTestDrives', 'canViewTestDrives'] },

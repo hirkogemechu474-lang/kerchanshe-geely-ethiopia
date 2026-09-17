@@ -5,22 +5,31 @@ import Link from 'next/link';
 import {
   TrendingUp, Calendar, Car, FileText, Star, Wrench, Loader2,
   AlertTriangle, Gauge, ClipboardList, ShieldCheck, PackageSearch, MessageSquare, Plus, BarChart3, QrCode, RefreshCw,
-  Wallet, FileCheck2, PackageCheck, CreditCard,
+  Wallet, FileCheck2, PackageCheck,
 } from 'lucide-react';
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
-import { OverviewTile, RankedBarChart, StatusBarChart } from '@/components/admin/analytics/AnalyticsCharts';
+import { OverviewTile, RankedBarChart, StatusBarChart, UtilizationBar } from '@/components/admin/analytics/AnalyticsCharts';
 import ReportExportBar from '@/components/admin/reports/ReportExportBar';
 import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
 import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
 import apiClient from '@/lib/apiClient';
+import { CHART_CATEGORICAL, CHART_CHROME, CHART_STATUS } from '@/lib/chartPalette';
 
-const WARRANTY_STATUS_FILL: Record<string, string> = {
-  DRAFTED: 'bg-gray-400 dark:bg-gray-500',
-  SUBMITTED: 'bg-geely-blue dark:bg-blue-400',
-  UNDER_REVIEW: 'bg-orange-500 dark:bg-orange-400',
-  APPROVED: 'bg-purple-500 dark:bg-purple-400',
-  REJECTED: 'bg-red-500 dark:bg-red-400',
-  REIMBURSED: 'bg-green-500 dark:bg-green-400',
+// Warranty claim status is an actual state indicator (matches the app's status
+// badges elsewhere), so per the dataviz method it maps onto the shared
+// CHART_STATUS palette rather than inventing ad hoc hex/Tailwind colors.
+// DRAFTED isn't a real state yet (no claim has been submitted), so it gets a
+// neutral chrome gray instead of one of the four reserved status colors.
+// REIMBURSED and APPROVED are both "good" outcomes; UNDER_REVIEW is treated as
+// more urgent ("serious") than a freshly-queued SUBMITTED ("warning") since
+// it's the stage immediately before an approve/reject decision.
+const WARRANTY_STATUS_COLOR: Record<string, string> = {
+  DRAFTED: CHART_CHROME.mutedText,
+  SUBMITTED: CHART_STATUS.warning,
+  UNDER_REVIEW: CHART_STATUS.serious,
+  APPROVED: CHART_STATUS.good,
+  REJECTED: CHART_STATUS.critical,
+  REIMBURSED: CHART_STATUS.good,
 };
 
 interface AnalyticsData {
@@ -187,13 +196,19 @@ function buildReport(data: AnalyticsData): DashboardReport {
   }
 
   return {
-    title: 'Executive Analytics Dashboard',
+    title: 'Executive Overview',
     subtitle: 'Everything across the showroom, workshop, and website in one place',
     sections,
   };
 }
 
-export default function AnalyticsDashboard({ canExport }: { canExport: boolean }) {
+export default function AnalyticsDashboard({
+  canExport,
+  canViewExecutive,
+}: {
+  canExport: boolean;
+  canViewExecutive: boolean;
+}) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -242,6 +257,41 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
     );
   }
 
+  // Individual-contributor roles (sales reps, technicians, service advisors,
+  // marketing, viewer) still land on this page after login, but they don't get
+  // the executive BI view — no charts, no revenue, no cross-department data.
+  // The /analytics response has nothing scoped to "your own" activity (no
+  // per-user fields), so we fall back to the least sensitive company-wide
+  // counts: total fleet size and two operational booking counts that are
+  // broadly relevant across sales and service roles alike.
+  if (!canViewExecutive) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card className="overflow-hidden border-0 bg-gradient-to-r from-navy via-[#143b82] to-geely-blue text-white shadow-xl">
+          <div className="p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Welcome back</p>
+            <h2 className="mt-1 text-2xl font-bold">Geely Ethiopia Dashboard</h2>
+            <p className="mt-2 max-w-2xl text-sm text-blue-100">
+              A quick snapshot of what&apos;s happening across the showroom and workshop today.
+            </p>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <OverviewTile label="Total Vehicles" value={data.overview.totalVehicles} icon={Car} accent="blue" />
+          <OverviewTile
+            label="Test Drive Bookings"
+            value={data.overview.totalTestDrives}
+            hint={`${data.recentActivity.testDrives} this month`}
+            icon={Calendar}
+            accent="green"
+          />
+          <OverviewTile label="Service Bookings" value={data.overview.totalServiceBookings} icon={Wrench} accent="orange" />
+        </div>
+      </div>
+    );
+  }
+
   const attention = data.needsAttention;
   const attentionItems = [
     attention.overdueJobCards > 0 && {
@@ -274,7 +324,7 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Dashboard"
+        title="Executive Overview"
         description="Everything across the showroom, workshop, and website in one place"
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -296,7 +346,7 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
         <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Insights &amp; reporting</p>
-            <h2 className="mt-1 text-2xl font-bold">Executive Analytics Center</h2>
+            <h2 className="mt-1 text-2xl font-bold">Showroom, CRM &amp; Workshop at a Glance</h2>
             <p className="mt-2 max-w-2xl text-sm text-blue-100">
               Review sales, CRM, and workshop performance from one place, then download the current report in the format your team needs.
             </p>
@@ -319,26 +369,45 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
       </Card>
 
       {/* Needs Attention */}
-      <Card className={attentionItems.length > 0 ? 'border-orange-200 dark:border-orange-800' : ''}>
-        <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Needs Attention</h2>
-        {attentionItems.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Nothing needs attention right now.</p>
-        ) : (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {attentionItems.map((item) => (
-              <li key={item.label}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-2 text-sm text-orange-800 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
-                >
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Needs Attention</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RankedBarChart
+              title="Open Items by Category"
+              icon={AlertTriangle}
+              emptyLabel="Nothing needs attention right now."
+              data={[
+                { label: 'Overdue Job Cards', value: attention.overdueJobCards },
+                { label: 'Parts Below Reorder', value: attention.partsBelowReorder },
+                { label: 'New Quote Requests', value: attention.pendingQuotations },
+                { label: 'Unread Messages', value: attention.unreadMessages },
+                { label: 'Reviews Awaiting Moderation', value: attention.pendingReviews },
+              ].filter((d) => d.value > 0)}
+            />
+          </div>
+          <Card className={attentionItems.length > 0 ? 'border-orange-200 dark:border-orange-800' : ''}>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Jump to Item</h3>
+            {attentionItems.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">All caught up — nothing needs attention.</p>
+            ) : (
+              <ul className="space-y-2">
+                {attentionItems.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="flex items-center gap-2 text-sm text-orange-800 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <Card className="flex flex-wrap gap-3">
@@ -429,39 +498,47 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
             </LinkButton>
           </div>
 
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-            <Wallet className="w-3.5 h-3.5" /> Payment
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            <StatTile label="Unpaid" value={data.salesPipeline.payment.unpaid} icon={AlertTriangle} tone={data.salesPipeline.payment.unpaid > 0 ? 'highlight' : 'default'} />
-            <StatTile label="Pending Review" value={data.salesPipeline.payment.pendingReview} icon={ClipboardList} tone={data.salesPipeline.payment.pendingReview > 0 ? 'highlight' : 'default'} />
-            <StatTile label="Paid" value={data.salesPipeline.payment.paid} icon={CreditCard} />
+          {/* Total Collected (currency) and Order-Linked Test Drives (a plain count)
+              are single current values of two different units/scales, so per the
+              one-axis rule they stay as stat tiles rather than sharing a chart. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
             <StatTile label="Total Collected" value={formatETB(data.salesPipeline.payment.totalCollected)} icon={TrendingUp} />
+            <StatTile label="Order-Linked Test Drives" value={data.salesPipeline.orderLinkedTestDrives} icon={Calendar} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                <FileCheck2 className="w-3.5 h-3.5" /> Agreement
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <StatTile label="Approved" value={data.salesPipeline.agreement.approved} icon={FileCheck2} />
-                <StatTile label="Sent to Customer" value={data.salesPipeline.agreement.sent} icon={FileText} />
-                <StatTile label="Signed" value={data.salesPipeline.agreement.signed} icon={FileCheck2} />
-                <StatTile label="Countersigned" value={data.salesPipeline.agreement.countersigned} icon={FileCheck2} />
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                <PackageCheck className="w-3.5 h-3.5" /> Handover &amp; Other
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <StatTile label="Delivered" value={data.salesPipeline.handover.delivered} icon={PackageCheck} />
-                <StatTile label="Handover Signed" value={data.salesPipeline.handover.signed} icon={PackageCheck} />
-                <StatTile label="Handover Countersigned" value={data.salesPipeline.handover.countersigned} icon={PackageCheck} />
-                <StatTile label="Order-Linked Test Drives" value={data.salesPipeline.orderLinkedTestDrives} icon={Calendar} />
-              </div>
-            </div>
+          {/* Each pipeline stage-breakdown is a magnitude comparison across an
+              ordered set of stages with no independent identity elsewhere, so —
+              per the method — a single brand-hue bar chart is the safe default
+              (not a distinct categorical color per stage). */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <RankedBarChart
+              title="Payment Status"
+              icon={Wallet}
+              data={[
+                { label: 'Unpaid', value: data.salesPipeline.payment.unpaid },
+                { label: 'Pending Review', value: data.salesPipeline.payment.pendingReview },
+                { label: 'Paid', value: data.salesPipeline.payment.paid },
+              ]}
+            />
+            <RankedBarChart
+              title="Agreement Progress"
+              icon={FileCheck2}
+              data={[
+                { label: 'Approved', value: data.salesPipeline.agreement.approved },
+                { label: 'Sent to Customer', value: data.salesPipeline.agreement.sent },
+                { label: 'Signed', value: data.salesPipeline.agreement.signed },
+                { label: 'Countersigned', value: data.salesPipeline.agreement.countersigned },
+              ]}
+            />
+            <RankedBarChart
+              title="Handover Progress"
+              icon={PackageCheck}
+              data={[
+                { label: 'Delivered', value: data.salesPipeline.handover.delivered },
+                { label: 'Signed', value: data.salesPipeline.handover.signed },
+                { label: 'Countersigned', value: data.salesPipeline.handover.countersigned },
+              ]}
+            />
           </div>
         </div>
       )}
@@ -480,13 +557,36 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
               </LinkButton>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <StatTile label="Bays Busy" value={`${data.workshop.kpis.baysBusy} / ${data.workshop.kpis.baysTotal}`} icon={Gauge} />
             <StatTile label="Jobs Today" value={data.workshop.kpis.jobsToday} icon={ClipboardList} />
             <StatTile label="Avg. Turnaround" value={formatMinutes(data.workshop.kpis.avgTurnaroundMinutes)} icon={Wrench} />
-            <StatTile label="Pending Approval" value={data.workshop.kpis.pendingApproval} icon={FileText} tone={data.workshop.kpis.pendingApproval > 0 ? 'highlight' : 'default'} />
-            <StatTile label="Overdue (3+ days)" value={data.workshop.kpis.overdueCount} icon={AlertTriangle} tone={data.workshop.kpis.overdueCount > 0 ? 'highlight' : 'default'} />
-            <StatTile label="Parts Below Reorder" value={data.workshop.kpis.partsBelowReorder} icon={PackageSearch} tone={data.workshop.kpis.partsBelowReorder > 0 ? 'highlight' : 'default'} />
+          </div>
+
+          {/* Bay Utilization is a proportion of one fixed total (one bar);
+              the three alert counts below are independent magnitudes with no
+              natural order (a ranked bar chart), so — per the one-axis rule —
+              they stay as two separate charts rather than one combined chart. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <UtilizationBar
+              title="Bay Utilization"
+              icon={Gauge}
+              emptyLabel="No active bays configured."
+              segments={[
+                { label: 'Busy', value: data.workshop.kpis.baysBusy, color: CHART_CATEGORICAL[0] },
+                { label: 'Available', value: Math.max(0, data.workshop.kpis.baysTotal - data.workshop.kpis.baysBusy), color: CHART_CHROME.gridline },
+              ]}
+            />
+            <RankedBarChart
+              title="Operational Alerts"
+              icon={AlertTriangle}
+              emptyLabel="No open operational alerts."
+              data={[
+                { label: 'Pending Approval', value: data.workshop.kpis.pendingApproval },
+                { label: 'Overdue (3+ days)', value: data.workshop.kpis.overdueCount },
+                { label: 'Parts Below Reorder', value: data.workshop.kpis.partsBelowReorder },
+              ].filter((d) => d.value > 0)}
+            />
           </div>
 
           <StatusBarChart
@@ -495,7 +595,7 @@ export default function AnalyticsDashboard({ canExport }: { canExport: boolean }
               status: c.status,
               label: WARRANTY_CLAIM_STATUS_LABELS[c.status as keyof typeof WARRANTY_CLAIM_STATUS_LABELS],
               count: c.count,
-              fillClass: WARRANTY_STATUS_FILL[c.status] ?? 'bg-gray-400 dark:bg-gray-500',
+              color: WARRANTY_STATUS_COLOR[c.status] ?? CHART_CHROME.mutedText,
             }))}
           />
         </div>

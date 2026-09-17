@@ -40,6 +40,7 @@ export const PERMISSIONS = {
   VIEW_ANALYTICS: 'canViewAnalytics',
   VIEW_REPORTS:   'canViewReports',
   EXPORT_REPORTS: 'canExportReports',
+  VIEW_EXECUTIVE_DASHBOARDS: 'canViewExecutiveDashboards',
   // Users
   MANAGE_USERS: 'canManageUsers',
   VIEW_USERS:   'canViewUsers',

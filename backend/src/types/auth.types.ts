@@ -46,6 +46,12 @@ export interface AdminPermissions {
   canViewAnalytics: boolean;
   canExportReports: boolean;
   canViewReports: boolean;
+  // Gates the Analytics / CRM Dashboard / Executive Overview (formerly
+  // Workshop BI) pages specifically — deliberately separate from
+  // canViewReports, which is also used by Report Export, Manage Workflow,
+  // and the Audit Log and stays true for every staff role. This one is
+  // manager-tier and up only (see ROLE_PERMISSIONS in rolePermissions.ts).
+  canViewExecutiveDashboards: boolean;
   canManageUsers: boolean;
   canViewUsers: boolean;
   canManageSettings: boolean;

@@ -1,11 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { dashboardService } from '../services/dashboard/dashboard.service';
 
 const router = Router();
 
+// Manager-tier only — same gate as the Next.js CRM Dashboard page
+// (canViewExecutiveDashboards), so the underlying data can't be pulled
+// directly by an authenticated session that the page itself would refuse.
+// requirePermission reads req.adminSession, so it must run after
+// requireAdminApiSession populates it — hence per-route, in this order,
+// not a single router-level .use() ahead of the session check.
+const guard = [requireAdminApiSession, requirePermission('canViewExecutiveDashboards')];
+
 // GET /api/dashboard/crm - Get comprehensive CRM dashboard
-router.get('/crm', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/crm', guard, async (req: Request, res: Response) => {
   try {
     const result = await dashboardService.getCRMDashboard();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -17,7 +25,7 @@ router.get('/crm', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // GET /api/dashboard/agent-performance - Get agent performance report
-router.get('/agent-performance', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/agent-performance', guard, async (req: Request, res: Response) => {
   try {
     const { agentId, startDate, endDate } = req.query;
     const result = await dashboardService.getAgentPerformance({
@@ -34,7 +42,7 @@ router.get('/agent-performance', requireAdminApiSession, async (req: Request, re
 });
 
 // GET /api/dashboard/lead-sources - Get lead source analytics
-router.get('/lead-sources', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/lead-sources', guard, async (req: Request, res: Response) => {
   try {
     const result = await dashboardService.getLeadSourceAnalytics();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -46,7 +54,7 @@ router.get('/lead-sources', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // GET /api/dashboard/revenue-trend - Get monthly revenue trend
-router.get('/revenue-trend', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/revenue-trend', guard, async (req: Request, res: Response) => {
   try {
     const result = await dashboardService.getRevenueTrend();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
