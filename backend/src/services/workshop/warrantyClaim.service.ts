@@ -128,6 +128,35 @@ export const warrantyClaimService = {
               },
             });
           }
+
+          // Step 21: Also notify service team about warranty claim status change
+          const serviceTeam = await prisma.user.findMany({ where: { role: { in: ['service', 'service_manager', 'service_advisor', 'technician', 'admin'] }, isActive: true }, select: { email: true } });
+          const serviceEmails = serviceTeam.map(s => s.email).filter(Boolean);
+          if (serviceEmails.length > 0) {
+            const serviceSubject = toStatus === 'APPROVED'
+              ? `Warranty Claim Approved — ${claim.claimNo}`
+              : `Warranty Claim Status Update — ${claim.claimNo}`;
+            await dispatchNotification({
+              type: 'warranty_claim',
+              to: serviceEmails,
+              subject: serviceSubject,
+              data: {
+                claimNo: claim.claimNo,
+                jobCardNo: jobCard?.jobCardNo || 'N/A',
+                customerName: jobCard?.customerName || 'N/A',
+                status: toStatus,
+                defectCode: claim.defectCode,
+              },
+              inApp: {
+                type: 'warranty_claim',
+                title: `Warranty Claim ${toStatus}`,
+                body: `Warranty claim ${claim.claimNo} for job card ${jobCard?.jobCardNo || 'N/A'} has been ${toStatus.toLowerCase()}.`,
+                relatedModel: 'warrantyClaim',
+                relatedId: claim.id,
+                priority: toStatus === 'APPROVED' ? 'normal' : 'high',
+              },
+            });
+          }
         } catch (notifyError: any) {
           console.error('[WARRANTY CLAIM NOTIFICATION ERROR]', notifyError.message);
         }

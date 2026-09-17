@@ -408,6 +408,56 @@ export const orderService = {
         }),
       });
 
+      // Step 13: Notify when PDI is 100% complete
+      if (isChecked) {
+        try {
+          const fullOrder = await salesOrderRepository.findByIdWithPdiItems(orderId);
+          if (fullOrder) {
+            const pdiTotal = fullOrder.pdiItems?.length ?? 0;
+            const pdiChecked = fullOrder.pdiItems?.filter((p: any) => p.isChecked).length ?? 0;
+            if (pdiTotal > 0 && pdiChecked === pdiTotal) {
+              const staffEmails: string[] = [];
+              if (fullOrder.salesAgentId) {
+                const agent = await prisma.user.findUnique({ where: { id: fullOrder.salesAgentId } });
+                if (agent?.email) staffEmails.push(agent.email);
+              }
+              const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
+              staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+              const serviceUsers = await prisma.user.findMany({ where: { role: { in: ['service', 'service_advisor', 'technician'] }, isActive: true }, select: { email: true } });
+              staffEmails.push(...serviceUsers.map(s => s.email).filter(Boolean));
+              const uniqueEmails = [...new Set(staffEmails)];
+              if (uniqueEmails.length > 0) {
+                await dispatchNotification({
+                  type: 'order_status',
+                  to: uniqueEmails,
+                  subject: `PDI Complete — ${fullOrder.orderNo}`,
+                  data: {
+                    orderNo: fullOrder.orderNo,
+                    customerName: fullOrder.customerName,
+                    vehicleModel: fullOrder.vehicleModel,
+                    nextStep: 'All PDI items have passed. Order is ready for delivery preparation.',
+                    adminLink: `${env.urls.admin}/orders/${fullOrder.id}`,
+                  },
+                  ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${fullOrder.id}` }],
+                  inApp: {
+                    type: 'order_update',
+                    title: 'PDI Complete',
+                    body: `PDI checklist for order ${fullOrder.orderNo} (${fullOrder.customerName}) is 100% complete. Order is ready for delivery preparation.`,
+                    link: `/admin/orders/${fullOrder.id}`,
+                    orderId: fullOrder.id,
+                    relatedModel: 'order',
+                    relatedId: fullOrder.id,
+                    priority: 'normal',
+                  },
+                });
+              }
+            }
+          }
+        } catch (pdiNotifyError: any) {
+          console.error('[PDI COMPLETE NOTIFICATION ERROR]', pdiNotifyError.message);
+        }
+      }
+
       return { ok: true, data: updated };
     } catch (error: any) {
       console.error('[PDI UPDATE ERROR]', error.message);

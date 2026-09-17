@@ -62,7 +62,7 @@ export async function generateDashboardReportPdf(input: DashboardReportInput): P
   ctx.y -= 24;
 
   for (const section of input.sections) {
-    const nextPage = ensureSpace(ctx, 40);
+    let nextPage = ensureSpace(ctx, 40);
     // ensureSpace() only breaks the page — it doesn't know about the
     // letterhead, so a section that starts a new page has to get its own
     // header/footer drawn here. A section whose own table/field-list is long

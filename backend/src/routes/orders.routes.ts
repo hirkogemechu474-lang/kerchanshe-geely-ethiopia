@@ -321,6 +321,50 @@ router.post('/:id/allocation/allocate', requireAdminApiSession, async (req: Requ
       performedById: req.adminSession!.user.id,
       toValue: { vehicleId: result.data.vehicleId, vin: result.data.vin },
     });
+
+    // Step 12: Notify sales agent and managers that vehicle has been allocated
+    try {
+      const fullOrder = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+      if (fullOrder) {
+        const staffEmails: string[] = [];
+        if (fullOrder.salesAgentId) {
+          const agent = await prisma.user.findUnique({ where: { id: fullOrder.salesAgentId } });
+          if (agent?.email) staffEmails.push(agent.email);
+        }
+        const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
+        staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+        const uniqueEmails = [...new Set(staffEmails)];
+        if (uniqueEmails.length > 0) {
+          await dispatchNotification({
+            type: 'order_status',
+            to: uniqueEmails,
+            subject: `Vehicle Allocated — ${fullOrder.orderNo}`,
+            data: {
+              orderNo: fullOrder.orderNo,
+              customerName: fullOrder.customerName,
+              vehicleModel: fullOrder.vehicleModel,
+              vin: result.data.vin || 'N/A',
+              nextStep: 'Vehicle has been allocated. PDI checklist can now be completed.',
+              adminLink: `${env.urls.admin}/orders/${fullOrder.id}`,
+            },
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${fullOrder.id}` }],
+            inApp: {
+              type: 'order_update',
+              title: 'Vehicle Allocated',
+              body: `Vehicle has been allocated to order ${fullOrder.orderNo} (${fullOrder.customerName}). VIN: ${result.data.vin || 'N/A'}. PDI checklist can now be completed.`,
+              link: `/admin/orders/${fullOrder.id}`,
+              orderId: fullOrder.id,
+              relatedModel: 'order',
+              relatedId: fullOrder.id,
+              priority: 'normal',
+            },
+          });
+        }
+      }
+    } catch (allocNotifyError: any) {
+      console.error('[VEHICLE ALLOCATED NOTIFICATION ERROR]', allocNotifyError.message);
+    }
+
     res.json(result.data);
   } catch (error) {
     console.error('Allocate step error:', error);
@@ -441,6 +485,40 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
       });
       notificationSent = result.ok;
       notificationError = result.error;
+    }
+
+    // Step 9: Notify sales agent that manager countersigned
+    if (order.salesAgentId) {
+      try {
+        const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId } });
+        if (agent?.email) {
+          await dispatchNotification({
+            type: 'order_status',
+            to: [agent.email],
+            subject: `Agreement Countersigned — ${order.orderNo}`,
+            data: {
+              orderNo: order.orderNo,
+              customerName: order.customerName,
+              vehicleModel: order.vehicleModel,
+              nextStep: 'Payment link has been sent to the customer. Monitor payment status.',
+              adminLink: `${env.urls.admin}/orders/${order.id}`,
+            },
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+            inApp: {
+              type: 'order_update',
+              title: 'Agreement Countersigned',
+              body: `Manager has countersigned the agreement for order ${order.orderNo} (${order.customerName}). Payment link has been sent to the customer.`,
+              link: `/admin/orders/${order.id}`,
+              orderId: order.id,
+              relatedModel: 'order',
+              relatedId: order.id,
+              priority: 'normal',
+            },
+          });
+        }
+      } catch (err: any) {
+        console.error('[COUNTERSIGN AGENT NOTIFICATION ERROR]', err.message);
+      }
     }
 
     res.json({ ...updated, notificationSent, notificationError });
@@ -676,6 +754,47 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
           data: { paymentStatus: 'UNPAID', paymentProofUrl: null, paymentSubmittedAt: null },
         });
 
+    // Step 10: Notify sales agent, managers, and finance when payment is confirmed
+    if (action === 'confirm') {
+      const notifyStaff = async (emails: string[], subject: string, data: Record<string, any>) => {
+        if (emails.length === 0) return;
+        try {
+          await dispatchNotification({
+            type: 'order_status',
+            to: emails,
+            subject,
+            data,
+            ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+          });
+        } catch (err: any) {
+          console.error('[PAYMENT CONFIRM STAFF NOTIFICATION ERROR]', err.message);
+        }
+      };
+
+      const baseData = { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, amountPaid: order.amountPaid };
+      const staffEmails: string[] = [];
+
+      // Sales agent
+      if (order.salesAgentId) {
+        const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId } });
+        if (agent?.email) staffEmails.push(agent.email);
+      }
+      // Managers
+      const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
+      const managerEmails = managers.map(m => m.email).filter(Boolean);
+      staffEmails.push(...managerEmails);
+      // Finance
+      const financeUsers = await prisma.user.findMany({ where: { role: 'finance', isActive: true }, select: { email: true } });
+      const financeEmails = financeUsers.map(f => f.email).filter(Boolean);
+      staffEmails.push(...financeEmails);
+
+      const uniqueEmails = [...new Set(staffEmails)];
+      await notifyStaff(uniqueEmails, `Payment Confirmed — ${order.orderNo}`, {
+        ...baseData,
+        nextStep: 'Finance must verify the payment before delivery can proceed.',
+      });
+    }
+
     res.json(updated);
   } catch (error) {
     console.error('Confirm payment error:', error);
@@ -729,6 +848,45 @@ router.post('/:id/payment/verify', requireAdminApiSession, requirePermission('ca
       });
       notificationSent = result.ok;
       notificationError = result.error;
+    }
+
+    // Step 11: Notify sales agent and managers that payment has been verified
+    try {
+      const staffEmails: string[] = [];
+      if (order.salesAgentId) {
+        const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId } });
+        if (agent?.email) staffEmails.push(agent.email);
+      }
+      const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true }, select: { email: true } });
+      staffEmails.push(...managers.map(m => m.email).filter(Boolean));
+      const uniqueEmails = [...new Set(staffEmails)];
+      if (uniqueEmails.length > 0) {
+        await dispatchNotification({
+          type: 'order_status',
+          to: uniqueEmails,
+          subject: `Payment Verified — ${order.orderNo}`,
+          data: {
+            orderNo: order.orderNo,
+            vehicleModel: order.vehicleModel,
+            customerName: order.customerName,
+            nextStep: 'Payment has been verified. Vehicle can now be allocated and delivery can proceed.',
+            adminLink: `${env.urls.admin}/orders/${order.id}`,
+          },
+          ctas: [{ label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` }],
+          inApp: {
+            type: 'order_update',
+            title: 'Payment Verified',
+            body: `Payment for order ${order.orderNo} (${order.customerName}) has been verified. Vehicle can now be allocated.`,
+            link: `/admin/orders/${order.id}`,
+            orderId: order.id,
+            relatedModel: 'order',
+            relatedId: order.id,
+            priority: 'normal',
+          },
+        });
+      }
+    } catch (err: any) {
+      console.error('[PAYMENT VERIFY STAFF NOTIFICATION ERROR]', err.message);
     }
 
     res.json({ ...updated, notificationSent, notificationError });

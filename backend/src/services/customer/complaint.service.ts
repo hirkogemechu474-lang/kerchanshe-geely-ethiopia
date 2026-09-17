@@ -2,6 +2,7 @@ import { prisma } from '../../config/database';
 import { dispatchNotification } from '../email/notifications.dispatch';
 import { auditService } from '../audit/audit.service';
 import { userRepository } from '../../repositories';
+import { env } from '../../config/env';
 
 export const complaintService = {
   /**
@@ -53,6 +54,62 @@ export const complaintService = {
         performedById: data.assignedTo || 'system',
         toValue: { caseNo, category: data.category, priority: data.priority, subject: data.subject },
       });
+
+      // Step 22: Notify customer of complaint creation
+      if (data.customerEmail) {
+        try {
+          await dispatchNotification({
+            type: 'complaint_created',
+            to: [data.customerEmail],
+            subject: `Complaint Received — ${caseNo}`,
+            data: {
+              caseNo,
+              customerName: data.customerName,
+              category: data.category,
+              priority: data.priority,
+              subject: data.subject,
+              description: data.description,
+              nextStep: 'Our team will review your complaint and get back to you shortly.',
+            },
+            greetingName: data.customerName,
+          });
+        } catch (customerNotifyError: any) {
+          console.error('[COMPLAINT CUSTOMER NOTIFICATION ERROR]', customerNotifyError.message);
+        }
+      }
+
+      // Step 22: Notify assigned staff member
+      if (data.assignedTo) {
+        try {
+          const assignedUser = await prisma.user.findUnique({ where: { id: data.assignedTo } });
+          if (assignedUser?.email) {
+            await dispatchNotification({
+              type: 'complaint_created',
+              to: [assignedUser.email],
+              subject: `[${data.priority}] Complaint Assigned to You: ${data.subject}`,
+              data: {
+                caseNo,
+                customerName: data.customerName,
+                category: data.category,
+                priority: data.priority,
+                subject: data.subject,
+                adminLink: `${env?.urls?.admin || ''}/admin/customers/complaints`,
+              },
+              greetingName: assignedUser.name,
+              inApp: {
+                type: 'complaint_created',
+                title: `[${data.priority}] Complaint Assigned`,
+                body: `A ${data.priority.toLowerCase()} priority complaint (${caseNo}) has been assigned to you from ${data.customerName}: "${data.subject}".`,
+                relatedModel: 'complaint',
+                relatedId: caseRecord.id,
+                priority: data.priority === 'CRITICAL' ? 'urgent' : 'high',
+              },
+            });
+          }
+        } catch (assignedNotifyError: any) {
+          console.error('[COMPLAINT ASSIGNED STAFF NOTIFICATION ERROR]', assignedNotifyError.message);
+        }
+      }
 
       // Notify manager if high priority
       if (data.priority === 'HIGH' || data.priority === 'CRITICAL') {

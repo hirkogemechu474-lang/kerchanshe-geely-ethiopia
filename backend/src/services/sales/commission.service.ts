@@ -149,6 +149,38 @@ export const commissionService = {
         },
       });
 
+      // Step 23: Notify sales agent that commission has been earned
+      const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId! } });
+      if (agent?.email) {
+        try {
+          await dispatchNotification({
+            type: 'commission_paid',
+            to: [agent.email],
+            subject: `Commission Earned — Order ${order.orderNo}`,
+            data: {
+              orderNo: order.orderNo,
+              customerName: order.customerName,
+              vehicleModel: order.vehicleModel,
+              totalCommission: totalCommission.toFixed(2),
+              splitPercent: order.commissionSplitPercent ?? 100,
+              agentCommission: agentCommission.toFixed(2),
+              nextStep: 'Your commission has been earned and will be included in the next payroll cycle.',
+            },
+            greetingName: agent.name,
+            inApp: {
+              type: 'commission_update',
+              title: 'Commission Earned',
+              body: `You have earned a commission of ${agentCommission.toFixed(2)} for order ${order.orderNo} (${order.customerName}).`,
+              relatedModel: 'order',
+              relatedId: orderId,
+              priority: 'normal',
+            },
+          });
+        } catch (notifyError: any) {
+          console.error('[COMMISSION EARNED NOTIFICATION ERROR]', notifyError.message);
+        }
+      }
+
       return { ok: true };
     } catch (error: any) {
       console.error('[COMMISSION MARK EARNED ERROR]', error.message);

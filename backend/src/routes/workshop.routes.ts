@@ -212,6 +212,43 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
       freeBayId,
     );
 
+    // Step 19: Notify service advisor on job card status change
+    if (current.customerEmail) {
+      try {
+        const statusLabels: Record<string, string> = {
+          DRAFT_CHECKIN: 'Draft Check-in', CHECKED_IN: 'Checked In', IN_PROGRESS: 'In Progress',
+          QC_PENDING: 'QC Pending', QC_PASSED: 'QC Passed', READY_FOR_PICKUP: 'Ready for Pickup',
+          INVOICED_CLOSED: 'Invoiced & Closed', RELEASED: 'Released', CANCELLED: 'Cancelled',
+        };
+        const notifyEmails: string[] = [current.customerEmail];
+        // Also notify the assigned technician/service advisor
+        if (current.technicianId) {
+          const tech = await prisma.user.findUnique({ where: { id: current.technicianId } });
+          if (tech?.email) notifyEmails.push(tech.email);
+        }
+        // Notify service managers
+        const serviceManagers = await prisma.user.findMany({ where: { role: { in: ['manager', 'service_manager', 'admin'] }, isActive: true }, select: { email: true } });
+        notifyEmails.push(...serviceManagers.map(m => m.email).filter(Boolean));
+        const uniqueEmails = [...new Set(notifyEmails)];
+        await dispatchNotification({
+          type: 'job_card_status',
+          to: uniqueEmails,
+          subject: `Service Update — ${current.jobCardNo}`,
+          data: {
+            jobCardNo: current.jobCardNo,
+            customerName: current.customerName,
+            vehicleModel: current.vehicleModel,
+            status: statusLabels[nextStatus] || nextStatus,
+          },
+          ctas: [
+            { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${current.id}` },
+          ],
+        });
+      } catch (statusNotifyError: any) {
+        console.error('[JOB CARD STATUS NOTIFICATION ERROR]', statusNotifyError.message);
+      }
+    }
+
     if (nextStatus === 'RELEASED') {
       try {
         await loyaltyService.earnPoints({
