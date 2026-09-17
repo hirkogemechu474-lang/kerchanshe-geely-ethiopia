@@ -249,6 +249,43 @@ export const orderService = {
         } catch (notifyError: any) {
           console.error('[DELIVERY READY NOTIFICATION ERROR]', notifyError.message);
         }
+        // Notify sales agent that delivery is ready for scheduling
+        if (order.salesAgentId) {
+          try {
+            const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId } });
+            if (agent?.email) {
+              await dispatchNotification({
+                type: 'delivery_ready',
+                to: [agent.email],
+                subject: `Delivery Ready for Scheduling — ${order.orderNo}`,
+                data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
+                ctas: [
+                  { label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` },
+                ],
+              });
+            }
+          } catch (err: any) {
+            console.error('[DELIVERY AGENT NOTIFICATION ERROR]', err.message);
+          }
+        }
+        // Notify managers
+        try {
+          const managers = await prisma.user.findMany({ where: { role: { in: ['manager', 'sales_manager', 'admin'] }, isActive: true } });
+          const managerEmails = managers.map(m => m.email).filter(Boolean);
+          if (managerEmails.length) {
+            await dispatchNotification({
+              type: 'delivery_ready',
+              to: managerEmails,
+              subject: `Vehicle Ready for Delivery — ${order.orderNo}`,
+              data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
+              ctas: [
+                { label: 'View Order', url: `${env.urls.admin}/orders/${order.id}` },
+              ],
+            });
+          }
+        } catch (err: any) {
+          console.error('[DELIVERY MANAGER NOTIFICATION ERROR]', err.message);
+        }
       }
 
       // Auto-register the warranty once the order is actually DELIVERED

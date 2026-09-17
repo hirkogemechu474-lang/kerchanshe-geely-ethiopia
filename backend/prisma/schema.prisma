@@ -306,8 +306,10 @@ model Quotation {
   quotationNo                String?                      @unique // GY-SQ-DDMMYYYY-NNN, via generateReference()
   quotationValidUntil        DateTime?
   unitPrice                  Float?
-  quantity                   Int?                         @default(1)
-  discountAmount             Float?                       @default(0)
+   quantity                   Int?                         @default(1)
+   referralSource             String?                      // How customer found us: referral, social, ad, event, etc.
+   campaign                   String?                      // Marketing campaign that prompted this request
+   discountAmount             Float?                       @default(0)
   vatAmount                  Float? // auto-computed at 15%, stored for the PDF/audit trail
   vehicleYear                String?
   vehicleColor               String?

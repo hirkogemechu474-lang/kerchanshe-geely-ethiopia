@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/MainLayout';
 import { serverApiClient } from '@/lib/serverApiClient';
 import { FileText } from 'lucide-react';
 
-
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Terms of Service - Geely Ethiopia',

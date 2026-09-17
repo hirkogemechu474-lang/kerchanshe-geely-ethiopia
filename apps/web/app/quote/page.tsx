@@ -28,6 +28,9 @@ interface QuoteFormData {
   nationalId: string;
   idDocumentType: string;
   vehicleId: string;
+  quantity: number;
+  referralSource: string;
+  campaign: string;
   purchaseTimeframe: string;
   financingNeeded: string;
   tradeIn: string;
@@ -72,6 +75,9 @@ export default function QuotePage() {
     defaultValues: {
       title: "",
       vehicleId: preselectedModel || "",
+      quantity: 1,
+      referralSource: "",
+      campaign: "",
       financingNeeded: "not-sure",
       tradeIn: "no",
       idDocumentType: "national_id",
@@ -218,6 +224,9 @@ export default function QuotePage() {
       const message = `
 Requested trim: ${requestedTrim || 'Not specified'}
 Requested color: ${requestedColor || 'Not specified'}
+Quantity: ${data.quantity || 1}
+Referral Source: ${data.referralSource || 'Not specified'}
+Campaign: ${data.campaign || 'Not specified'}
 Purchase Timeframe: ${TIMEFRAME_LABELS[data.purchaseTimeframe] || data.purchaseTimeframe}
 Financing Needed: ${data.financingNeeded}
 Trade-In: ${data.tradeIn}
@@ -242,12 +251,15 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
           idDocumentType: data.idDocumentType,
           idPhotoUrl: idPhotoUrl || undefined,
           vehicleModel: selectedVehicle?.name || data.vehicleId,
+          quantity: data.quantity || 1,
+          referralSource: data.referralSource || undefined,
+          campaign: data.campaign || undefined,
           preferredDealer: null,
           financingInterest: data.financingNeeded === 'yes',
           tradeInInterest: data.tradeIn === 'yes',
           message,
           configuration: configuration || undefined,
-          source: visitId ? 'qr-showroom' : 'website',
+          source: visitId ? 'qr-showroom' : (data.referralSource || 'website'),
           visitId: visitId || undefined,
         }),
       }).then(async res => {
@@ -732,6 +744,50 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      {...register("quantity", { valueAsNumber: true, min: { value: 1, message: "Minimum 1" } })}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      How did you hear about us?
+                    </label>
+                    <select
+                      {...register("referralSource")}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                    >
+                      <option value="">Select source</option>
+                      <option value="website">Website</option>
+                      <option value="social-media">Social Media</option>
+                      <option value="referral">Friend / Family Referral</option>
+                      <option value="advertisement">Advertisement</option>
+                      <option value="event">Event / Exhibition</option>
+                      <option value="showroom">Showroom Visit</option>
+                      <option value="phone">Phone Inquiry</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
+                      Campaign / Promotion (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      {...register("campaign")}
+                      className="w-full px-4 py-3 border border-line dark:bg-midnight dark:text-ice dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      placeholder="e.g. Ramadan Offer, EX5 Launch, Service Week"
+                    />
                   </div>
 
                   <div>

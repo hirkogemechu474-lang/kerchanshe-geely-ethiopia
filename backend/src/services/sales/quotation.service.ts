@@ -32,6 +32,9 @@ export const quotationService = {
     customerAddress?: string;
     customerTin?: string;
     vehicleModel?: string;
+    quantity?: number;
+    referralSource?: string;
+    campaign?: string;
     message?: string;
     financingInterest?: boolean;
     tradeInInterest?: boolean;
@@ -63,6 +66,9 @@ export const quotationService = {
         customerAddress: data.customerAddress,
         customerTin: data.customerTin,
         vehicleModel: data.vehicleModel,
+        quantity: data.quantity,
+        referralSource: data.referralSource,
+        campaign: data.campaign,
         message: data.message,
         financingInterest: data.financingInterest,
         tradeInInterest: data.tradeInInterest,

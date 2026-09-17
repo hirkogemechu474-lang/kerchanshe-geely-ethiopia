@@ -8,6 +8,7 @@ import { loyaltyService } from '../services/loyalty/loyalty.service';
 import { generateServiceInvoicePdf } from '../services/pdf/serviceInvoice.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -223,6 +224,24 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
         });
       } catch (loyaltyError: any) {
         console.error('[AUTO LOYALTY EARN ERROR]', loyaltyError.message);
+      }
+      // Send feedback/survey request after vehicle release
+      if (current.customerEmail) {
+        try {
+          const surveyLink = `${env.urls.site}/csi-survey/${current.id}`;
+          await dispatchNotification({
+            type: 'job_card_status',
+            to: [current.customerEmail],
+            subject: `How Was Your Service Experience? — ${current.jobCardNo}`,
+            data: { jobCardNo: current.jobCardNo, customerName: current.customerName, vehicleModel: current.vehicleModel },
+            ctas: [
+              { label: 'Share Feedback', url: surveyLink },
+              { label: 'Book Next Service', url: `${env.urls.site}/service` },
+            ],
+          });
+        } catch (surveyError: any) {
+          console.error('[FEEDBACK REQUEST ERROR]', surveyError.message);
+        }
       }
     }
 

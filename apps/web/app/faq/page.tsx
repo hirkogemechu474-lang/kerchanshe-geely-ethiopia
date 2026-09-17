@@ -5,6 +5,8 @@ import { serverApiClient } from "@/lib/serverApiClient";
 import { getFAQSchema } from "@/lib/schema";
 import type { Metadata } from "next";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Frequently Asked Questions | Geely Ethiopia",
   description:

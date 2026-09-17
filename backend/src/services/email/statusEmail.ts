@@ -23,6 +23,7 @@ export async function sendQuotationConfirmationEmail(params: {
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 25px 0;">
           <p style="margin: 0 0 8px;"><strong>Reference Number:</strong> ${params.reference}</p>
           ${params.vehicleModel ? `<p style="margin: 0 0 8px;"><strong>Vehicle:</strong> ${params.vehicleModel}</p>` : ''}
+          <p style="margin: 0 0 8px;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
           <p style="margin: 0;"><strong>Status:</strong> Under Review</p>
         </div>
 
