@@ -12,7 +12,7 @@ export interface AssignmentRules {
 // A lead should be assignable to a manager directly (not only delegated to
 // a sales rep) — same manager-role set as backend userRepository.
 // findManagerEmails(), so "who counts as a manager" stays in one place.
-const ASSIGNABLE_ROLES = ['sales', 'sales_manager', 'general_manager', 'admin'];
+const ASSIGNABLE_ROLES = ['sales', 'sales_manager', 'general_manager', 'admin', 'sales_representative', 'super_admin'];
 
 export async function listSalesReps(): Promise<{ id: string; name: string }[]> {
   try {
