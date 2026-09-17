@@ -26,6 +26,7 @@ interface Warranty {
   nextServiceDate: string | null;
   nextServiceKm: number | null;
   lastServiceDate?: string | null;
+  firstServiceCompletedAt?: string | null;
 }
 
 interface ListResponse {
@@ -47,6 +48,7 @@ export default function WarrantyList() {
   const [upcoming, setUpcoming] = useState<Warranty[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [firstServiceOnly, setFirstServiceOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [showRegister, setShowRegister] = useState(false);
   const [showService, setShowService] = useState<Warranty | null>(null);
@@ -113,7 +115,7 @@ export default function WarrantyList() {
     }
   };
 
-  const rows = tab === 'all' ? (data?.warranties ?? []) : upcoming;
+  const rows = tab === 'all' ? (data?.warranties ?? []) : (firstServiceOnly ? upcoming.filter((w) => !w.firstServiceCompletedAt) : upcoming);
 
   return (
     <div className="space-y-6">
@@ -158,6 +160,10 @@ export default function WarrantyList() {
             onChange={(e) => setDays(Number(e.target.value) || 30)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm w-24"
           />
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input type="checkbox" checked={firstServiceOnly} onChange={(e) => setFirstServiceOnly(e.target.checked)} />
+            First service only
+          </label>
         </div>
       )}
 
@@ -186,7 +192,12 @@ export default function WarrantyList() {
                 <Td>{w.vehicleModel || '—'}</Td>
                 <Td><Badge tone={statusTone(w.status)}>{w.status}</Badge></Td>
                 <Td>{fmtDate(w.warrantyStartDate)} → {fmtDate(w.warrantyEndDate)}</Td>
-                <Td>{fmtDate(w.nextServiceDate)}</Td>
+                <Td>
+                  <div className="flex flex-col gap-1">
+                    <span>{fmtDate(w.nextServiceDate)}</span>
+                    {!w.firstServiceCompletedAt && <Badge tone="orange">1st service due</Badge>}
+                  </div>
+                </Td>
                 <Td>{w.nextServiceKm != null ? `${w.nextServiceKm.toLocaleString()} km` : '—'}</Td>
                 <Td>{w.currentKm != null ? `${w.currentKm.toLocaleString()} km` : '—'}</Td>
                 <Td>
@@ -229,6 +240,9 @@ export default function WarrantyList() {
       {showService && (
         <Modal title={`Add Service Record — ${showService.customerName}`} onClose={() => { setShowService(null); setMessage(''); }}>
           <div className="space-y-4 text-sm">
+            {!showService.firstServiceCompletedAt && (
+              <p className="text-xs text-orange-600 dark:text-orange-400">This will be recorded as this vehicle's first service.</p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block mb-1 text-gray-700 dark:text-gray-300">Service Date</label>

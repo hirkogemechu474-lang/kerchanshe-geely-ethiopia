@@ -1275,7 +1275,7 @@ router.get('/orders/:orderId/payment', async (req: Request, res: Response) => {
   try {
     const order = await prisma.salesOrder.findUnique({
       where: { id: req.params.orderId },
-      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, totalPrice: true, amountPaid: true, countersignedAt: true },
+      select: { paymentStatus: true, paymentProofUrl: true, paymentSubmittedAt: true, paymentConfirmedAt: true, paymentVerifiedAt: true, totalPrice: true, amountPaid: true, countersignedAt: true },
     });
     if (!guardPaymentAccess(order, req.query.token, req.params.orderId, res)) return;
     const { countersignedAt, ...payment } = order!;
@@ -1341,6 +1341,30 @@ router.get('/orders/:orderId/invoice', async (req: Request, res: Response) => {
     res.send(result.data);
   } catch (error) {
     console.error('Get public invoice error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/public/orders/:orderId/receipt?token=... — customer self-serve
+// payment receipt download, same token-gated pattern as /invoice above.
+router.get('/orders/:orderId/receipt', async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.orderId } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!verifyLinkToken(typeof req.query.token === 'string' ? req.query.token : undefined, 'receipt', req.params.orderId)) {
+      res.status(403).json({ error: 'Invalid or expired link.' });
+      return;
+    }
+    if (!order.paymentVerifiedAt) { res.status(404).json({ error: 'Receipt not available yet.' }); return; }
+
+    const result = await orderInvoiceService.generateReceiptPdf(order.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate receipt PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="receipt-${order.orderNo}.pdf"`);
+    res.send(result.data);
+  } catch (error) {
+    console.error('Get public receipt error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

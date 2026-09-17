@@ -63,6 +63,7 @@ import {
   BookOpen,
   MessagesSquare,
   Award,
+  UserPlus,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/types';
 import { useTheme } from './ThemeProvider';
@@ -227,6 +228,7 @@ const navSections: NavSection[] = [
           { name: 'Manage Test Drives', href: '/admin/test-drives', icon: Calendar, permission: 'canManageTestDrives' },
           { name: 'Manage Quotations', href: '/admin/quotations', icon: FileText, permission: 'canViewQuotations' },
           { name: 'Manage Orders', href: '/admin/orders', icon: ShoppingCart, permission: 'canManageOrders' },
+          { name: 'Walk-in Registrations', href: '/admin/walk-ins', icon: UserPlus, permission: 'canManageTestDrives' },
           { name: 'Manage Parts Requests', href: '/admin/parts-requests', icon: FileText, permission: 'canManageSpareParts' },
           { name: 'Manage Messages', href: '/admin/messages', icon: MessageSquare, permission: 'canViewMessages' },
         ],

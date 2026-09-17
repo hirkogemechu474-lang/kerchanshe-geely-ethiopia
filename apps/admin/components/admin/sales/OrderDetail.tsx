@@ -504,7 +504,18 @@ export default function OrderDetail({
           <p className="text-xs text-green-600">Confirmed {new Date(state.paymentConfirmedAt).toLocaleString()}</p>
         )}
         {state.paymentVerifiedAt && (
-          <p className="text-xs text-green-600">Verified by finance {new Date(state.paymentVerifiedAt).toLocaleString()}</p>
+          <div>
+            <p className="text-xs text-green-600">Verified by finance {new Date(state.paymentVerifiedAt).toLocaleString()}</p>
+            <a
+              href={`/api/orders/${state.id}/receipt`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline mt-1"
+            >
+              <FileText className="w-4 h-4" />
+              View Receipt
+            </a>
+          </div>
         )}
 
         {permissions.canManageQuotations && state.paymentStatus === 'PENDING_REVIEW' && (

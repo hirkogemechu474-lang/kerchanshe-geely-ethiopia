@@ -567,6 +567,24 @@ router.get('/:id/invoice', requireAdminApiSession, async (req: Request, res: Res
   }
 });
 
+// GET /api/orders/:id/receipt (download payment receipt PDF)
+router.get('/:id/receipt', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order || !order.paymentVerifiedAt) { res.status(404).json({ error: 'Receipt not found' }); return; }
+
+    const result = await orderInvoiceService.generateReceiptPdf(req.params.id);
+    if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate receipt PDF' }); return; }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="receipt-${order.orderNo}.pdf"`);
+    res.send(result.data);
+  } catch (error) {
+    console.error('Get receipt error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // POST /api/orders/:id/invoice (generate invoice)
 router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
@@ -685,7 +703,35 @@ router.post('/:id/payment/verify', requireAdminApiSession, requirePermission('ca
       action: 'payment_verified',
       performedById: req.adminSession!.user.id,
     });
-    res.json(updated);
+
+    let notificationSent = false;
+    let notificationError: string | undefined;
+    if (order.customerEmail) {
+      let attachments;
+      try {
+        const pdfResult = await orderInvoiceService.generateReceiptPdf(order.id);
+        if (pdfResult.ok && pdfResult.data) {
+          attachments = [{ filename: `receipt-${order.orderNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+        }
+      } catch (_) {
+        // PDF generation failure should not block the email
+      }
+
+      const receiptToken = signLinkToken('receipt', order.id);
+      const receiptLink = `${env.urls.site}/api/public/orders/${order.id}/receipt?token=${encodeURIComponent(receiptToken)}`;
+      const result = await dispatchNotification({
+        type: 'order_status',
+        to: [order.customerEmail],
+        subject: `Payment Confirmed — ${order.orderNo}`,
+        data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, amountPaid: order.amountPaid, customerName: order.customerName },
+        attachments,
+        ctas: [{ label: 'View Receipt', url: receiptLink }],
+      });
+      notificationSent = result.ok;
+      notificationError = result.error;
+    }
+
+    res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Verify payment error:', error);
     res.status(500).json({ error: 'Internal server error' });

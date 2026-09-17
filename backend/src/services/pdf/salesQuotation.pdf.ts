@@ -43,6 +43,7 @@ export interface QuotationPdfData {
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
   managerSignerName?: string | null;
+  managerSignerTitle?: string | null;
   managerSignedAt?: Date | string | null;
 }
 
@@ -228,6 +229,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
     {
       heading: company.legalName.toUpperCase(),
       name: data.managerSignerName || data.salesExecutiveName,
+      title: data.managerSignerTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
       date: data.managerSignedAt ? new Date(data.managerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,

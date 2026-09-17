@@ -10,7 +10,7 @@ import { convertQuotationToOrderService } from '../services/sales/convertQuotati
 import { quotationPdfService } from '../services/sales/quotationPdf.service';
 import { generateReference, REFERENCE_CATEGORY } from '../utils/reference';
 import { validateTin, validateIdDocumentNumber } from '../utils/idValidation';
-import { userRepository } from '../repositories';
+import { userRepository, quotationRepository } from '../repositories';
 import { env } from '../config/env';
 import { auditService } from '../services/audit/audit.service';
 import fs from 'fs';
@@ -108,8 +108,18 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 // POST /api/quotations (admin create walk-in lead)
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    // UC-01 dedupe: an already-open inquiry for this phone number is reused
+    // instead of creating a duplicate lead (WalkInLeadForm surfaces this via
+    // `deduped` and redirects to the existing quotation either way).
+    if (req.body.phoneNumber) {
+      const existingOpen = await quotationRepository.findOpenByPhone(req.body.phoneNumber);
+      if (existingOpen) {
+        res.json({ deduped: true, quotation: existingOpen });
+        return;
+      }
+    }
     const quotation = await prisma.quotation.create({ data: req.body });
-    res.status(201).json(quotation);
+    res.status(201).json({ quotation });
   } catch (error) {
     console.error('Create quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });

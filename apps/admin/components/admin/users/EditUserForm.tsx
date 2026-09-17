@@ -20,6 +20,7 @@ export default function EditUserForm({ id }: { id: string }) {
     name: '',
     email: '',
     role: 'sales',
+    title: '',
     dealerId: '',
     isActive: true,
     isAvailableForLeads: true,
@@ -49,6 +50,7 @@ export default function EditUserForm({ id }: { id: string }) {
         name: data.user.name,
         email: data.user.email,
         role: data.user.role,
+        title: data.user.title || '',
         dealerId: data.user.dealerId || '',
         isActive: data.user.isActive,
         isAvailableForLeads: data.user.isAvailableForLeads ?? true,
@@ -98,6 +100,7 @@ export default function EditUserForm({ id }: { id: string }) {
           name: formData.name,
           email: formData.email,
           role: formData.role,
+          title: formData.title || null,
           dealerId: formData.dealerId || null,
           isActive: formData.isActive,
           isAvailableForLeads: formData.isAvailableForLeads,
@@ -251,6 +254,26 @@ export default function EditUserForm({ id }: { id: string }) {
               ))}
             </select>
             <RolePermissionPreview role={formData.role} />
+          </div>
+
+          {/* Job Title (Optional) */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <Shield className="w-4 h-4 inline mr-2" />
+              Job Title (Optional)
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              placeholder="e.g., Sales Manager, General Manager"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Printed alongside this user&apos;s name and signature on approved documents (quotations, agreements, invoices, handover notes)
+            </p>
           </div>
 
           {/* Dealer (Optional) */}

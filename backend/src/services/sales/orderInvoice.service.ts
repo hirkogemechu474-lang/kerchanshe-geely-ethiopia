@@ -1,6 +1,7 @@
 import { salesOrderRepository, userRepository } from '../../repositories';
 import { formatCurrency } from '../../utils/formatting';
 import { generateSalesInvoicePdf, InvoiceLineItem, SalesInvoicePdfData } from '../pdf/salesInvoice.pdf';
+import { generateReceiptPdf, ReceiptPdfData } from '../pdf/receipt.pdf';
 import { HandoverItemRow } from '../pdf/handover.pdf';
 import { getCompanyInfo } from '../pdf/companyInfo';
 
@@ -42,13 +43,51 @@ async function buildInvoicePdfData(order: any): Promise<SalesInvoicePdfData> {
     deliveryLocation: order.deliveryLocation,
     itemsHandedOver: (order.itemsHandedOver as HandoverItemRow[] | null) ?? null,
     sellerSignerName: sellerSigner?.name ?? null,
+    sellerSignerTitle: sellerSigner?.title ?? null,
     customerSignatureUrl: order.signedDocumentUrl,
     customerSignedAt: order.signedAt,
     managerSignatureUrl: managerSigner?.signatureUrl,
   };
 }
 
+async function buildReceiptPdfData(order: any): Promise<ReceiptPdfData> {
+  const detail = await salesOrderRepository.findByIdWithDocumentDetail(order.id);
+  const verifier = order.paymentVerifiedById ? await userRepository.findByIdSlim(order.paymentVerifiedById) : null;
+
+  return {
+    orderNo: order.orderNo,
+    customerName: order.customerName,
+    purchaserTitle: order.purchaserTitle,
+    customerPhone: order.customerPhone,
+    customerEmail: order.customerEmail,
+    vehicleModel: order.vehicleModel,
+    vin: detail?.vehicleAllocation?.vin ?? null,
+    totalPrice: order.totalPrice,
+    amountPaid: order.amountPaid,
+    paymentMethod: order.paymentMethod,
+    paymentReferenceNo: order.paymentReferenceNo,
+    paymentVerifiedAt: order.paymentVerifiedAt,
+    verifiedByName: verifier?.name ?? null,
+    verifiedByTitle: verifier?.title ?? null,
+  };
+}
+
 export const orderInvoiceService = {
+  async generateReceiptPdf(orderId: string): Promise<{ ok: boolean; data?: Buffer; error?: string }> {
+    try {
+      const order = await salesOrderRepository.findById(orderId);
+      if (!order || !order.paymentVerifiedAt) return { ok: false, error: 'Receipt not available yet.' };
+
+      const [pdfData, company] = await Promise.all([buildReceiptPdfData(order), getCompanyInfo()]);
+      const pdfBuffer = await generateReceiptPdf(pdfData, company);
+
+      return { ok: true, data: pdfBuffer };
+    } catch (error: any) {
+      console.error('[RECEIPT PDF ERROR]', error.message);
+      return { ok: false, error: 'Failed to generate receipt PDF.' };
+    }
+  },
+
   async generateInvoicePdf(orderId: string): Promise<{ ok: boolean; data?: Buffer; error?: string }> {
     try {
       const order = await salesOrderRepository.findById(orderId);

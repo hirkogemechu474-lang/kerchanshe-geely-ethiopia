@@ -40,6 +40,7 @@ async function buildAgreementPdfData(order: any): Promise<SalesAgreementPdfData>
     purchaserAddress: order.purchaserAddress,
     purchaserAuthorizedRep: order.purchaserAuthorizedRep,
     sellerAuthorizedRep: sellerSigner?.name ?? null,
+    sellerAuthorizedRepTitle: managerSigner?.title || sellerSigner?.title || null,
     depositAmount: order.depositAmount,
     depositDueDate: order.depositDueDate,
     otherPaymentAmount: order.otherPaymentAmount,

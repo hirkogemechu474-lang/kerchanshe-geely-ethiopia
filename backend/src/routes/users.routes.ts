@@ -23,7 +23,7 @@ const VALID_STAFF_ROLES = [
 // used by every handler below so create/get/update always agree on what a
 // "user" looks like over the wire.
 const USER_DETAIL_SELECT = {
-  id: true, name: true, email: true, role: true, isActive: true,
+  id: true, name: true, email: true, role: true, title: true, isActive: true,
   dealerId: true, createdAt: true, lastLogin: true, signatureUrl: true,
   isAvailableForLeads: true, leadHoursStart: true, leadHoursEnd: true,
   brandSpecializations: { select: { brandId: true } },
@@ -49,7 +49,7 @@ router.get('/', async (req: Request, res: Response) => {
     const [items, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true, lastLogin: true },
+        select: { id: true, name: true, email: true, role: true, title: true, isActive: true, createdAt: true, lastLogin: true },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -67,7 +67,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/admin/users (admin create)
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role, dealerId, isActive } = req.body;
+    const { name, email, password, role, title, dealerId, isActive } = req.body;
 
     if (!name || !email || !password || !role) {
       res.status(400).json({ error: 'Name, email, password, and role are required.' });
@@ -89,6 +89,7 @@ router.post('/', async (req: Request, res: Response) => {
         email: email.toLowerCase(),
         passwordHash,
         role,
+        title: title || null,
         dealerId: dealerId || null,
         isActive: isActive ?? true,
       },
@@ -147,7 +148,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // PUT /api/admin/users/:id (admin update)
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, email, role, isActive, dealerId, isAvailableForLeads, leadHoursStart, leadHoursEnd, brandIds } = req.body;
+    const { name, email, role, title, isActive, dealerId, isAvailableForLeads, leadHoursStart, leadHoursEnd, brandIds } = req.body;
 
     if (role !== undefined && !VALID_STAFF_ROLES.includes(role)) {
       res.status(400).json({ error: 'Invalid role.' });
@@ -158,6 +159,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (name !== undefined) data.name = name;
     if (email !== undefined) data.email = String(email).toLowerCase();
     if (role !== undefined) data.role = role;
+    if (title !== undefined) data.title = title || null;
     if (isActive !== undefined) data.isActive = isActive;
     if (dealerId !== undefined) data.dealerId = dealerId || null;
     if (isAvailableForLeads !== undefined) data.isAvailableForLeads = isAvailableForLeads;

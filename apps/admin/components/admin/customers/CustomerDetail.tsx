@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AdminPermissions } from '@/types';
-import { Card, Button } from '@/components/admin/ui';
+import { Card, Button, Modal, ModalActions } from '@/components/admin/ui';
+import { Plus } from 'lucide-react';
 
 interface JobCardRow {
   id: string;
@@ -190,6 +191,70 @@ function VehicleCard({ vehicle, canEdit }: { vehicle: VehicleData; canEdit: bool
   );
 }
 
+function AddVehicleModal({ customerId, onClose, onAdded }: { customerId: string; onClose: () => void; onAdded: (vehicle: VehicleData) => void }) {
+  const [form, setForm] = useState({ plateNo: '', vin: '', model: '', color: '', warrantyEndDate: '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/customers/${customerId}/vehicles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plateNo: form.plateNo,
+          vin: form.vin || null,
+          model: form.model || null,
+          color: form.color || null,
+          warrantyEndDate: form.warrantyEndDate || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add vehicle');
+      onAdded({ ...data.vehicle, jobCards: [] });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Add Vehicle" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-3">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">{error}</div>}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Plate No. *</label>
+          <input required value={form.plateNo} onChange={(e) => setForm({ ...form, plateNo: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">VIN (optional)</label>
+          <input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Model</label>
+          <input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Color</label>
+          <input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Warranty end</label>
+          <input type="date" value={form.warrantyEndDate} onChange={(e) => setForm({ ...form, warrantyEndDate: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <ModalActions>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save Vehicle'}</Button>
+        </ModalActions>
+      </form>
+    </Modal>
+  );
+}
+
 export default function CustomerDetail({ customer, history, permissions }: { customer: CustomerData; history: CustomerHistory | null; permissions: AdminPermissions }) {
   const router = useRouter();
   const [state, setState] = useState(customer);
@@ -202,6 +267,7 @@ export default function CustomerDetail({ customer, history, permissions }: { cus
     email: customer.email ?? '',
     address: customer.address ?? '',
   });
+  const [addingVehicle, setAddingVehicle] = useState(false);
 
   const canEdit = permissions.canManageJobCards;
 
@@ -277,9 +343,16 @@ export default function CustomerDetail({ customer, history, permissions }: { cus
       </Card>
 
       <div>
-        <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          Vehicles ({state.vehicles.length})
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+            Vehicles ({state.vehicles.length})
+          </h2>
+          {canEdit && (
+            <Button size="sm" variant="secondary" onClick={() => setAddingVehicle(true)}>
+              <Plus className="w-4 h-4" /> Add vehicle
+            </Button>
+          )}
+        </div>
         {state.vehicles.length === 0 ? (
           <Card>
             <p className="text-sm text-gray-400">No vehicle on file for this customer yet.</p>
@@ -292,6 +365,18 @@ export default function CustomerDetail({ customer, history, permissions }: { cus
           </div>
         )}
       </div>
+
+      {addingVehicle && (
+        <AddVehicleModal
+          customerId={state.id}
+          onClose={() => setAddingVehicle(false)}
+          onAdded={(vehicle) => {
+            setState({ ...state, vehicles: [vehicle, ...state.vehicles] });
+            setAddingVehicle(false);
+            router.refresh();
+          }}
+        />
+      )}
 
       {history && <CustomerHistorySections history={history} />}
     </div>

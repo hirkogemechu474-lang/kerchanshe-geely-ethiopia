@@ -3,7 +3,7 @@ import { env } from '../config/env';
 
 const SECRET = env.auth.jwtSecret;
 
-export type LinkType = 'agreement' | 'payment' | 'handover' | 'handover-countersign' | 'quotation' | 'invoice' | 'delivery-schedule';
+export type LinkType = 'agreement' | 'payment' | 'handover' | 'handover-countersign' | 'quotation' | 'invoice' | 'delivery-schedule' | 'receipt';
 
 export function signLinkToken(typ: LinkType, id: string, ttl: string | number = '48h'): string {
   return sign({ typ, id }, SECRET, { expiresIn: ttl } as any);

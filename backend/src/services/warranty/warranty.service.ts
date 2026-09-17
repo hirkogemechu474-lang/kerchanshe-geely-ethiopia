@@ -176,6 +176,7 @@ export const warrantyService = {
           nextServiceDate: data.nextServiceDate || warranty.nextServiceDate,
           nextServiceKm: data.nextServiceKm || warranty.nextServiceKm,
           currentKm: data.kmAtService || warranty.currentKm,
+          firstServiceCompletedAt: warranty.firstServiceCompletedAt ?? data.serviceDate,
         },
       });
 
@@ -239,10 +240,13 @@ export const warrantyService = {
       for (const warranty of upcoming.data) {
         if (warranty.customerEmail) {
           const bookingUrl = `${env.urls.site}/service`;
+          const isFirstService = warranty.firstServiceCompletedAt == null;
           await dispatchNotification({
-            type: 'service_reminder',
+            type: isFirstService ? 'first_service_reminder' : 'service_reminder',
             to: [warranty.customerEmail],
-            subject: `Service Reminder - ${warranty.vehicleModel}`,
+            subject: isFirstService
+              ? `Your First Service is Coming Up - ${warranty.vehicleModel}`
+              : `Service Reminder - ${warranty.vehicleModel}`,
             data: {
               customerName: warranty.customerName,
               vehicleModel: warranty.vehicleModel,

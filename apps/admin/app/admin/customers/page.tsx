@@ -3,15 +3,15 @@ import { PageHeader } from '@/components/admin/ui';
 import CustomersList from '@/components/admin/customers/CustomersList';
 
 export default async function CustomersPage() {
-  await requirePermission('canViewJobCards');
+  const session = await requirePermission('canViewJobCards');
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Customers"
-        description="Every customer and vehicle on file, built up from job-card write-ups and kiosk check-ins — search by name, phone, plate, or VIN"
+        description="Every customer and vehicle on file, built up from job-card write-ups, kiosk check-ins, and walk-in registrations — search by name, phone, plate, or VIN"
       />
-      <CustomersList />
+      <CustomersList canAdd={session.user.permissions.canManageJobCards} />
     </div>
   );
 }

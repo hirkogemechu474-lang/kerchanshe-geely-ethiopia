@@ -45,6 +45,7 @@ export interface SalesInvoicePdfData {
   deliveryLocation?: string | null;
   itemsHandedOver?: HandoverItemRow[] | null;
   sellerSignerName?: string | null;
+  sellerSignerTitle?: string | null;
   customerSignatureUrl?: string | null;
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
@@ -216,6 +217,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
     {
       heading: company.legalName.toUpperCase(),
       name: data.sellerSignerName,
+      title: data.sellerSignerTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
     },

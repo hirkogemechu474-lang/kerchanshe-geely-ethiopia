@@ -24,7 +24,7 @@ export const userRepository = {
   async findById(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, email: true, role: true, isActive: true, lastLogin: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, title: true, isActive: true, lastLogin: true, createdAt: true },
     });
   },
 
@@ -62,7 +62,7 @@ export const userRepository = {
     return prisma.user.findUnique({
       where: { id },
       select: {
-        id: true, email: true, name: true, role: true, isActive: true, dealerId: true,
+        id: true, email: true, name: true, role: true, title: true, isActive: true, dealerId: true,
         signatureUrl: true,
         lastLogin: true, createdAt: true, updatedAt: true,
         isAvailableForLeads: true, leadHoursStart: true, leadHoursEnd: true,

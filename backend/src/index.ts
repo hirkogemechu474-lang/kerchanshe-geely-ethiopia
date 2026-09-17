@@ -2,6 +2,7 @@ import { app } from './app';
 import { env } from './config/env';
 import { prisma } from './config/database';
 import { startServiceReminderCron } from './jobs/serviceReminders.cron';
+import { startLoyaltyExpiryCron } from './jobs/loyaltyExpiry.cron';
 
 async function main() {
   try {
@@ -14,6 +15,7 @@ async function main() {
     });
 
     startServiceReminderCron();
+    startLoyaltyExpiryCron();
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

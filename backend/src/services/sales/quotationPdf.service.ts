@@ -63,6 +63,7 @@ export const quotationPdfService = {
         customerSignedAt: quotation.signedAt,
         managerSignatureUrl: (quotation as any).managerSignatureUrl || manager?.signatureUrl,
         managerSignerName: manager?.name,
+        managerSignerTitle: manager?.title,
         managerSignedAt: quotation.managerApprovedAt,
       }, company);
 

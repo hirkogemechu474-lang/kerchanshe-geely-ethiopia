@@ -14,6 +14,10 @@ model User {
   name                         String
   passwordHash                 String
   role                         String
+  // Display job title printed on approved/signed documents (e.g. "Sales
+  // Manager", "General Manager") — distinct from `role`, which is the
+  // permission slug (e.g. "sales_manager") used for access control.
+  title                        String?
   isActive                     Boolean   @default(true)
   dealerId                     String?
   // Profile photo shown in the admin UI (top nav, staff lists, etc.) — no
@@ -2024,6 +2028,7 @@ model Warranty {
   lastServiceDate   DateTime?
   nextServiceDate   DateTime?
   nextServiceKm     Int?
+  firstServiceCompletedAt DateTime?
   serviceHistory    ServiceRecord[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

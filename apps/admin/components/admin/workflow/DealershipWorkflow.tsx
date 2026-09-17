@@ -97,7 +97,7 @@ const stages = [
       ['Warranty registration', 'Register warranty and send certificate', '/admin/warranty'],
       ['Service profile', 'Create the customer vehicle profile', '/admin/customers'],
       ['Service reminders', 'Set mileage and time reminders', '/admin/service-bookings'],
-      ['First service', 'Track the customer’s first visit', '/admin/service-bookings'],
+      ['First service', 'Track the customer’s first visit', '/admin/warranty'],
       ['Workshop / job card', 'Create job card and assign technician', '/admin/workshop/job-cards'],
       ['Parts & labor', 'Allocate parts and record work', '/admin/parts'],
       ['Quality check', 'Complete inspection after service', '/admin/workshop/job-cards'],

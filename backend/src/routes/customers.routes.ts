@@ -1,8 +1,33 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession } from '../middleware/auth';
+import { customerService } from '../services/customers/customer.service';
 
 const router = Router();
+
+// POST /api/customers (admin create — e.g. a walk-in customer with no
+// account, registered at the counter). Dedupes by phone (see
+// Customer.phone's schema comment) instead of enforcing a DB constraint.
+router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const { fullName, phone, email, address } = req.body;
+    if (!fullName || !phone) {
+      res.status(400).json({ error: 'Full name and phone are required.' });
+      return;
+    }
+
+    const result = await customerService.create({ fullName, phone, email, address });
+    if (!result.ok) {
+      res.status(409).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json({ customer: result.data });
+  } catch (error) {
+    console.error('Create customer error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // GET /api/customers (admin search/list)
 router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
@@ -141,6 +166,34 @@ router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response)
     res.json({ id: customer.id, fullName: customer.fullName, email: customer.email, phone: customer.phone });
   } catch (error) {
     console.error('Update customer error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/customers/:id/vehicles (admin add a vehicle to a customer's file)
+router.post('/:id/vehicles', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const { vin, plateNo, model, color, warrantyEndDate } = req.body;
+    if (!plateNo) {
+      res.status(400).json({ error: 'Plate number is required.' });
+      return;
+    }
+
+    const result = await customerService.addVehicle(req.params.id, {
+      vin: vin || undefined,
+      plateNo,
+      model: model || '',
+      color: color || undefined,
+      warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate) : undefined,
+    });
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json({ vehicle: result.data });
+  } catch (error) {
+    console.error('Add customer vehicle error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

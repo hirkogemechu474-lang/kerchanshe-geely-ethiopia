@@ -92,6 +92,7 @@ export interface HandoverPdfData {
   handoverExpectedCompletionDate?: Date | string | null;
   handoverSignedAt?: Date | string | null;
   countersignedByName?: string | null;
+  countersignedByTitle?: string | null;
   countersignedAt?: Date | string | null;
   customerSignatureUrl?: string | null;
   managerSignatureUrl?: string | null;
@@ -280,6 +281,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
     {
       heading: `FOR ${company.legalName.toUpperCase()}`,
       name: data.countersignedByName,
+      title: data.countersignedByTitle,
       signatureImage: managerSignatureImage ?? undefined,
       date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },

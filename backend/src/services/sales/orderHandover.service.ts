@@ -15,16 +15,22 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
   // handoverCountersignedById stays null — fall back to the signature
   // ledger (recorded by name at sign time) so the PDF still credits them.
   let countersignerName: string | null = null;
+  let countersignerTitle: string | null = null;
   let countersignerSignatureUrl: string | null = null;
   if (order.handoverCountersignedById) {
     const countersigner = await userRepository.findByIdSlim(order.handoverCountersignedById);
     countersignerName = countersigner?.name ?? null;
+    countersignerTitle = countersigner?.title ?? null;
     countersignerSignatureUrl = countersigner?.signatureUrl ?? null;
   } else if (order.handoverCountersignedAt) {
     const signatures = await documentSignatureRepository.findMany('HANDOVER', order.id);
     const managerSignature = signatures.find((s: any) => s.role === 'manager');
     countersignerName = managerSignature?.signedByName ?? null;
     countersignerSignatureUrl = managerSignature?.signatureUrl ?? null;
+    if (managerSignature?.signedByUserId) {
+      const countersigner = await userRepository.findByIdSlim(managerSignature.signedByUserId);
+      countersignerTitle = countersigner?.title ?? null;
+    }
   }
 
   return {
@@ -61,6 +67,7 @@ async function buildHandoverPdfData(order: any): Promise<HandoverPdfData> {
     handoverDate: (order.deliveredAt ?? order.handoverSignedAt) ? String(order.deliveredAt ?? order.handoverSignedAt) : new Date().toISOString(),
     handoverSignedAt: order.handoverSignedAt,
     countersignedByName: countersignerName,
+    countersignedByTitle: countersignerTitle,
     countersignedAt: order.handoverCountersignedAt,
     customerSignatureUrl: order.handoverSignedDocumentUrl ?? null,
     managerSignatureUrl: countersignerSignatureUrl,

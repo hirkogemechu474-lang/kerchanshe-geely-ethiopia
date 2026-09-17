@@ -32,6 +32,7 @@ export interface SalesAgreementPdfData {
   purchaserAddress?: string | null;
   purchaserAuthorizedRep?: string | null;
   sellerAuthorizedRep?: string | null;
+  sellerAuthorizedRepTitle?: string | null;
   depositAmount?: number | null;
   depositDueDate?: Date | string | null;
   otherPaymentAmount?: number | null;
@@ -246,6 +247,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
     {
       heading: `FOR ${company.legalName.toUpperCase()}`,
       name: data.sellerAuthorizedRep,
+      title: data.sellerAuthorizedRepTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
       date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,

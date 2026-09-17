@@ -15,6 +15,7 @@ interface OrderPaymentSummary {
   outstandingAmount: number | null;
   paymentStatus: 'UNPAID' | 'PENDING_REVIEW' | 'PAID';
   paymentProofUrl: string | null;
+  paymentVerifiedAt: string | null;
 }
 
 export default function OrderPaymentPage() {
@@ -152,6 +153,16 @@ export default function OrderPaymentPage() {
                 <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-3" />
                 <h2 className="text-lg font-bold text-navy dark:text-ice mb-1">Payment Received</h2>
                 <p className="text-sm text-steel dark:text-steel-light">Thank you, your payment has been recorded.</p>
+                {order.paymentVerifiedAt && (
+                  <a
+                    href={`/api/public/orders/${orderId}/receipt?${tokenQs}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-geely-blue hover:underline"
+                  >
+                    View / Download Receipt
+                  </a>
+                )}
               </div>
             ) : order.paymentStatus === 'PENDING_REVIEW' ? (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">

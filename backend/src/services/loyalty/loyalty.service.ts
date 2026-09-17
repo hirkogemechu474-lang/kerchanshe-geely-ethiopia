@@ -413,4 +413,51 @@ export const loyaltyService = {
   getTierBenefits() {
     return TIER_BENEFITS;
   },
+
+  /**
+   * Expire points for accounts inactive for POINTS_EXPIRY_MONTHS — driven by
+   * the cron in jobs/loyaltyExpiry.cron.ts. LoyaltyAccount.updatedAt already
+   * bumps on every earn/redeem/adjust, so it doubles as "last activity" with
+   * no separate tracking needed.
+   */
+  async expireInactiveAccounts(): Promise<{ ok: boolean; expiredCount: number }> {
+    try {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - POINTS_EXPIRY_MONTHS);
+
+      const accounts = await prisma.loyaltyAccount.findMany({
+        where: { points: { gt: 0 }, updatedAt: { lte: cutoff } },
+        include: { customer: { select: { id: true, fullName: true, email: true } } },
+      });
+
+      let expiredCount = 0;
+      for (const account of accounts) {
+        const result = await this.adjustPoints({
+          customerId: account.customerId,
+          points: -account.points,
+          reason: `Points expired after ${POINTS_EXPIRY_MONTHS} months of inactivity`,
+          adjustedById: 'system',
+        });
+        if (!result.ok) continue;
+        expiredCount++;
+
+        if (account.customer.email) {
+          await dispatchNotification({
+            type: 'order_status',
+            to: [account.customer.email],
+            subject: 'Loyalty Points Expired',
+            data: {
+              message: `Your ${account.points} loyalty points have expired after ${POINTS_EXPIRY_MONTHS} months of inactivity. Earn new points on your next purchase or service visit.`,
+              customerName: account.customer.fullName,
+            },
+          }).catch(() => {});
+        }
+      }
+
+      return { ok: true, expiredCount };
+    } catch (error: any) {
+      console.error('[LOYALTY EXPIRE INACTIVE ACCOUNTS ERROR]', error.message);
+      return { ok: false, expiredCount: 0 };
+    }
+  },
 };
