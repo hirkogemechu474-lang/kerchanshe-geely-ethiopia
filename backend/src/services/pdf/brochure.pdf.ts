@@ -60,7 +60,7 @@ export async function generateBrochurePdf(data: BrochurePdfData, company: Compan
 
   // Highlights page
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'FEATURES & OVERVIEW', company);
+  ctx = await drawHeaderFooter(ctx, 'FEATURES & OVERVIEW', company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, 'Highlights');
   const highlights = [

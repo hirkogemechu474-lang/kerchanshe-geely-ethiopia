@@ -42,9 +42,11 @@ export interface QuotationPdfData {
   customerSignatureUrl?: string | null;
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
+  managerStampUrl?: string | null;
   managerSignerName?: string | null;
   managerSignerTitle?: string | null;
   managerSignedAt?: Date | string | null;
+  customerStampUrl?: string | null;
 }
 
 function salesTypeLabel(salesType?: string | null): string {
@@ -102,8 +104,10 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
   const doc = await openDocument();
   const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
   const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
+  const managerStampImage = await embedSignatureImage(doc.doc, data.managerStampUrl);
+  const customerStampImage = await embedSignatureImage(doc.doc, data.customerStampUrl);
   let ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
+  ctx = await drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawLabelValue(ctx, 'Quotation No.', data.quotationNo, PDF_MARGIN, ctx.y);
@@ -196,7 +200,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
 
   // Page 2 — Quotation Conditions + Customer Confirmation, per the draft.
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
+  ctx = await drawHeaderFooter(ctx, 'GEELY ELECTRIC VEHICLE SALES QUOTATION', company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, 'Quotation Conditions');
   ctx.y -= 4;
@@ -224,6 +228,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
       heading: 'CUSTOMER',
       name: data.customerName,
       signatureImage: customerSignatureImage,
+      stampImage: customerStampImage,
       date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
     {
@@ -232,6 +237,7 @@ export async function generateSalesQuotationPdf(data: QuotationPdfData, company:
       title: data.managerSignerTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
+      stampImage: managerStampImage,
       date: data.managerSignedAt ? new Date(data.managerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );

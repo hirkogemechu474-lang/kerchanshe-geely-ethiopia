@@ -49,6 +49,8 @@ export interface SalesInvoicePdfData {
   customerSignatureUrl?: string | null;
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
+  managerStampUrl?: string | null;
+  customerStampUrl?: string | null;
 }
 
 function taxableAmount(item: InvoiceLineItem): number {
@@ -66,13 +68,15 @@ const IMPORTANT_NOTES = [
 
 export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
-  const [customerSignatureImage, managerSignatureImage] = await Promise.all([
+  const [customerSignatureImage, managerSignatureImage, managerStampImage, customerStampImage] = await Promise.all([
     embedSignatureImage(doc.doc, data.customerSignatureUrl),
     embedSignatureImage(doc.doc, data.managerSignatureUrl),
+    embedSignatureImage(doc.doc, data.managerStampUrl),
+    embedSignatureImage(doc.doc, data.customerStampUrl),
   ]);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE SALES INVOICE';
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawLabelValue(ctx, 'Invoice No.', data.invoiceNo || data.orderNo, PDF_MARGIN, ctx.y);
@@ -157,7 +161,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
 
   // ── Page 2: Payment, Delivery & Handover mini-section, notes, signatures ─
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, 'Payment');
   ctx = drawFieldTable(ctx, [
@@ -212,6 +216,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
       name: customerDisplayName,
       showStamp: true,
       signatureImage: customerSignatureImage,
+      stampImage: customerStampImage,
       date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
     {
@@ -220,6 +225,7 @@ export async function generateSalesInvoicePdf(data: SalesInvoicePdfData, company
       title: data.sellerSignerTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
+      stampImage: managerStampImage,
     },
   );
 

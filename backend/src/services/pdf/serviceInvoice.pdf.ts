@@ -32,7 +32,7 @@ export interface ServiceInvoicePdfData {
 export async function generateServiceInvoicePdf(data: ServiceInvoicePdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'SERVICE INVOICE', company);
+  ctx = await drawHeaderFooter(ctx, 'SERVICE INVOICE', company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
 

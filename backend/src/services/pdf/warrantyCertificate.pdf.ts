@@ -33,7 +33,7 @@ const TERMS = [
 export async function generateWarrantyCertificatePdf(data: WarrantyCertificatePdfData, company: CompanyInfo): Promise<Buffer> {
   const doc = await openDocument();
   let ctx = addPage(doc);
-  drawHeaderFooter(ctx, 'VEHICLE WARRANTY CERTIFICATE', company);
+  ctx = await drawHeaderFooter(ctx, 'VEHICLE WARRANTY CERTIFICATE', company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
 

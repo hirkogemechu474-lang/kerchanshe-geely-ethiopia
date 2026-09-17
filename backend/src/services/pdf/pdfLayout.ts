@@ -7,6 +7,32 @@ import type { CompanyInfo } from './companyInfo';
 export const PDF_MARGIN = 54;
 export const PDF_CONTENT_WIDTH = 612 - PDF_MARGIN * 2;
 
+// Logo cache — loaded once per process, reused across all PDFs.
+let _logoCache: PDFImage | null = null;
+let _logoLoaded = false;
+
+async function loadLogo(doc: PDFDocument): Promise<PDFImage | null> {
+  if (_logoLoaded) return _logoCache;
+  _logoLoaded = true;
+  try {
+    const candidatePaths = [
+      path.resolve(process.cwd(), '..', 'apps', 'admin', 'public', 'assets', 'logos', 'geely-logo.png'),
+      path.resolve(process.cwd(), 'uploads', 'logo.png'),
+    ];
+    const logoPath = candidatePaths.find((p) => fs.existsSync(p));
+    if (!logoPath) return null;
+    const bytes = fs.readFileSync(logoPath);
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+      _logoCache = await doc.embedPng(bytes);
+    } else if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+      _logoCache = await doc.embedJpg(bytes);
+    }
+    return _logoCache;
+  } catch {
+    return null;
+  }
+}
+
 export const COLORS = {
   brand: rgb(0 / 255, 0 / 255, 0 / 255),
   brandRed: rgb(214 / 255, 27 / 255, 40 / 255),
@@ -47,11 +73,9 @@ export function addPage(ctx: NewDocResult): PagedContext {
 }
 
 // Y position where body content should start on a page that has a
-// drawHeaderFooter() title/company-name header — sits safely below the
-// header's divider line (drawn at 792-74) regardless of how long the
-// company legal name is. Set `ctx.y = PDF_HEADER_CONTENT_Y` after calling
-// drawHeaderFooter(), instead of nudging the addPage() default.
-export const PDF_HEADER_CONTENT_Y = 792 - 74 - 20;
+// drawHeaderFooter() logo + title/company-name header. The logo (up to
+// 40pt tall) + company name + title + divider = ~110pt from top.
+export const PDF_HEADER_CONTENT_Y = 792 - 110 - 20;
 
 export function ensureSpace(ctx: PagedContext, needed: number): PagedContext {
   if (ctx.y - needed < 60) {
@@ -60,30 +84,45 @@ export function ensureSpace(ctx: PagedContext, needed: number): PagedContext {
   return ctx;
 }
 
-export function drawHeaderFooter(ctx: PagedContext, title: string | undefined, company: CompanyInfo) {
-  const { page } = ctx;
+export async function drawHeaderFooter(ctx: PagedContext, title: string | undefined, company: CompanyInfo): Promise<PagedContext> {
+  const { page, doc } = ctx;
   const width = page.getWidth();
   const top = 792;
   const centerX = width / 2;
 
-  // Centered two-line title block — company legal name, then the document
-  // title below it — matching the drafts' letterhead ("KERCHANSHE TRADING
-  // PLC" / "GEELY ELECTRIC VEHICLE SALES QUOTATION" etc.) instead of a
-  // left-aligned wordmark + right-aligned title.
+  // Logo — centered above company name, scaled to max 120×40 pt
+  const logo = await loadLogo(doc);
+  let logoBottomY = top - 10;
+  if (logo) {
+    const maxW = 120;
+    const maxH = 40;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+    page.drawImage(logo, { x: centerX - w / 2, y: top - 8 - h, width: w, height: h });
+    logoBottomY = top - 8 - h - 6;
+  }
+
+  // Company legal name
   const nameSize = 14;
   const nameText = company.legalName.toUpperCase();
   const nameWidth = ctx.bold.widthOfTextAtSize(nameText, nameSize);
-  page.drawText(nameText, { x: centerX - nameWidth / 2, y: top - 38, size: nameSize, font: ctx.bold, color: COLORS.dark });
+  page.drawText(nameText, { x: centerX - nameWidth / 2, y: logoBottomY - 14, size: nameSize, font: ctx.bold, color: COLORS.dark });
 
+  // Document title
+  let titleBottomY = logoBottomY - 14;
   if (title) {
     const titleSize = 11;
     const titleWidth = ctx.bold.widthOfTextAtSize(title, titleSize);
-    page.drawText(title, { x: centerX - titleWidth / 2, y: top - 56, size: titleSize, font: ctx.bold, color: COLORS.dark });
+    page.drawText(title, { x: centerX - titleWidth / 2, y: logoBottomY - 32, size: titleSize, font: ctx.bold, color: COLORS.dark });
+    titleBottomY = logoBottomY - 32;
   }
 
+  // Divider line
+  const dividerY = titleBottomY - 12;
   page.drawLine({
-    start: { x: PDF_MARGIN, y: top - 74 },
-    end: { x: width - PDF_MARGIN, y: top - 74 },
+    start: { x: PDF_MARGIN, y: dividerY },
+    end: { x: width - PDF_MARGIN, y: dividerY },
     thickness: 1,
     color: COLORS.border,
   });
@@ -103,6 +142,9 @@ export function drawHeaderFooter(ctx: PagedContext, title: string | undefined, c
     company.email ? `Email: ${company.email}` : null,
   ].filter(Boolean);
   page.drawText(footerParts.join(' | '), { x: PDF_MARGIN, y: 20, size: 7, font: ctx.font, color: COLORS.gray });
+
+  // Return updated context with y positioned below the header
+  return { ...ctx, y: dividerY - 8 };
 }
 
 export function drawRightText(ctx: PagedContext, text: string, x: number, y: number, size: number, font: PDFFont, color: RGB = COLORS.dark) {
@@ -218,6 +260,7 @@ export interface SignatureEntry {
   date?: string | null;
   showStamp?: boolean;
   signatureImage?: PDFImage | null;
+  stampImage?: PDFImage | null;
 }
 
 export async function embedSignatureImage(doc: PDFDocument, source?: string | null): Promise<PDFImage | null> {
@@ -293,7 +336,11 @@ export function drawSignatureBlock(ctx: PagedContext, left: SignatureEntry, righ
     ey -= 16;
     if (entry.showStamp) {
       ctx.page.drawText('Stamp:', { x, y: ey, size: 9, font: ctx.font, color: COLORS.gray });
-      ey -= 16;
+      if (entry.stampImage) {
+        const stampScale = entry.stampImage.scaleToFit(80, 50);
+        ctx.page.drawImage(entry.stampImage, { x: x + 40, y: ey - 40, width: stampScale.width, height: stampScale.height });
+      }
+      ey -= 50;
     }
     endY = Math.min(endY, ey);
   }

@@ -50,7 +50,7 @@ export async function generateDashboardReportPdf(input: DashboardReportInput): P
   const company = await getCompanyInfo();
   const doc = await openDocument();
   let ctx = addPage(doc);
-  drawHeaderFooter(ctx, input.title, company);
+  ctx = await drawHeaderFooter(ctx, input.title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
 
   if (input.subtitle) {
@@ -71,7 +71,7 @@ export async function generateDashboardReportPdf(input: DashboardReportInput): P
     // header/footer — the same pre-existing limitation the sales-document
     // generators already have, not something new to this report.
     if (nextPage.page !== ctx.page) {
-      drawHeaderFooter(nextPage, undefined, company);
+      nextPage = await drawHeaderFooter(nextPage, undefined, company);
       nextPage.y = PDF_HEADER_CONTENT_Y;
     }
     ctx = nextPage;

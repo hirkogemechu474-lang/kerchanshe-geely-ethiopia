@@ -45,6 +45,8 @@ export interface SalesAgreementPdfData {
   customerSignatureUrl?: string | null;
   customerSignedAt?: Date | string | null;
   managerSignatureUrl?: string | null;
+  managerStampUrl?: string | null;
+  customerStampUrl?: string | null;
 }
 
 function paragraphs(ctx: PagedContext, texts: string[], size = 9.5): PagedContext {
@@ -67,9 +69,11 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
   const doc = await openDocument();
   const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
   const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
+  const managerStampImage = await embedSignatureImage(doc.doc, data.managerStampUrl);
+  const customerStampImage = await embedSignatureImage(doc.doc, data.customerStampUrl);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE SALES AGREEMENT';
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
 
   // ── Page 1: header, intro, Parties ──────────────────────────────────────
   const purchaserDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');
@@ -102,7 +106,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
 
   // ── Page 2: Vehicle & Sales Details, Price ──────────────────────────────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, '2. Vehicle and Sales Details');
   const exteriorColor = data.exteriorColor || data.color || '—';
@@ -141,7 +145,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
 
   // ── Page 3: Payment + bank details, Order Sales & Price Changes ─────────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, '4. Payment');
   ctx = paragraphs(ctx, ["The Purchaser shall pay according to the schedule below. Payment is considered made when cleared funds are received in the Seller's designated bank account."]);
@@ -175,7 +179,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
 
   // ── Page 4: Delivery/Inspection, EV Handover, Warranty ──────────────────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawSectionTitle(ctx, '6. Delivery, Inspection and Acceptance');
   ctx = paragraphs(ctx, [
@@ -206,7 +210,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
 
   // ── Page 5: remaining clauses + Signatures ──────────────────────────────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   ctx = clauseHeading(ctx, '9. Purchaser Responsibilities');
   ctx = paragraphs(ctx, [
@@ -250,6 +254,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
       title: data.sellerAuthorizedRepTitle,
       showStamp: true,
       signatureImage: managerSignatureImage,
+      stampImage: managerStampImage,
       date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
     {
@@ -258,6 +263,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
       title: data.purchaserAuthorizedRep,
       showStamp: true,
       signatureImage: customerSignatureImage,
+      stampImage: customerStampImage,
       date: data.customerSignedAt ? new Date(data.customerSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );
@@ -275,7 +281,7 @@ export async function generateSalesAgreementPdf(data: SalesAgreementPdfData, com
 
   // ── Page 6: Recommended Attachments ─────────────────────────────────────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
   ctx.page.drawText('Recommended Attachments (Annexes)', { x: PDF_MARGIN, y: ctx.y, size: 11, font: ctx.bold, color: COLORS.brandRed });
   ctx.y -= 24;

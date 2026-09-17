@@ -26,7 +26,7 @@ export async function generateReceiptPdf(data: ReceiptPdfData, company: CompanyI
   const doc = await openDocument();
   let ctx = addPage(doc);
   const title = 'PAYMENT RECEIPT';
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
 
   const customerDisplayName = data.purchaserTitle ? `${data.purchaserTitle} ${data.customerName || ''}`.trim() : (data.customerName || '—');

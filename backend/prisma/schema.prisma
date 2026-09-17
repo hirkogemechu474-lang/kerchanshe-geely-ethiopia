@@ -39,6 +39,7 @@ model User {
   // admin auth required" upload in this codebase — agreement/handover/
   // quotation signing), so signatureUrl is a web-hosted /uploads/... path.
   signatureUrl                 String?
+  stampUrl                     String?   // Company stamp image (uploaded via staff-signature setup)
   signatureUpdatedAt           DateTime?
   signatureSetupToken          String?   @unique
   signatureSetupTokenExpiresAt DateTime?
@@ -51,6 +52,7 @@ model User {
   leadHoursStart       Int? // local hour-of-day, 0-23; null = no restriction
   leadHoursEnd         Int? // local hour-of-day, 0-23; null = no restriction
   brandSpecializations UserVehicleBrand[]
+  walkInRegistrations   WalkInRegistration[]
 }
 
 // A rep's vehicle-brand specialization, used by nextSalesRep() when the
@@ -2246,5 +2248,21 @@ model LoyaltyTransaction {
   createdAt  DateTime       @default(now())
 
   @@index([accountId])
+  @@index([createdAt])
+}
+
+model WalkInRegistration {
+  id              String    @id @default(uuid())
+  customerName    String
+  phone           String
+  email           String?
+  vehicleInterest String?
+  notes           String?
+  registeredById  String
+  registeredBy    User      @relation(fields: [registeredById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([registeredById])
   @@index([createdAt])
 }

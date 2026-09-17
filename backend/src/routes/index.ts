@@ -55,6 +55,7 @@ import { vehicleConfigRoutes } from './vehicle-config.routes';
 import { documentsRoutes } from './documents.routes';
 import { reportsRoutes } from './reports.routes';
 import { loyaltyRoutes } from './loyalty.routes';
+import { walkInRoutes } from './walk-in.routes';
 
 const router = Router();
 
@@ -114,5 +115,6 @@ router.use('/admin', vehicleConfigRoutes);
 router.use('/admin/documents', documentsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/loyalty', loyaltyRoutes);
+router.use('/walk-ins', walkInRoutes);
 
 export { router as routes };

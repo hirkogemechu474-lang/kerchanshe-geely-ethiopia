@@ -55,8 +55,8 @@ export const env = {
   },
 
   urls: {
-    site: process.env.NEXT_PUBLIC_SITE_URL || 'https://geely.com.et',
-    admin: process.env.ADMIN_URL || 'http://localhost:7500',
+    site: process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://geelyethiopia.com',
+    admin: process.env.ADMIN_URL || process.env.NEXT_PUBLIC_ADMIN_URL || 'https://admin.geelyethiopia.com',
   },
 
   commission: {

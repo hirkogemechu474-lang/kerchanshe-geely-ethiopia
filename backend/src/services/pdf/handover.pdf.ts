@@ -96,6 +96,8 @@ export interface HandoverPdfData {
   countersignedAt?: Date | string | null;
   customerSignatureUrl?: string | null;
   managerSignatureUrl?: string | null;
+  managerStampUrl?: string | null;
+  customerStampUrl?: string | null;
 }
 
 function drawItemsHandedOverTable(ctx: PagedContext, rows: HandoverItemRow[]): PagedContext {
@@ -167,9 +169,11 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
   const doc = await openDocument();
   const managerSignatureImage = await embedSignatureImage(doc.doc, data.managerSignatureUrl);
   const customerSignatureImage = await embedSignatureImage(doc.doc, data.customerSignatureUrl);
+  const managerStampImage = await embedSignatureImage(doc.doc, data.managerStampUrl);
+  const customerStampImage = await embedSignatureImage(doc.doc, data.customerStampUrl);
   let ctx = addPage(doc);
   const title = 'GEELY ELECTRIC VEHICLE DELIVERY & HANDOVER NOTE';
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
 
   ctx.y = PDF_HEADER_CONTENT_Y;
   drawLabelValue(ctx, 'Delivery Note No.', data.deliveryNoteNo || '—', PDF_MARGIN, ctx.y);
@@ -230,7 +234,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
 
   // ── Page 2: Inspection, EV Guidance, Remarks, Final Acknowledgement ─────
   ctx = addPage(doc);
-  drawHeaderFooter(ctx, title, company);
+  ctx = await drawHeaderFooter(ctx, title, company);
   ctx.y = PDF_HEADER_CONTENT_Y;
 
   const inspectionChecklist = data.inspectionChecklist?.length ? data.inspectionChecklist : DEFAULT_INSPECTION_CHECKLIST;
@@ -283,6 +287,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
       name: data.countersignedByName,
       title: data.countersignedByTitle,
       signatureImage: managerSignatureImage ?? undefined,
+      stampImage: managerStampImage ?? undefined,
       date: data.countersignedAt ? new Date(data.countersignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
     {
@@ -290,6 +295,7 @@ export async function generateHandoverPdf(data: HandoverPdfData, company: Compan
       name: data.customerName,
       title: data.customerTitle,
       signatureImage: customerSignatureImage ?? undefined,
+      stampImage: customerStampImage ?? undefined,
       date: data.handoverSignedAt ? new Date(data.handoverSignedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
     },
   );
