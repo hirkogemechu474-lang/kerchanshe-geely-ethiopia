@@ -59,7 +59,6 @@ async function getManagerEmails(): Promise<string[]> {
   managerEmailsCachedAt = now;
   return cachedManagerEmails;
 }
-import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { chatbotService } from '../services/chatbot/chatbot.service';
 
 const router = Router();
@@ -1197,7 +1196,9 @@ router.post('/purchases', rateLimiters.contactForm, async (req: Request, res: Re
       });
     }
 
-    await seedPdiChecklist(prisma, purchase.id);
+    // PDI checklist is seeded once a vehicle is actually allocated to the
+    // order (see vehicleAllocationService.lockAllocation) — the reservation
+    // above only reserves a stock unit, it doesn't lock a specific VIN yet.
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (error) {
     console.error('Submit purchase error:', error);

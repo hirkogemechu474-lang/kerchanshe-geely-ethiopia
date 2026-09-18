@@ -1,6 +1,4 @@
 import { quotationRepository, salesOrderRepository, vehicleRepository } from '../../repositories';
-import { prisma } from '../../config/database';
-import { seedPdiChecklist } from './pdiChecklist.template';
 import { vehicleAllocationService } from './vehicleAllocation.service';
 import { auditService } from '../audit/audit.service';
 
@@ -87,8 +85,10 @@ export const convertQuotationToOrderService = {
         salesOrder: { connect: { id: order.id } },
       });
 
-      await seedPdiChecklist(prisma, order.id);
-
+      // PDI checklist is seeded once a vehicle is actually allocated (see
+      // vehicleAllocationService.lockAllocation), not here — the
+      // auto-allocation above only reserves a stock unit, it doesn't lock a
+      // specific VIN yet.
       await auditService.log({
         entityType: 'quotation',
         entityId: quotationId,

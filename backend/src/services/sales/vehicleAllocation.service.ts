@@ -1,4 +1,6 @@
 import { vehicleAllocationRepository, vehicleRepository, salesOrderRepository } from '../../repositories';
+import { prisma } from '../../config/database';
+import { seedPdiChecklist } from './pdiChecklist.template';
 
 export const vehicleAllocationService = {
   // Reserves a stock unit (status RESERVED — see POST .../allocate on
@@ -65,6 +67,7 @@ export const vehicleAllocationService = {
         status: 'ALLOCATED',
         ...(vin && { vin }),
       });
+      await seedPdiChecklist(prisma, orderId);
       return { ok: true, data: allocation };
     } catch (error: any) {
       console.error('[ALLOCATION LOCK ERROR]', error.message);

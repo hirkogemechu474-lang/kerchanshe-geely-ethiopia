@@ -37,13 +37,23 @@ export function getPdiCategories(): string[] {
   return [...new Set(PDI_CHECKLIST_TEMPLATE.map((item) => item.category))];
 }
 
-// Seeds the PDI checklist for a newly-created order. The BOOKED ->
-// READY_FOR_DELIVERY gate (order.service.ts's getTransitionBlockReason)
-// requires `pdiItems.length > 0 && every(isChecked)`, so ANY order created
-// without this being called can never legitimately reach Ready for
-// Delivery or Delivered — call this from every SalesOrder creation path,
-// not just the quotation-conversion one.
-export async function seedPdiChecklist(prisma: { pdiChecklistItem: { createMany: (args: any) => Promise<unknown> } }, orderId: string): Promise<void> {
+// Seeds the PDI checklist once a vehicle is actually allocated to the order
+// (vehicleAllocationService.lockAllocation's RESERVED -> ALLOCATED step) —
+// per the spec's step order, inspection only makes sense once a specific VIN
+// is locked in, not at order creation before any vehicle is even chosen. The
+// BOOKED -> READY_FOR_DELIVERY gate (order.service.ts's
+// getTransitionBlockReason) requires `pdiItems.length > 0 && every(isChecked)`
+// AND vehicleAllocation.status === 'ALLOCATED' before that transition, so by
+// the time PDI completeness is ever checked, allocation has already
+// happened and this has already run. Idempotent (checks for existing rows
+// first) since lockAllocation can be called again for an already-ALLOCATED
+// order.
+export async function seedPdiChecklist(
+  prisma: { pdiChecklistItem: { createMany: (args: any) => Promise<unknown>; count: (args: any) => Promise<number> } },
+  orderId: string
+): Promise<void> {
+  const existingCount = await prisma.pdiChecklistItem.count({ where: { orderId } });
+  if (existingCount > 0) return;
   await prisma.pdiChecklistItem.createMany({
     data: PDI_CHECKLIST_TEMPLATE.map((item) => ({
       orderId,

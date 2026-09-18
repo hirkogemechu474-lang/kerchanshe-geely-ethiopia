@@ -3,7 +3,6 @@ import { generateReference, REFERENCE_CATEGORY } from '../../utils/reference';
 import { commissionService } from './commission.service';
 import { warrantyService } from '../warranty/warranty.service';
 import { loyaltyService } from '../loyalty/loyalty.service';
-import { seedPdiChecklist } from './pdiChecklist.template';
 import { prisma } from '../../config/database';
 import { auditService } from '../audit/audit.service';
 import { dispatchNotification } from '../email/notifications.dispatch';
@@ -136,8 +135,8 @@ export const orderService = {
         await commissionService.initializeCommission(order.id, data.assignedTo);
       }
 
-      await seedPdiChecklist(prisma, order.id);
-
+      // PDI checklist is seeded once a vehicle is actually allocated (see
+      // vehicleAllocationService.lockAllocation), not at creation.
       return { ok: true, data: order };
     } catch (error: any) {
       console.error('[ORDER CREATE ERROR]', error.message);

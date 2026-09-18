@@ -418,31 +418,40 @@ export default function OrderDetail({
 
       <Card className="space-y-3">
         <h2 className="font-semibold text-gray-900">Pre-Delivery Inspection (PDI)</h2>
-        <p className="text-xs text-gray-500">
-          Every item must be marked Pass or N/A before this order can move to Ready for Delivery.
-          A Failed item blocks delivery until it's resolved and reinspected back to Pass.
-        </p>
-        <ul className="divide-y divide-gray-100">
-          {state.pdiItems.map((item) => (
-            <PdiItemRow
-              key={item.id}
-              item={item}
-              canManage={permissions.canManageQuotations}
-              busy={busy}
-              onSetResult={setPdiResult}
-            />
-          ))}
-        </ul>
-        <p className="text-xs font-medium">
-          {pdiComplete ? (
-            <span className="text-green-600">All items complete</span>
-          ) : (
-            <span className="text-orange-600">
-              {state.pdiItems?.filter((p) => p.result === 'PASS' || p.result === 'NA').length ?? 0} / {state.pdiItems?.length ?? 0} complete
-              {state.pdiItems?.some((p) => p.result === 'FAIL') && ' — some items failed'}
-            </span>
-          )}
-        </p>
+        {state.pdiItems.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            The checklist is seeded once a specific vehicle (VIN) is allocated to this order —
+            {state.vehicleAllocation?.status === 'ALLOCATED' ? ' it should appear shortly; refresh if it does not.' : ' allocate a vehicle first.'}
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500">
+              Every item must be marked Pass or N/A before this order can move to Ready for Delivery.
+              A Failed item blocks delivery until it's resolved and reinspected back to Pass.
+            </p>
+            <ul className="divide-y divide-gray-100">
+              {state.pdiItems.map((item) => (
+                <PdiItemRow
+                  key={item.id}
+                  item={item}
+                  canManage={permissions.canManageQuotations}
+                  busy={busy}
+                  onSetResult={setPdiResult}
+                />
+              ))}
+            </ul>
+            <p className="text-xs font-medium">
+              {pdiComplete ? (
+                <span className="text-green-600">All items complete</span>
+              ) : (
+                <span className="text-orange-600">
+                  {state.pdiItems?.filter((p) => p.result === 'PASS' || p.result === 'NA').length ?? 0} / {state.pdiItems?.length ?? 0} complete
+                  {state.pdiItems?.some((p) => p.result === 'FAIL') && ' — some items failed'}
+                </span>
+              )}
+            </p>
+          </>
+        )}
       </Card>
 
       <OrderApprovalPanel

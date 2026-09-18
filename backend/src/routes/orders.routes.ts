@@ -6,7 +6,6 @@ import { vehicleAllocationService } from '../services/sales/vehicleAllocation.se
 import { orderAgreementService } from '../services/sales/orderAgreement.service';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
 import { orderInvoiceService } from '../services/sales/orderInvoice.service';
-import { seedPdiChecklist } from '../services/sales/pdiChecklist.template';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { generateSalesAgreementPdf } from '../services/pdf/salesAgreement.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
@@ -72,7 +71,10 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
       return {
         ...order,
         pdiComplete: pdiTotal > 0 && pdiChecked === pdiTotal,
-        pdiProgress: `${pdiChecked}/${pdiTotal}`,
+        // The checklist is only seeded once a vehicle is allocated (see
+        // vehicleAllocationService.lockAllocation), so pdiTotal === 0 means
+        // "not started yet", not "0 of 0 done".
+        pdiProgress: pdiTotal > 0 ? `${pdiChecked}/${pdiTotal}` : 'Not started',
       };
     });
 
@@ -89,8 +91,10 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 // POST /api/orders (admin create)
 router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
   try {
+    // PDI checklist is seeded once a vehicle is actually allocated (see
+    // vehicleAllocationService.lockAllocation), not at creation — no vehicle
+    // is necessarily chosen yet at this point.
     const order = await prisma.salesOrder.create({ data: req.body });
-    await seedPdiChecklist(prisma, order.id);
     res.status(201).json(order);
   } catch (error) {
     console.error('Create order error:', error);
