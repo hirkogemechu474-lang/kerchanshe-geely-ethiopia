@@ -128,31 +128,48 @@ async function createInAppNotifications(payload: NotificationPayload) {
 }
 
 function buildNotificationHtml(payload: NotificationPayload): string {
-  const dataEntries = Object.entries(payload.data)
-    .map(([key, value]) => `<p style="margin: 4px 0;"><strong>${formatKey(key)}:</strong> ${formatValue(value)}</p>`)
+  const ctaButtons = (payload.ctas ?? [])
+    .map((cta) => `<a href="${escapeHtml(cta.url)}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; display: inline-block; margin: 0 6px 10px;">${escapeHtml(cta.label)}</a>`)
     .join('');
 
-  const ctaButtons = (payload.ctas ?? [])
-    .map((cta) => `<a href="${cta.url}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; display: inline-block; margin: 0 6px 10px;">${cta.label}</a>`)
-    .join('');
+  // A 'campaign' email is customer-facing marketing copy, not an internal
+  // status update — render `data.message` as flowing prose (paragraph
+  // breaks preserved) instead of the generic "Message: ..." key/value row
+  // every other notification type uses.
+  const body = payload.type === 'campaign'
+    ? `<div style="color: #333; line-height: 1.6; margin: 20px 0; white-space: pre-line;">${escapeHtml(String(payload.data.message ?? ''))}</div>`
+    : `<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">${buildDataEntries(payload.data)}</div>`;
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1a1a2e;">${payload.subject}</h2>
-      ${payload.greetingName ? `<p style="margin: 0 0 12px;">Hello ${payload.greetingName},</p>` : ''}
-      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-        ${dataEntries}
-      </div>
+      <h2 style="color: #1a1a2e;">${escapeHtml(payload.subject)}</h2>
+      ${payload.greetingName ? `<p style="margin: 0 0 12px;">Hello ${escapeHtml(payload.greetingName)},</p>` : ''}
+      ${body}
       ${ctaButtons ? `<div style="text-align: center; margin: 20px 0;">${ctaButtons}</div>` : ''}
     </div>
   `;
 }
 
+function buildDataEntries(data: Record<string, any>): string {
+  return Object.entries(data)
+    .map(([key, value]) => `<p style="margin: 4px 0;"><strong>${escapeHtml(formatKey(key))}:</strong> ${formatValue(value)}</p>`)
+    .join('');
+}
+
 function formatValue(value: unknown): string {
   if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
-    return `<a href="${value}" style="color: #194BFF;">${value}</a>`;
+    return `<a href="${escapeHtml(value)}" style="color: #194BFF;">${escapeHtml(value)}</a>`;
   }
-  return String(value);
+  return escapeHtml(String(value));
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatKey(key: string): string {
