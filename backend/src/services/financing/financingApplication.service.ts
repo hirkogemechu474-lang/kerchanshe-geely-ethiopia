@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { dispatchNotification } from '../email/notifications.dispatch';
 
 export interface FinancingApplicationCreationData {
   leadId: string;
@@ -112,11 +113,28 @@ export class FinancingApplicationService {
   ): Promise<FinancingApplicationResponse> {
     try {
       const status = isConditional ? 'CONDITIONALLY_APPROVED' : 'APPROVED';
-      
+
       const application = await prisma.financingApplication.update({
         where: { id: applicationId },
-        data: { status, approvedById },
+        // approvedAt existed on the schema but was never actually stamped —
+        // every approval looked "unapproved" by timestamp.
+        data: { status, approvedById, approvedAt: new Date() },
       });
+
+      if (application.customerEmail) {
+        const label = isConditional ? 'Conditionally Approved' : 'Approved';
+        await dispatchNotification({
+          type: 'financing_application',
+          to: [application.customerEmail],
+          subject: `Financing Application ${label} — ${application.vehicleModel}`,
+          data: {
+            message: isConditional
+              ? `Good news — your financing application for the ${application.vehicleModel} has been conditionally approved. Our finance team will contact you about the remaining requirements.`
+              : `Good news — your financing application for the ${application.vehicleModel} has been approved. Our finance team will contact you with next steps.`,
+          },
+          greetingName: application.customerName,
+        }).catch(() => {});
+      }
 
       return { ok: true, data: application };
     } catch (error: any) {
@@ -134,6 +152,20 @@ export class FinancingApplicationService {
         where: { id: applicationId },
         data: { status: 'DECLINED', rejectionReason },
       });
+
+      if (application.customerEmail) {
+        await dispatchNotification({
+          type: 'financing_application',
+          to: [application.customerEmail],
+          subject: `Financing Application Update — ${application.vehicleModel}`,
+          data: {
+            message: `We're unable to approve your financing application for the ${application.vehicleModel} at this time.${
+              rejectionReason ? ` Reason: ${rejectionReason}` : ''
+            } Contact us to discuss other options.`,
+          },
+          greetingName: application.customerName,
+        }).catch(() => {});
+      }
 
       return { ok: true, data: application };
     } catch (error: any) {

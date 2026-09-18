@@ -6,6 +6,13 @@ import Link from "next/link";
 import { CheckCircle, CreditCard, LoaderCircle, ShieldCheck, ExternalLink, ArrowRight } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
 import { validateGenericIdOrLicense } from "@/lib/idValidation";
+import { calculateLoan } from "@/lib/financeCalculator";
+
+function formatETB(amount: number): string {
+  return new Intl.NumberFormat("en-ET", { style: "currency", currency: "ETB", minimumFractionDigits: 0 }).format(
+    Math.max(0, Math.round(amount))
+  );
+}
 
 interface Vehicle {
   id: string;
@@ -22,6 +29,15 @@ interface Bank {
   name: string;
   logoUrl?: string | null;
   websiteUrl?: string | null;
+}
+
+interface Program {
+  id: string;
+  name: string;
+  interestRate: string | number;
+  downPaymentPercent: string | number;
+  tenureMonths: number;
+  bank: Bank;
 }
 
 interface QuoteSummary {
@@ -72,6 +88,7 @@ export default function VehiclePurchasePage() {
   const visitId = searchParams.get("visitId") || "";
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [quote, setQuote] = useState<QuoteSummary | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState(preselectedVehicle);
   const [loading, setLoading] = useState(true);
@@ -225,23 +242,45 @@ export default function VehiclePurchasePage() {
     async function loadBanksForVehicle() {
       try {
         const response = await fetch(`/api/public/financing-programs?vehicleId=${encodeURIComponent(selectedVehicleId)}`);
-        const programs = await response.json().catch(() => []);
+        const programsData = await response.json().catch(() => []);
+        const programList: Program[] = Array.isArray(programsData) ? programsData : [];
         const uniqueBanks = new Map<string, Bank>();
-        (Array.isArray(programs) ? programs : []).forEach((program) => {
+        programList.forEach((program) => {
           if (program.bank) uniqueBanks.set(program.bank.id, program.bank);
         });
         setBanks(Array.from(uniqueBanks.values()));
+        setPrograms(programList);
         setForm((current) => ({
           ...current,
           bankId: uniqueBanks.has(current.bankId) ? current.bankId : "",
         }));
       } catch {
         setBanks([]);
+        setPrograms([]);
         setError("Unable to load payment banks for this vehicle.");
       }
     }
     void loadBanksForVehicle();
   }, [selectedVehicleId]);
+
+  // The best-matching program for the selected bank — used only to show an
+  // illustrative "estimated monthly payment" alongside the direct-purchase
+  // form; the actual charge here is always the full purchaseAmount, not an
+  // installment (see the full Finance Calculator on /financing for
+  // interactive down-payment/term exploration).
+  const selectedProgram = useMemo(
+    () => programs.find((p) => p.bank.id === form.bankId) ?? null,
+    [programs, form.bankId]
+  );
+  const estimatedInstallment = useMemo(() => {
+    if (!selectedProgram || !purchaseAmount) return null;
+    return calculateLoan({
+      vehiclePrice: purchaseAmount,
+      downPaymentPercent: Number(selectedProgram.downPaymentPercent) || 0,
+      annualInterestRatePercent: Number(selectedProgram.interestRate) || 0,
+      tenureMonths: selectedProgram.tenureMonths,
+    });
+  }, [selectedProgram, purchaseAmount]);
 
   const update = (key: keyof PurchaseForm, value: string | boolean) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -323,6 +362,9 @@ export default function VehiclePurchasePage() {
     return () => clearInterval(interval);
   }, [confirmation?.purchaseId, confirmation?.status, confirmation?.approved]);
 
+  // No real bank payment gateway exists yet (mock-pay + manual staff
+  // verification is the actual system today) — this submits the order for
+  // payment review rather than redirecting to a bank checkout page.
   const continueToBankPayment = async () => {
     if (!confirmation?.purchaseId) return;
     setInitiatingPayment(true);
@@ -330,13 +372,13 @@ export default function VehiclePurchasePage() {
       const response = await fetch("/api/payments/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ purchaseId: confirmation.purchaseId }),
+        body: JSON.stringify({ orderId: confirmation.purchaseId }),
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.success) throw new Error(result?.message || result?.error || "Unable to start payment.");
-      window.location.href = result.payment.paymentUrl;
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Unable to submit this order for payment review.");
+      setConfirmation((current) => (current ? { ...current, status: "PENDING_REVIEW" } : current));
     } catch (paymentError) {
-      setError(paymentError instanceof Error ? paymentError.message : "Unable to start payment.");
+      setError(paymentError instanceof Error ? paymentError.message : "Unable to submit this order for payment review.");
     } finally {
       setInitiatingPayment(false);
     }
@@ -361,14 +403,18 @@ export default function VehiclePurchasePage() {
               <div className="flex justify-between gap-4"><span className="text-steel dark:text-steel-light">Payment status</span><strong className={confirmation.status === "PAID" ? "text-green-700" : "text-amber-700"}>{confirmation.status === "PAID" ? "Paid / Payment Confirmed" : "Payment Pending"}</strong></div>
             </div>
             {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 text-left">{error}</div>}
-            {confirmation.status !== "PAID" && (
+            {confirmation.status === "PENDING_REVIEW" ? (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900 text-left">
+                Your payment has been submitted and is awaiting confirmation from our finance team. We'll email you once it's confirmed.
+              </div>
+            ) : confirmation.status !== "PAID" && (
               confirmation.approved ? (
                 <div className="mb-4">
                   <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 text-left font-medium">
-                    Your order has been approved! Continue below to complete your payment.
+                    Your order has been approved! Submit your payment details below to continue.
                   </div>
                   <button type="button" onClick={() => void continueToBankPayment()} disabled={initiatingPayment} className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-60">
-                    {initiatingPayment ? "Starting secure payment..." : "Continue to Bank Payment"}
+                    {initiatingPayment ? "Submitting..." : "Submit for Payment Review"}
                   </button>
                 </div>
               ) : (
@@ -518,6 +564,22 @@ export default function VehiclePurchasePage() {
                 <CreditCard className="shrink-0 mt-0.5" size={18} />
                 <span>You will be directed to the selected bank payment service to authenticate and complete payment.</span>
               </div>
+              {selectedProgram && estimatedInstallment && (
+                <div className="mt-4 p-4 border border-line dark:border-midnight-line rounded-lg">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-steel dark:text-steel-light mb-2">
+                    Prefer to finance instead of paying in full?
+                  </p>
+                  <p className="text-sm text-navy dark:text-ice">
+                    {selectedProgram.bank.name}&apos;s {selectedProgram.name} could bring this down to an estimated{" "}
+                    <strong className="tabular-nums">{formatETB(estimatedInstallment.monthlyPayment)}/month</strong>{" "}
+                    ({Number(selectedProgram.downPaymentPercent)}% down, {selectedProgram.tenureMonths} months at{" "}
+                    {Number(selectedProgram.interestRate).toFixed(2)}% p.a.).
+                  </p>
+                  <Link href="/financing#calculator" className="inline-flex items-center gap-1 text-xs font-semibold text-geely-blue hover:underline mt-2">
+                    Explore this in the full calculator <ArrowRight size={12} />
+                  </Link>
+                </div>
+              )}
               <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="font-medium text-amber-900 mb-2 flex items-center gap-2">
                   <CreditCard className="w-4 h-4" />

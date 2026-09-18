@@ -957,6 +957,38 @@ router.post('/financing-applications', rateLimiters.contactForm, async (req: Req
       },
     });
 
+    try {
+      const managerEmails = await getManagerEmails();
+      if (managerEmails.length > 0) {
+        await dispatchNotification({
+          type: 'financing_application',
+          to: managerEmails,
+          subject: `New Financing Application — ${vehicleModel}`,
+          data: {
+            customerName,
+            customerPhone,
+            vehicleModel,
+            requestedAmount: requestedAmount || 0,
+            adminLink: `${env.urls.admin}/admin/financing?tab=applications`,
+          },
+          ctas: [{ label: 'Review Application', url: `${env.urls.admin}/admin/financing?tab=applications` }],
+        });
+      }
+      if (customerEmail) {
+        await dispatchNotification({
+          type: 'financing_application',
+          to: [customerEmail],
+          subject: `Financing Application Received — ${vehicleModel}`,
+          data: {
+            message: `We've received your financing application for the ${vehicleModel}. Our finance team will review it and get back to you shortly.`,
+          },
+          greetingName: customerName,
+        });
+      }
+    } catch (notifyError: any) {
+      console.error('[FINANCING APPLICATION NOTIFICATION ERROR]', notifyError.message);
+    }
+
     res.status(201).json({ success: true, id: application.id });
   } catch (error) {
     console.error('Submit financing application error:', error);

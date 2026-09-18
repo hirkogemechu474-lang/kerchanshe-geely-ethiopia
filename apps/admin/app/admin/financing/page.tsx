@@ -21,6 +21,10 @@ import {
   AlertCircle,
   Settings,
   FileText,
+  Search,
+  Clock,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 
 interface Bank {
@@ -193,6 +197,8 @@ export default function FinancingManagementPage() {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [programs, setPrograms] = useState<FinancingProgram[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+  const [applicationSearch, setApplicationSearch] = useState('');
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState('all');
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -907,7 +913,86 @@ export default function FinancingManagementPage() {
       )}
 
       {/* APPLICATIONS TAB */}
-      {activeTab === 'applications' && (
+      {activeTab === 'applications' && (() => {
+        const total = applications.length;
+        const pending = applications.filter((a) => a.status === 'PENDING').length;
+        const underReview = applications.filter((a) => a.status === 'UNDER_REVIEW' || a.status === 'SUBMITTED' || a.status === 'DOCUMENTS_REQUIRED').length;
+        const approved = applications.filter((a) => a.status === 'APPROVED' || a.status === 'CONDITIONALLY_APPROVED').length;
+        const declined = applications.filter((a) => a.status === 'DECLINED').length;
+        const decided = approved + declined;
+        const approvalRate = decided > 0 ? Math.round((approved / decided) * 100) : null;
+
+        const filteredApplications = applications.filter((app) => {
+          if (applicationStatusFilter !== 'all' && app.status !== applicationStatusFilter) return false;
+          if (!applicationSearch.trim()) return true;
+          const q = applicationSearch.trim().toLowerCase();
+          return (
+            app.customerName?.toLowerCase().includes(q) ||
+            app.customerPhone?.toLowerCase().includes(q) ||
+            app.customerEmail?.toLowerCase().includes(q) ||
+            app.vehicleModel?.toLowerCase().includes(q)
+          );
+        });
+
+        return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-gray-900">{total}</div>
+              <div className="text-xs text-gray-500 mt-1">Total Applications</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-1.5 text-2xl font-bold text-amber-600">
+                <Clock className="w-4 h-4" /> {pending}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Pending</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-blue-600">{underReview}</div>
+              <div className="text-xs text-gray-500 mt-1">Under Review</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-1.5 text-2xl font-bold text-green-600">
+                <ThumbsUp className="w-4 h-4" /> {approved}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Approved</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-1.5 text-2xl font-bold text-gray-700">
+                <ThumbsDown className="w-4 h-4 text-red-500" /> {declined}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Declined{approvalRate !== null && ` — ${approvalRate}% approval rate`}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                value={applicationSearch}
+                onChange={(e) => setApplicationSearch(e.target.value)}
+                placeholder="Search by customer, phone, email, or vehicle..."
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              />
+            </div>
+            <select
+              value={applicationStatusFilter}
+              onChange={(e) => setApplicationStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-geely-blue"
+            >
+              <option value="all">All Statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="DOCUMENTS_REQUIRED">Documents Required</option>
+              <option value="SUBMITTED">Submitted</option>
+              <option value="UNDER_REVIEW">Under Review</option>
+              <option value="APPROVED">Approved</option>
+              <option value="CONDITIONALLY_APPROVED">Conditionally Approved</option>
+              <option value="DECLINED">Declined</option>
+            </select>
+          </div>
+
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -922,16 +1007,22 @@ export default function FinancingManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {applications.length === 0 ? (
+                {filteredApplications.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-16 text-center text-gray-500">
                       <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-base mb-2">No financing applications yet</p>
-                      <p className="text-sm mb-4">Applications submitted from the website will appear here</p>
+                      {applications.length === 0 ? (
+                        <>
+                          <p className="text-base mb-2">No financing applications yet</p>
+                          <p className="text-sm mb-4">Applications submitted from the website will appear here</p>
+                        </>
+                      ) : (
+                        <p className="text-base mb-2">No applications match your search/filter</p>
+                      )}
                     </td>
                   </tr>
                 ) : (
-                  applications.map((app: any) => (
+                  filteredApplications.map((app: any) => (
                     <tr key={app.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="min-w-0">
@@ -1032,7 +1123,9 @@ export default function FinancingManagementPage() {
             </table>
           </div>
         </div>
-      )}
+        </div>
+        );
+      })()}
 
       {/* BANK MODAL */}
       {bankModalOpen && editingBank && (
@@ -1244,13 +1337,18 @@ export default function FinancingManagementPage() {
                 </div>
               </div>
 
-              {/* Section: Loan Terms */}
-              <div className="hidden bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-xl p-5 space-y-4">
+              {/* Section: Loan Terms — was accidentally marked `hidden`, which
+                  meant this was the ONLY place interest rate/down payment/
+                  tenure/fees are editable, and admins had no way to reach it
+                  at all. Un-hidden and relabeled to match what it actually
+                  edits (not "legacy" — these are the live FinancingProgram
+                  columns, rendered on the public /financing calculator). */}
+              <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center">
                     <Wallet className="w-4 h-4" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">Legacy Payment Fields</h3>
+                  <h3 className="font-semibold text-gray-800">Rate &amp; Payment Terms</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>

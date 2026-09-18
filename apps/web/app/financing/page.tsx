@@ -19,6 +19,8 @@ import {
   mergeFinancingPageContent,
   type FinancingPageContent,
 } from "@/lib/financingPageContent";
+import { FinanceCalculator, type CalcProgram } from "@/components/financing/FinanceCalculator";
+import { FinancingProgramCards } from "@/components/financing/FinancingProgramCards";
 
 interface Vehicle {
   id: string;
@@ -72,19 +74,22 @@ function BankLogo({ bank, className = "" }: { bank: Bank; className?: string }) 
 export default function PurchasePage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [programs, setPrograms] = useState<CalcProgram[]>([]);
   const [content, setContent] = useState<FinancingPageContent | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [vehiclesResponse, banksResponse, contentResponse] = await Promise.all([
+        const [vehiclesResponse, banksResponse, programsResponse, contentResponse] = await Promise.all([
           fetch("/api/public/vehicles"),
           fetch("/api/public/financing-banks"),
+          fetch("/api/public/financing-programs"),
           fetch("/api/public/financing-page-content"),
         ]);
         const vehiclesData = await vehiclesResponse.json().catch(() => []);
         const banksData = await banksResponse.json().catch(() => []);
+        const programsData = await programsResponse.json().catch(() => []);
         const contentData = await contentResponse.json().catch(() => null);
         setVehicles(Array.isArray(vehiclesData) ? vehiclesData : vehiclesData?.vehicles || []);
         setBanks(
@@ -94,6 +99,7 @@ export default function PurchasePage() {
               )
             : []
         );
+        setPrograms(Array.isArray(programsData) ? programsData : []);
         setContent(mergeFinancingPageContent(contentData));
       } finally {
         setLoading(false);
@@ -137,7 +143,7 @@ export default function PurchasePage() {
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap gap-3">
               <a
-                href="#banks"
+                href="#calculator"
                 className="inline-flex items-center gap-2 bg-gold text-[#2c2308] font-bold px-8 py-4 rounded-xl hover:bg-opacity-90 hover:shadow-lg hover:shadow-gold/20 transition-all"
               >
                 {hero.primaryCtaLabel} <ArrowRight size={20} />
@@ -195,6 +201,48 @@ export default function PurchasePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Finance Calculator ──────────────────────────────────────── */}
+      {!loading && programs.length > 0 && (
+        <section id="calculator" className="py-20 bg-ice dark:bg-midnight scroll-mt-24 transition-colors">
+          <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+            <div className="max-w-2xl mb-10">
+              <div className="text-[13px] tracking-[0.2em] text-geely-blue font-bold mb-3 uppercase">
+                Finance Calculator
+              </div>
+              <h2 className="disp text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-4">
+                Estimate your monthly payment
+              </h2>
+              <p className="text-steel dark:text-steel-light leading-relaxed">
+                Pick a vehicle and a financing partner, then adjust your down payment and loan term to see an
+                estimated monthly repayment instantly.
+              </p>
+            </div>
+            <FinanceCalculator vehicles={vehicles} programs={programs} />
+          </div>
+        </section>
+      )}
+
+      {/* ── Compare Financing Options ────────────────────────────────── */}
+      {!loading && programs.length > 0 && (
+        <section className="py-20 bg-white dark:bg-midnight-surface scroll-mt-24 transition-colors">
+          <div className="max-w-[1280px] mx-auto px-6 md:px-10">
+            <div className="max-w-2xl mb-10">
+              <div className="text-[13px] tracking-[0.2em] text-geely-blue font-bold mb-3 uppercase">
+                Compare Offers
+              </div>
+              <h2 className="disp text-3xl md:text-4xl font-bold text-navy dark:text-ice mb-4">
+                Current financing options
+              </h2>
+              <p className="text-steel dark:text-steel-light leading-relaxed">
+                Rates and terms from our partner banks — select one in the calculator above to see it applied to a
+                specific vehicle.
+              </p>
+            </div>
+            <FinancingProgramCards programs={programs} />
+          </div>
+        </section>
+      )}
 
       {/* ── Select Your Bank (WesBank-style logo grid) ──────────────── */}
       <section id="banks" className="py-20 bg-ice dark:bg-midnight transition-colors scroll-mt-24">
