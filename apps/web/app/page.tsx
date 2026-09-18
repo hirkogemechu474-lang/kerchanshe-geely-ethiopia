@@ -4,6 +4,7 @@ import ModelsShowcase from "@/components/home/ModelsShowcase";
 import SpotlightStrip from "@/components/home/SpotlightStrip";
 import dynamic from "next/dynamic";
 import PromotionsBanner from "@/components/home/PromotionsBanner";
+import FinancingSection from "@/components/home/FinancingSection";
 import { getOrganizationSchema, getWebsiteSchema } from "@/lib/schema";
 import { serverApiClient } from "@/lib/serverApiClient";
 import { Metadata } from "next";
@@ -94,6 +95,8 @@ export default async function HomePage() {
     showcaseList,
     newsResponse,
     allReviews,
+    financingBanksRaw,
+    financingProgramsRaw,
   ] = await Promise.all([
     client.get('/public/hero').then((r) => r.data).catch(() => []),
     client.get('/public/vehicles').then((r) => r.data).catch(() => []),
@@ -101,6 +104,8 @@ export default async function HomePage() {
     client.get('/public/showcase').then((r) => r.data).catch(() => []),
     client.get('/public/news', { params: { pageSize: 6 } }).then((r) => r.data).catch(() => ({ items: [] })),
     client.get('/public/testimonials').then((r) => r.data).catch(() => []),
+    client.get('/public/financing-banks').then((r) => r.data).catch(() => []),
+    client.get('/public/financing-programs').then((r) => r.data).catch(() => []),
   ]);
 
   const initialVehicles = (Array.isArray(rawVehicles) ? rawVehicles : [])
@@ -165,6 +170,18 @@ export default async function HomePage() {
     imageUrl: existingLocalImage(article.imageUrl),
   }));
 
+  // Home page teaser only needs a name + whether the bank actually has any
+  // published programs (an inactive-but-listed bank with zero programs
+  // shouldn't be shown as a financing option) and the single lowest real
+  // rate across them — never a hardcoded/placeholder figure.
+  const financingBanks = (Array.isArray(financingBanksRaw) ? financingBanksRaw : []).filter(
+    (bank: any) => (bank._count?.financingPrograms ?? 1) > 0
+  );
+  const financingPrograms = Array.isArray(financingProgramsRaw) ? financingProgramsRaw : [];
+  const startingFinancingRate = financingPrograms.length > 0
+    ? Math.min(...financingPrograms.map((p: any) => Number(p.interestRate) || Infinity))
+    : null;
+
   const initialReviewsData = {
     reviews: featuredReviews.map((review: any) => ({
       ...review,
@@ -185,9 +202,9 @@ export default async function HomePage() {
 
       {/* Sequenced as a narrative rather than a stack: product (hero/models/
           spotlight) → brand story (about/showcase) → credibility (stats/
-          trust) → promotions → social proof (reviews) → location & services
-          (map + after-sale/roadside/innovation cards) → final conversion
-          push → reference info. */}
+          trust) → promotions → financing (how to pay for it) → social proof
+          (reviews) → location & services (map + after-sale/roadside/
+          innovation cards) → final conversion push → reference info. */}
       <HeroSection initialHeroSections={initialHeroSections} />
       <ModelsShowcase initialCategories={initialCategories} initialVehicles={initialVehicles} />
       <SpotlightStrip />
@@ -196,6 +213,7 @@ export default async function HomePage() {
       <StatisticsSection initialStats={initialStats} />
       <TrustSection />
       <PromotionsBanner initialPromotions={initialPromotions} />
+      <FinancingSection banks={financingBanks} startingRate={startingFinancingRate} />
       <CustomerReviews initialData={initialReviewsData} />
       <DealerLocatorPreview />
       <CTAStrip />
