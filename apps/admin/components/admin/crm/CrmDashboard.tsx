@@ -8,9 +8,10 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList,
 } from 'recharts';
 import { Card, StatTile, Button, PageHeader } from '@/components/admin/ui';
+import { UtilizationBar } from '@/components/admin/analytics/AnalyticsCharts';
 import ReportExportBar from '@/components/admin/reports/ReportExportBar';
 import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
-import { CHART_CATEGORICAL, CHART_SEQUENTIAL_BLUE, CHART_CHROME } from '@/lib/chartPalette';
+import { CHART_CATEGORICAL, CHART_SEQUENTIAL_BLUE, CHART_CHROME, CHART_STATUS } from '@/lib/chartPalette';
 
 interface CrmDashboard {
   pipeline: {
@@ -304,10 +305,6 @@ export default function CrmDashboard({ canExport }: { canExport: boolean }) {
                 <span>Quotation → Order: <strong className="text-gray-700 dark:text-gray-300">{data.conversionRates.quotationToOrder}%</strong></span>
                 <span>Order → Delivery: <strong className="text-gray-700 dark:text-gray-300">{data.conversionRates.orderToDelivery}%</strong></span>
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                <p>Financing: {data.financing.approved} approved / {data.financing.pending} pending / {data.financing.declined} declined</p>
-                <p>Trade-ins: {data.tradeIns.approved} approved / {data.tradeIns.pending} pending</p>
-              </div>
             </Card>
 
             <Card>
@@ -362,6 +359,33 @@ export default function CrmDashboard({ canExport }: { canExport: boolean }) {
                 </ResponsiveContainer>
               )}
             </Card>
+          </div>
+
+          {/* Financing & trade-in pipelines — each a proportion of one whole
+              (all applications this dashboard knows about), so per the
+              dataviz method these are single stacked bars with a
+              direct-labeled legend rather than per-category bars. Approved/
+              pending/declined map onto the shared status colors since that's
+              a real outcome state, matching how the same colors read
+              everywhere else in the app. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <UtilizationBar
+              title="Financing Pipeline"
+              icon={BadgeDollarSign}
+              segments={[
+                { label: 'Approved', value: data.financing.approved, color: CHART_STATUS.good },
+                { label: 'Pending', value: data.financing.pending, color: CHART_STATUS.warning },
+                { label: 'Declined', value: data.financing.declined, color: CHART_STATUS.critical },
+              ]}
+            />
+            <UtilizationBar
+              title="Trade-in Pipeline"
+              icon={ShoppingCart}
+              segments={[
+                { label: 'Approved', value: data.tradeIns.approved, color: CHART_STATUS.good },
+                { label: 'Pending', value: data.tradeIns.pending, color: CHART_STATUS.warning },
+              ]}
+            />
           </div>
 
           {/* Revenue trend */}

@@ -65,6 +65,7 @@ import {
   MessagesSquare,
   Award,
   UserPlus,
+  TrendingUp,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/types';
 import { useTheme } from './ThemeProvider';
@@ -123,8 +124,14 @@ const navSections: NavSection[] = [
           // page itself branches internally on canViewExecutiveDashboards to
           // show the light 3-tile view vs. the full executive dashboard.
           { name: 'Executive Overview', href: '/admin/analytics', icon: LayoutDashboard },
+          // Daily operational view (target pace, today's quotes/orders/
+          // payments, marketing activity, showroom traffic) — every staff
+          // member sees it, matching its API's own gate (plain auth, not
+          // canViewExecutiveDashboards).
+          { name: 'Sales Dashboard', href: '/admin/sales-dashboard', icon: TrendingUp },
           { name: 'CRM Dashboard', href: '/admin/crm-dashboard', icon: BarChart3, permission: 'canViewExecutiveDashboards' },
           { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: Gauge, permission: 'canViewExecutiveDashboards' },
+          { name: 'Sales Targets', href: '/admin/sales-targets', icon: Target, permission: 'canViewExecutiveDashboards' },
         ],
       },
     ],

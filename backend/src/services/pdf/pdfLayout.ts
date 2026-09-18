@@ -161,8 +161,9 @@ export async function drawHeaderFooter(ctx: PagedContext, title: string | undefi
 }
 
 export function drawRightText(ctx: PagedContext, text: string, x: number, y: number, size: number, font: PDFFont, color: RGB = COLORS.dark) {
-  const width = ctx.font.widthOfTextAtSize(text, size);
-  ctx.page.drawText(text, { x: x - width, y, size, font, color });
+  const safeText = sanitizePdfText(text);
+  const width = ctx.font.widthOfTextAtSize(safeText, size);
+  ctx.page.drawText(safeText, { x: x - width, y, size, font, color });
   return width;
 }
 
@@ -174,7 +175,7 @@ export function drawLabelValue(ctx: PagedContext, label: string, value: string, 
 }
 
 export function drawSectionTitle(ctx: PagedContext, text: string) {
-  ctx.page.drawText(text.toUpperCase(), { x: PDF_MARGIN, y: ctx.y, size: 10, font: ctx.bold, color: COLORS.dark });
+  ctx.page.drawText(sanitizePdfText(text).toUpperCase(), { x: PDF_MARGIN, y: ctx.y, size: 10, font: ctx.bold, color: COLORS.dark });
   ctx.page.drawLine({
     start: { x: PDF_MARGIN, y: ctx.y - 6 },
     end: { x: PDF_MARGIN + PDF_CONTENT_WIDTH, y: ctx.y - 6 },
@@ -262,7 +263,7 @@ export function drawCheckbox(ctx: PagedContext, x: number, y: number, checked: b
     ctx.page.drawText('X', { x: x + size * 0.18, y: y + size * 0.18, size: size * 0.85, font: ctx.bold, color: COLORS.white });
   }
   if (label) {
-    ctx.page.drawText(label, { x: x + size + 6, y: y + size * 0.15, size: 9, font: ctx.font, color: COLORS.dark });
+    ctx.page.drawText(sanitizePdfText(label), { x: x + size + 6, y: y + size * 0.15, size: 9, font: ctx.font, color: COLORS.dark });
   }
 }
 
@@ -379,13 +380,14 @@ export function drawFieldTable(ctx: PagedContext, rows: Array<[string, string]>,
   const valueWidth = PDF_CONTENT_WIDTH - labelWidth - pad * 2;
 
   for (const [label, value] of rows) {
+    const safeLabel = sanitizePdfText(label);
     const safeValue = sanitizePdfText(value);
     const lines = Math.max(1, Math.ceil(ctx.font.widthOfTextAtSize(safeValue, 10) / valueWidth));
     const rowH = 14 * lines + 10;
     ctx = ensureSpace(ctx, rowH);
     const rowTop = ctx.y;
     ctx.page.drawLine({ start: { x: PDF_MARGIN, y: rowTop }, end: { x: PDF_MARGIN + PDF_CONTENT_WIDTH, y: rowTop }, thickness: 0.5, color: COLORS.border });
-    ctx.page.drawText(label, { x: PDF_MARGIN + pad, y: rowTop - 15, size: 9, font: ctx.bold, color: COLORS.dark });
+    ctx.page.drawText(safeLabel, { x: PDF_MARGIN + pad, y: rowTop - 15, size: 9, font: ctx.bold, color: COLORS.dark });
     const wrapped = wrapText({ ...ctx, y: rowTop - 15 }, safeValue, valueX, rowTop - 15, 10, valueWidth);
     void wrapped;
     ctx.y = rowTop - rowH;
@@ -394,8 +396,45 @@ export function drawFieldTable(ctx: PagedContext, rows: Array<[string, string]>,
   return ctx;
 }
 
-function sanitizePdfText(text: string): string {
-  return text.replace(/[\r\n\t]+/g, ' ');
+// pdf-lib's standard Helvetica fonts only encode WinAnsi (Windows-1252) —
+// any character outside that repertoire (arrows, stars, checkmarks, emoji,
+// box-drawing, …) makes drawText() throw mid-render, failing the entire
+// export with a generic 500 (this is what broke "★"/"→" characters used in
+// a couple of dashboard report labels). Every piece of text drawn into a
+// PDF should funnel through this so a future label with an unusual
+// character degrades gracefully instead of crashing the export.
+const PDF_CHAR_REPLACEMENTS: Record<string, string> = {
+  '→': '->', '←': '<-', '↔': '<->', '⇒': '=>',
+  '★': '*', '☆': '*',
+  '✓': 'v', '✔': 'v', '✗': 'x', '✘': 'x', '×': 'x',
+  ' ': ' ',
+};
+// Codepoints WinAnsiEncoding can actually render: ASCII + Latin-1 supplement,
+// plus the "smart punctuation" Windows-1252 fills into the 0x80-0x9F range
+// (em/en dash, smart quotes, ellipsis, bullet, euro, etc.) — those come
+// through as their real Unicode code points (e.g. "—" is U+2014), not 0x97.
+const WINANSI_EXTRA_CODEPOINTS = new Set([
+  0x20ac, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030,
+  0x0160, 0x2039, 0x0152, 0x017d, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022,
+  0x2013, 0x2014, 0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0x017e, 0x0178,
+]);
+function isWinAnsiSafe(codePoint: number): boolean {
+  return (codePoint >= 0x20 && codePoint <= 0x7e) || (codePoint >= 0xa0 && codePoint <= 0xff) || WINANSI_EXTRA_CODEPOINTS.has(codePoint);
+}
+
+export function sanitizePdfText(text: string): string {
+  const collapsed = text.replace(/[\r\n\t]+/g, ' ');
+  let out = '';
+  for (const ch of collapsed) {
+    const replacement = PDF_CHAR_REPLACEMENTS[ch];
+    if (replacement !== undefined) {
+      out += replacement;
+    } else if (isWinAnsiSafe(ch.codePointAt(0) ?? 0)) {
+      out += ch;
+    }
+    // else: drop the unencodable glyph rather than let pdf-lib throw.
+  }
+  return out;
 }
 
 export function wrapText(ctx: PagedContext, text: string, x: number, y: number, size: number, maxWidth: number): PagedContext {

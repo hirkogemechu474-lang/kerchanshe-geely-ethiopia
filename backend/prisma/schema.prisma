@@ -843,6 +843,48 @@ model Dealer {
   rating       Float    @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  salesTargets SalesTarget[]
+}
+
+// Leadership-entered monthly sales quota — the one input the Executive
+// Overview's "Achievement %" / "vs Plan" figures are computed against.
+// Nothing upstream (orders, quotations) carries a target, so without this
+// there is no honest way to show a percent-of-plan number. dealerId null
+// means the company-wide target; a per-showroom row (dealerId set) drives
+// that showroom's own achievement bar. One row per (month, dealer).
+model SalesTarget {
+  id            String   @id @default(uuid())
+  month         String   // "YYYY-MM"
+  dealerId      String?
+  dealer        Dealer?  @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  revenueTarget Float
+  unitsTarget   Int
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([month, dealerId])
+  @@index([month])
+}
+
+// Daily marketing-activity log (Sales Dashboard's "Daily Marketing
+// Activities" table) — a campaign/activity a staff member ran today, with
+// how many leads it produced. Distinct from Quotation.campaign (which just
+// tags which campaign a single lead came from): this is the log of the
+// activities themselves, which nothing else in the schema tracks.
+model MarketingActivity {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  activity    String
+  channel     String // free text, e.g. 'Social Media' | 'Outdoor' | 'Event' | 'SMS' | 'Radio' | 'Other'
+  leads       Int      @default(0)
+  status      String   @default("planned") // 'planned' | 'ongoing' | 'completed'
+  notes       String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
 }
 
 // Service Bookings

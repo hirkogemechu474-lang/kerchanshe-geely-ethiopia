@@ -57,6 +57,8 @@ import { documentsRoutes } from './documents.routes';
 import { reportsRoutes } from './reports.routes';
 import { loyaltyRoutes } from './loyalty.routes';
 import { walkInRoutes } from './walk-in.routes';
+import { salesTargetsRoutes } from './sales-targets.routes';
+import { marketingActivitiesRoutes } from './marketing-activities.routes';
 
 const router = Router();
 
@@ -118,5 +120,7 @@ router.use('/admin/documents', documentsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/loyalty', loyaltyRoutes);
 router.use('/walk-ins', walkInRoutes);
+router.use('/sales-targets', salesTargetsRoutes);
+router.use('/marketing-activities', marketingActivitiesRoutes);
 
 export { router as routes };

@@ -234,6 +234,19 @@ function FtfTooltip({ active, payload, label }: { active?: boolean; payload?: an
   );
 }
 
+function TurnaroundTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+  if (!active || !payload || !payload.length) return null;
+  const v = payload[0].value;
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 shadow-md text-sm">
+      <p className="text-gray-500 dark:text-gray-400 text-xs mb-0.5">{label}</p>
+      <p className="font-semibold text-gray-900 dark:text-gray-100">
+        {v === null || v === undefined ? 'No closed job cards' : `${v}h avg. turnaround`}
+      </p>
+    </div>
+  );
+}
+
 function RevenueTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
   if (!active || !payload || !payload.length) return null;
   return (
@@ -460,6 +473,50 @@ export default function WorkshopBiDashboard({ canExport }: { canExport: boolean 
                     strokeWidth={2}
                     dot={{ r: 4, fill: CHART_CATEGORICAL[0], stroke: chrome.surface, strokeWidth: 2 }}
                     activeDot={{ r: 6, fill: CHART_CATEGORICAL[0], stroke: chrome.surface, strokeWidth: 2 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : null}
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Avg. Turnaround Time</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">6-month trend, hours per closed job card</p>
+              </div>
+              {trendLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+            </div>
+            {!trendLoading && (!trend || trend.every((p) => p.avgTurnaroundHours === null)) ? (
+              <p className="text-sm text-gray-400">Not enough closed job cards yet to chart a trend.</p>
+            ) : trend ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={trend} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke={chrome.grid} />
+                  <XAxis
+                    dataKey="label"
+                    tickFormatter={(l: string) => l.split(' ')[0].slice(0, 3)}
+                    tick={{ fill: chrome.text, fontSize: 12 }}
+                    axisLine={{ stroke: chrome.axis }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(v: number) => `${v}h`}
+                    tick={{ fill: chrome.text, fontSize: 12 }}
+                    axisLine={{ stroke: chrome.axis }}
+                    tickLine={false}
+                    width={44}
+                  />
+                  <Tooltip content={<TurnaroundTooltip />} cursor={{ stroke: chrome.axis, strokeWidth: 1 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="avgTurnaroundHours"
+                    stroke={CHART_CATEGORICAL[1]}
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: CHART_CATEGORICAL[1], stroke: chrome.surface, strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: CHART_CATEGORICAL[1], stroke: chrome.surface, strokeWidth: 2 }}
                     connectNulls={false}
                     isAnimationActive={false}
                   />

@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, Calendar, Car, FileText, Star, Wrench, Loader2,
   AlertTriangle, Gauge, ClipboardList, ShieldCheck, PackageSearch, MessageSquare, Plus, BarChart3, QrCode, RefreshCw,
-  Wallet, FileCheck2, PackageCheck,
+  Wallet, FileCheck2, PackageCheck, Banknote, Percent, ShoppingCart, Building2, LayoutGrid, Route, Boxes, Target, type LucideIcon,
 } from 'lucide-react';
 import { Card, StatTile, LinkButton, Button, PageHeader } from '@/components/admin/ui';
-import { OverviewTile, RankedBarChart, StatusBarChart, UtilizationBar } from '@/components/admin/analytics/AnalyticsCharts';
+import {
+  OverviewTile, RankedBarChart, StatusBarChart, UtilizationBar,
+  KpiTile, SalesMixChart, ShowroomRankingTable, RiskFlagsList, FunnelChart,
+  AchievementBar, QuarterlyPlanChart, MtdTrendChart,
+  type RiskFlag,
+} from '@/components/admin/analytics/AnalyticsCharts';
 import ReportExportBar from '@/components/admin/reports/ReportExportBar';
 import { DashboardReport, statsSection, tableSection } from '@/lib/reportExport';
 import { WARRANTY_CLAIM_STATUS_LABELS } from '@/lib/services/workshop/warrantyClaimStateMachine';
@@ -31,6 +36,34 @@ const WARRANTY_STATUS_COLOR: Record<string, string> = {
   REJECTED: CHART_STATUS.critical,
   REIMBURSED: CHART_STATUS.good,
 };
+
+interface LeadershipData {
+  kpis: {
+    revenueMTD: number;
+    revenueMTDTargetPct: number | null;
+    revenueYTD: number;
+    unitsSoldMTD: number;
+    unitsSoldMTDTargetPct: number | null;
+    avgDealSizeMTD: number;
+    conversionRate: number;
+    avgRating: number;
+  };
+  monthlyTarget: { month: string; revenueTarget: number; unitsTarget: number } | null;
+  dailyTrend: { day: number; label: string; cumulativeRevenue: number; pace: number | null }[];
+  revenueByShowroom: { dealerId: string; name: string; revenue: number; units: number; target: number | null; achievementPct: number | null }[];
+  salesMixByModel: { model: string; count: number; revenue: number }[];
+  quarterlyRevenue: { quarter: string; label: string; actual: number; plan: number | null; isCurrent: boolean; isFuture: boolean; projectedActual: number | null }[];
+  financialSnapshot: {
+    receivablesOutstanding: number;
+    receivablesAgedOver60d: number;
+    inventoryValue: number;
+    inventoryUnits: number;
+    daysSalesOfInventory: number | null;
+    cashCollectedMTD: number;
+    cashCollectedMTDPctOfRevenue: number | null;
+  };
+  risks: RiskFlag[];
+}
 
 interface AnalyticsData {
   overview: {
@@ -74,10 +107,34 @@ interface AnalyticsData {
     handover: { delivered: number; signed: number; countersigned: number };
     orderLinkedTestDrives: number;
   } | null;
+  leadership: LeadershipData | null;
+}
+
+/** Shared section header — icon + title + optional right-aligned actions —
+ * so every band of the dashboard reads as one consistent system instead of
+ * a mix of hand-rolled flex rows. */
+function SectionHeading({ icon: Icon, title, actions }: { icon: LucideIcon; title: string; actions?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <Icon className="w-4 h-4 text-geely-blue" />
+        {title}
+      </h2>
+      {actions}
+    </div>
+  );
 }
 
 function formatETB(value: number) {
   return `ETB ${Math.round(value).toLocaleString('en-US')}`;
+}
+
+/** Compact axis-tick form for large currency values (e.g. "1.2M", "480k"). */
+function formatETBAxis(value: number) {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${Math.round(value / 1000)}k`;
+  return value.toLocaleString('en-US');
 }
 
 function formatMinutes(mins: number | null) {
@@ -117,6 +174,7 @@ function normalizeAnalyticsData(responseData: any): AnalyticsData {
     },
     workshop: responseData?.workshop ?? null,
     salesPipeline: responseData?.salesPipeline ?? null,
+    leadership: responseData?.leadership ?? null,
   };
 }
 
@@ -149,9 +207,78 @@ function buildReport(data: AnalyticsData): DashboardReport {
     ),
   ];
 
+  if (data.leadership) {
+    const l = data.leadership;
+    sections.push(
+      statsSection('Key Performance Indicators', [
+        { label: 'Revenue — MTD', value: formatETB(l.kpis.revenueMTD) },
+        { label: 'Revenue — YTD', value: formatETB(l.kpis.revenueYTD) },
+        { label: 'Units Sold — MTD', value: l.kpis.unitsSoldMTD },
+        { label: 'Average Deal Size (MTD)', value: formatETB(l.kpis.avgDealSizeMTD) },
+        { label: 'Quotation → Order Conversion', value: `${l.kpis.conversionRate}%` },
+        { label: 'Average Customer Rating', value: `★ ${l.kpis.avgRating.toFixed(1)}` },
+        ...(l.monthlyTarget
+          ? [
+              { label: 'Monthly Revenue Target', value: formatETB(l.monthlyTarget.revenueTarget) },
+              { label: 'Monthly Units Target', value: l.monthlyTarget.unitsTarget },
+            ]
+          : []),
+      ]),
+      tableSection(
+        'Revenue Trend — Month to Date',
+        ['Day', 'Cumulative Revenue', 'Pace to Target'],
+        l.dailyTrend.map((d) => [d.day, formatETB(d.cumulativeRevenue), d.pace != null ? formatETB(d.pace) : '—'])
+      ),
+      tableSection(
+        'Revenue by Showroom — MTD',
+        ['Showroom', 'Units', 'Revenue', 'Target', 'Achievement'],
+        l.revenueByShowroom.map((r) => [
+          r.name,
+          r.units,
+          formatETB(r.revenue),
+          r.target != null ? formatETB(r.target) : 'Not set',
+          r.achievementPct != null ? `${r.achievementPct}%` : '—',
+        ])
+      ),
+      tableSection(
+        'Sales Mix by Model — MTD',
+        ['Model', 'Units', 'Revenue'],
+        l.salesMixByModel.map((m) => [m.model, m.count, formatETB(m.revenue)])
+      ),
+      tableSection(
+        'Quarterly Revenue — Actual vs. Plan',
+        ['Quarter', 'Actual', 'Plan'],
+        l.quarterlyRevenue.map((q) => [q.label, formatETB(q.actual), q.plan != null ? formatETB(q.plan) : 'Not set'])
+      ),
+      statsSection('Financial Snapshot', [
+        { label: 'Receivables Outstanding', value: formatETB(l.financialSnapshot.receivablesOutstanding) },
+        { label: 'Receivables Aged >60 Days', value: formatETB(l.financialSnapshot.receivablesAgedOver60d) },
+        { label: 'Inventory Value (Stock)', value: formatETB(l.financialSnapshot.inventoryValue) },
+        { label: 'Inventory Units on Ground', value: l.financialSnapshot.inventoryUnits },
+        { label: 'Days Sales of Inventory', value: l.financialSnapshot.daysSalesOfInventory != null ? `${l.financialSnapshot.daysSalesOfInventory} days` : '—' },
+        { label: 'Cash Collected — MTD', value: formatETB(l.financialSnapshot.cashCollectedMTD) },
+      ]),
+      tableSection(
+        'Risks & Flags for Leadership',
+        ['Risk', 'Severity'],
+        l.risks.length > 0 ? l.risks.map((r) => [r.label, r.severity]) : [['No leadership-level risks flagged right now.', '—']]
+      )
+    );
+  }
+
   if (data.salesPipeline) {
     const { payment, agreement, handover, orderLinkedTestDrives } = data.salesPipeline;
     sections.push(
+      tableSection(
+        'Sales Pipeline — Order Lifecycle Funnel',
+        ['Stage', 'Count'],
+        [
+          ['Quotations', data.overview.totalQuotations],
+          ['Paid', payment.paid],
+          ['Agreement Countersigned', agreement.countersigned],
+          ['Delivered', handover.delivered],
+        ]
+      ),
       statsSection('Sales Pipeline — Payment', [
         { label: 'Unpaid', value: payment.unpaid },
         { label: 'Pending Review', value: payment.pendingReview },
@@ -174,7 +301,7 @@ function buildReport(data: AnalyticsData): DashboardReport {
   }
 
   if (data.workshop) {
-    const { kpis, warrantyClaimsByStatus } = data.workshop;
+    const { kpis, warrantyClaimsByStatus, bays } = data.workshop;
     sections.push(
       statsSection('Workshop Operations (SWMS)', [
         { label: 'Bays Busy', value: `${kpis.baysBusy} / ${kpis.baysTotal}` },
@@ -184,6 +311,11 @@ function buildReport(data: AnalyticsData): DashboardReport {
         { label: 'Overdue (3+ days)', value: kpis.overdueCount },
         { label: 'Parts Below Reorder', value: kpis.partsBelowReorder },
       ]),
+      tableSection(
+        'Service Bays',
+        ['Bay', 'Status'],
+        bays.map((b) => [b.name, b.status.replace(/_/g, ' ')])
+      ),
       tableSection(
         'Warranty Claims by Status',
         ['Status', 'Count'],
@@ -368,9 +500,139 @@ export default function AnalyticsDashboard({
         )}
       </Card>
 
+      {/* Leadership BI: KPIs, revenue by showroom, sales mix, quarterly trend,
+          financial snapshot, showroom ranking, and risk flags — restricted to
+          canViewExecutive server-side too (the /analytics API only fills in
+          `leadership` for a session with canViewExecutiveDashboards). */}
+      {data.leadership && (
+        <div className="space-y-6">
+          <div>
+            <SectionHeading
+              icon={Gauge}
+              title="Key Performance Indicators"
+              actions={
+                <LinkButton href="/admin/sales-targets" variant="ghost" size="sm">
+                  <Target className="w-4 h-4" /> Manage Targets
+                </LinkButton>
+              }
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <KpiTile
+                label="Revenue — MTD"
+                value={formatETB(data.leadership.kpis.revenueMTD)}
+                icon={Banknote}
+                accent="blue"
+                progressPct={data.leadership.kpis.revenueMTDTargetPct}
+                sparkline={data.leadership.dailyTrend.map((d) => d.cumulativeRevenue)}
+                hint={
+                  data.leadership.monthlyTarget
+                    ? `${data.leadership.kpis.revenueMTDTargetPct ?? 0}% of ${formatETB(data.leadership.monthlyTarget.revenueTarget)} target`
+                    : 'No monthly target set'
+                }
+              />
+              <KpiTile
+                label="Revenue — YTD"
+                value={formatETB(data.leadership.kpis.revenueYTD)}
+                icon={TrendingUp}
+                accent="green"
+                hint={`Since Jan 1, ${new Date().getFullYear()}`}
+              />
+              <KpiTile
+                label="Units Sold — MTD"
+                value={data.leadership.kpis.unitsSoldMTD}
+                icon={ShoppingCart}
+                accent="purple"
+                progressPct={data.leadership.kpis.unitsSoldMTDTargetPct}
+                hint={
+                  data.leadership.monthlyTarget
+                    ? `${data.leadership.kpis.unitsSoldMTDTargetPct ?? 0}% of ${data.leadership.monthlyTarget.unitsTarget}-unit target`
+                    : 'No monthly target set'
+                }
+              />
+              <KpiTile label="Average Deal Size" value={formatETB(data.leadership.kpis.avgDealSizeMTD)} icon={Wallet} accent="orange" hint="Month-to-date" />
+              <KpiTile label="Quote → Order Conversion" value={`${data.leadership.kpis.conversionRate}%`} icon={Percent} accent="indigo" />
+              <KpiTile label="Customer Rating" value={`★ ${data.leadership.kpis.avgRating.toFixed(1)}`} icon={Star} accent="pink" />
+            </div>
+          </div>
+
+          <MtdTrendChart
+            title="Revenue Trend — Month to Date"
+            data={data.leadership.dailyTrend}
+            valueFormatter={formatETB}
+            axisFormatter={formatETBAxis}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <h3 className="flex items-center gap-1.5 text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                <Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Revenue by Showroom — MTD
+              </h3>
+              {data.leadership.revenueByShowroom.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">No orders booked yet this month.</p>
+              ) : (
+                <div className="space-y-4">
+                  {data.leadership.revenueByShowroom.map((r) => (
+                    <AchievementBar key={r.dealerId} label={r.name} value={r.revenue} target={r.target} valueFormatter={formatETB} />
+                  ))}
+                </div>
+              )}
+            </Card>
+            <SalesMixChart
+              title="Sales Mix by Model — MTD"
+              icon={Car}
+              data={data.leadership.salesMixByModel.map((m) => ({ label: m.model, count: m.count, revenue: m.revenue }))}
+              valueFormatter={formatETB}
+            />
+          </div>
+
+          <QuarterlyPlanChart
+            title="Quarterly Revenue — Actual vs. Plan"
+            data={data.leadership.quarterlyRevenue}
+            valueFormatter={formatETB}
+            axisFormatter={formatETBAxis}
+          />
+
+          <div>
+            <SectionHeading icon={Wallet} title="Financial Snapshot" />
+            <p className="text-xs text-gray-400 dark:text-gray-500 -mt-2 mb-3">Working capital and cash position</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatTile
+                label="Receivables Outstanding"
+                value={formatETB(data.leadership.financialSnapshot.receivablesOutstanding)}
+                icon={AlertTriangle}
+                tone={data.leadership.financialSnapshot.receivablesOutstanding > 0 ? 'highlight' : 'default'}
+              />
+              <StatTile label="Inventory Value (Stock)" value={formatETB(data.leadership.financialSnapshot.inventoryValue)} icon={Boxes} />
+              <StatTile
+                label="Days Sales of Inventory"
+                value={data.leadership.financialSnapshot.daysSalesOfInventory != null ? `${data.leadership.financialSnapshot.daysSalesOfInventory} days` : '—'}
+                icon={ClipboardList}
+              />
+              <StatTile label="Cash Collected — MTD" value={formatETB(data.leadership.financialSnapshot.cashCollectedMTD)} icon={Wallet} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-1.5">
+              <p className="text-xs text-gray-400 dark:text-gray-500">ETB {Math.round(data.leadership.financialSnapshot.receivablesAgedOver60d).toLocaleString()} aged &gt;60 days</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{data.leadership.financialSnapshot.inventoryUnits} units on ground</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Based on last 30 days' sales pace</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {data.leadership.financialSnapshot.cashCollectedMTDPctOfRevenue != null ? `${data.leadership.financialSnapshot.cashCollectedMTDPctOfRevenue}% of MTD revenue` : 'No MTD revenue yet'}
+              </p>
+            </div>
+          </div>
+
+          <ShowroomRankingTable
+            title="Showroom Ranking — MTD Achievement"
+            valueFormatter={formatETB}
+            rows={data.leadership.revenueByShowroom.map((r) => ({ id: r.dealerId, name: r.name, revenue: r.revenue, units: r.units, achievementPct: r.achievementPct }))}
+          />
+
+          <RiskFlagsList title="Risks & Flags for Leadership" risks={data.leadership.risks} />
+        </div>
+      )}
+
       {/* Needs Attention */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Needs Attention</h2>
+        <SectionHeading icon={AlertTriangle} title="Needs Attention" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <RankedBarChart
@@ -430,7 +692,7 @@ export default function AnalyticsDashboard({
 
       {/* Business Overview */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Business Overview</h2>
+        <SectionHeading icon={LayoutGrid} title="Business Overview" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <OverviewTile label="Total Vehicles" value={data.overview.totalVehicles} icon={Car} accent="blue" />
           <OverviewTile
@@ -491,12 +753,15 @@ export default function AnalyticsDashboard({
           present for viewers who can see quotations/orders */}
       {data.salesPipeline && (
         <div>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sales Pipeline</h2>
-            <LinkButton href="/admin/orders" variant="secondary" size="sm">
-              <FileText className="w-4 h-4" /> View Orders
-            </LinkButton>
-          </div>
+          <SectionHeading
+            icon={Route}
+            title="Sales Pipeline"
+            actions={
+              <LinkButton href="/admin/orders" variant="secondary" size="sm">
+                <FileText className="w-4 h-4" /> View Orders
+              </LinkButton>
+            }
+          />
 
           {/* Total Collected (currency) and Order-Linked Test Drives (a plain count)
               are single current values of two different units/scales, so per the
@@ -504,6 +769,34 @@ export default function AnalyticsDashboard({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
             <StatTile label="Total Collected" value={formatETB(data.salesPipeline.payment.totalCollected)} icon={TrendingUp} />
             <StatTile label="Order-Linked Test Drives" value={data.salesPipeline.orderLinkedTestDrives} icon={Calendar} />
+          </div>
+
+          {/* Whole-lifecycle funnel (an ordered, narrowing population — quote
+              to delivered) alongside the payment-status split as a
+              proportion-of-one-whole bar, both new "more chart" additions
+              distinct from the per-stage breakdowns below. */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <FunnelChart
+                title="Order Lifecycle Funnel"
+                icon={TrendingUp}
+                stages={[
+                  { stage: 'Quotations', count: data.overview.totalQuotations },
+                  { stage: 'Paid', count: data.salesPipeline.payment.paid },
+                  { stage: 'Agreement Countersigned', count: data.salesPipeline.agreement.countersigned },
+                  { stage: 'Delivered', count: data.salesPipeline.handover.delivered },
+                ]}
+              />
+            </div>
+            <UtilizationBar
+              title="Payment Mix"
+              icon={Wallet}
+              segments={[
+                { label: 'Paid', value: data.salesPipeline.payment.paid, color: CHART_STATUS.good },
+                { label: 'Pending Review', value: data.salesPipeline.payment.pendingReview, color: CHART_STATUS.warning },
+                { label: 'Unpaid', value: data.salesPipeline.payment.unpaid, color: CHART_STATUS.critical },
+              ]}
+            />
           </div>
 
           {/* Each pipeline stage-breakdown is a magnitude comparison across an
@@ -546,17 +839,20 @@ export default function AnalyticsDashboard({
       {/* Workshop Operations — only present for viewers who can see workshop data */}
       {data.workshop && (
         <div>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Workshop Operations (SWMS)</h2>
-            <div className="flex items-center gap-2">
-              <LinkButton href="/admin/workshop/dashboard" variant="secondary" size="sm">
-                <Gauge className="w-4 h-4" /> Live Dashboard
-              </LinkButton>
-              <LinkButton href="/admin/workshop/bi-dashboard" variant="secondary" size="sm">
-                <BarChart3 className="w-4 h-4" /> BI Dashboard
-              </LinkButton>
-            </div>
-          </div>
+          <SectionHeading
+            icon={Wrench}
+            title="Workshop Operations (SWMS)"
+            actions={
+              <div className="flex items-center gap-2">
+                <LinkButton href="/admin/workshop/dashboard" variant="secondary" size="sm">
+                  <Gauge className="w-4 h-4" /> Live Dashboard
+                </LinkButton>
+                <LinkButton href="/admin/workshop/bi-dashboard" variant="secondary" size="sm">
+                  <BarChart3 className="w-4 h-4" /> BI Dashboard
+                </LinkButton>
+              </div>
+            }
+          />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <StatTile label="Bays Busy" value={`${data.workshop.kpis.baysBusy} / ${data.workshop.kpis.baysTotal}`} icon={Gauge} />
             <StatTile label="Jobs Today" value={data.workshop.kpis.jobsToday} icon={ClipboardList} />
