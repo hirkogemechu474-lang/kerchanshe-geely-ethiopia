@@ -20,6 +20,7 @@ interface OrderFulfillmentData {
   invoiceAmount: number | null;
   invoicedAt: string | null;
   vehicleModel: string;
+  customerEmail: string | null;
 }
 
 // A non-2xx response isn't guaranteed to carry a JSON body (a proxy/timeout
@@ -130,6 +131,25 @@ export default function OrderFulfillmentPanel({
     }
   };
 
+  const resendInvoice = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/orders/${order.id}/resend-invoice`, { method: 'POST' });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || 'Failed to resend invoice');
+      setInvoiceNotice(
+        data.notificationSent
+          ? 'Invoice re-emailed to the customer.'
+          : `Invoice email still could not be sent${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
+      );
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Card className="space-y-5">
       <div className="flex items-center gap-2">
@@ -184,6 +204,16 @@ export default function OrderFulfillmentPanel({
               <FileText className="w-4 h-4" />
               View / Download Invoice PDF
             </a>
+            {canManage && (
+              <Button
+                variant="secondary"
+                onClick={resendInvoice}
+                disabled={busy || !order.customerEmail}
+                className="mt-2"
+              >
+                Resend Invoice Email
+              </Button>
+            )}
           </div>
         ) : (
           canManage && (

@@ -565,6 +565,7 @@ export default function OrderDetail({
           invoiceAmount: state.invoiceAmount,
           invoicedAt: state.invoicedAt,
           vehicleModel: state.vehicleModel,
+          customerEmail: state.customerEmail,
         }}
         canManage={permissions.canManageQuotations}
         onUpdated={refresh}

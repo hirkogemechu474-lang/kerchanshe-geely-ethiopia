@@ -34,6 +34,41 @@ async function sendPaymentLinkEmail(order: { id: string; orderNo: string; vehicl
   });
 }
 
+// Shared by POST /:id/invoice (first send) and /:id/resend-invoice (retry
+// after a failed send) — see that route's comment.
+async function sendInvoiceEmail(
+  order: { id: string; orderNo: string; customerName: string; customerEmail: string | null },
+  invoiced: { invoiceNo: string | null; invoiceAmount: number | null },
+): Promise<{ notificationSent: boolean; notificationError?: string }> {
+  if (!order.customerEmail) return { notificationSent: false, notificationError: 'No customer email on file.' };
+
+  let attachments;
+  try {
+    const pdfResult = await orderInvoiceService.generateInvoicePdf(order.id);
+    if (pdfResult.ok && pdfResult.data) {
+      attachments = [{ filename: `invoice-${invoiced.invoiceNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
+    }
+  } catch (_) {
+    // PDF generation failure should not block the email
+  }
+
+  const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(order.orderNo)}`;
+  const invoiceToken = signLinkToken('invoice', order.id);
+  const invoiceLink = `${env.urls.site}/api/public/orders/${order.id}/invoice?token=${encodeURIComponent(invoiceToken)}`;
+  const result = await dispatchNotification({
+    type: 'order_status',
+    to: [order.customerEmail],
+    subject: `Sales Invoice — ${order.orderNo}`,
+    data: { orderNo: order.orderNo, invoiceNo: invoiced.invoiceNo, invoiceAmount: invoiced.invoiceAmount, customerName: order.customerName },
+    attachments,
+    ctas: [
+      { label: 'View Invoice', url: invoiceLink },
+      { label: 'Check Order Status', url: statusLink },
+    ],
+  });
+  return { notificationSent: result.ok, notificationError: result.error };
+}
+
 const VALID_FINANCING_STATUSES = [
   'NOT_REQUESTED', 'REQUESTED', 'DOCUMENTS_PENDING', 'DOCUMENTS_SUBMITTED',
   'UNDER_REVIEW', 'APPROVED', 'CONDITIONALLY_APPROVED', 'REJECTED',
@@ -760,40 +795,41 @@ router.post('/:id/invoice', requireAdminApiSession, async (req: Request, res: Re
       },
     });
 
-    let notificationSent = false;
-    let notificationError: string | undefined;
-    if (order.customerEmail) {
-      let attachments;
-      try {
-        const pdfResult = await orderInvoiceService.generateInvoicePdf(order.id);
-        if (pdfResult.ok && pdfResult.data) {
-          attachments = [{ filename: `invoice-${updated.invoiceNo}.pdf`, content: pdfResult.data, contentType: 'application/pdf' }];
-        }
-      } catch (_) {
-        // PDF generation failure should not block the email
-      }
-
-      const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(order.orderNo)}`;
-      const invoiceToken = signLinkToken('invoice', order.id);
-      const invoiceLink = `${env.urls.site}/api/public/orders/${order.id}/invoice?token=${encodeURIComponent(invoiceToken)}`;
-      const result = await dispatchNotification({
-        type: 'order_status',
-        to: [order.customerEmail],
-        subject: `Sales Invoice — ${order.orderNo}`,
-        data: { orderNo: order.orderNo, invoiceNo: updated.invoiceNo, invoiceAmount: updated.invoiceAmount, customerName: order.customerName },
-        attachments,
-        ctas: [
-          { label: 'View Invoice', url: invoiceLink },
-          { label: 'Check Order Status', url: statusLink },
-        ],
-      });
-      notificationSent = result.ok;
-      notificationError = result.error;
-    }
+    const { notificationSent, notificationError } = await sendInvoiceEmail(order, updated);
 
     res.status(201).json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Generate invoice error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/resend-invoice — /invoice above only ever emails the
+// invoice once (at generation time, guarded by `if (order.invoicedAt)`), so a
+// failed send (e.g. a transient SMTP outage — an observed failure mode) had
+// no retry path short of a DB edit. Gated on the invoice already existing.
+router.post('/:id/resend-invoice', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!order.invoicedAt) {
+      res.status(400).json({ error: 'No invoice has been generated for this order yet.' });
+      return;
+    }
+
+    const { notificationSent, notificationError } = await sendInvoiceEmail(order, order);
+
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'invoice_resent',
+      performedById: req.adminSession!.user.id,
+      toValue: { notificationSent, notificationError: notificationError ?? null },
+    });
+
+    res.json({ notificationSent, notificationError });
+  } catch (error) {
+    console.error('Resend invoice error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
