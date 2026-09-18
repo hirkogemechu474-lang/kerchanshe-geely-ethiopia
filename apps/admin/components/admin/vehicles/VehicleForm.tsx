@@ -7,6 +7,7 @@ import ImageUpload from './ImageUpload';
 import SpecificationsEditor from './SpecificationsEditor';
 import PricingEditor from './PricingEditor';
 import InventoryManager from './InventoryManager';
+import SeoPublishEditor from './SeoPublishEditor';
 import { withBasePath } from '@/lib/basePath';
 
 interface VehicleFormProps {
@@ -92,7 +93,7 @@ function normalizeInventory(vehicle: any) {
 }
 
 export default function VehicleForm({ mode, initialData, initialStep }: VehicleFormProps) {
-  const [currentStep, setCurrentStep] = useState(initialStep && initialStep >= 1 && initialStep <= 5 ? initialStep : 1);
+  const [currentStep, setCurrentStep] = useState(initialStep && initialStep >= 1 && initialStep <= 6 ? initialStep : 1);
   const [categories, setCategories] = useState<VehicleCategoryOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -118,9 +119,21 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     // Inventory - FULLY INITIALIZED
     inventory: normalizeInventory(initialData),
     
-    // Status
-    status: initialData?.status ?? 'draft',
+    // Status — defaults to 'published' for a brand-new vehicle (least
+    // surprise: creating a vehicle used to always auto-publish), but is now
+    // a real, changeable control instead of being hardcoded at save time.
+    status: initialData?.status ?? 'published',
     featured: initialData?.featured ?? initialData?.isFeatured ?? false,
+
+    // SEO — falls back to an auto-derived title/description on the public
+    // site when left blank (see apps/web/app/models/[id]/page.tsx).
+    metaTitle: initialData?.metaTitle ?? '',
+    metaDescription: initialData?.metaDescription ?? '',
+
+    // Admin-curated related vehicles + feature tags — both fall back to
+    // auto-computed/legacy behavior on the public site when empty.
+    relatedVehicleIds: Array.isArray(initialData?.relatedVehicleIds) ? initialData.relatedVehicleIds : [],
+    featureTags: initialData?.featureTags ?? { safety: [], comfort: [], technology: [], performance: [], exterior: [] },
   });
 
   useEffect(() => {
@@ -146,6 +159,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     { id: 3, name: 'Specifications', description: 'Technical specs' },
     { id: 4, name: 'Pricing', description: 'Price & offers' },
     { id: 5, name: 'Inventory', description: 'Stock management' },
+    { id: 6, name: 'SEO & Publish', description: 'Visibility, search, related' },
   ];
 
   const handleSubmit = async () => {
@@ -205,8 +219,11 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
         warehouse: formData.inventory.warehouseLocation || null,
         location: formData.inventory.location || null,
         isFeatured: formData.featured,
-        // Auto-publish: set status to 'published'
-        status: 'published',
+        status: formData.status,
+        metaTitle: formData.metaTitle || null,
+        metaDescription: formData.metaDescription || null,
+        relatedVehicleIds: formData.relatedVehicleIds,
+        featureTags: formData.featureTags,
       };
 
       // `slug` is required and unique on Vehicle but this form never
@@ -499,6 +516,25 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
             <InventoryManager
               inventory={formData.inventory}
               onChange={(inventory) => setFormData({ ...formData, inventory })}
+            />
+          )}
+
+          {/* Step 6: SEO & Publish */}
+          {currentStep === 6 && (
+            <SeoPublishEditor
+              status={formData.status}
+              onStatusChange={(status) => setFormData({ ...formData, status })}
+              metaTitle={formData.metaTitle}
+              onMetaTitleChange={(metaTitle) => setFormData({ ...formData, metaTitle })}
+              metaDescription={formData.metaDescription}
+              onMetaDescriptionChange={(metaDescription) => setFormData({ ...formData, metaDescription })}
+              relatedVehicleIds={formData.relatedVehicleIds}
+              onRelatedVehicleIdsChange={(relatedVehicleIds) => setFormData({ ...formData, relatedVehicleIds })}
+              featureTags={formData.featureTags}
+              onFeatureTagsChange={(featureTags) => setFormData({ ...formData, featureTags })}
+              currentVehicleId={initialData?.id}
+              fallbackTitle={formData.name}
+              fallbackDescription={formData.description}
             />
           )}
 

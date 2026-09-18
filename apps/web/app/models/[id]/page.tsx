@@ -211,10 +211,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 
   const pageUrl = `${BASE_URL}/models/${vehicle.slug}`;
+  // Admin-set per-vehicle SEO overrides (Admin → Vehicles → edit → SEO &
+  // Publish) win when present; otherwise fall back to the same auto-derived
+  // copy this page has always used.
+  const metaTitle = vehicle.metaTitle || `${vehicle.name} | Geely Ethiopia`;
+  const metaDescription = vehicle.metaDescription || `${vehicle.description || vehicle.name} Explore specs, features, and book a test drive.`;
 
   return {
-    title: `${vehicle.name} | Geely Ethiopia`,
-    description: `${vehicle.description || vehicle.name} Explore specs, features, and book a test drive.`,
+    title: metaTitle,
+    description: metaDescription,
     keywords: `${vehicle.name}, ${vehicle.category}, Geely Ethiopia, ${vehicle.brand?.name || "Geely"}, ${vehicle.vehicleCategory?.name || vehicle.category}`,
     alternates: {
       canonical: pageUrl,
@@ -225,8 +230,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       },
     },
     openGraph: {
-      title: `${vehicle.name} | Geely Ethiopia`,
-      description: vehicle.description || vehicle.name,
+      title: metaTitle,
+      description: metaDescription,
       url: pageUrl,
       siteName: "Geely Ethiopia",
       locale: "en_ET",
@@ -312,21 +317,32 @@ export default async function VehicleDetailPage({
   const { data: allVehicles } = await apiClient
     .get("/public/vehicles")
     .catch(() => ({ data: [] as any[] }));
-  const relatedVehicles = (Array.isArray(allVehicles) ? allVehicles : [])
-    .filter((v: any) => v.id !== vehicle.id && v.isActive && v.status === "published")
-    .filter((v: any) => {
-      const categoryMatch = vehicle.categoryId
-        ? v.categoryId === vehicle.categoryId
-        : v.category === vehicle.category;
-      const brandMatch = vehicle.brandId ? v.brandId === vehicle.brandId : false;
-      return categoryMatch || brandMatch;
-    })
-    .sort((a: any, b: any) =>
-      (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
-      Number(b.isFeatured) - Number(a.isFeatured) ||
-      String(a.name).localeCompare(String(b.name))
-    )
-    .slice(0, 3);
+  const otherVehicles = (Array.isArray(allVehicles) ? allVehicles : [])
+    .filter((v: any) => v.id !== vehicle.id && v.isActive && v.status === "published");
+
+  // Admin-curated picks (Admin → Vehicles → edit → SEO & Publish) win, in
+  // the order the admin chose, when set; otherwise fall back to the
+  // existing auto-computed same-category/brand suggestions.
+  const curatedIds: string[] = Array.isArray(vehicle.relatedVehicleIds) ? vehicle.relatedVehicleIds : [];
+  const relatedVehicles = curatedIds.length > 0
+    ? curatedIds
+        .map((relId) => otherVehicles.find((v: any) => v.id === relId))
+        .filter(Boolean)
+        .slice(0, 3)
+    : otherVehicles
+        .filter((v: any) => {
+          const categoryMatch = vehicle.categoryId
+            ? v.categoryId === vehicle.categoryId
+            : v.category === vehicle.category;
+          const brandMatch = vehicle.brandId ? v.brandId === vehicle.brandId : false;
+          return categoryMatch || brandMatch;
+        })
+        .sort((a: any, b: any) =>
+          (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
+          Number(b.isFeatured) - Number(a.isFeatured) ||
+          String(a.name).localeCompare(String(b.name))
+        )
+        .slice(0, 3);
 
   // ── Schema.org structured data ─────────────────────────────────────────────
   const vehicleSchema = {
@@ -391,6 +407,16 @@ export default async function VehicleDetailPage({
     ? dedicatedExteriorImages.map((url: string) => publicMediaUrl(url))
     : galleries;
   const featuredFeatures: string[] = (() => {
+    // Admin-curated tags (Admin → Vehicles → edit → SEO & Publish, picked
+    // from the shared Setting['vehicle_features'] list) win when any are
+    // selected; otherwise fall back to the legacy free-text specs.features
+    // object every vehicle already has.
+    const curatedTags = vehicle.featureTags && typeof vehicle.featureTags === "object"
+      ? Object.values(vehicle.featureTags as Record<string, unknown>).flatMap((v) => (Array.isArray(v) ? v : []))
+      : [];
+    if (curatedTags.length > 0) {
+      return curatedTags.filter(Boolean).map(String).slice(0, 12);
+    }
     if (specs?.features) {
       return Object.values(specs.features)
         .flatMap((v) => (Array.isArray(v) ? v : [v]))

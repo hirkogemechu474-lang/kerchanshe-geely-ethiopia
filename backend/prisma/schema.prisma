@@ -152,10 +152,31 @@ model Vehicle {
   location         String?
   isFeatured       Boolean             @default(false)
   isActive         Boolean             @default(true)
-  status           String              @default("draft") // draft, published, archived
+  // draft | published | archived — actually enforced now: the public read
+  // paths (public.routes.ts) require 'published' in addition to isActive,
+  // and VehicleForm.tsx exposes a real Draft/Published/Archived control
+  // instead of hardcoding this to 'published' on every save.
+  status           String              @default("draft")
   displayOrder     Int                 @default(0)
   heroImageUrl     String? // Link to hero image from media library
   heroVideoUrl     String? // Link to hero video from media library
+  // Per-vehicle SEO overrides — falls back to an auto-derived title/
+  // description (see apps/web/app/models/[id]/page.tsx's generateMetadata)
+  // when unset, same "override when present" convention as the site-wide
+  // SEO Settings page.
+  metaTitle        String?
+  metaDescription  String?
+  // Admin-curated related vehicles, in display order — falls back to the
+  // existing auto-computed (same category/brand) logic on the public model
+  // page when empty. Plain Vehicle.id list, not a relation table: order
+  // matters and this is a small, admin-picked list, not a queryable graph.
+  relatedVehicleIds String[]           @default([])
+  // Curated feature tags selected from Setting['vehicle_features'] (see
+  // apps/admin/lib/vehicle-settings-types.ts's VehicleFeatureLists shape:
+  // safety/comfort/technology/performance/exterior string arrays) — falls
+  // back to the legacy free-text specifications.features object on the
+  // public model page when unset/empty.
+  featureTags      Json?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   testDrives       TestDrive[]

@@ -129,6 +129,17 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     return { label: 'In Stock', tone: 'green' };
   }
 
+  // Vehicle.status (draft/published/archived) used to be write-only —
+  // VehicleForm hardcoded every save to 'published', so this was never
+  // worth surfacing. Now that it's a real control (SEO & Publish step),
+  // show it explicitly rather than relying on the stock-status badge, which
+  // answers a different question entirely.
+  function getVisibility(status: string): { label: string; tone: 'gray' | 'green' | 'orange' } {
+    if (status === 'published') return { label: 'Published', tone: 'green' };
+    if (status === 'archived') return { label: 'Archived', tone: 'gray' };
+    return { label: 'Draft', tone: 'orange' };
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-ET', {
       style: 'currency',
@@ -221,7 +232,8 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
                   <Th>Category</Th>
                   <Th>Price</Th>
                   <Th>Stock</Th>
-                  <Th>Status</Th>
+                  <Th>Visibility</Th>
+                  <Th>Stock Status</Th>
                   <Th className="text-right">Actions</Th>
                 </tr>
               </THead>
@@ -258,6 +270,9 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
                         )}
                       </Td>
                       <Td>{vehicle.stock} units</Td>
+                      <Td>
+                        <Badge tone={getVisibility(vehicle.status).tone}>{getVisibility(vehicle.status).label}</Badge>
+                      </Td>
                       <Td>
                         <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
                       </Td>
@@ -335,6 +350,10 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
                         <span className="text-gray-700">{vehicle.stock} units</span>
                         <Badge tone={stockStatus.tone}>{stockStatus.label}</Badge>
                       </div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-400">Visibility</div>
+                      <Badge tone={getVisibility(vehicle.status).tone}>{getVisibility(vehicle.status).label}</Badge>
                     </div>
                   </div>
 

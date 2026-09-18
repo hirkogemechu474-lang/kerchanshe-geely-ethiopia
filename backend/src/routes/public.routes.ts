@@ -65,7 +65,7 @@ const router = Router();
 
 router.get('/vehicles', async (req: Request, res: Response) => {
   try {
-    const vehicles = await prisma.vehicle.findMany({ where: { isActive: true }, include: { brand: true, vehicleCategory: true, colors: true }, orderBy: { displayOrder: 'asc' } });
+    const vehicles = await prisma.vehicle.findMany({ where: { isActive: true, status: 'published' }, include: { brand: true, vehicleCategory: true, colors: true }, orderBy: { displayOrder: 'asc' } });
     res.json(vehicles);
   } catch (error) {
     console.error('List public vehicles error:', error);
@@ -75,7 +75,7 @@ router.get('/vehicles', async (req: Request, res: Response) => {
 
 router.get('/vehicles/:slug', async (req: Request, res: Response) => {
   try {
-    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { brand: true, vehicleCategory: true, colors: true, packages: true, interiors: true } });
+    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true, status: 'published' }, include: { brand: true, vehicleCategory: true, colors: true, packages: true, interiors: true } });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
     // Wheels and accessories can be scoped to this one vehicle OR marked
     // "available for all vehicles" (vehicleId: null in the admin UI) — a
@@ -98,7 +98,7 @@ router.get('/vehicles/:slug', async (req: Request, res: Response) => {
 
 router.get('/vehicles/:slug/configuration', async (req: Request, res: Response) => {
   try {
-    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { colors: true, packages: true, interiors: true } });
+    const vehicle = await prisma.vehicle.findFirst({ where: { slug: req.params.slug, isActive: true, status: 'published' }, include: { colors: true, packages: true, interiors: true } });
     if (!vehicle) { res.status(404).json({ error: 'Vehicle not found' }); return; }
     // See the matching comment on GET /vehicles/:slug above — wheels/
     // accessories need the OR-null (global-scope) query, not a plain
@@ -160,7 +160,7 @@ router.get('/categories', async (req: Request, res: Response) => {
 
 router.get('/categories/:slug', async (req: Request, res: Response) => {
   try {
-    const category = await prisma.vehicleCategory.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { vehicles: { where: { isActive: true } } } });
+    const category = await prisma.vehicleCategory.findFirst({ where: { slug: req.params.slug, isActive: true }, include: { vehicles: { where: { isActive: true, status: 'published' } } } });
     if (!category) { res.status(404).json({ error: 'Category not found' }); return; }
     res.json(category);
   } catch (error) {
