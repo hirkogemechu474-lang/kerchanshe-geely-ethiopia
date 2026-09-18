@@ -76,15 +76,21 @@ export const orderStateMachine = {
 // null if it's allowed.
 function getTransitionBlockReason(order: { pdiItems?: { isChecked: boolean }[]; approvedAt: Date | null; signedDocumentUrl: string | null; countersignedAt: Date | null; paymentStatus: string; paymentVerifiedAt?: Date | null; registeredAt: Date | null; invoicedAt: Date | null; vehicleAllocation?: { status: string } | null; deliveryHold?: boolean }, toStatus: string): string | null {
   if (toStatus === 'READY_FOR_DELIVERY') {
-    const pdiItems = order.pdiItems ?? [];
-    const pdiComplete = pdiItems.length > 0 && pdiItems.every((p) => p.isChecked);
-    if (!pdiComplete) return 'Complete the PDI checklist before marking this order ready for delivery.';
+    // Ordered to match what's actually achievable at each point — PDI items
+    // are only seeded once a vehicle is allocated (see
+    // vehicleAllocationService.lockAllocation), so checking PDI before
+    // allocation used to tell a brand-new order to "complete the PDI
+    // checklist" when there was no checklist to complete yet and several
+    // earlier steps hadn't happened at all.
     const agreementComplete = Boolean(order.approvedAt) && Boolean(order.signedDocumentUrl);
     if (!agreementComplete) return 'Approve the order and attach the signed agreement before marking it ready for delivery.';
     if (!order.countersignedAt) return "Get the manager's countersignature before marking this order ready for delivery.";
     if (order.paymentStatus !== 'PAID') return 'Confirm payment before marking this order ready for delivery.';
     if (!order.paymentVerifiedAt) return 'Finance must verify the payment before marking this order ready for delivery.';
     if (order.vehicleAllocation?.status !== 'ALLOCATED') return 'Allocate a specific vehicle (VIN) to this order before marking it ready for delivery.';
+    const pdiItems = order.pdiItems ?? [];
+    const pdiComplete = pdiItems.length > 0 && pdiItems.every((p) => p.isChecked);
+    if (!pdiComplete) return 'Complete the PDI checklist before marking this order ready for delivery.';
     if (order.deliveryHold) return 'Delivery is on hold for this order.';
   }
   if (toStatus === 'DELIVERED') {

@@ -621,34 +621,39 @@ export default function OrderDetail({
               </Button>
             ))}
           </div>
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && !pdiComplete && (
-            <p className="text-xs text-orange-600 mt-2">
-              Complete the PDI checklist above to unlock &quot;Ready for Delivery&quot;.
-            </p>
-          )}
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && !agreementComplete && (
+          {/* Ordered to match what's actually achievable at each point — PDI
+              items only exist once a vehicle is allocated (see
+              vehicleAllocationService.lockAllocation), so this now checks
+              allocation before PDI, matching order.service.ts's
+              getTransitionBlockReason exactly. */}
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && !agreementComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Approve the order and attach the signed agreement above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && !Boolean(state.countersignedAt) && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && agreementComplete && !Boolean(state.countersignedAt) && (
             <p className="text-xs text-orange-600 mt-2">
               Get the manager&apos;s countersignature to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && !paymentComplete && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && agreementComplete && Boolean(state.countersignedAt) && !paymentComplete && (
             <p className="text-xs text-orange-600 mt-2">
               Confirm payment above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && !Boolean(state.paymentVerifiedAt) && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && !Boolean(state.paymentVerifiedAt) && (
             <p className="text-xs text-orange-600 mt-2">
               Finance must verify the payment above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
-          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && pdiComplete && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && Boolean(state.paymentVerifiedAt) && state.vehicleAllocation?.status !== 'ALLOCATED' && (
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && Boolean(state.paymentVerifiedAt) && state.vehicleAllocation?.status !== 'ALLOCATED' && (
             <p className="text-xs text-orange-600 mt-2">
               Allocate a specific vehicle (VIN) above to unlock &quot;Ready for Delivery&quot;.
+            </p>
+          )}
+          {(state.status === 'BOOKED' || state.status === 'FINANCING_PENDING') && agreementComplete && Boolean(state.countersignedAt) && paymentComplete && Boolean(state.paymentVerifiedAt) && state.vehicleAllocation?.status === 'ALLOCATED' && !pdiComplete && (
+            <p className="text-xs text-orange-600 mt-2">
+              Complete the PDI checklist above to unlock &quot;Ready for Delivery&quot;.
             </p>
           )}
           {state.status === 'READY_FOR_DELIVERY' && (!registrationComplete || !invoiceComplete) && (
