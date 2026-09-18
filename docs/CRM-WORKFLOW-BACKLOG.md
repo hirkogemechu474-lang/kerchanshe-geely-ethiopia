@@ -298,10 +298,19 @@ session too — not something this round introduced or was asked to fix).
   intake/goods-receipt system and an OEM feed this codebase doesn't have.
 - **Real payment gateway** (Chapa/Telebirr/Stripe/etc.) — needs a vendor
   decision from the business.
-- **SMTP TLS trust issue** in this dev environment (`self-signed
-  certificate in certificate chain` — every outbound email fails this way,
-  confirmed pre-existing and unrelated to any code in this repo) — an
-  infra/certificate fix, not an application change.
+- ~~**SMTP TLS trust issue** in this dev environment (`self-signed
+  certificate in certificate chain`...) — an infra/certificate fix, not an
+  application change.~~ — **stale claim, re-verified**: `getTransporter()`
+  (`backend/src/services/email/smtp.ts`) already sets
+  `tls: { rejectUnauthorized: false }`, which was present from this file's
+  first commit — so the local Avast-MITM self-signed cert was never actually
+  rejected by the app's own SMTP client, regardless of `NODE_EXTRA_CA_CERTS`.
+  Confirmed live via `transporter.verify()` against the real
+  `smtp.gmail.com` config in `.env`/`.env.production` — connects cleanly, no
+  TLS error. Whatever produced this claim earlier was either a different,
+  non-SMTP TLS path (e.g. a raw `fetch`/Prisma CLI call not going through
+  this transporter) or has since resolved itself; nothing to fix in the
+  email-sending code path today.
 
 ## Known gaps not addressed this round (found, not fixed)
 
@@ -406,13 +415,50 @@ session too — not something this round introduced or was asked to fix).
   decision from the business.
 - **Real VIN-level vehicle inventory / ERP-OEM allocation** — needs a real
   intake/goods-receipt system and an OEM feed this codebase doesn't have.
-- **SMTP TLS trust issue** in this dev environment — an infra/certificate
-  fix, not an application change.
+- ~~**SMTP TLS trust issue** in this dev environment — an infra/certificate
+  fix, not an application change.~~ — see the corrected entry above; already
+  handled by `smtp.ts`'s `rejectUnauthorized: false`, re-verified live.
 
 ## Remaining known gaps
 
-- PDI-checklist creation is still triggered at order creation, not at
-  vehicle allocation (functionally inert).
-- Full campaign/segmentation engine — `Promotion` stays a plain CMS banner.
-- Points expiry logic is configured (`POINTS_EXPIRY_MONTHS = 24`) but not
-  yet wired to a cron job that actually expires stale points.
+- ~~PDI-checklist creation is still triggered at order creation, not at
+  vehicle allocation (functionally inert).~~ — **delivered**: seeding moved
+  to `vehicleAllocationService.lockAllocation()` (the RESERVED -> ALLOCATED
+  step), removed from all 4 live order-creation paths (admin manual create,
+  quotation conversion, and the public purchase route — plus a 5th, already
+  dead-code, call in `orderService.create()`). `seedPdiChecklist()` is now
+  idempotent (checks for existing rows first) since `lockAllocation` can be
+  re-invoked for an already-`ALLOCATED` order. `getTransitionBlockReason`'s
+  gate needed no change — it already required `vehicleAllocation.status ===
+  'ALLOCATED'` before `READY_FOR_DELIVERY`, so PDI items always exist by the
+  time completeness is checked. `OrderDetail.tsx`'s PDI card and
+  `OrdersList.tsx`'s PDI column now show "allocate a vehicle first" / "Not
+  started" instead of a misleading "0/0" for an order with no vehicle
+  allocated yet.
+- ~~Full campaign/segmentation engine — `Promotion` stays a plain CMS
+  banner.~~ — **delivered, scoped to rule-based targeting + manual send (no
+  scheduling/automation, per explicit user decision)**: new `CustomerSegment`
+  model (`name`/`description`/`criteria` JSON), `backend/src/services/
+  marketing/segmentation.service.ts` builds a Prisma `where` from real
+  attributes only — loyalty tier, vehicle model owned, vehicle year,
+  service-recency, and a best-effort `Customer.address` substring match (no
+  structured city field exists) — plus `sendCampaign()`, which loops
+  `dispatchNotification()` per matched customer (never a single call with
+  every recipient's email in one `to` array, which would leak every
+  customer's address to every other recipient). Routes at `/api/segments/*`
+  reuse the existing `canManagePromotions` permission — no new permission
+  added. Admin UI at `/admin/marketing/segments` (`SegmentsManager.tsx`):
+  create/edit a segment with a live "N customers match" preview, then a
+  "Send Campaign" action (subject/message/optional CTA) that re-resolves the
+  segment at send time rather than caching a stale list. Verified against
+  live data via a throwaway script (not just typecheck) — tier/vehicle/
+  combined-criteria filters all returned correct, distinct counts.
+- ~~Points expiry logic is configured (`POINTS_EXPIRY_MONTHS = 24`) but not
+  yet wired to a cron job that actually expires stale points.~~ — **delivered**
+  in `3b97fec` (a separate, concurrent session): `backend/src/jobs/
+  loyaltyExpiry.cron.ts` runs monthly, calling `loyaltyService.
+  expireInactiveAccounts()` (`backend/src/services/loyalty/loyalty.service.ts`).
+  Known simplification worth a future look: it zeroes an account's entire
+  balance once `updatedAt` is 24 months stale, rather than aging/expiring
+  points on a FIFO per-transaction basis — fine for now, but not exact if the
+  spec ever wants partial expiry.
