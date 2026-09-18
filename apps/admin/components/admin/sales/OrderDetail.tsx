@@ -458,6 +458,7 @@ export default function OrderDetail({
         order={{
           id: state.id, orderNo: state.orderNo, customerEmail: state.customerEmail, approvedAt: state.approvedAt, agreementSentAt: state.agreementSentAt,
           signedDocumentUrl: state.signedDocumentUrl, signedAt: state.signedAt, countersignedAt: state.countersignedAt,
+          paymentStatus: state.paymentStatus,
           rejectedAt: state.rejectedAt, rejectionReason: state.rejectionReason,
           salesType: state.salesType, vehicleType: state.vehicleType, motorBatterySerialNo: state.motorBatterySerialNo,
           purchaserTitle: state.purchaserTitle,

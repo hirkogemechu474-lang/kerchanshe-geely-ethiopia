@@ -19,6 +19,21 @@ import { auditService } from '../services/audit/audit.service';
 
 const router = Router();
 
+// Shared by /countersign (first send) and /resend-payment-link (retry after
+// a failed send — see that route's comment) so both use the exact same
+// token/link/email shape.
+async function sendPaymentLinkEmail(order: { id: string; orderNo: string; vehicleModel: string; customerName: string; customerEmail: string | null }): Promise<{ ok: boolean; error?: string }> {
+  if (!order.customerEmail) return { ok: false, error: 'No customer email on file.' };
+  const paymentToken = signLinkToken('payment', order.id);
+  const link = `${env.urls.site}/payment/order/${order.id}?token=${encodeURIComponent(paymentToken)}`;
+  return dispatchNotification({
+    type: 'order_status',
+    to: [order.customerEmail],
+    subject: `Complete Your Payment — ${order.orderNo}`,
+    data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
+  });
+}
+
 const VALID_FINANCING_STATUSES = [
   'NOT_REQUESTED', 'REQUESTED', 'DOCUMENTS_PENDING', 'DOCUMENTS_SUBMITTED',
   'UNDER_REVIEW', 'APPROVED', 'CONDITIONALLY_APPROVED', 'REJECTED',
@@ -489,20 +504,9 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
       // Signature-log write failure should not block countersigning.
     }
 
-    let notificationSent = false;
-    let notificationError: string | undefined;
-    if (order.customerEmail) {
-      const paymentToken = signLinkToken('payment', order.id);
-      const link = `${env.urls.site}/payment/order/${order.id}?token=${encodeURIComponent(paymentToken)}`;
-      const result = await dispatchNotification({
-        type: 'order_status',
-        to: [order.customerEmail],
-        subject: `Complete Your Payment — ${order.orderNo}`,
-        data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
-      });
-      notificationSent = result.ok;
-      notificationError = result.error;
-    }
+    const paymentLinkResult = await sendPaymentLinkEmail(order);
+    const notificationSent = paymentLinkResult.ok;
+    const notificationError = paymentLinkResult.error;
 
     // Step 9: Notify sales agent that manager countersigned
     if (order.salesAgentId) {
@@ -541,6 +545,44 @@ router.post('/:id/countersign', requireAdminApiSession, async (req: Request, res
     res.json({ ...updated, notificationSent, notificationError });
   } catch (error) {
     console.error('Countersign error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/resend-payment-link — the countersign route above
+// only ever sends the payment-link email once (when countersignedAt first
+// gets set); if that one send fails (e.g. a transient SMTP outage — this is
+// a real, observed failure mode, not hypothetical), there was previously no
+// way to retry short of re-running the whole countersign step, which isn't
+// possible once it's already done. Gated on countersignedAt being set (no
+// link exists to resend before that) and not yet PAID (nothing to pay for
+// once paid).
+router.post('/:id/resend-payment-link', requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const order = await prisma.salesOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
+    if (!order.countersignedAt) {
+      res.status(400).json({ error: 'This order has not been countersigned yet — no payment link exists to resend.' });
+      return;
+    }
+    if (order.paymentStatus === 'PAID') {
+      res.status(400).json({ error: 'This order is already paid.' });
+      return;
+    }
+
+    const result = await sendPaymentLinkEmail(order);
+
+    await auditService.log({
+      entityType: 'order',
+      entityId: order.id,
+      action: 'payment_link_resent',
+      performedById: req.adminSession!.user.id,
+      toValue: { notificationSent: result.ok, notificationError: result.error ?? null },
+    });
+
+    res.json({ notificationSent: result.ok, notificationError: result.error });
+  } catch (error) {
+    console.error('Resend payment link error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

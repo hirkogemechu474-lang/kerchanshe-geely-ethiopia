@@ -23,6 +23,7 @@ interface OrderApprovalData {
   signedDocumentUrl: string | null;
   signedAt: string | null;
   countersignedAt: string | null;
+  paymentStatus: string;
   rejectedAt: string | null;
   rejectionReason: string | null;
   // New Sales Agreement format fields (Kerchanshe Trading PLC draft) —
@@ -271,6 +272,25 @@ export default function OrderApprovalPanel({
       );
       onUpdated();
       router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resendPaymentLink = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/orders/${order.id}/resend-payment-link`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Resend failed');
+      setCountersignNotice(
+        data.notificationSent
+          ? `Payment link resent to ${order.customerEmail}.`
+          : `Could not resend the payment-link email${data.notificationError ? `: ${data.notificationError}` : ' — check SMTP settings.'}`
+      );
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -576,6 +596,16 @@ export default function OrderApprovalPanel({
                   <p>Countersigned {new Date(order.countersignedAt).toLocaleString()}</p>
                   {managerSignature?.signedByName && <p className="mt-1">Signed by manager: {managerSignature.signedByName}</p>}
                   {managerSignature?.signatureUrl && <p className="mt-1 text-green-700">Manager signature is on file.</p>}
+                  {order.paymentStatus !== 'PAID' && (
+                    <div className="mt-3">
+                      <Button variant="secondary" onClick={resendPaymentLink} disabled={busy || !order.customerEmail}>
+                        {busy ? 'Sending…' : 'Resend Payment Link'}
+                      </Button>
+                      {!order.customerEmail && (
+                        <p className="mt-1 text-gray-500 font-normal">No customer email on file — nothing to send to.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : order.rejectedAt ? (
                 <p className="text-xs text-red-700">
