@@ -13,6 +13,7 @@ import {
   Wrench,
   Package,
   Megaphone,
+  Target,
   Star,
   Newspaper,
   MessageSquare,
@@ -175,6 +176,7 @@ const navSections: NavSection[] = [
         label: 'Marketing',
         items: [
           { name: 'Manage Promotions', href: '/admin/promotions', icon: Megaphone, permission: 'canManagePromotions' },
+          { name: 'Customer Segments', href: '/admin/marketing/segments', icon: Target, permission: 'canManagePromotions' },
           { name: 'Manage News', href: '/admin/news', icon: Newspaper, permission: 'canManageContent' },
           { name: 'Manage Reviews', href: '/admin/reviews', icon: Star, permission: 'canModerateReviews' },
           { name: 'Manage FAQ', href: '/admin/faq', icon: MessageSquare, permission: 'canManageContent' },

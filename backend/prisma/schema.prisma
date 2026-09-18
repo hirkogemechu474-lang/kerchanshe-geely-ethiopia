@@ -1285,6 +1285,22 @@ model Promotion {
   upgradeOpportunities UpgradeOpportunity[]
 }
 
+// Rule-based customer targeting (CRM-WORKFLOW-BACKLOG.md's "campaign/
+// segmentation engine" item). Deliberately scoped to real, already-tracked
+// customer attributes + a manual send action — no scheduling/automation.
+// `criteria` is a structured filter object, not free text — see
+// backend/src/services/marketing/segmentation.service.ts's SegmentCriteria
+// type for the exact shape/semantics of each key.
+model CustomerSegment {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  criteria    Json
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // Customer Reviews
 model Review {
   id            String   @id @default(uuid())

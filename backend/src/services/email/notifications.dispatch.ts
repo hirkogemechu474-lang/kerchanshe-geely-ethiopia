@@ -4,7 +4,7 @@ import { inAppNotificationRepository } from '../../repositories/inAppNotificatio
 import { userRepository } from '../../repositories';
 
 export interface NotificationPayload {
-  type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'first_service_reminder' | 'complaint_created' | 'complaint_status_changed' | 'upgrade_opportunity' | 'sla_breach' | 'delivery_ready' | 'delivery_scheduled' | 'delivered';
+  type: 'order_status' | 'job_card_status' | 'test_drive' | 'service_booking' | 'quotation' | 'warranty_claim' | 'lead_assignment' | 'commission_reassigned' | 'commission_paid' | 'warranty_registered' | 'service_reminder' | 'first_service_reminder' | 'complaint_created' | 'complaint_status_changed' | 'upgrade_opportunity' | 'sla_breach' | 'delivery_ready' | 'delivery_scheduled' | 'delivered' | 'campaign';
   to: string[];
   subject: string;
   data: Record<string, any>;
