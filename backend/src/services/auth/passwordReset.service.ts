@@ -8,7 +8,12 @@ import { env } from '../../config/env';
 export const passwordResetService = {
   async requestReset(email: string): Promise<{ ok: boolean; error?: string }> {
     try {
-      const user = await userRepository.findByEmail(email);
+      // Matches admin-login's email.toLowerCase() lookup — findByEmail is a
+      // raw case-sensitive query, so without this a user typing their email
+      // in different casing than it's stored would silently never receive
+      // an OTP (requestReset intentionally returns ok:true either way, to
+      // not reveal whether an account exists).
+      const user = await userRepository.findByEmail(email.toLowerCase());
       if (!user) {
         return { ok: true };
       }
@@ -47,7 +52,7 @@ export const passwordResetService = {
     try {
       const user = await prisma.user.findFirst({
         where: {
-          email,
+          email: email.toLowerCase(),
           otpCode: otp,
           otpExpiry: { gte: new Date() },
         },

@@ -82,7 +82,10 @@ export default function AdminLogin() {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, newPassword }),
+        // Backend destructures `code`, not `otp` — sending the wrong key
+        // meant every submission failed with "Email, code, and new password
+        // are required" even with all three fields visibly filled in.
+        body: JSON.stringify({ email, code: otp, newPassword }),
       });
 
       const data = await response.json();
