@@ -1,13 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { newsRepository } from '../repositories/news.repository';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session, never checked a
+// permission — any authenticated staff member of any role could create/edit/
+// delete news articles. canManageContent matches AdminLayout.tsx's "Manage
+// News" nav item and every news admin page.tsx's own requirePermission/
+// useAdminAuth('canManageContent') guard (not the separate canManageNews/
+// canViewNews fields, which exist but aren't what the nav/pages actually use).
+const gate = requirePermission('canManageContent');
+
 // GET /api/news (admin list all — not just published; the public list lives
 // under /api/public/news, a separate route)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -29,7 +37,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // GET /api/news/:id (admin: single article detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const article = await newsRepository.findById(req.params.id);
     if (!article) { res.status(404).json({ error: 'News article not found' }); return; }
@@ -41,7 +49,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // POST /api/news (admin: create article)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { title, category, content, author, image, imageUrl, excerpt, status, publishDate } = req.body;
     const article = await newsRepository.create({
@@ -62,7 +70,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // PUT /api/news/:id (admin: update article)
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { title, category, content, author, image, imageUrl, excerpt, status, publishDate } = req.body;
     const article = await newsRepository.update(req.params.id, {
@@ -83,7 +91,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/news/:id (admin: delete article)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await newsRepository.delete(req.params.id);
     res.json({ success: true });

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowDown, ArrowUp, Info, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 type FooterLink = { label: string; href: string };
 type FooterColumn = { heading: string; links: FooterLink[] };
@@ -89,6 +90,7 @@ function LinkListEditor({ links, onChange }: { links: FooterLink[]; onChange: (l
 }
 
 export default function FooterContentPage() {
+  useAdminAuth('canManageSettings');
   const [content, setContent] = useState<FooterContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -7,6 +7,7 @@ import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
 import ImageUpload from '@/components/admin/vehicles/ImageUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface VehiclePackage {
   id: string;
@@ -59,6 +60,7 @@ function ImagePreview({ src, alt, sizeClass }: { src: string; alt: string; sizeC
 }
 
 export default function ModelsAndVariantsPage() {
+  useAdminAuth('canManageVehicles');
   const [resource, setResource] = useState<Resource>('trims');
   const [vehicleId, setVehicleId] = useState<string | null>(null);
 

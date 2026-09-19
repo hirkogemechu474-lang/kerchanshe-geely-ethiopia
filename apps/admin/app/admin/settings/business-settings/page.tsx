@@ -13,6 +13,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { Card, Button, PageHeader } from '@/components/admin/ui';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface BusinessSettings {
   companyName: string;
@@ -85,6 +86,7 @@ const TIMEZONE_OPTIONS = [
 ];
 
 export default function BusinessSettingsPage() {
+  useAdminAuth('canManageSettings');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

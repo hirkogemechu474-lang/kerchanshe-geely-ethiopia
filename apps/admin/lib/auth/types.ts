@@ -153,8 +153,33 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
   super_admin: { ...allTrue },
   admin: { ...allTrue },
 
-  // ── GM Geely: full access (read + write + approve) ──
-  gm_geely: { ...allTrue },
+  // ── GM Geely: broad oversight + approvals, not day-to-day operational
+  //    management — mirrors backend/src/middleware/rolePermissions.ts's
+  //    GM_GEELY exactly. This used to be `{ ...allTrue }` here, contradicting
+  //    the backend's deliberately scoped-down version (e.g. it never granted
+  //    canManageSpareParts/canManageUsers/canManageSettings) — the sidebar
+  //    showed manage-level links the backend would 403 on for this role.
+  gm_geely: {
+    ...defaultPermissions,
+    canViewContent: true,
+    canViewVehicles: true,
+    canViewTestDrives: true,
+    canManageQuotations: true, canViewQuotations: true,
+    canManageDealers: true, canViewDealers: true,
+    canViewServiceBookings: true,
+    canViewSpareParts: true,
+    canViewPromotions: true,
+    canViewReviews: true,
+    canViewNews: true,
+    canViewMessages: true,
+    canViewAnalytics: true, canExportReports: true, canViewReports: true,
+    canViewExecutiveDashboards: true,
+    canViewUsers: true,
+    canViewSettings: true,
+    canViewJobCards: true,
+    canApproveWarrantyClaims: true,
+    canViewCustomers: true,
+  },
 
   // ── Manager: department head — approves quotations, agreements, delivery,
   //    manages all workshop/service, views all analytics ──
@@ -185,6 +210,10 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageDealers: true, canViewDealers: true,
     // CRM & post-sales
     canManageShowroomVisits: true, canManageReviews: true,
+    // The Reviews nav item and backend enforcement actually key off
+    // canModerateReviews, not canManageReviews — without this Manager could
+    // never see/open the Reviews module despite canManageReviews being true.
+    canModerateReviews: true, canViewReviews: true,
     // Content & marketing
     canManageContent: true, canManageNews: true, canManagePromotions: true,
     // Messages
@@ -337,7 +366,10 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canManageContent: true, canViewContent: true,
     canManagePromotions: true, canViewPromotions: true,
     canManageNews: true, canViewNews: true,
-    canManageReviews: true, canViewReviews: true,
+    // Same canManageReviews/canModerateReviews mismatch as Manager (see
+    // above) — Marketing's own role description explicitly includes
+    // reviews, but without canModerateReviews it couldn't open the module.
+    canManageReviews: true, canModerateReviews: true, canViewReviews: true,
     canViewAnalytics: true, canViewVehicles: true, canViewDealers: true,
   },
 

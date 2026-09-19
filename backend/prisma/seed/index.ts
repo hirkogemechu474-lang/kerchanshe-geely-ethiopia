@@ -371,10 +371,26 @@ async function seedMedia() {
     { name: 'Chaltu Sales', email: 'sales.manager@geelyethiopia.com', role: 'sales_manager', avatar: 'sales-manager.svg', hash: passwordHash2 },
     { name: 'Fikru Demissie', email: 'sales.rep@geelyethiopia.com', role: 'sales_representative', avatar: 'sales-representative.svg', hash: passwordHash2 },
     { name: 'Getachew Worku', email: 'workshop@geelyethiopia.com', role: 'workshop_manager', avatar: 'workshop-manager.svg', hash: passwordHash2 },
-    { name: 'Hiwot Ayalew', email: 'service@geelyethiopia.com', role: 'service_advisor', avatar: 'service-advisor.svg', hash: passwordHash2 },
+    { name: 'Hiwot Ayalew', email: 'service.advisor@geelyethiopia.com', role: 'service_advisor', avatar: 'service-advisor.svg', hash: passwordHash2 },
     { name: 'Imani Tesfaye', email: 'marketing@geelyethiopia.com', role: 'marketing', avatar: 'marketing.svg', hash: passwordHash2 },
-    { name: 'Jemila Ahmed', email: 'parts@geelyethiopia.com', role: 'parts_manager', avatar: 'sales-manager.svg', hash: passwordHash2 },
-    { name: 'Kebede Tadesse', email: 'technician@geelyethiopia.com', role: 'technician', avatar: 'workshop-manager.svg', hash: passwordHash2 },
+    // These two used to carry role: 'parts_manager' / 'technician' — neither
+    // is a real AdminRole value (see apps/admin/lib/auth/types.ts), so both
+    // accounts could never actually log in (isAdminRole() rejects unknown
+    // role strings). Fixed to real roles, which also fills two of the gaps
+    // below.
+    { name: 'Jemila Ahmed', email: 'service.manager@geelyethiopia.com', role: 'service_manager', avatar: 'service-manager.svg', hash: passwordHash2 },
+    { name: 'Kebede Tadesse', email: 'service@geelyethiopia.com', role: 'service', avatar: 'service.svg', hash: passwordHash2 },
+    // Remaining AdminRole values with no seeded account at all until now:
+    // admin, manager, sales, gm_geely, after_sales_manager. (viewer is
+    // admin-app-only and isn't recognized by the backend's AdminRole enum —
+    // an account with that role could never authenticate either, so it's
+    // deliberately not seeded. customer/dealer are the public portal's own
+    // roles, unrelated to admin staff accounts.)
+    { name: 'Tsedale Worku', email: 'staff.admin@geelyethiopia.com', role: 'admin', avatar: 'admin.svg', hash: passwordHash2 },
+    { name: 'Bereket Fikru', email: 'manager@geelyethiopia.com', role: 'manager', avatar: 'manager.svg', hash: passwordHash2 },
+    { name: 'Liya Tesema', email: 'sales@geelyethiopia.com', role: 'sales', avatar: 'sales.svg', hash: passwordHash2 },
+    { name: 'Solomon Bekele', email: 'gm@geelyethiopia.com', role: 'gm_geely', avatar: 'gm-geely.svg', hash: passwordHash2 },
+    { name: 'Rahel Getachew', email: 'after.sales@geelyethiopia.com', role: 'after_sales_manager', avatar: 'after-sales-manager.svg', hash: passwordHash2 },
   ];
   for (const u of demoUsers) {
     await prisma.user.upsert({

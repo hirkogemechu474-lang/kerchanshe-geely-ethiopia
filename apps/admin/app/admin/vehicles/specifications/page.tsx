@@ -5,10 +5,12 @@ import { Gauge, Settings, Car, Save, RefreshCw, CheckCircle2, AlertCircle } from
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
 import type { VehicleSpecificationLists } from '@/lib/vehicle-settings-types';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const EMPTY: VehicleSpecificationLists = { engine: [], transmission: [], fuelType: [], driveType: [] };
 
 export default function VehicleSpecificationsPage() {
+  useAdminAuth('canManageVehicles');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);

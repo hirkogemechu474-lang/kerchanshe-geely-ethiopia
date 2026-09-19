@@ -5,10 +5,12 @@ import { ShieldCheck, Sofa, Radio, Gauge, Car, Save, RefreshCw, CheckCircle2, Al
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
 import type { VehicleFeatureLists } from '@/lib/vehicle-settings-types';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const EMPTY: VehicleFeatureLists = { safety: [], comfort: [], technology: [], performance: [], exterior: [] };
 
 export default function VehicleFeaturesPage() {
+  useAdminAuth('canManageVehicles');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface CookieBannerConfig {
   enabled: boolean;
@@ -13,6 +14,7 @@ interface CookieBannerConfig {
 }
 
 export default function CookieBannerSettingsPage() {
+  useAdminAuth('canManageSettings');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

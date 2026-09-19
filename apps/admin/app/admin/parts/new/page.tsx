@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Package, Hash, Tag, DollarSign, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function NewSparePartPage() {
+  useAdminAuth('canManageSpareParts');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

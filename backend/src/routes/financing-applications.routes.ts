@@ -1,11 +1,20 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { FinancingApplicationService } from '../services/financing/financingApplication.service';
 
 const router = Router();
 
+// Was session-only — any authenticated staff member could read/approve/
+// decline customer financing applications. canManageSettings: this router's
+// only consumer, apps/admin/app/admin/financing/page.tsx (nav: 'Manage
+// Financing'), fetches both /api/financing/* and /api/financing-applications
+// on the same page under a single useAdminAuth('canManageSettings') gate, so
+// this mirrors that rather than the (unverified) 'canManageOrders' guess.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageSettings'));
+
 // GET /api/financing-applications (list all)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await FinancingApplicationService.getAll();
     if (!result.ok) {
@@ -19,7 +28,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/financing-applications (create from lead)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const application = await FinancingApplicationService.create(req.body);
     if (!application.ok) {
@@ -33,7 +42,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/financing-applications/lead/:leadId (get by lead)
-router.get('/lead/:leadId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/lead/:leadId', async (req: Request, res: Response) => {
   try {
     const result = await FinancingApplicationService.getByLeadId(req.params.leadId);
     if (!result.ok) {
@@ -47,7 +56,7 @@ router.get('/lead/:leadId', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/financing-applications/:id/status (update status)
-router.post('/:id/status', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/status', async (req: Request, res: Response) => {
   try {
     const { status, rejectionReason, documentsSubmitted, paymentProofUrl } = req.body;
     const result = await FinancingApplicationService.updateStatus(req.params.id, {
@@ -67,7 +76,7 @@ router.post('/:id/status', requireAdminApiSession, async (req: Request, res: Res
 });
 
 // POST /api/financing-applications/:id/approve (approve financing)
-router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/approve', async (req: Request, res: Response) => {
   try {
     const { isConditional } = req.body;
     const result = await FinancingApplicationService.approve(req.params.id, req.adminSession!.user.id, isConditional);
@@ -82,7 +91,7 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/financing-applications/:id/decline (decline financing)
-router.post('/:id/decline', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/decline', async (req: Request, res: Response) => {
   try {
     const { rejectionReason } = req.body;
     const result = await FinancingApplicationService.decline(req.params.id, rejectionReason);

@@ -21,6 +21,7 @@ import {
   Image as ImageIcon,
   Layers,
 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 /* ---------- TYPES ---------- */
 interface VehicleSettingsData {
@@ -94,6 +95,7 @@ const DEFAULT_DATA: VehicleSettingsData = {
 
 /* ---------- PAGE ---------- */
 export default function VehicleSettingsPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);

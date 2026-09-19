@@ -1,13 +1,20 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { loyaltyService } from '../services/loyalty/loyalty.service';
 
 const router = Router();
 
+// Was session-only — any authenticated staff member could view every
+// customer's loyalty account and adjust/redeem their points. canManageCustomers
+// matches the '/admin/loyalty' nav entry (AdminLayout.tsx) and the gate
+// already used by apps/admin/app/admin/loyalty/page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageCustomers'));
+
 // ─── Admin Routes ───────────────────────────────────────────────────────────
 
 // GET /api/loyalty — admin listing with pagination, tier filter, search
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const { tier, search, page, pageSize } = req.query;
     const result = await loyaltyService.listAll({
@@ -25,7 +32,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // GET /api/loyalty/analytics — admin dashboard stats
-router.get('/analytics', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/analytics', async (req: Request, res: Response) => {
   try {
     const result = await loyaltyService.getAnalytics();
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -37,7 +44,7 @@ router.get('/analytics', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // GET /api/loyalty/tier-benefits — get tier benefits configuration
-router.get('/tier-benefits', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/tier-benefits', async (req: Request, res: Response) => {
   try {
     res.json(loyaltyService.getTierBenefits());
   } catch (error) {
@@ -47,7 +54,7 @@ router.get('/tier-benefits', requireAdminApiSession, async (req: Request, res: R
 });
 
 // GET /api/loyalty/:customerId — get specific loyalty account
-router.get('/:customerId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:customerId', async (req: Request, res: Response) => {
   try {
     const result = await loyaltyService.getByCustomerId(req.params.customerId);
     if (!result.ok) { res.status(404).json({ error: result.error }); return; }
@@ -60,7 +67,7 @@ router.get('/:customerId', requireAdminApiSession, async (req: Request, res: Res
 });
 
 // POST /api/loyalty/adjust — manually adjust points (admin)
-router.post('/adjust', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/adjust', async (req: Request, res: Response) => {
   try {
     const { customerId, points, reason } = req.body;
     if (!customerId || !points || !reason) {
@@ -84,7 +91,7 @@ router.post('/adjust', requireAdminApiSession, async (req: Request, res: Respons
 });
 
 // POST /api/loyalty/redeem — redeem points (admin-initiated)
-router.post('/redeem', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/redeem', async (req: Request, res: Response) => {
   try {
     const { customerId, points, reason } = req.body;
     if (!customerId || !points || !reason) {

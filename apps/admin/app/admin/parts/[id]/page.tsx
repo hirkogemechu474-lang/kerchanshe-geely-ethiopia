@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Package, Hash, Tag, DollarSign, TrendingUp, Star, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import FileUpload from '@/components/admin/FileUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Category {
   id: string;
@@ -12,6 +13,7 @@ interface Category {
 }
 
 export default function EditSparePartPage() {
+  useAdminAuth('canManageSpareParts');
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
   const router = useRouter();

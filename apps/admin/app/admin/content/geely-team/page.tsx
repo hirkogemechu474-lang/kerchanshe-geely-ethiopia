@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Image as ImageIcon, Plus, RefreshCw, Save, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 type TeamMember = { id: string; name: string; role: string; bio: string; imageUrl: string; displayOrder: number; isActive: boolean };
 const emptyMember = (): TeamMember => ({ id: crypto.randomUUID(), name: '', role: '', bio: '', imageUrl: '', displayOrder: 0, isActive: true });
 
 export default function GeelyTeamContentPage() {
+  useAdminAuth('canManageContent');
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

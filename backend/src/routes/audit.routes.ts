@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { auditService } from '../services/audit/audit.service';
 
 const router = Router();
 
+// Was session-only — any authenticated staff member could read the full
+// audit trail/activity feed for every entity in the system. canViewReports
+// matches the '/admin/audit' nav entry (AdminLayout.tsx) and the gate
+// already used by apps/admin/app/admin/audit/page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canViewReports'));
+
 // GET /api/audit/stats - Get audit statistics
-router.get('/stats', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/stats', async (req: Request, res: Response) => {
   try {
     const result = await auditService.getStats();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -17,7 +24,7 @@ router.get('/stats', requireAdminApiSession, async (req: Request, res: Response)
 });
 
 // GET /api/audit/:entityType/:entityId - Get audit trail for an entity
-router.get('/:entityType/:entityId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:entityType/:entityId', async (req: Request, res: Response) => {
   try {
     const result = await auditService.getTrail(req.params.entityType, req.params.entityId);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -29,7 +36,7 @@ router.get('/:entityType/:entityId', requireAdminApiSession, async (req: Request
 });
 
 // GET /api/audit/activity - Get recent audit activity
-router.get('/activity', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/activity', async (req: Request, res: Response) => {
   try {
     const { entityType, performedById, page, pageSize } = req.query;
     const result = await auditService.getRecentActivity({

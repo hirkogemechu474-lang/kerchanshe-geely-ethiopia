@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Bell, CheckCircle2, Sparkles } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const NOTIFICATION_EVENTS: Record<string, string> = {
   'quotation.newLead': 'New lead received (notifies sales managers)',
@@ -36,6 +37,7 @@ function defaultRules(): Rules {
 }
 
 export default function NotificationRulesPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rules, setRules] = useState<Rules>(defaultRules());

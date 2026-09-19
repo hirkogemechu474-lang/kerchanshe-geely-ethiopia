@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { vehicleService } from '../services';
 import { prisma } from '../config/database';
 
@@ -21,6 +21,16 @@ import { prisma } from '../config/database';
 //   /api/admin/vehicle-accessories(/:id)
 
 const router = Router();
+
+// Every route below only ever required a valid admin session — any
+// authenticated staff member of any role could create/edit/delete a
+// vehicle's colors, interiors, wheels, packages, and accessories.
+// canManageVehicles matches AdminLayout.tsx's "Manage Colors"/"Manage
+// Models" nav items and apps/admin/app/admin/vehicles/colors|
+// models-variants page.tsx's own useAdminAuth('canManageVehicles') guard —
+// these config pages have no separate view-only mode, unlike the main
+// vehicles list/detail pages (canViewVehicles).
+const gate = requirePermission('canManageVehicles');
 
 function requiredVehicleId(req: Request, res: Response): string | null {
   const vehicleId = req.query.vehicleId as string | undefined;
@@ -51,7 +61,7 @@ function requiredVehicleId(req: Request, res: Response): string | null {
 // apps/web/app/configurator/page.tsx) — QuotationPdfPanel uses these to
 // default the "Vehicle year" / "Unit price" fields from the database instead
 // of a hardcoded guess or a blank input.
-router.get('/vehicle-colors', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-colors', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const vehicleId = req.query.vehicleId as string | undefined;
     const vehicleName = req.query.vehicleName as string | undefined;
@@ -88,7 +98,7 @@ router.get('/vehicle-colors', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.post('/vehicle-colors', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-colors', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { name, colorCode, vehicleId } = req.body || {};
     if (!name || !colorCode || !vehicleId) {
@@ -104,7 +114,7 @@ router.post('/vehicle-colors', requireAdminApiSession, async (req: Request, res:
   }
 });
 
-router.put('/vehicle-colors/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/vehicle-colors/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.updateColor(req.params.id, req.body);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -115,7 +125,7 @@ router.put('/vehicle-colors/:id', requireAdminApiSession, async (req: Request, r
   }
 });
 
-router.delete('/vehicle-colors/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/vehicle-colors/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.deleteColor(req.params.id);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -130,7 +140,7 @@ router.delete('/vehicle-colors/:id', requireAdminApiSession, async (req: Request
 /* Interior options (always vehicle-scoped)                             */
 /* ------------------------------------------------------------------ */
 
-router.get('/vehicle-interiors', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-interiors', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const vehicleId = requiredVehicleId(req, res);
     if (!vehicleId) return;
@@ -143,7 +153,7 @@ router.get('/vehicle-interiors', requireAdminApiSession, async (req: Request, re
   }
 });
 
-router.post('/vehicle-interiors', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-interiors', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { name, materialType, vehicleId } = req.body || {};
     if (!name || !materialType || !vehicleId) {
@@ -159,7 +169,7 @@ router.post('/vehicle-interiors', requireAdminApiSession, async (req: Request, r
   }
 });
 
-router.put('/vehicle-interiors/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/vehicle-interiors/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.updateInterior(req.params.id, req.body);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -170,7 +180,7 @@ router.put('/vehicle-interiors/:id', requireAdminApiSession, async (req: Request
   }
 });
 
-router.delete('/vehicle-interiors/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/vehicle-interiors/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.deleteInterior(req.params.id);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -185,7 +195,7 @@ router.delete('/vehicle-interiors/:id', requireAdminApiSession, async (req: Requ
 /* Wheels (vehicle-scoped, or global when vehicleId is null)           */
 /* ------------------------------------------------------------------ */
 
-router.get('/vehicle-wheels', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-wheels', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const vehicleId = requiredVehicleId(req, res);
     if (!vehicleId) return;
@@ -198,7 +208,7 @@ router.get('/vehicle-wheels', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.post('/vehicle-wheels', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-wheels', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { name, size } = req.body || {};
     if (!name || !size) {
@@ -214,7 +224,7 @@ router.post('/vehicle-wheels', requireAdminApiSession, async (req: Request, res:
   }
 });
 
-router.put('/vehicle-wheels/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/vehicle-wheels/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.updateWheel(req.params.id, req.body);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -225,7 +235,7 @@ router.put('/vehicle-wheels/:id', requireAdminApiSession, async (req: Request, r
   }
 });
 
-router.delete('/vehicle-wheels/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/vehicle-wheels/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.deleteWheel(req.params.id);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -240,7 +250,7 @@ router.delete('/vehicle-wheels/:id', requireAdminApiSession, async (req: Request
 /* Packages / trim levels (always vehicle-scoped)                      */
 /* ------------------------------------------------------------------ */
 
-router.get('/vehicle-packages', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-packages', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const vehicleId = requiredVehicleId(req, res);
     if (!vehicleId) return;
@@ -253,7 +263,7 @@ router.get('/vehicle-packages', requireAdminApiSession, async (req: Request, res
   }
 });
 
-router.post('/vehicle-packages', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-packages', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { name, vehicleId } = req.body || {};
     if (!name || !vehicleId) {
@@ -269,7 +279,7 @@ router.post('/vehicle-packages', requireAdminApiSession, async (req: Request, re
   }
 });
 
-router.put('/vehicle-packages/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/vehicle-packages/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.updatePackage(req.params.id, req.body);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -280,7 +290,7 @@ router.put('/vehicle-packages/:id', requireAdminApiSession, async (req: Request,
   }
 });
 
-router.delete('/vehicle-packages/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/vehicle-packages/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.deletePackage(req.params.id);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -295,7 +305,7 @@ router.delete('/vehicle-packages/:id', requireAdminApiSession, async (req: Reque
 /* Accessories (vehicle-scoped, or global when vehicleId is null)      */
 /* ------------------------------------------------------------------ */
 
-router.get('/vehicle-accessories', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-accessories', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const vehicleId = requiredVehicleId(req, res);
     if (!vehicleId) return;
@@ -308,7 +318,7 @@ router.get('/vehicle-accessories', requireAdminApiSession, async (req: Request, 
   }
 });
 
-router.post('/vehicle-accessories', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-accessories', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { name, category } = req.body || {};
     if (!name || !category) {
@@ -324,7 +334,7 @@ router.post('/vehicle-accessories', requireAdminApiSession, async (req: Request,
   }
 });
 
-router.put('/vehicle-accessories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/vehicle-accessories/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.updateAccessory(req.params.id, req.body);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }
@@ -335,7 +345,7 @@ router.put('/vehicle-accessories/:id', requireAdminApiSession, async (req: Reque
   }
 });
 
-router.delete('/vehicle-accessories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/vehicle-accessories/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await vehicleService.deleteAccessory(req.params.id);
     if (!result.ok) { res.status(500).json({ error: result.error }); return; }

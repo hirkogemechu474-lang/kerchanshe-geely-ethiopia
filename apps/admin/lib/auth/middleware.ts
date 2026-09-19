@@ -37,9 +37,13 @@ export const getSession = cache(async (): Promise<AdminSession | null> => {
     const user = data?.user;
     if (!user) return null;
 
-    // Backend JWT only carries { id, email, name, role }.
-    // Derive the full permission set from the role on the admin side.
-    const permissions: AdminPermissions = ROLE_PERMISSIONS[user.role as AdminRole] ?? ({} as AdminPermissions);
+    // The backend already computes effective permissions (role defaults +
+    // any RolePermissionOverride rows) via getEffectivePermissions() and
+    // includes them on user.permissions — use that directly so DB overrides
+    // made in the Roles & Permissions UI are reflected here immediately.
+    // Fall back to the static table only if the backend ever omits it.
+    const permissions: AdminPermissions =
+      user.permissions ?? ROLE_PERMISSIONS[user.role as AdminRole] ?? ({} as AdminPermissions);
 
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     return {

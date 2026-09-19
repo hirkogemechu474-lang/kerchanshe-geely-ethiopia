@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { FinancingPageContentEditor } from '@/components/admin/financing/FinancingPageContentEditor';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function FinancingPageContentRoute() {
+  useAdminAuth('canManageSettings');
   return (
     <div className="space-y-6">
       <div>

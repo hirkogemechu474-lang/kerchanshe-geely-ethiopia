@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import FileUpload from '@/components/admin/FileUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Content {
   id: string;
@@ -24,6 +25,7 @@ interface Content {
 }
 
 export default function PartsContentPage() {
+  useAdminAuth('canManageSpareParts');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

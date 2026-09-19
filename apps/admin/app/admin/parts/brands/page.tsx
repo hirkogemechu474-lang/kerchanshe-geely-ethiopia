@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Pencil, Trash2, Loader2, ImageIcon } from 'lucide-react';
 import FileUpload from '@/components/admin/FileUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Brand {
   id: string;
@@ -17,6 +18,7 @@ interface Brand {
 const emptyForm = { name: '', description: '', imageUrl: '', displayOrder: 0, isActive: true };
 
 export default function PartBrandsPage() {
+  useAdminAuth('canManageSpareParts');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Brand | null>(null);

@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { repeatPurchaseService } from '../services/customer/repeatPurchase.service';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session — any
+// authenticated staff member of any role could view/create/update repeat-
+// purchase opportunities. canManageCustomers matches AdminLayout.tsx's
+// "Manage Repeat Purchase" nav item and the admin page's own
+// requirePermission('canManageCustomers') guard.
+const gate = requirePermission('canManageCustomers');
+
 // GET /api/repeat-purchase/pipeline - Get upgrade pipeline dashboard
-router.get('/pipeline', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/pipeline', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await repeatPurchaseService.getPipelineDashboard();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -17,7 +24,7 @@ router.get('/pipeline', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // GET /api/repeat-purchase - List opportunities
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { status, opportunityType, assignedTo, page, pageSize } = req.query;
     const result = await repeatPurchaseService.list({
@@ -36,7 +43,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/repeat-purchase - Create an opportunity
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await repeatPurchaseService.createOpportunity(req.body);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -48,7 +55,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // POST /api/repeat-purchase/detect - Auto-detect upgrade opportunities
-router.post('/detect', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/detect', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await repeatPurchaseService.detectOpportunities();
     if (!result.ok) { res.status(400).json({ error: 'Detection failed' }); return; }
@@ -60,7 +67,7 @@ router.post('/detect', requireAdminApiSession, async (req: Request, res: Respons
 });
 
 // GET /api/repeat-purchase/customer/:customerId - Get opportunities by customer
-router.get('/customer/:customerId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/customer/:customerId', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await repeatPurchaseService.getByCustomer(req.params.customerId);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -72,7 +79,7 @@ router.get('/customer/:customerId', requireAdminApiSession, async (req: Request,
 });
 
 // POST /api/repeat-purchase/:id/status - Update opportunity status
-router.post('/:id/status', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/status', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { status, notes } = req.body;
     if (!status) { res.status(400).json({ error: 'status is required' }); return; }

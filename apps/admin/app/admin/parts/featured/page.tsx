@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Star, Loader2, Search } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Part {
   id: string;
@@ -17,6 +18,7 @@ interface Part {
 }
 
 export default function FeaturedPartsPage() {
+  useAdminAuth('canManageSpareParts');
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);

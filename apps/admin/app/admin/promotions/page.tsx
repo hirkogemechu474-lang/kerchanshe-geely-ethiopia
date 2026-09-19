@@ -3,7 +3,9 @@ import PromotionsList from '@/components/admin/PromotionsList';
 import { PageHeader } from '@/components/admin/ui';
 
 export default async function AdminPromotionsPage() {
-  await requirePermission('canManageContent');
+  // Matches the nav entry, the new/edit pages, and the backend route's
+  // gate — was canManageContent, a co-occurring but non-dedicated key.
+  await requirePermission('canManagePromotions');
 
   return (
     <div className="space-y-6">

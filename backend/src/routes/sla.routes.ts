@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { slaTimerService } from '../services/sla/sla.timer.service';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session — any
+// authenticated staff member of any role could read SLA data and start/
+// complete/escalate timers. canManageOrders matches AdminLayout.tsx's "SLA
+// Monitor" nav item and the admin page's own requirePermission
+// ('canManageOrders') guard.
+const gate = requirePermission('canManageOrders');
+
 // GET /api/sla/dashboard - Get SLA dashboard metrics
-router.get('/dashboard', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/dashboard', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await slaTimerService.getSLADashboard();
     if (!result.ok) {
@@ -20,7 +27,7 @@ router.get('/dashboard', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // GET /api/sla/:entityType/:entityId - Get SLA status for an entity
-router.get('/:entityType/:entityId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:entityType/:entityId', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await slaTimerService.getSLAStatus(req.params.entityType, req.params.entityId);
     if (!result.ok) {
@@ -35,7 +42,7 @@ router.get('/:entityType/:entityId', requireAdminApiSession, async (req: Request
 });
 
 // POST /api/sla/start - Start an SLA timer
-router.post('/start', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/start', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { entityType, entityId, stage, assignedTo } = req.body;
     if (!entityType || !entityId || !stage) {
@@ -56,7 +63,7 @@ router.post('/start', requireAdminApiSession, async (req: Request, res: Response
 });
 
 // POST /api/sla/complete - Complete an SLA timer
-router.post('/complete', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/complete', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const { entityType, entityId, stage } = req.body;
     if (!entityType || !entityId || !stage) {
@@ -77,7 +84,7 @@ router.post('/complete', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // POST /api/sla/check-breached - Check and escalate breached SLAs
-router.post('/check-breached', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/check-breached', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const result = await slaTimerService.checkBreachedSLAs();
     res.json(result);

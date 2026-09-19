@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { PageHeader, Button, StatTile, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyState, Pagination, type Tone } from '@/components/admin/ui';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const PAGE_SIZE = 25;
 
@@ -59,6 +60,7 @@ const STATUS_META: Record<string, { label: string; tone: Tone }> = {
 const ALL_STATUSES = ['new', 'contacted', 'in_progress', 'quoted', 'closed'];
 
 export default function PartsRequestsPage() {
+  useAdminAuth('canManageSpareParts');
   const [requests, setRequests] = useState<PartRequest[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, new: 0, quoted: 0, closed: 0 });
   const [total, setTotal] = useState(0);

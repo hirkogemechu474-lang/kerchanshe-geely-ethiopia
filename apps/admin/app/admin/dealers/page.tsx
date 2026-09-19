@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Plus, MapPin, Search, Loader2, Eye, EyeOff, Pencil, Trash2, Star } from 'lucide-react';
 import { PageHeader, LinkButton, Card, StatTile, TableCard, THead, TBody, Tr, Th, Td, Badge, EmptyTableRow } from '@/components/admin/ui';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Dealer {
   id: string;
@@ -22,6 +23,7 @@ interface Dealer {
 }
 
 export default function DealersPage() {
+  useAdminAuth('canViewDealers');
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

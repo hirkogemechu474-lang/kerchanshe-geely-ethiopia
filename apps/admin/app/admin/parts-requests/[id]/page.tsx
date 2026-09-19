@@ -16,6 +16,7 @@ import {
   Save,
   User,
 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface RequestItem {
   id: string;
@@ -52,6 +53,7 @@ const ALL_STATUSES = ['new', 'contacted', 'in_progress', 'quoted', 'closed'];
 const formatPrice = (price: number) => `ETB ${price.toLocaleString()}`;
 
 export default function PartRequestDetailPage() {
+  useAdminAuth('canManageSpareParts');
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [request, setRequest] = useState<PartRequest | null>(null);

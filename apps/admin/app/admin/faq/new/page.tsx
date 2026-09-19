@@ -2,13 +2,16 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import FAQForm from '@/components/admin/faq/FAQForm';
+import { requirePermission } from '@/lib/auth/middleware';
 
 export const metadata: Metadata = {
   title: 'New FAQ - Admin',
   description: 'Create a new frequently asked question',
 };
 
-export default function NewFAQPage() {
+export default async function NewFAQPage() {
+  await requirePermission('canManageContent');
+
   return (
     <div className="space-y-6">
       {/* Header */}

@@ -6,6 +6,7 @@ import { Save, FileText, Tag, Calendar, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link';
 import { Card, Button, PageHeader } from '@/components/admin/ui';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface NewsArticle {
   id: string;
@@ -20,6 +21,7 @@ interface NewsArticle {
 }
 
 export default function EditNewsPage({ params }: { params: Promise<{ id: string }> }) {
+  useAdminAuth('canManageContent');
   const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);

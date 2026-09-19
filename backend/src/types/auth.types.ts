@@ -63,6 +63,26 @@ export interface AdminPermissions {
   canPerformQC: boolean;
   canManagePartsIssue: boolean;
   canApproveWarrantyClaims: boolean;
+  // Existed on apps/admin's AdminPermissions (lib/auth/types.ts) but had no
+  // backend counterpart at all — the Customers and Warranty Claims admin
+  // pages could gate themselves on these client-side, but the backend had
+  // no field to enforce them with even if a route wanted to.
+  canViewCustomers: boolean;
+  canManageCustomers: boolean;
+  canManageWarrantyClaims: boolean;
+  // Ported from apps/admin's AdminPermissions for full parity — previously
+  // frontend-only fields with no backend field to enforce them at all.
+  canManageOrders: boolean;
+  canManageInventory: boolean;
+  canManageWorkshop: boolean;
+  canManageFinance: boolean;
+  canManagePurchases: boolean;
+  canManageSignatures: boolean;
+  canManageShowroomVisits: boolean;
+  canManageSiteNavigation: boolean;
+  canManageRoles: boolean;
+  canManageParts: boolean;
+  canManageReviews: boolean;
 }
 
 export interface AdminUser {

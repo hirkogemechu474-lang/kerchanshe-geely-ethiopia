@@ -11,6 +11,7 @@ import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
 import apiClient from '@/lib/apiClient';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 type FeatureCard = { icon: string; title: string; description: string; image?: string };
 type HighlightItem = { value: string; label: string };
@@ -605,6 +606,7 @@ function FeatureCardsEditor({
 /* ---------- Main Page ---------- */
 
 export default function AboutSettingsPage() {
+  useAdminAuth('canManageContent');
   const [data, setData] = useState<AboutContent>(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

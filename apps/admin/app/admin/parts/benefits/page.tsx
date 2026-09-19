@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Benefit {
   id: string;
@@ -16,6 +17,7 @@ interface Benefit {
 const emptyForm = { title: '', description: '', icon: '', displayOrder: 0, isActive: true };
 
 export default function PartBenefitsPage() {
+  useAdminAuth('canManageSpareParts');
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Benefit | null>(null);

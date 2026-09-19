@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Calendar, Percent, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader, Card, Button, LinkButton } from '@/components/admin/ui';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function NewPromotionPage() {
+  useAdminAuth('canManagePromotions');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

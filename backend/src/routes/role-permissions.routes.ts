@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rolePermissionRepository } from '../repositories';
 import { ADMIN_ROLES, AdminRole, AdminPermissions } from '../types/auth.types';
 import { ROLE_PERMISSIONS } from '../middleware/rolePermissions';
@@ -14,6 +14,12 @@ import { ROLE_PERMISSIONS } from '../middleware/rolePermissions';
 const router = Router();
 
 router.use(requireAdminApiSession);
+// Was session-only — any authenticated staff member (Marketing, Sales, etc.)
+// could read the full permission matrix and grant/revoke any permission for
+// any role via PATCH/DELETE. canManageUsers matches the gate already used
+// by apps/admin/app/admin/users/roles/page.tsx, the only page that renders
+// RolesPermissionsManager.tsx against this router.
+router.use(requirePermission('canManageUsers'));
 
 const LOCKED_ROLE = AdminRole.SUPER_ADMIN;
 
@@ -66,6 +72,26 @@ const PERMISSION_LABELS: Record<keyof AdminPermissions, string> = {
   canPerformQC: 'Perform QC',
   canManagePartsIssue: 'Manage Parts Issue',
   canApproveWarrantyClaims: 'Approve Warranty Claims',
+  canViewCustomers: 'View Customers',
+  canManageCustomers: 'Manage Customers',
+  canManageWarrantyClaims: 'Manage Warranty Claims',
+  // Ported onto AdminPermissions for admin/backend field parity (see
+  // rolePermissions.ts) — only canManageOrders is actually enforced by any
+  // route today (commission/sla/payments); the rest are declared here to
+  // satisfy Record<keyof AdminPermissions, ...> but aren't yet wired to a
+  // route or added to PERMISSION_GROUP_KEYS below, matching this file's own
+  // policy of only grouping keys that are really enforced.
+  canManageOrders: 'Manage Orders',
+  canManageInventory: 'Manage Inventory',
+  canManageWorkshop: 'Manage Workshop',
+  canManageFinance: 'Manage Finance',
+  canManagePurchases: 'Manage Purchases',
+  canManageSignatures: 'Manage Signatures',
+  canManageShowroomVisits: 'Manage Showroom Visits',
+  canManageSiteNavigation: 'Manage Site Navigation',
+  canManageRoles: 'Manage Roles',
+  canManageParts: 'Manage Parts',
+  canManageReviews: 'Manage Reviews',
 };
 
 const PERMISSION_GROUP_KEYS: { label: string; keys: (keyof AdminPermissions)[] }[] = [
@@ -73,13 +99,15 @@ const PERMISSION_GROUP_KEYS: { label: string; keys: (keyof AdminPermissions)[] }
   { label: 'Vehicles', keys: ['canManageVehicles', 'canViewVehicles'] },
   { label: 'Test Drives', keys: ['canManageTestDrives', 'canViewTestDrives'] },
   { label: 'Quotations & Agreements', keys: ['canManageQuotations', 'canViewQuotations', 'canCountersignAgreements'] },
+  { label: 'Orders', keys: ['canManageOrders'] },
   { label: 'Dealers', keys: ['canManageDealers', 'canViewDealers'] },
   { label: 'Service Bookings', keys: ['canManageServiceBookings', 'canViewServiceBookings', 'canManageService'] },
   { label: 'Spare Parts', keys: ['canManageSpareParts', 'canViewSpareParts', 'canManagePartsIssue'] },
   { label: 'Messages', keys: ['canManageMessages', 'canViewMessages'] },
   { label: 'Analytics & Reports', keys: ['canViewAnalytics', 'canExportReports', 'canViewReports', 'canViewExecutiveDashboards'] },
   { label: 'Users & Settings', keys: ['canManageUsers', 'canViewUsers', 'canManageSettings', 'canViewSettings'] },
-  { label: 'Workshop', keys: ['canViewJobCards', 'canManageJobCards', 'canManageBays', 'canManageTechnicians', 'canPerformQC', 'canApproveWarrantyClaims'] },
+  { label: 'Workshop', keys: ['canViewJobCards', 'canManageJobCards', 'canManageBays', 'canManageTechnicians', 'canPerformQC', 'canManageWarrantyClaims', 'canApproveWarrantyClaims'] },
+  { label: 'Customers', keys: ['canViewCustomers', 'canManageCustomers'] },
 ];
 
 const PERMISSION_GROUPS = PERMISSION_GROUP_KEYS.map((group) => ({

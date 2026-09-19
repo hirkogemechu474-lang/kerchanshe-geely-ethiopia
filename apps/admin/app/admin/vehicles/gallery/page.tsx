@@ -2,8 +2,10 @@
 
 import { PageHeader } from '@/components/admin/ui';
 import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function VehicleGalleryPage() {
+  useAdminAuth('canManageVehicles');
   return (
     <div className="space-y-6">
       <PageHeader

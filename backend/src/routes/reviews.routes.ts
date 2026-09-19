@@ -1,9 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 
 const router = Router();
+
+// The /admin/reviews/* endpoints below were session-only — any authenticated
+// staff member of any role could see, edit, or delete every review
+// (including ones pending moderation). canModerateReviews matches
+// AdminLayout.tsx's "Manage Reviews" nav item and the dedicated field
+// ROLE_PERMISSIONS grants specifically for this module — deliberately NOT
+// canManageReviews, a same-sounding but unused field. (The admin
+// /admin/reviews page.tsx itself guards on canManageContent instead — a
+// pre-existing frontend inconsistency, but every role that has one of these
+// two keys currently has both, so it doesn't change who's actually let in.)
+const gate = requirePermission('canModerateReviews');
 
 // GET /api/reviews (list approved)
 router.get('/', async (req: Request, res: Response) => {
@@ -38,7 +49,7 @@ router.post('/', rateLimiters.contactForm, async (req: Request, res: Response) =
 });
 
 // GET /api/reviews/admin/reviews (admin list all)
-router.get('/admin/reviews', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/reviews', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -60,7 +71,7 @@ router.get('/admin/reviews', requireAdminApiSession, async (req: Request, res: R
 });
 
 // PUT /api/reviews/admin/reviews/:id (admin update)
-router.put('/admin/reviews/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/admin/reviews/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const review = await prisma.review.update({ where: { id: req.params.id }, data: req.body });
     res.json(review);
@@ -71,7 +82,7 @@ router.put('/admin/reviews/:id', requireAdminApiSession, async (req: Request, re
 });
 
 // DELETE /api/reviews/admin/reviews/:id (admin delete)
-router.delete('/admin/reviews/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/admin/reviews/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.review.delete({ where: { id: req.params.id } });
     res.json({ success: true });

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 
 const router = Router();
 
@@ -48,8 +48,12 @@ router.get('/:paymentId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/payments/:paymentId/authorize (authorize payment)
-router.post('/:paymentId/authorize', requireAdminApiSession, async (req: Request, res: Response) => {
+// POST /api/payments/:paymentId/authorize (authorize payment) — was
+// session-only, so any authenticated staff member could mark any order's
+// payment PAID. canManageOrders matches the permission every other
+// order-payment mutation in this codebase uses (commissions, SLA, orders
+// payment/confirm).
+router.post('/:paymentId/authorize', requireAdminApiSession, requirePermission('canManageOrders'), async (req: Request, res: Response) => {
   try {
     const payment = await prisma.salesOrder.update({
       where: { id: req.params.paymentId },

@@ -1,15 +1,27 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { settingRepository } from '../repositories/setting.repository';
 
 const router = Router();
+
+// Every route here only ever required a valid admin session — any
+// authenticated staff member of any role could read/overwrite any site
+// setting. canManageSettings matches AdminLayout.tsx's settings-related nav
+// items and every /admin/settings/* page's own requirePermission/
+// useAdminAuth('canManageSettings') guard, with one deliberate exception:
+// /admin/settings/about uses canManageContent instead (matching both its own
+// nav entry and apps/admin/app/admin/settings/about/page.tsx's
+// useAdminAuth('canManageContent')) — so the '/about' routes below use
+// contentGate while every other route uses settingsGate.
+const settingsGate = requirePermission('canManageSettings');
+const contentGate = requirePermission('canManageContent');
 
 // GET /api/settings/by-type/:type (list settings of a given type, e.g. 'policy')
 // Registered before '/:key' below just for readability — the two patterns
 // don't actually shadow each other since '/:key' only matches a single path
 // segment and this route always has two.
-router.get('/by-type/:type', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/by-type/:type', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const settings = await settingRepository.findManyByType(req.params.type);
     res.json(settings);
@@ -26,7 +38,7 @@ router.get('/by-type/:type', requireAdminApiSession, async (req: Request, res: R
 // '/:key' matches any single segment, 'social-media'/'policies' included).
 
 // GET /api/settings/social-media (get social links)
-router.get('/social-media', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/social-media', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'social_media' } });
     if (!setting?.value) { res.json({}); return; }
@@ -42,7 +54,7 @@ router.get('/social-media', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/settings/social-media (update social links)
-router.post('/social-media', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/social-media', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -58,7 +70,7 @@ router.post('/social-media', requireAdminApiSession, async (req: Request, res: R
 });
 
 // GET /api/settings/policies (get policies)
-router.get('/policies', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/policies', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'policies' } });
     if (!setting?.value) { res.json({}); return; }
@@ -74,7 +86,7 @@ router.get('/policies', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // POST /api/settings/policies (update policies)
-router.post('/policies', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/policies', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -103,7 +115,7 @@ router.post('/policies', requireAdminApiSession, async (req: Request, res: Respo
 // the pre-existing financing-page-content route's own naming mismatch).
 
 // GET /api/settings/business-settings
-router.get('/business-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/business-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'business_settings' } });
     if (!setting?.value) { res.json({}); return; }
@@ -119,7 +131,7 @@ router.get('/business-settings', requireAdminApiSession, async (req: Request, re
 });
 
 // POST /api/settings/business-settings
-router.post('/business-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/business-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -135,7 +147,7 @@ router.post('/business-settings', requireAdminApiSession, async (req: Request, r
 });
 
 // GET /api/settings/contact-information
-router.get('/contact-information', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/contact-information', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'contact_information' } });
     if (!setting?.value) { res.json({}); return; }
@@ -151,7 +163,7 @@ router.get('/contact-information', requireAdminApiSession, async (req: Request, 
 });
 
 // POST /api/settings/contact-information
-router.post('/contact-information', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/contact-information', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -168,7 +180,7 @@ router.post('/contact-information', requireAdminApiSession, async (req: Request,
 
 // GET /api/settings/bank-details (company bank account shown on the Sales
 // Agreement and Sales Invoice PDFs — see backend/src/services/pdf/companyInfo.ts)
-router.get('/bank-details', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/bank-details', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'bank_details' } });
     if (!setting?.value) { res.json({}); return; }
@@ -184,7 +196,7 @@ router.get('/bank-details', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/settings/bank-details
-router.post('/bank-details', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/bank-details', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -280,7 +292,7 @@ const DEFAULT_FINANCING_SETTINGS = {
   },
 };
 
-router.get('/financing-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/financing-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'financing_settings' } });
     if (!setting?.value) { res.json(DEFAULT_FINANCING_SETTINGS); return; }
@@ -295,7 +307,7 @@ router.get('/financing-settings', requireAdminApiSession, async (req: Request, r
   }
 });
 
-router.post('/financing-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/financing-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -311,7 +323,7 @@ router.post('/financing-settings', requireAdminApiSession, async (req: Request, 
 });
 
 // GET /api/settings/financing-page-content (get public financing page content)
-router.get('/financing-page-content', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/financing-page-content', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'financing_page_content' } });
     if (!setting?.value) { res.json({}); return; }
@@ -327,7 +339,7 @@ router.get('/financing-page-content', requireAdminApiSession, async (req: Reques
 });
 
 // POST /api/settings/financing-page-content (update public financing page content)
-router.post('/financing-page-content', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/financing-page-content', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -344,7 +356,7 @@ router.post('/financing-page-content', requireAdminApiSession, async (req: Reque
 
 // The About editor works with the JSON content directly rather than the
 // database setting wrapper returned by the generic route below.
-router.get('/about', requireAdminApiSession, async (_req: Request, res: Response) => {
+router.get('/about', requireAdminApiSession, contentGate, async (_req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'about_page' } });
     res.json(setting?.value ? JSON.parse(setting.value) : {});
@@ -354,7 +366,7 @@ router.get('/about', requireAdminApiSession, async (_req: Request, res: Response
   }
 });
 
-router.post('/about', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/about', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -382,7 +394,7 @@ router.post('/about', requireAdminApiSession, async (req: Request, res: Response
 // data. Same JSON.stringify(req.body)/JSON.parse(setting.value) convention,
 // keyed to match what public.routes.ts / assignSalesRep.ts already read.
 
-router.get('/vehicle-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_settings' } });
     if (!setting?.value) { res.json({}); return; }
@@ -397,7 +409,7 @@ router.get('/vehicle-settings', requireAdminApiSession, async (req: Request, res
   }
 });
 
-router.post('/vehicle-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -412,7 +424,7 @@ router.post('/vehicle-settings', requireAdminApiSession, async (req: Request, re
   }
 });
 
-router.get('/vehicle-specifications', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-specifications', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_specifications' } });
     if (!setting?.value) { res.json({}); return; }
@@ -427,7 +439,7 @@ router.get('/vehicle-specifications', requireAdminApiSession, async (req: Reques
   }
 });
 
-router.post('/vehicle-specifications', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-specifications', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -442,7 +454,7 @@ router.post('/vehicle-specifications', requireAdminApiSession, async (req: Reque
   }
 });
 
-router.get('/vehicle-features', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vehicle-features', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_features' } });
     if (!setting?.value) { res.json({}); return; }
@@ -457,7 +469,7 @@ router.get('/vehicle-features', requireAdminApiSession, async (req: Request, res
   }
 });
 
-router.post('/vehicle-features', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/vehicle-features', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -472,7 +484,7 @@ router.post('/vehicle-features', requireAdminApiSession, async (req: Request, re
   }
 });
 
-router.get('/document-signatures', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/document-signatures', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'document_signatures' } });
     if (!setting?.value) { res.json({}); return; }
@@ -487,7 +499,7 @@ router.get('/document-signatures', requireAdminApiSession, async (req: Request, 
   }
 });
 
-router.post('/document-signatures', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/document-signatures', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -502,7 +514,7 @@ router.post('/document-signatures', requireAdminApiSession, async (req: Request,
   }
 });
 
-router.get('/warranty-page', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/warranty-page', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'warranty_page' } });
     if (!setting?.value) { res.json({}); return; }
@@ -517,7 +529,7 @@ router.get('/warranty-page', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
-router.post('/warranty-page', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/warranty-page', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -532,7 +544,7 @@ router.post('/warranty-page', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.get('/cookie-banner', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/cookie-banner', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'cookie_banner' } });
     if (!setting?.value) { res.json({}); return; }
@@ -547,7 +559,7 @@ router.get('/cookie-banner', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
-router.post('/cookie-banner', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/cookie-banner', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -562,7 +574,7 @@ router.post('/cookie-banner', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.get('/notification-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/notification-rules', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'notification_rules' } });
     if (!setting?.value) { res.json({}); return; }
@@ -577,7 +589,7 @@ router.get('/notification-rules', requireAdminApiSession, async (req: Request, r
   }
 });
 
-router.post('/notification-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/notification-rules', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -595,7 +607,7 @@ router.post('/notification-rules', requireAdminApiSession, async (req: Request, 
 // Key is 'assignment_rules', matching backend/src/services/sales/assignSalesRep.ts's
 // getAssignmentRules(), which reads this setting to weight auto-assignment —
 // this was previously unreachable/unsaveable via the generic '/:key' route.
-router.get('/assignment-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/assignment-rules', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'assignment_rules' } });
     if (!setting?.value) { res.json({}); return; }
@@ -610,7 +622,7 @@ router.get('/assignment-rules', requireAdminApiSession, async (req: Request, res
   }
 });
 
-router.post('/assignment-rules', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/assignment-rules', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -627,7 +639,7 @@ router.post('/assignment-rules', requireAdminApiSession, async (req: Request, re
 
 // Key is 'ev_calculator' (not 'ev_savings_calculator'), matching the existing
 // key public.routes.ts's GET /ev-savings-calculator already reads.
-router.get('/ev-savings-calculator', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/ev-savings-calculator', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'ev_calculator' } });
     if (!setting?.value) { res.json({}); return; }
@@ -642,7 +654,7 @@ router.get('/ev-savings-calculator', requireAdminApiSession, async (req: Request
   }
 });
 
-router.post('/ev-savings-calculator', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/ev-savings-calculator', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -681,7 +693,7 @@ const DEFAULT_SEO_SETTINGS = {
   robotsExtra: '',
 };
 
-router.get('/seo-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/seo-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'seo_settings' } });
     if (!setting?.value) { res.json(DEFAULT_SEO_SETTINGS); return; }
@@ -696,7 +708,7 @@ router.get('/seo-settings', requireAdminApiSession, async (req: Request, res: Re
   }
 });
 
-router.post('/seo-settings', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/seo-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -712,7 +724,7 @@ router.post('/seo-settings', requireAdminApiSession, async (req: Request, res: R
 });
 
 // GET /api/settings/:key (get setting)
-router.get('/:key', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:key', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: req.params.key } });
     if (!setting) { res.status(404).json({ error: 'Setting not found' }); return; }
@@ -724,7 +736,7 @@ router.get('/:key', requireAdminApiSession, async (req: Request, res: Response) 
 });
 
 // POST /api/settings/:key (upsert setting)
-router.post('/:key', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:key', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
   try {
     const { value } = req.body;
     // Setting.value is a String column — guard against a caller passing a

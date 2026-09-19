@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function AdminContentLegacyRedirect() {
+  useAdminAuth('canManageContent');
   const router = useRouter();
   useEffect(() => {
     // Instant redirect — but allow browser/plugin time to hook (300ms)

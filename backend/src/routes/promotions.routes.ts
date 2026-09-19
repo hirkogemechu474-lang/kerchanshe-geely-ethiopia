@@ -1,8 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 
 const router = Router();
+
+// Mutations were session-only — any authenticated staff member of any role
+// could create/update/delete promotions. canManagePromotions matches
+// AdminLayout.tsx's "Manage Promotions" nav item and the create/edit admin
+// pages' own useAdminAuth('canManagePromotions') guard. (The list page.tsx
+// itself guards on canManageContent instead — a pre-existing frontend
+// inconsistency, but every role that has one of these two keys currently has
+// both, so it doesn't change who's actually let in.)
+const gate = requirePermission('canManagePromotions');
 
 // GET /api/promotions (list)
 router.get('/', async (req: Request, res: Response) => {
@@ -23,7 +32,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/promotions (admin create)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const promotion = await prisma.promotion.create({ data: req.body });
     res.status(201).json(promotion);
@@ -46,7 +55,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // PUT /api/promotions/:id (admin update)
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const promotion = await prisma.promotion.update({ where: { id: req.params.id }, data: req.body });
     res.json(promotion);
@@ -57,7 +66,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/promotions/:id (admin delete)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.promotion.update({ where: { id: req.params.id }, data: { isActive: false } });
     res.json({ success: true });

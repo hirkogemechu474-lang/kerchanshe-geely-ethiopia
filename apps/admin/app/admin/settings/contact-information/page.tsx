@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface ContactInformation {
   headquarters: {
@@ -88,6 +89,7 @@ const DEFAULT_DATA: ContactInformation = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactInformationPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<ContactInformation>(DEFAULT_DATA);

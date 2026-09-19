@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Facebook, Instagram, Twitter, Youtube, Linkedin, Music, ExternalLink } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function SocialMediaPage() {
+  useAdminAuth('canManageSettings');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

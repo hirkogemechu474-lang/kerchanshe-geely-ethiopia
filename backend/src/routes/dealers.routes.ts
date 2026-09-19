@@ -1,11 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 
 const router = Router();
 
+router.use(requireAdminApiSession);
+
+// Was session-only — any authenticated staff member could read (and, worse,
+// create/edit/delete) dealers. Split to match dealers/page.tsx (view) vs.
+// dealers/new + dealers/[id]/edit (manage), same view/manage shape as
+// customers.routes.ts.
 // GET /api/dealers (admin list with search)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requirePermission('canViewDealers'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -41,7 +47,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/dealers (admin create)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requirePermission('canManageDealers'), async (req: Request, res: Response) => {
   try {
     const dealer = await prisma.dealer.create({ data: req.body });
     res.status(201).json({ success: true, dealer });
@@ -52,7 +58,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/dealers/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requirePermission('canViewDealers'), async (req: Request, res: Response) => {
   try {
     const dealer = await prisma.dealer.findUnique({ where: { id: req.params.id } });
     if (!dealer) { res.status(404).json({ error: 'Dealer not found' }); return; }
@@ -64,7 +70,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // PUT /api/dealers/:id (admin update)
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requirePermission('canManageDealers'), async (req: Request, res: Response) => {
   try {
     const dealer = await prisma.dealer.update({ where: { id: req.params.id }, data: req.body });
     res.json({ success: true, dealer });
@@ -75,7 +81,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/dealers/:id (admin delete)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requirePermission('canManageDealers'), async (req: Request, res: Response) => {
   try {
     await prisma.dealer.delete({ where: { id: req.params.id } });
     res.json({ success: true });

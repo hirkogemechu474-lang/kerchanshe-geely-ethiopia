@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Sparkles,
 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface SliderInput {
   default: number;
@@ -140,6 +141,7 @@ const etb = (n: number) =>
   `ETB ${Math.round(n).toLocaleString('en-US')}`;
 
 export default function EvSavingsCalculatorPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<EvSavingsCalculatorSettings>(DEFAULT_DATA);

@@ -6,6 +6,7 @@ import { Calendar, User, Eye, Tag, Edit, Trash2, ArrowLeft, Globe, Save, ImageIc
 import Link from "next/link";
 import { Card, Button, Badge, type Tone } from "@/components/admin/ui";
 import { uploadAndRegisterMedia } from "@/lib/mediaUpload";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface NewsArticle {
   id: string;
@@ -23,6 +24,7 @@ interface NewsArticle {
 }
 
 export default function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  useAdminAuth('canManageContent');
   const { id } = use(params);
   const router = useRouter();
   const [article, setArticle] = useState<NewsArticle | null>(null);

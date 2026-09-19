@@ -6,8 +6,10 @@ import { Save, FileText, Tag, Calendar, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link';
 import { Card, Button, PageHeader } from '@/components/admin/ui';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function NewNewsPage() {
+  useAdminAuth('canManageContent');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

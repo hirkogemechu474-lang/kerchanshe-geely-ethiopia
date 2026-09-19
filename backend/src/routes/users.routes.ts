@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { staffSignatureService } from '../services/staffSignature/staffSignature.service';
 
@@ -9,6 +9,11 @@ const router = Router();
 
 // All user management routes require admin session
 router.use(requireAdminApiSession);
+// Was session-only — any authenticated staff member could list/create/edit
+// staff accounts, including promoting one to super_admin. canManageUsers
+// matches the gate already used by every apps/admin/app/admin/users/**
+// page (list, detail, new, roles) that calls this router.
+router.use(requirePermission('canManageUsers'));
 
 // Mirrors ROLE_OPTIONS in apps/admin/lib/auth/types.ts. Kept as a plain list
 // (rather than importing that file) because backend has no shared module

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, PenTool, CheckCircle2, Sparkles } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 type DocumentType = 'QUOTATION' | 'SALES_AGREEMENT' | 'HANDOVER';
 type SignerRole = 'sales_agent' | 'manager' | 'customer';
@@ -30,6 +31,7 @@ const ROLES: SignerRole[] = ['sales_agent', 'manager', 'customer'];
 const DOCUMENT_TYPES: DocumentType[] = ['QUOTATION', 'SALES_AGREEMENT', 'HANDOVER'];
 
 export default function DocumentSignaturesPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requirements, setRequirements] = useState<SignatureRequirements>(DEFAULT_REQUIREMENTS);

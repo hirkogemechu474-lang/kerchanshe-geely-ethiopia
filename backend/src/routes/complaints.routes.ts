@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { complaintService } from '../services/customer/complaint.service';
 
 const router = Router();
 
+// Was session-only — any authenticated staff member could read/create
+// complaints and change their status. canManageCustomers matches the
+// '/admin/complaints' nav entry (AdminLayout.tsx) and the gate already used
+// by apps/admin/app/admin/complaints/page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageCustomers'));
+
 // GET /api/complaints/dashboard - Get complaint dashboard metrics
-router.get('/dashboard', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/dashboard', async (req: Request, res: Response) => {
   try {
     const result = await complaintService.getDashboard();
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -17,7 +24,7 @@ router.get('/dashboard', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // GET /api/complaints - List complaints with filters
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const { status, category, priority, assignedTo, page, pageSize } = req.query;
     const result = await complaintService.list({
@@ -37,7 +44,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/complaints - Create a complaint
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const result = await complaintService.create(req.body);
     if (!result.ok) { res.status(400).json({ error: result.error }); return; }
@@ -49,7 +56,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/complaints/:id - Get complaint details
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await complaintService.getById(req.params.id);
     if (!result.ok) { res.status(404).json({ error: result.error }); return; }
@@ -61,7 +68,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // POST /api/complaints/:id/status - Update complaint status
-router.post('/:id/status', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/status', async (req: Request, res: Response) => {
   try {
     const { status, note } = req.body;
     if (!status) { res.status(400).json({ error: 'status is required' }); return; }
@@ -75,7 +82,7 @@ router.post('/:id/status', requireAdminApiSession, async (req: Request, res: Res
 });
 
 // POST /api/complaints/:id/notes - Add a note to a complaint
-router.post('/:id/notes', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/notes', async (req: Request, res: Response) => {
   try {
     const { noteType, content, isPublic } = req.body;
     if (!content) { res.status(400).json({ error: 'content is required' }); return; }

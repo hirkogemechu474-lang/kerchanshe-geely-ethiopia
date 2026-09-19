@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Eye, Image as ImageIcon, Save, Tag } from 'lucide-
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface PromotionForm {
   title: string;
@@ -37,6 +38,7 @@ function dateInputValue(value: string) {
 }
 
 export default function EditPromotionPage() {
+  useAdminAuth('canManagePromotions');
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [form, setForm] = useState<PromotionForm>(EMPTY_FORM);

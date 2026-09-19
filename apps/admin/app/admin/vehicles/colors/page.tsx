@@ -6,6 +6,7 @@ import { PageHeader, Card, Button, TableCard, THead, TBody, Tr, Th, Td, Badge, E
 import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import ImageUpload from '@/components/admin/vehicles/ImageUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface VehicleColor {
   id: string;
@@ -98,6 +99,7 @@ function ColorSwatchThumb({ color }: { color: VehicleColor }) {
 }
 
 export default function VehicleColorsPage() {
+  useAdminAuth('canManageVehicles');
   const [resource, setResource] = useState<Resource>('colors');
   const [vehicleId, setVehicleId] = useState<string | null>(null);
 

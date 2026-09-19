@@ -1,11 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { generateBrochurePdf } from '../services/pdf/brochure.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
 import { formatCurrency } from '../utils/formatting';
 
 const router = Router();
+
+// Every admin-session-gated route below never checked a permission — any
+// authenticated staff member of any role could read/create/edit/delete
+// vehicles. Split to match apps/admin/app/admin/vehicles page.tsx
+// (list/detail: requirePermission('canViewVehicles')) vs new/page.tsx and
+// [id]/edit/page.tsx (requirePermission('canManageVehicles')) — both fields
+// exist and vary independently across roles (e.g. Marketing has
+// canViewVehicles: true but canManageVehicles: false).
+const viewGate = requirePermission('canViewVehicles');
+const manageGate = requirePermission('canManageVehicles');
 
 // Fields callers are allowed to sort the admin list by. Keep this in sync
 // with actual scalar columns on Vehicle — never pass req.query.sortBy
@@ -16,7 +26,7 @@ const SORTABLE_VEHICLE_FIELDS = new Set([
 ]);
 
 // GET /api/vehicles (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -50,7 +60,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/vehicles
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const vehicle = await prisma.vehicle.create({ data: req.body });
     res.status(201).json(vehicle);
@@ -68,7 +78,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 // GET /api/vehicles/stats (admin dashboard tiles)
 // Registered before GET /:id so Express doesn't shadow it (a bare
 // `/:id` route would otherwise match /stats with id="stats").
-router.get('/stats', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/stats', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const [total, outOfStock, totalCategories, stockLevels] = await Promise.all([
       prisma.vehicle.count(),
@@ -96,7 +106,7 @@ router.get('/stats', requireAdminApiSession, async (req: Request, res: Response)
 
 // GET /api/vehicles/brands (active brands, for admin dropdowns)
 // Also registered before GET /:id to avoid route-shadowing.
-router.get('/brands', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/brands', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const brands = await prisma.vehicleBrand.findMany({
       where: { isActive: true },
@@ -112,7 +122,7 @@ router.get('/brands', requireAdminApiSession, async (req: Request, res: Response
 // GET /api/vehicles/categories/:id (single category, admin editing)
 // Not filtered by isActive — admins need to be able to open/edit inactive
 // categories too. Registered before GET /:id to avoid route-shadowing.
-router.get('/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/categories/:id', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const category = await prisma.vehicleCategory.findUnique({
       where: { id: req.params.id },
@@ -156,7 +166,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // PUT /api/vehicles/:id
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: req.body });
     res.json(vehicle);
@@ -176,7 +186,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/vehicles/:id (permanent delete)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     await prisma.vehicle.delete({ where: { id: req.params.id } });
     res.json({ success: true });

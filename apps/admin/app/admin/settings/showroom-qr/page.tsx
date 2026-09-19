@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
 import { ArrowLeft, Download, QrCode } from 'lucide-react';
 import { Card, PageHeader } from '@/components/admin/ui';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 // One-time-use utility: the showroom QR is static — the same code is
 // printed/displayed indefinitely and reused by every visitor. There is no
@@ -12,6 +13,7 @@ import { Card, PageHeader } from '@/components/admin/ui';
 // download the PNG, and print it for the showroom poster/table-tent/kiosk
 // screen.
 export default function ShowroomQrPage() {
+  useAdminAuth('canManageSettings');
   const router = useRouter();
   const [siteUrl, setSiteUrl] = useState(process.env.NEXT_PUBLIC_SITE_URL || '');
   const [dataUrl, setDataUrl] = useState<string | null>(null);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Search, CheckCircle2, Sparkles } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 type SeoSettings = {
   defaultMetaTitle: string;
@@ -31,6 +32,7 @@ const DEFAULT_SEO_SETTINGS: SeoSettings = {
 };
 
 export default function SeoSettingsPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<SeoSettings>(DEFAULT_SEO_SETTINGS);

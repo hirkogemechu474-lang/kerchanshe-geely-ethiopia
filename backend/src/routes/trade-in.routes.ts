@@ -1,11 +1,22 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { TradeInEvaluationService } from '../services/trade-in/tradeInEvaluation.service';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session. Trade-in
+// evaluations are surfaced inside the Quotation detail page
+// (TradeInEvaluationPanel.tsx, rendered from
+// apps/admin/app/admin/quotations/[id]/page.tsx), which passes
+// session.user.permissions.canManageQuotations as that panel's `canManage`
+// prop (gating its one mutating action, approve) and itself guards on
+// canViewQuotations — so this router is split to match: view -> read the
+// evaluation, manage -> create/approve/annotate it.
+const viewGate = requirePermission('canViewQuotations');
+const manageGate = requirePermission('canManageQuotations');
+
 // POST /api/trade-in (create trade-in evaluation)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const evaluation = await TradeInEvaluationService.create(req.body);
     if (!evaluation.ok) {
@@ -19,7 +30,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/trade-in/lead/:leadId (get evaluation by lead)
-router.get('/lead/:leadId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/lead/:leadId', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const result = await TradeInEvaluationService.getByLeadId(req.params.leadId);
     if (!result.ok) {
@@ -33,7 +44,7 @@ router.get('/lead/:leadId', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/trade-in/:id/approve (approve/reject evaluation)
-router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/approve', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const { approvalStatus, evaluatedValue, internalNotes } = req.body;
     const result = await TradeInEvaluationService.updateEvaluation(req.params.id, {
@@ -54,7 +65,7 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // POST /api/trade-in/:id/notes (add internal notes)
-router.post('/:id/notes', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/notes', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const { notes } = req.body;
     const result = await TradeInEvaluationService.addInternalNotes(req.params.id, notes);

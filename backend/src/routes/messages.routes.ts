@@ -1,12 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 
 const router = Router();
 
+// Was session-only on both admin routes — any authenticated staff member
+// could read every inbound message and change its status. Split to match
+// messages/page.tsx (canViewMessages) vs. the canManageMessages field that
+// exists alongside it in AdminPermissions for the mutating action. POST '/'
+// stays public/unauthenticated — it's the public contact-form submission,
+// rate-limited, not an admin action.
 // GET /api/messages (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, requirePermission('canViewMessages'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -39,7 +45,7 @@ router.post('/', rateLimiters.contactForm, async (req: Request, res: Response) =
 });
 
 // PATCH /api/messages/:id (admin update status)
-router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.patch('/:id', requireAdminApiSession, requirePermission('canManageMessages'), async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
     const message = await prisma.message.update({ where: { id: req.params.id }, data: { status } });

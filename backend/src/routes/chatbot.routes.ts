@@ -1,19 +1,27 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { chatbotService } from '../services/chatbot/chatbot.service';
 
 const router = Router();
 
+// Was session-only — any authenticated staff member could edit the chatbot's
+// knowledge base or read customer conversation logs. canManageContent
+// matches the '/admin/chatbot*' nav entries (AdminLayout.tsx) and the gate
+// already used by apps/admin/app/admin/chatbot/{,knowledge,conversations}
+// page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageContent'));
+
 // ── AI layer status ──────────────────────────────────────────────────────
 
-router.get('/ai-status', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/ai-status', async (req: Request, res: Response) => {
   res.json(chatbotService.getAiStatus());
 });
 
 // ── Knowledge base CRUD ─────────────────────────────────────────────────
 
-router.get('/knowledge', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/knowledge', async (req: Request, res: Response) => {
   try {
     const entries = await prisma.chatbotKnowledge.findMany({
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
@@ -25,7 +33,7 @@ router.get('/knowledge', requireAdminApiSession, async (req: Request, res: Respo
   }
 });
 
-router.get('/knowledge/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/knowledge/:id', async (req: Request, res: Response) => {
   try {
     const entry = await prisma.chatbotKnowledge.findUnique({ where: { id: req.params.id } });
     if (!entry) { res.status(404).json({ error: 'Knowledge entry not found' }); return; }
@@ -36,7 +44,7 @@ router.get('/knowledge/:id', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
-router.post('/knowledge', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/knowledge', async (req: Request, res: Response) => {
   try {
     const { question, keywords, answer, category, isActive, priority, displayOrder } = req.body;
     const entry = await prisma.chatbotKnowledge.create({
@@ -57,7 +65,7 @@ router.post('/knowledge', requireAdminApiSession, async (req: Request, res: Resp
   }
 });
 
-router.put('/knowledge/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/knowledge/:id', async (req: Request, res: Response) => {
   try {
     const { question, keywords, answer, category, isActive, priority, displayOrder } = req.body;
     const entry = await prisma.chatbotKnowledge.update({
@@ -79,7 +87,7 @@ router.put('/knowledge/:id', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
-router.delete('/knowledge/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/knowledge/:id', async (req: Request, res: Response) => {
   try {
     await prisma.chatbotKnowledge.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -91,7 +99,7 @@ router.delete('/knowledge/:id', requireAdminApiSession, async (req: Request, res
 
 // ── Conversation logs ───────────────────────────────────────────────────
 
-router.get('/conversations', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/conversations', async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -120,7 +128,7 @@ router.get('/conversations', requireAdminApiSession, async (req: Request, res: R
   }
 });
 
-router.get('/conversations/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/conversations/:id', async (req: Request, res: Response) => {
   try {
     const conversation = await prisma.chatbotConversation.findUnique({
       where: { id: req.params.id },

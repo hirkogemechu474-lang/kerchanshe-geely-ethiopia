@@ -1,11 +1,27 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { warrantyService } from '../services/warranty/warranty.service';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session. This is the
+// "Warranty Register" module (service history/reminders tied to job
+// cards) — a different feature from workshop.routes.ts's warranty-claims
+// endpoints (defect/complaint claims, already gated on
+// canManageWarrantyClaims). AdminLayout.tsx's nav labels this
+// canManageWarrantyClaims too, but the page that actually consumes this
+// router (apps/admin/app/admin/warranty/page.tsx) guards with
+// requirePermission('canViewJobCards') instead, and canManageWarrantyClaims
+// is otherwise only used by the separate workshop/warranty-claims pages.
+// Matching the real page guard (and using canManageJobCards — already used
+// elsewhere for job-card mutations — for the mutating routes) avoids 403ing
+// roles like Service Advisor, which has canViewJobCards/canManageJobCards
+// but not canManageWarrantyClaims.
+const viewGate = requirePermission('canViewJobCards');
+const manageGate = requirePermission('canManageJobCards');
+
 // GET /api/warranty/upcoming-services - Get warranties with upcoming services
-router.get('/upcoming-services', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/upcoming-services', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const daysAhead = req.query.days ? parseInt(req.query.days as string) : 30;
     const result = await warrantyService.getUpcomingServices(daysAhead);
@@ -21,7 +37,7 @@ router.get('/upcoming-services', requireAdminApiSession, async (req: Request, re
 });
 
 // POST /api/warranty/send-reminders - Send service reminders
-router.post('/send-reminders', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/send-reminders', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const result = await warrantyService.sendServiceReminders();
     res.json(result);
@@ -32,7 +48,7 @@ router.post('/send-reminders', requireAdminApiSession, async (req: Request, res:
 });
 
 // GET /api/warranty/:orderId - Get warranty by order ID
-router.get('/:orderId', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:orderId', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const result = await warrantyService.getWarranty(req.params.orderId);
     if (!result.ok) {
@@ -47,7 +63,7 @@ router.get('/:orderId', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // GET /api/warranty/vin/:vin - Get warranty by VIN
-router.get('/vin/:vin', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/vin/:vin', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const result = await warrantyService.getWarrantyByVin(req.params.vin);
     if (!result.ok) {
@@ -62,7 +78,7 @@ router.get('/vin/:vin', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // POST /api/warranty/:orderId/register - Register warranty for an order
-router.post('/:orderId/register', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:orderId/register', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const result = await warrantyService.registerWarranty(req.params.orderId);
     if (!result.ok) {
@@ -77,7 +93,7 @@ router.post('/:orderId/register', requireAdminApiSession, async (req: Request, r
 });
 
 // POST /api/warranty/:warrantyId/service - Add service record to warranty
-router.post('/:warrantyId/service', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:warrantyId/service', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const { serviceDate, serviceType, description, kmAtService, cost, performedBy, nextServiceDate, nextServiceKm, documents } = req.body;
     if (!serviceDate || !serviceType) {
@@ -109,7 +125,7 @@ router.post('/:warrantyId/service', requireAdminApiSession, async (req: Request,
 });
 
 // GET /api/warranty - List warranties with filters
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const { status, page, pageSize } = req.query;
     const result = await warrantyService.list({

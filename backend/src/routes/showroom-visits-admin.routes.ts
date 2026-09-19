@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { showroomVisitRepository } from '../repositories';
 
 // Admin-only showroom-visit routes, kept in a file separate from
@@ -12,6 +12,15 @@ import { showroomVisitRepository } from '../repositories';
 const router = Router();
 
 router.use(requireAdminApiSession);
+// Was session-only — any authenticated staff member of any role could read
+// the full showroom-visit list. There's no dedicated nav entry for this page
+// (it isn't wired into AdminLayout.tsx's navSections), but its own page.tsx
+// (apps/admin/app/admin/showroom-visits/page.tsx) guards with
+// canViewQuotations — not the seemingly-on-point canManageShowroomVisits
+// field, which turns out to be unused anywhere in the frontend today.
+// Matching the page's real guard here (rather than the unused field) avoids
+// 403ing a role that can currently load the page fine.
+router.use(requirePermission('canViewQuotations'));
 
 // GET /api/admin/showroom-visits (admin list) — see
 // apps/admin/components/admin/showroom-visits/ShowroomVisitsList.tsx for

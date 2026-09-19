@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Landmark, CheckCircle2 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 // Company bank account, printed on the Sales Agreement's "Payment" section
 // and the Sales Invoice's "Payment" section — see
@@ -23,6 +24,7 @@ const DEFAULT_DATA: BankDetails = {
 };
 
 export default function BankDetailsPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<BankDetails>(DEFAULT_DATA);

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
 import { sendQuotationConfirmationEmail } from '../services/email/statusEmail';
@@ -18,6 +18,19 @@ import path from 'path';
 import { UPLOAD_ROOT } from './upload.routes';
 
 const router = Router();
+
+// Every admin-session-gated route below never checked a permission — any
+// authenticated staff member of any role could read, edit, approve, or
+// escalate any quotation. Split to match apps/admin/app/admin/quotations
+// page.tsx/[id]/page.tsx (requirePermission('canViewQuotations') to load the
+// list/detail pages) vs the `canManage` prop those pages derive from
+// session.user.permissions.canManageQuotations (gating every mutating action
+// button on the detail page — send, approve, reject, escalate, convert,
+// regenerate PDF, assign rep) and new/page.tsx (requirePermission
+// ('canManageQuotations')). POST /submit stays public — it's the
+// customer-facing lead-capture form, not an admin route.
+const viewGate = requirePermission('canViewQuotations');
+const manageGate = requirePermission('canManageQuotations');
 
 // Persists a rendered quotation PDF snapshot so `Quotation.pdfUrl` reflects
 // the exact document a manager approved or a customer signed, even if the
@@ -47,7 +60,7 @@ async function getManagerEmails(): Promise<string[]> {
 }
 
 // GET /api/quotations (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -106,7 +119,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/quotations (admin create walk-in lead)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     // UC-01 dedupe: an already-open inquiry for this phone number is reused
     // instead of creating a duplicate lead (WalkInLeadForm surfaces this via
@@ -127,7 +140,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/quotations/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.findUnique({
       where: { id: req.params.id },
@@ -143,7 +156,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 
 // GET /api/quotations/:id/prior-inquiries (other quotations sharing this
 // quotation's phone number — UC-01 dedupe visibility)
-router.get('/:id/prior-inquiries', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id/prior-inquiries', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -170,7 +183,7 @@ router.get('/:id/prior-inquiries', requireAdminApiSession, async (req: Request, 
 // quotation that hasn't been priced/generated yet (quotationGeneratedAt
 // null) is exempt, since managerApprovalStatus defaults to PENDING from
 // creation and the agent must be able to freely edit before ever submitting.
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const existing = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -191,7 +204,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/quotations/:id (admin delete)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     await prisma.quotation.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -205,7 +218,7 @@ router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response
 // to the customer — gated on manager approval, per Quotation.
 // managerApprovalStatus's doc comment: "a generated quotation cannot be sent
 // to the customer until a manager approves it here")
-router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/send-quotation', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -296,7 +309,7 @@ router.post('/:id/send-quotation', requireAdminApiSession, async (req: Request, 
 // quotation for correction — this is the manager-approval-status reject,
 // same gate QuotationApprovalPanel.tsx surfaces, not a customer-facing
 // rejection: the customer never sees a quotation until it's sent).
-router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/reject-quotation', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const { reason } = req.body;
     if (!reason) { res.status(400).json({ error: 'A rejection reason is required.' }); return; }
@@ -358,7 +371,7 @@ router.post('/:id/reject-quotation', requireAdminApiSession, async (req: Request
 
 // GET /api/quotations/:id/quotation-pdf (view PDF) — serves the stored PDF
 // if available, otherwise generates on-demand.
-router.get('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id/quotation-pdf', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     // Check if a stored PDF exists
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id }, select: { pdfUrl: true } });
@@ -389,7 +402,7 @@ router.get('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, re
 // POST /api/quotations/:id/quotation-pdf (generate/regenerate the Sales
 // Quotation — see QuotationPdfPanel.tsx for the real request body shape and
 // the manager-approval reset-on-regenerate behavior).
-router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/quotation-pdf', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -510,7 +523,7 @@ router.post('/:id/quotation-pdf', requireAdminApiSession, async (req: Request, r
 });
 
 // POST /api/quotations/:id/escalate (escalate to manager)
-router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/escalate', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const existing = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -599,7 +612,7 @@ router.post('/:id/escalate', requireAdminApiSession, async (req: Request, res: R
 });
 
 // POST /api/quotations/check-overdue-escalations (check and auto-escalate overdue)
-router.post('/check-overdue-escalations', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/check-overdue-escalations', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const result = await quotationService.checkOverdueEscalations();
     res.json(result);
@@ -610,7 +623,7 @@ router.post('/check-overdue-escalations', requireAdminApiSession, async (req: Re
 });
 
 // POST /api/quotations/:id/convert-to-order (convert to sales order)
-router.post('/:id/convert-to-order', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/convert-to-order', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const result = await convertQuotationToOrderService.convert(req.params.id, req.body?.assignedTo, req.adminSession!.user.id);
     if (!result.ok) {
@@ -628,7 +641,7 @@ router.post('/:id/convert-to-order', requireAdminApiSession, async (req: Request
 // quotation — sets the manager sign-off gate, not the general lifecycle
 // `status`; see QuotationApprovalPanel.tsx). Also handles discount
 // approvals where managerApprovalStatus is PENDING_DISCOUNT.
-router.post('/:id/approve-quotation', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/approve-quotation', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });
     if (!quotation) { res.status(404).json({ error: 'Quotation not found' }); return; }
@@ -822,7 +835,7 @@ router.post('/submit', rateLimiters.contactForm, async (req: Request, res: Respo
 });
 
 // POST /api/quotations/:id/assign-rep (assign or reassign sales rep)
-router.post('/:id/assign-rep', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/assign-rep', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const { autoAssign, salesRepName, salesRepId, assignmentFactors } = req.body;
     const quotation = await prisma.quotation.findUnique({ where: { id: req.params.id } });

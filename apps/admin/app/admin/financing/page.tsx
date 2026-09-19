@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { FinancingSettingsEditor } from '@/components/admin/financing/FinancingSettingsEditor';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import {
   Wallet,
   Banknote,
@@ -187,6 +188,7 @@ const emptyProgram = (): ProgramForm => ({
 });
 
 export default function FinancingManagementPage() {
+  useAdminAuth('canManageSettings');
   const [activeTab, setActiveTab] = useState<'banks' | 'programs' | 'settings' | 'applications'>(() => {
     if (typeof window !== 'undefined') {
       const t = new URLSearchParams(window.location.search).get('tab');

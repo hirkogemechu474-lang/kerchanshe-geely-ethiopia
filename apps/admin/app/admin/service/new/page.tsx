@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { ArrowLeft, Wrench, CalendarDays, User, CarFront, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface BookingFormData {
   customerName: string;
@@ -44,6 +45,7 @@ const timeSlots = [
 ];
 
 export default function NewServiceBookingForm() {
+  useAdminAuth('canManageService');
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");

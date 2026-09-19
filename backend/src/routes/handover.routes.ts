@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { rateLimiters } from '../utils/rateLimit';
 import { verifyLinkToken } from '../utils/secureLink';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
@@ -66,8 +66,14 @@ router.get('/:orderId/pdf', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/handover/:orderId/countersign-stamp (staff countersign)
-router.post('/:orderId/countersign-stamp', requireAdminApiSession, async (req: Request, res: Response) => {
+// POST /api/handover/:orderId/countersign-stamp (staff countersign) — was
+// session-only, so any authenticated staff member (not just a manager) could
+// stamp a handover as countersigned. canCountersignAgreements is the
+// permission this exact action's name maps to, and is what the other
+// manager-approval gates on this same handover/delivery flow use (see
+// orders.routes.ts's /delivery-hold and /payment/verify, immediately
+// upstream of this step).
+router.post('/:orderId/countersign-stamp', requireAdminApiSession, requirePermission('canCountersignAgreements'), async (req: Request, res: Response) => {
   try {
     const order = await prisma.salesOrder.update({
       where: { id: req.params.orderId },

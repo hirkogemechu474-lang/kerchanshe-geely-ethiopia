@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { contentRepository } from '../repositories/content.repository';
 import type { Prisma } from '@prisma/client';
 
@@ -23,7 +23,14 @@ import type { Prisma } from '@prisma/client';
 
 const router = Router();
 
-router.get('/categories', requireAdminApiSession, async (req: Request, res: Response) => {
+// Was session-only — any authenticated staff member could create/edit/delete
+// vehicle categories. canManageVehicles matches the '/admin/categories' nav
+// entry (AdminLayout.tsx) and the gate already used by
+// apps/admin/app/admin/categories/page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageVehicles'));
+
+router.get('/categories', async (req: Request, res: Response) => {
   try {
     const includeInactive = req.query.includeInactive === 'true';
     const categories = await contentRepository.findAllCategories(includeInactive);
@@ -34,7 +41,7 @@ router.get('/categories', requireAdminApiSession, async (req: Request, res: Resp
   }
 });
 
-router.get('/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/categories/:id', async (req: Request, res: Response) => {
   try {
     const category = await contentRepository.findCategoryById(req.params.id);
     if (!category) { res.status(404).json({ error: 'Category not found' }); return; }
@@ -45,7 +52,7 @@ router.get('/categories/:id', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.post('/categories', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/categories', async (req: Request, res: Response) => {
   try {
     const {
       name, slug, description, imageUrl, iconUrl, heroImageUrl, heroVideoUrl,
@@ -84,7 +91,7 @@ router.post('/categories', requireAdminApiSession, async (req: Request, res: Res
   }
 });
 
-router.put('/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/categories/:id', async (req: Request, res: Response) => {
   try {
     const {
       name, slug, description, imageUrl, iconUrl, heroImageUrl, heroVideoUrl,
@@ -122,7 +129,7 @@ router.put('/categories/:id', requireAdminApiSession, async (req: Request, res: 
   }
 });
 
-router.delete('/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/categories/:id', async (req: Request, res: Response) => {
   try {
     const existing = await contentRepository.findCategoryVehicleCount(req.params.id);
     if (!existing) { res.status(404).json({ error: 'Category not found' }); return; }

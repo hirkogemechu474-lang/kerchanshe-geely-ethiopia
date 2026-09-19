@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Shuffle, CheckCircle2, Sparkles } from 'lucide-react';
 import type { AssignmentRules } from '@/lib/assignSalesRep';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const DEFAULT_RULES: AssignmentRules = {
   lowestWorkload: true,
@@ -48,6 +49,7 @@ const FACTORS: { key: keyof AssignmentRules; label: string; description: string 
 ];
 
 export default function AssignmentRulesPage() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rules, setRules] = useState<AssignmentRules>(DEFAULT_RULES);

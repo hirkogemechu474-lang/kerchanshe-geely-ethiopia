@@ -2,13 +2,16 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Plus, HelpCircle } from 'lucide-react';
 import FAQList from '@/components/admin/faq/FAQList';
+import { requirePermission } from '@/lib/auth/middleware';
 
 export const metadata: Metadata = {
   title: 'FAQ Management - Admin',
   description: 'Manage frequently asked questions',
 };
 
-export default function FAQManagementPage() {
+export default async function FAQManagementPage() {
+  await requirePermission('canManageContent');
+
   return (
     <div className="space-y-6">
       {/* Header */}

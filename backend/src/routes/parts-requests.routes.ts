@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { partRequestRepository } from '../repositories';
 
 const router = Router();
 
 // All parts-requests admin routes require an admin session.
 router.use(requireAdminApiSession);
+// Was session-only — any authenticated staff member of any role could read,
+// update the status of, or delete parts requests. canManageSpareParts
+// matches AdminLayout.tsx's "Manage Parts Requests" nav item and both
+// apps/admin/app/admin/parts-requests page.tsx's useAdminAuth guard (the
+// Spare Parts nav uses this one key even for list/view pages — there's no
+// separate canViewSpareParts split in practice).
+router.use(requirePermission('canManageSpareParts'));
 
 // GET /api/admin/parts-requests (admin list) — see
 // apps/admin/app/admin/parts-requests/page.tsx for the exact contract:

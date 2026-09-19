@@ -18,6 +18,7 @@ import {
   Eye,
   GripVertical,
 } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 /* ---------- TYPES ---------- */
 interface CoverageItem {
@@ -80,6 +81,7 @@ function newDocId() {
 
 /* ---------- PAGE ---------- */
 export default function WarrantyPageSettings() {
+  useAdminAuth('canManageSettings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);

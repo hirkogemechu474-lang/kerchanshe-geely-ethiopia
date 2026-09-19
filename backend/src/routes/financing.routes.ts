@@ -1,9 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { slugify } from '../utils/formatting';
 
 const router = Router();
+
+// Was session-only — any authenticated staff member could create/edit/delete
+// financing programs and partner banks. canManageSettings matches the
+// '/admin/financing' nav entry (AdminLayout.tsx) and the gate already used
+// by apps/admin/app/admin/financing/page.tsx.
+router.use(requireAdminApiSession);
+router.use(requirePermission('canManageSettings'));
 
 // FinancingProgram's canonical Prisma fields — the admin UI form
 // (apps/admin/app/admin/financing/page.tsx) uses short UI-only field names
@@ -34,7 +41,7 @@ function pickProgramFields(body: any) {
 // ── Programs ─────────────────────────────────────────────────────────────
 
 // GET /api/financing/programs (admin list)
-router.get('/programs', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/programs', async (req: Request, res: Response) => {
   try {
     const programs = await prisma.financingProgram.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(programs);
@@ -45,7 +52,7 @@ router.get('/programs', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // POST /api/financing/programs (admin create)
-router.post('/programs', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/programs', async (req: Request, res: Response) => {
   try {
     const slug = `${slugify(req.body.name || 'program')}-${Date.now().toString(36)}`;
     const program = await prisma.financingProgram.create({ data: { ...pickProgramFields(req.body), slug } });
@@ -57,7 +64,7 @@ router.post('/programs', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // GET /api/financing/programs/:id (admin detail)
-router.get('/programs/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/programs/:id', async (req: Request, res: Response) => {
   try {
     const program = await prisma.financingProgram.findUnique({ where: { id: req.params.id } });
     if (!program) { res.status(404).json({ error: 'Program not found' }); return; }
@@ -69,7 +76,7 @@ router.get('/programs/:id', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // PUT /api/financing/programs/:id (admin update)
-router.put('/programs/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/programs/:id', async (req: Request, res: Response) => {
   try {
     const program = await prisma.financingProgram.update({ where: { id: req.params.id }, data: pickProgramFields(req.body) });
     res.json(program);
@@ -80,7 +87,7 @@ router.put('/programs/:id', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // DELETE /api/financing/programs/:id (admin delete)
-router.delete('/programs/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/programs/:id', async (req: Request, res: Response) => {
   try {
     await prisma.financingProgram.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -104,7 +111,7 @@ function pickBankFields(body: any) {
 }
 
 // GET /api/financing/banks (admin list)
-router.get('/banks', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/banks', async (req: Request, res: Response) => {
   try {
     const banks = await prisma.financingBank.findMany({
       orderBy: { name: 'asc' },
@@ -118,7 +125,7 @@ router.get('/banks', requireAdminApiSession, async (req: Request, res: Response)
 });
 
 // POST /api/financing/banks (admin create)
-router.post('/banks', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/banks', async (req: Request, res: Response) => {
   try {
     const bank = await prisma.financingBank.create({ data: pickBankFields(req.body) });
     res.status(201).json(bank);
@@ -129,7 +136,7 @@ router.post('/banks', requireAdminApiSession, async (req: Request, res: Response
 });
 
 // GET /api/financing/banks/:id (admin detail)
-router.get('/banks/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/banks/:id', async (req: Request, res: Response) => {
   try {
     const bank = await prisma.financingBank.findUnique({
       where: { id: req.params.id },
@@ -144,7 +151,7 @@ router.get('/banks/:id', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // PUT /api/financing/banks/:id (admin update)
-router.put('/banks/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/banks/:id', async (req: Request, res: Response) => {
   try {
     const bank = await prisma.financingBank.update({ where: { id: req.params.id }, data: pickBankFields(req.body) });
     res.json(bank);
@@ -155,7 +162,7 @@ router.put('/banks/:id', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // DELETE /api/financing/banks/:id (admin delete)
-router.delete('/banks/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/banks/:id', async (req: Request, res: Response) => {
   try {
     await prisma.financingBank.delete({ where: { id: req.params.id } });
     res.json({ success: true });

@@ -1,14 +1,25 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { sendTestDriveApprovalEmail } from '../services/email/statusEmail';
 import { settingRepository } from '../repositories';
 import { validateIdDocumentNumber } from '../utils/idValidation';
 
 const router = Router();
 
+// Every route here only ever required a valid admin session — any
+// authenticated staff member of any role could read/create/approve/update
+// test drives. Split to match apps/admin/app/admin/test-drives's own page.tsx
+// guards exactly: the list (page.tsx) and detail ([id]/page.tsx) pages use
+// requirePermission('canViewTestDrives'), while new/page.tsx (create) uses
+// requirePermission('canManageTestDrives') — a genuine view/manage split at
+// the page level, not the single canManageTestDrives-for-everything some
+// other SWMS modules (e.g. walk-ins) use.
+const viewGate = requirePermission('canViewTestDrives');
+const manageGate = requirePermission('canManageTestDrives');
+
 // GET /api/test-drives (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -36,7 +47,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/test-drives (admin create)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const testDrive = await prisma.testDrive.create({
       data: { ...req.body, createdById: req.adminSession!.user.id },
@@ -49,7 +60,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/test-drives/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, viewGate, async (req: Request, res: Response) => {
   try {
     const testDrive = await prisma.testDrive.findUnique({
       where: { id: req.params.id },
@@ -64,7 +75,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // POST /api/test-drives/:id/approve (admin approve + send email)
-router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/approve', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     const testDrive = await prisma.testDrive.findUnique({
       where: { id: req.params.id },
@@ -126,7 +137,7 @@ router.post('/:id/approve', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // PATCH /api/test-drives/:id (admin update)
-router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.patch('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
     if (req.body?.idDocumentNumber) {
       const idError = validateIdDocumentNumber(req.body.idDocumentNumber, req.body.idDocumentType);

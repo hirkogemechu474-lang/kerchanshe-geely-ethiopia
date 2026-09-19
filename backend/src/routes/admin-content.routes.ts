@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { contentRepository } from '../repositories/content.repository';
 
 // Write/single-item admin endpoints for content areas whose frontend forms
@@ -17,6 +17,17 @@ import { contentRepository } from '../repositories/content.repository';
 //   /api/admin/content/geely-team
 
 const router = Router();
+
+router.use(requireAdminApiSession);
+
+// Was session-only on every route below — any authenticated staff member
+// could write to any of these content areas. Gated per-route rather than
+// once for the whole file because the actual consumers split across two
+// different permissions: Hero/FAQ/SiteNav/Geely-Team are all driven by
+// canManageContent-gated pages (content/hero, faq, site-navigation,
+// content/geely-team), while Showcase and Footer are driven by
+// canManageSettings-gated pages (vehicles/settings, settings/footer) — see
+// each section below.
 
 // Hero/FAQ/Showcase/SiteNav create+update below all pass `req.body` straight
 // through to the repository/Prisma call, so the draft/scheduled/published
@@ -38,7 +49,7 @@ function withNormalizedScheduledAt(body: any) {
 /* ------------------------------------------------------------------ */
 
 // GET /api/admin/hero/:id (single hero section, for HeroSectionForm's edit mode)
-router.get('/hero/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/hero/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const heroSection = await contentRepository.findHeroSectionById(req.params.id);
     if (!heroSection) { res.status(404).json({ error: 'Hero section not found' }); return; }
@@ -50,7 +61,7 @@ router.get('/hero/:id', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // POST /api/admin/hero (create)
-router.post('/hero', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/hero', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     if (!req.body.title || !req.body.mediaType) {
       res.status(400).json({ error: 'title and mediaType are required' });
@@ -65,7 +76,7 @@ router.post('/hero', requireAdminApiSession, async (req: Request, res: Response)
 });
 
 // PUT /api/admin/hero/:id (update — also used by HeroSectionList to toggle isActive)
-router.put('/hero/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/hero/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const heroSection = await contentRepository.updateHeroSection(req.params.id, withNormalizedScheduledAt(req.body));
     res.json({ heroSection });
@@ -76,7 +87,7 @@ router.put('/hero/:id', requireAdminApiSession, async (req: Request, res: Respon
 });
 
 // DELETE /api/admin/hero/:id
-router.delete('/hero/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/hero/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     await contentRepository.deleteHeroSection(req.params.id);
     res.json({ success: true });
@@ -91,7 +102,7 @@ router.delete('/hero/:id', requireAdminApiSession, async (req: Request, res: Res
 /* ------------------------------------------------------------------ */
 
 // POST /api/admin/faq (create)
-router.post('/faq', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/faq', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     if (!req.body.question || !req.body.answer) {
       res.status(400).json({ error: 'question and answer are required' });
@@ -106,7 +117,7 @@ router.post('/faq', requireAdminApiSession, async (req: Request, res: Response) 
 });
 
 // PUT /api/admin/faq/:id (update)
-router.put('/faq/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/faq/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const faq = await contentRepository.updateFaq(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(faq);
@@ -117,7 +128,7 @@ router.put('/faq/:id', requireAdminApiSession, async (req: Request, res: Respons
 });
 
 // DELETE /api/admin/faq/:id
-router.delete('/faq/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/faq/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     await contentRepository.deleteFaq(req.params.id);
     res.json({ success: true });
@@ -132,7 +143,7 @@ router.delete('/faq/:id', requireAdminApiSession, async (req: Request, res: Resp
 /* ------------------------------------------------------------------ */
 
 // POST /api/admin/site-nav (create)
-router.post('/site-nav', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/site-nav', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     if (!req.body.placement || !req.body.label || !req.body.href) {
       res.status(400).json({ error: 'placement, label, and href are required' });
@@ -147,7 +158,7 @@ router.post('/site-nav', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // PUT /api/admin/site-nav/:id (update)
-router.put('/site-nav/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/site-nav/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const item = await contentRepository.updateSiteNavItem(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(item);
@@ -158,7 +169,7 @@ router.put('/site-nav/:id', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // DELETE /api/admin/site-nav/:id
-router.delete('/site-nav/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/site-nav/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     await contentRepository.deleteSiteNavItem(req.params.id);
     res.json({ success: true });
@@ -172,8 +183,10 @@ router.delete('/site-nav/:id', requireAdminApiSession, async (req: Request, res:
 /* Vehicle Showcase (360° viewer, "Explore Every Angle" section)        */
 /* ------------------------------------------------------------------ */
 
-// POST /api/admin/showcase (create)
-router.post('/showcase', requireAdminApiSession, async (req: Request, res: Response) => {
+// POST /api/admin/showcase (create) — consumed by
+// apps/admin/app/admin/vehicles/settings/page.tsx, gated canManageSettings
+// (not canManageContent like the sections above).
+router.post('/showcase', requirePermission('canManageSettings'), async (req: Request, res: Response) => {
   try {
     if (!req.body.vehicleId || !req.body.vehicleName || !req.body.title) {
       res.status(400).json({ error: 'vehicleId, vehicleName, and title are required' });
@@ -188,7 +201,7 @@ router.post('/showcase', requireAdminApiSession, async (req: Request, res: Respo
 });
 
 // PUT /api/admin/showcase/:id (update)
-router.put('/showcase/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/showcase/:id', requirePermission('canManageSettings'), async (req: Request, res: Response) => {
   try {
     const showcase = await contentRepository.updateShowcase(req.params.id, withNormalizedScheduledAt(req.body));
     res.json(showcase);
@@ -199,7 +212,7 @@ router.put('/showcase/:id', requireAdminApiSession, async (req: Request, res: Re
 });
 
 // DELETE /api/admin/showcase/:id
-router.delete('/showcase/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/showcase/:id', requirePermission('canManageSettings'), async (req: Request, res: Response) => {
   try {
     await contentRepository.deleteShowcase(req.params.id);
     res.json({ success: true });
@@ -219,7 +232,7 @@ router.delete('/showcase/:id', requireAdminApiSession, async (req: Request, res:
 const GEELY_TEAM_SETTING_KEY = 'geely_team';
 
 // GET /api/admin/content/geely-team
-router.get('/content/geely-team', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/content/geely-team', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: GEELY_TEAM_SETTING_KEY } });
     const parsed = setting?.value ? JSON.parse(setting.value) : { members: [] };
@@ -231,7 +244,7 @@ router.get('/content/geely-team', requireAdminApiSession, async (req: Request, r
 });
 
 // PUT /api/admin/content/geely-team
-router.put('/content/geely-team', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/content/geely-team', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
     const members = Array.isArray(req.body.members) ? req.body.members : [];
     const setting = await prisma.setting.upsert({
@@ -307,8 +320,9 @@ const DEFAULT_FOOTER_CONTENT = {
   ],
 };
 
-// GET /api/admin/content/footer
-router.get('/content/footer', requireAdminApiSession, async (req: Request, res: Response) => {
+// GET /api/admin/content/footer — consumed by
+// apps/admin/app/admin/settings/footer/page.tsx, gated canManageSettings.
+router.get('/content/footer', requirePermission('canManageSettings'), async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: FOOTER_SETTING_KEY } });
     res.json(setting?.value ? JSON.parse(setting.value) : DEFAULT_FOOTER_CONTENT);
@@ -319,7 +333,7 @@ router.get('/content/footer', requireAdminApiSession, async (req: Request, res: 
 });
 
 // PUT /api/admin/content/footer
-router.put('/content/footer', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/content/footer', requirePermission('canManageSettings'), async (req: Request, res: Response) => {
   try {
     const columns = Array.isArray(req.body.columns) ? req.body.columns : DEFAULT_FOOTER_CONTENT.columns;
     const legalLinks = Array.isArray(req.body.legalLinks) ? req.body.legalLinks : DEFAULT_FOOTER_CONTENT.legalLinks;

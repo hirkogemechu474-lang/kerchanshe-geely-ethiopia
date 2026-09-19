@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Pencil, Trash2, Loader2, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import FileUpload from '@/components/admin/FileUpload';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Category {
   id: string;
@@ -20,6 +21,7 @@ interface Category {
 const emptyForm = { name: '', slug: '', description: '', imageUrl: '', displayOrder: 0, isActive: true };
 
 export default function PartCategoriesPage() {
+  useAdminAuth('canManageSpareParts');
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
