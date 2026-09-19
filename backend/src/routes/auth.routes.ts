@@ -46,7 +46,7 @@ router.post('/login', rateLimiters.login, async (req: Request, res: Response) =>
 
     res.cookie('customer-token', token, {
       httpOnly: true,
-      secure: env.nodeEnv === 'production',
+      secure: req.secure,
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
@@ -92,7 +92,7 @@ router.post('/register', rateLimiters.login, async (req: Request, res: Response)
 
     res.cookie('customer-token', token, {
       httpOnly: true,
-      secure: env.nodeEnv === 'production',
+      secure: req.secure,
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
@@ -191,7 +191,7 @@ router.post('/admin-login', rateLimiters.login, async (req: Request, res: Respon
       { expiresIn: '30d' }
     );
 
-    const secure = env.nodeEnv === 'production';
+    const secure = req.secure;
     const cookieName = secure ? '__Secure-next-auth.session-token' : 'next-auth.session-token';
     res.cookie(cookieName, token, {
       httpOnly: true,
