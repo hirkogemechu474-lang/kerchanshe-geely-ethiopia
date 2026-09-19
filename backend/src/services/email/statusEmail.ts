@@ -210,3 +210,97 @@ export async function sendServiceBookingConfirmationEmail(params: {
     html,
   });
 }
+
+export async function sendPartsRequestConfirmationEmail(params: {
+  to: string;
+  customerName: string;
+  reference: string;
+  items: { partName: string; partSku?: string | null; unitPrice: number; quantity: number }[];
+}): Promise<{ ok: boolean; error?: string }> {
+  const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(params.reference)}`;
+  const total = params.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+
+  const rows = params.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.partName}${item.partSku ? ` <span style="color: #999;">(${item.partSku})</span>` : ''}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">ETB ${(item.unitPrice * item.quantity).toLocaleString('en-US')}</td>
+        </tr>`
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1a1a2e;">Parts Quote Request Received</h2>
+      <p>Dear ${params.customerName},</p>
+      <p>Thank you for your parts request. Our team will review it and send you a detailed quote shortly.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 8px 0; border-bottom: 2px solid #1a1a2e;">Part</th>
+            <th style="text-align: center; padding: 8px 0; border-bottom: 2px solid #1a1a2e;">Qty</th>
+            <th style="text-align: right; padding: 8px 0; border-bottom: 2px solid #1a1a2e;">Est. Price</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="text-align: right; font-weight: bold;">Estimated Total: ETB ${total.toLocaleString('en-US')}</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>Reference:</strong> ${params.reference}</p>
+      </div>
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${statusLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Check Status</a>
+      </div>
+      <p>Final pricing and availability will be confirmed by our parts team before anything is payable.</p>
+      <p>Best regards,<br/>${env.smtp.fromName}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: params.to,
+    subject: `Parts Quote Request Received — ${params.reference}`,
+    html,
+  });
+}
+
+export async function sendRoadsideAssistanceConfirmationEmail(params: {
+  to: string;
+  customerName: string;
+  reference: string;
+  currentLocation: string;
+  issueType: string;
+  vehicleInfo: string;
+  emergencyPhone: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const statusLink = `${env.urls.site}/status?ref=${encodeURIComponent(params.reference)}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1a1a2e;">Help Is on the Way</h2>
+      <p>Dear ${params.customerName},</p>
+      <p>We've received your roadside assistance request and dispatch is being arranged now.</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>Issue:</strong> ${params.issueType}</p>
+        <p style="margin: 5px 0 0;"><strong>Vehicle:</strong> ${params.vehicleInfo}</p>
+        <p style="margin: 5px 0 0;"><strong>Location:</strong> ${params.currentLocation}</p>
+        <p style="margin: 5px 0 0;"><strong>Reference:</strong> ${params.reference}</p>
+      </div>
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #991b1b;"><strong>Need to talk to someone right now?</strong> Call our 24/7 hotline: <a href="tel:${params.emergencyPhone}" style="color: #991b1b; font-weight: bold;">${params.emergencyPhone}</a></p>
+      </div>
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${statusLink}" style="background: #194BFF; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;">Check Status</a>
+      </div>
+      <p>Please keep your phone accessible — our team will call you shortly to confirm your exact location.</p>
+      <p>Best regards,<br/>${env.smtp.fromName}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: params.to,
+    subject: `Roadside Assistance Requested — ${params.reference}`,
+    html,
+  });
+}

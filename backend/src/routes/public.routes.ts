@@ -8,6 +8,7 @@ import { orderService } from '../services/sales/order.service';
 import { orderInvoiceService } from '../services/sales/orderInvoice.service';
 import { convertQuotationToOrderService } from '../services/sales/convertQuotationToOrder.service';
 import { dispatchNotification } from '../services/email/notifications.dispatch';
+import { sendPartsRequestConfirmationEmail, sendRoadsideAssistanceConfirmationEmail } from '../services/email/statusEmail';
 import { userRepository } from '../repositories';
 import { env } from '../config/env';
 import { verifyLinkToken } from '../utils/secureLink';
@@ -664,10 +665,189 @@ router.get('/parts', async (req: Request, res: Response) => {
 router.post('/parts/requests', rateLimiters.contactForm, async (req: Request, res: Response) => {
   try {
     // NOTE: was `prisma.partsRequest` (typo) — the real model is `PartRequest`.
-    const request = await prisma.partRequest.create({ data: req.body });
-    res.status(201).json({ success: true, id: request.id });
+    // It also used to pass req.body straight through: PartRequest.items is a
+    // relation to PartRequestItem, not a JSON/array column, so the cart array
+    // apps/web/app/parts/page.tsx sends (partId/partName/partSku/unitPrice/
+    // quantity per line) always threw a Prisma validation error — every
+    // "Request Quote" submission 500'd. Needs the nested `create` write
+    // syntax instead, plus the reference code this model's own schema
+    // comment says it should get (every other lead-capture flow in this
+    // file does the same).
+    const { name, company, phone, email, address, notes, items } = req.body ?? {};
+    if (!name || !phone || !email) {
+      res.status(400).json({ error: 'Name, phone, and email are required.' });
+      return;
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: 'At least one part is required.' });
+      return;
+    }
+
+    const reference = await generateReference(REFERENCE_CATEGORY.PARTS_REQUEST);
+    const request = await prisma.partRequest.create({
+      data: {
+        name,
+        company: company || null,
+        phone,
+        email,
+        address: address || null,
+        notes: notes || null,
+        reference,
+        items: {
+          create: items.map((item: any) => ({
+            partId: item.partId || null,
+            partName: item.partName,
+            partSku: item.partSku || null,
+            unitPrice: Number(item.unitPrice) || 0,
+            quantity: Number(item.quantity) || 1,
+          })),
+        },
+      },
+    });
+    let notificationSent = true;
+    try {
+      await sendPartsRequestConfirmationEmail({
+        to: email,
+        customerName: name,
+        reference,
+        items: items.map((item: any) => ({
+          partName: item.partName,
+          partSku: item.partSku,
+          unitPrice: Number(item.unitPrice) || 0,
+          quantity: Number(item.quantity) || 1,
+        })),
+      });
+
+      const notifyEmails = await userRepository.findWorkshopManagerEmails();
+      await dispatchNotification({
+        type: 'parts_request',
+        to: [...new Set(notifyEmails)],
+        subject: `New Parts Quote Request — ${reference}`,
+        data: {
+          reference,
+          customerName: name,
+          phone,
+          itemCount: items.length,
+        },
+        ctas: [{ label: 'View Request', url: `${env.urls.admin}/admin/parts-requests` }],
+        inApp: {
+          type: 'parts_request',
+          title: 'New Parts Quote Request',
+          body: `${name} requested a quote for ${items.length} part${items.length === 1 ? '' : 's'} (${reference}).`,
+          link: '/admin/parts-requests',
+          relatedModel: 'partRequest',
+          relatedId: request.id,
+          priority: 'normal',
+        },
+      });
+    } catch (notifyError: any) {
+      notificationSent = false;
+      console.error('[PARTS REQUEST NOTIFICATION ERROR]', notifyError.message);
+    }
+
+    res.status(201).json({ success: true, id: request.id, reference, notificationSent });
   } catch (error) {
     console.error('Submit parts request error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/public/roadside-requests — apps/web/app/roadside's "Request
+// Assistance" form used to be entirely fake (a setTimeout + console.log, no
+// backend call at all), so no real request was ever recorded, dispatched,
+// or notified to staff. This is the emergency-flavored equivalent of
+// /parts/requests and /service-bookings — always notifies workshop/service
+// staff (that must never silently fail), and additionally emails the
+// customer a confirmation when they provided one (the form's core fields
+// are name/phone, not email, since phone is what dispatch actually needs).
+router.post('/roadside-requests', rateLimiters.contactForm, async (req: Request, res: Response) => {
+  try {
+    const {
+      firstName, lastName, phone, alternatePhone, email,
+      currentLocation, landmark, city,
+      vehicleModel, plateNumber, color,
+      issueType, issueDescription, isVehicleSafe, passengersCount,
+      hasMembership, membershipNumber,
+    } = req.body ?? {};
+
+    if (!firstName || !lastName || !phone || !currentLocation || !issueType) {
+      res.status(400).json({ error: 'Name, phone, location, and issue type are required.' });
+      return;
+    }
+
+    const reference = await generateReference(REFERENCE_CATEGORY.ROADSIDE_ASSISTANCE);
+    const request = await prisma.roadsideAssistanceRequest.create({
+      data: {
+        firstName,
+        lastName,
+        phone,
+        alternatePhone: alternatePhone || null,
+        currentLocation,
+        landmark: landmark || null,
+        city: city || 'Unspecified',
+        vehicleModel: vehicleModel || 'Unspecified',
+        plateNumber: plateNumber || 'Unspecified',
+        color: color || 'Unspecified',
+        issueType,
+        issueDescription: issueDescription || '',
+        isVehicleSafe: isVehicleSafe === 'yes' || isVehicleSafe === true,
+        passengersCount: passengersCount || '0',
+        hasMembership: hasMembership === 'yes' || hasMembership === true,
+        membershipNumber: membershipNumber || null,
+        reference,
+      },
+    });
+
+    const customerName = `${firstName} ${lastName}`;
+    const vehicleInfo = [color, vehicleModel, plateNumber ? `(${plateNumber})` : ''].filter(Boolean).join(' ');
+
+    let notificationSent = true;
+    try {
+      const notifyEmails = await userRepository.findWorkshopManagerEmails();
+      await dispatchNotification({
+        type: 'roadside_request',
+        to: [...new Set(notifyEmails)],
+        subject: `🚨 Roadside Assistance Requested — ${reference}`,
+        data: {
+          reference,
+          customerName,
+          phone,
+          issueType,
+          currentLocation,
+          vehicleInfo,
+          isVehicleSafe: isVehicleSafe === 'yes' || isVehicleSafe === true ? 'Yes' : 'No — needs urgent attention',
+        },
+        ctas: [{ label: 'View Request', url: `${env.urls.admin}/admin/roadside-requests` }],
+        inApp: {
+          type: 'roadside_request',
+          title: 'New Roadside Assistance Request',
+          body: `${customerName} needs help with ${issueType} at ${currentLocation} (${reference}).`,
+          link: '/admin/roadside-requests',
+          relatedModel: 'roadsideAssistanceRequest',
+          relatedId: request.id,
+          priority: 'high',
+        },
+      });
+
+      if (email) {
+        await sendRoadsideAssistanceConfirmationEmail({
+          to: email,
+          customerName,
+          reference,
+          currentLocation,
+          issueType,
+          vehicleInfo,
+          emergencyPhone: '+251 99 338 9874',
+        });
+      }
+    } catch (notifyError: any) {
+      notificationSent = false;
+      console.error('[ROADSIDE REQUEST NOTIFICATION ERROR]', notifyError.message);
+    }
+
+    res.status(201).json({ success: true, id: request.id, reference, notificationSent });
+  } catch (error) {
+    console.error('Submit roadside request error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

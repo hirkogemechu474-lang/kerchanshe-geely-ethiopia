@@ -1272,6 +1272,39 @@ model PartRequestItem {
   createdAt DateTime    @default(now())
 }
 
+// 24/7 roadside assistance dispatch request (apps/web/app/roadside). Used to
+// be entirely fake on the frontend — the "Request Assistance" form just did
+// a setTimeout and console.log, so no request was ever actually recorded,
+// dispatched, or notified to anyone.
+model RoadsideAssistanceRequest {
+  id               String    @id @default(uuid())
+  firstName        String
+  lastName         String
+  phone            String
+  alternatePhone   String?
+  currentLocation  String
+  landmark         String?
+  city             String
+  vehicleModel     String
+  plateNumber      String
+  color            String
+  issueType        String
+  issueDescription String    @db.Text
+  isVehicleSafe    Boolean
+  passengersCount  String
+  hasMembership    Boolean   @default(false)
+  membershipNumber String?
+  status           String    @default("NEW") // NEW, DISPATCHED, IN_PROGRESS, RESOLVED, CANCELLED
+  assignedTo       String?
+  resolvedAt       DateTime?
+  // Customer-facing lookup code (GY-RA-DDMMYYYY-NNN), generated at creation.
+  reference        String    @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+}
+
 // Parts Page CMS Content (single record manages the /parts page)
 model PartsPageContent {
   id                  String   @id @default(uuid())
