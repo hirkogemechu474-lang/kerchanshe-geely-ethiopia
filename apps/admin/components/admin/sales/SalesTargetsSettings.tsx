@@ -28,6 +28,36 @@ function monthLabel(month: string) {
   return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+function daysInMonth(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+function formatCompact(value: number) {
+  return Math.round(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+/** Splits a monthly target into its Day/Week/Month/Year equivalents so
+ * leadership can see the same quota at every cadence, not just MTD. Week
+ * and day are derived from the actual number of days in the selected
+ * month (not a flat /30), year is a straight ×12 run-rate. */
+function periodBreakdown(monthlyValue: number, month: string) {
+  const days = daysInMonth(month);
+  const perDay = monthlyValue / days;
+  return { day: perDay, week: perDay * 7, month: monthlyValue, year: monthlyValue * 12 };
+}
+
+function BreakdownLine({ value, month, unit }: { value: number; month: string; unit?: string }) {
+  if (!(value > 0)) return null;
+  const b = periodBreakdown(value, month);
+  const fmt = (n: number) => `${formatCompact(n)}${unit ? ` ${unit}` : ''}`;
+  return (
+    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+      Day {fmt(b.day)} · Week {fmt(b.week)} · Month {fmt(b.month)} · Year {fmt(b.year)}
+    </p>
+  );
+}
+
 /** One editable revenue+units row — used for both the company-wide target
  * and each showroom's own row, so both save through the same PUT shape
  * (dealerId omitted/null = company-wide). */
@@ -35,12 +65,14 @@ function TargetRow({
   label,
   revenueTarget,
   unitsTarget,
+  month,
   onSave,
   highlight,
 }: {
   label: string;
   revenueTarget: number | null;
   unitsTarget: number | null;
+  month: string;
   onSave: (revenueTarget: number, unitsTarget: number) => Promise<void>;
   highlight?: boolean;
 }) {
@@ -69,10 +101,15 @@ function TargetRow({
     }
   };
 
+  const revenueNum = Number(revenue);
+  const unitsNum = Number(units);
+
   return (
     <tr className={highlight ? 'bg-blue-50/60 dark:bg-blue-900/10' : ''}>
-      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{label}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+        {highlight ? label : <>Sales Team: {label}</>}
+      </td>
+      <td className="px-4 py-3 align-top">
         <input
           type="number"
           min={0}
@@ -81,8 +118,9 @@ function TargetRow({
           placeholder="e.g. 45000000"
           className="w-40 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
         />
+        {Number.isFinite(revenueNum) && <BreakdownLine value={revenueNum} month={month} />}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 align-top">
         <input
           type="number"
           min={0}
@@ -91,11 +129,12 @@ function TargetRow({
           placeholder="e.g. 150"
           className="w-28 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
         />
+        {Number.isFinite(unitsNum) && <BreakdownLine value={unitsNum} month={month} unit="units" />}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 align-top">
         <Button variant="secondary" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> : <Save className="w-3.5 h-3.5" />}
-          {saved ? 'Saved' : 'Save'}
+          {saved ? (highlight ? 'Saved' : 'Assigned') : (highlight ? 'Save' : 'Assign to team')}
         </Button>
       </td>
     </tr>
@@ -132,7 +171,7 @@ export default function SalesTargetsSettings() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Sales Targets"
-        description="Monthly revenue and unit quotas — company-wide and per showroom. These drive every Achievement % and vs-Plan figure on the Executive Overview and Sales Dashboard."
+        description="Assign monthly revenue and unit quotas company-wide or to a specific sales team (showroom). Each target also shows its Day / Week / Month / Year breakdown. These drive every Achievement % and vs-Plan figure on the Executive Overview and Sales Dashboard."
         actions={
           <input
             type="month"
@@ -163,17 +202,18 @@ export default function SalesTargetsSettings() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 uppercase text-xs">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold">Scope</th>
-                  <th className="text-left px-4 py-3 font-semibold">Revenue Target (ETB)</th>
-                  <th className="text-left px-4 py-3 font-semibold">Units Target</th>
+                  <th className="text-left px-4 py-3 font-semibold">Sales Team</th>
+                  <th className="text-left px-4 py-3 font-semibold">Revenue Target (ETB / month)</th>
+                  <th className="text-left px-4 py-3 font-semibold">Units Target (/ month)</th>
                   <th className="text-left px-4 py-3 font-semibold"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 <TargetRow
-                  label="Company-wide"
+                  label="Company-wide (all sales teams)"
                   revenueTarget={data.company?.revenueTarget ?? null}
                   unitsTarget={data.company?.unitsTarget ?? null}
+                  month={data.month}
                   onSave={(revenue, units) => saveTarget(null, revenue, units)}
                   highlight
                 />
@@ -183,6 +223,7 @@ export default function SalesTargetsSettings() {
                     label={d.name}
                     revenueTarget={d.revenueTarget}
                     unitsTarget={d.unitsTarget}
+                    month={data.month}
                     onSave={(revenue, units) => saveTarget(d.dealerId, revenue, units)}
                   />
                 ))}
