@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/admin/ui';
 import ServiceCheckInList from '@/components/admin/crm/ServiceCheckInList';
 
 export default async function ServiceCheckInPage() {
-  await requirePermission('canViewJobCards');
+  await requirePermission('canManageServiceBookings');
 
   return (
     <div className="space-y-6">

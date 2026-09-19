@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { customerService } from '../services/customers/customer.service';
 
 const router = Router();
@@ -8,7 +8,7 @@ const router = Router();
 // POST /api/customers (admin create — e.g. a walk-in customer with no
 // account, registered at the counter). Dedupes by phone (see
 // Customer.phone's schema comment) instead of enforcing a DB constraint.
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, requirePermission('canManageCustomers'), async (req: Request, res: Response) => {
   try {
     const { fullName, phone, email, address } = req.body;
     if (!fullName || !phone) {
@@ -30,7 +30,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/customers (admin search/list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, requirePermission('canViewCustomers'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -64,7 +64,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // GET /api/customers/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, requirePermission('canViewCustomers'), async (req: Request, res: Response) => {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: req.params.id },
@@ -96,7 +96,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 // schema change than this feature needs, so this aggregates the same way
 // the rest of the codebase already dedupes/looks customers up: by phone
 // number (and, where available, by VIN for the vehicles on file).
-router.get('/:id/history', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id/history', requireAdminApiSession, requirePermission('canViewCustomers'), async (req: Request, res: Response) => {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: req.params.id },
@@ -156,7 +156,7 @@ router.get('/:id/history', requireAdminApiSession, async (req: Request, res: Res
 });
 
 // PATCH /api/customers/:id (admin update)
-router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.patch('/:id', requireAdminApiSession, requirePermission('canManageCustomers'), async (req: Request, res: Response) => {
   try {
     const { fullName, email, phone, address } = req.body;
     const customer = await prisma.customer.update({
@@ -171,7 +171,7 @@ router.patch('/:id', requireAdminApiSession, async (req: Request, res: Response)
 });
 
 // POST /api/customers/:id/vehicles (admin add a vehicle to a customer's file)
-router.post('/:id/vehicles', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/vehicles', requireAdminApiSession, requirePermission('canManageCustomers'), async (req: Request, res: Response) => {
   try {
     const { vin, plateNo, model, color, warrantyEndDate } = req.body;
     if (!plateNo) {
@@ -199,7 +199,7 @@ router.post('/:id/vehicles', requireAdminApiSession, async (req: Request, res: R
 });
 
 // PATCH /api/customers/customer-vehicles/:id (update vehicle)
-router.patch('/customer-vehicles/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.patch('/customer-vehicles/:id', requireAdminApiSession, requirePermission('canManageCustomers'), async (req: Request, res: Response) => {
   try {
     const vehicle = await prisma.customerVehicle.update({ where: { id: req.params.id }, data: req.body });
     res.json(vehicle);

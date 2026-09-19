@@ -3,7 +3,7 @@ import { prisma } from '../config/database';
 import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { resolveBiMonthRange, computeWorkshopBiMetrics, WorkshopBiMetrics } from '../services/workshop/biSummary.service';
 import { jobCardPartsService } from '../services/workshop/jobCardParts.service';
-import { jobCardRepository, userRepository } from '../repositories';
+import { jobCardRepository, userRepository, customerRepository, warrantyClaimRepository } from '../repositories';
 import { loyaltyService } from '../services/loyalty/loyalty.service';
 import { generateServiceInvoicePdf } from '../services/pdf/serviceInvoice.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
@@ -16,7 +16,7 @@ const router = Router();
 router.use(requireAdminApiSession);
 
 // GET /api/admin/workshop/dashboard (KPI summary)
-router.get('/dashboard', async (req: Request, res: Response) => {
+router.get('/dashboard', requirePermission('canViewJobCards'), async (req: Request, res: Response) => {
   try {
     const [totalJobCards, activeJobCards, completedJobCards, pendingParts] = await Promise.all([
       prisma.jobCard.count(),
@@ -35,7 +35,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/board (bay scheduling board)
-router.get('/board', async (req: Request, res: Response) => {
+router.get('/board', requirePermission('canManageBays'), async (req: Request, res: Response) => {
   try {
     const bays = await prisma.serviceBay.findMany({
       where: { isActive: true },
@@ -68,7 +68,7 @@ router.get('/board', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/job-cards (list)
-router.get('/job-cards', async (req: Request, res: Response) => {
+router.get('/job-cards', requirePermission('canViewJobCards'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -103,11 +103,71 @@ router.get('/job-cards', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/job-cards (create)
-router.post('/job-cards', async (req: Request, res: Response) => {
+router.post('/job-cards', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
-    // JobCard has no `createdById` column — this always threw an "Unknown
-    // argument" error before reaching the database.
-    const jobCard = await prisma.jobCard.create({ data: req.body });
+    const {
+      plateNo, vin, vehicleModel, vehicleYear, mileage,
+      customerName, customerPhone, customerEmail, complaintText,
+      technicianId, bayId, warrantyStartDate, warrantyEndDate,
+      customerVehicleId, saveAsNewVehicleRecord,
+    } = req.body ?? {};
+
+    if (!plateNo || !customerName || !customerPhone) {
+      res.status(400).json({ error: 'Plate number, customer name, and phone are required.' });
+      return;
+    }
+
+    // JobCardWriteUpForm.tsx (the only caller) sends the year/mileage
+    // <input>s as strings and a `saveAsNewVehicleRecord` flag that isn't a
+    // JobCard column at all — passing req.body straight to prisma.create
+    // always threw (unknown arg / wrong type), which is why every job card
+    // creation attempt 500'd. jobCardNo also has to be generated
+    // server-side (unique, no default) — the convert-from-booking path
+    // already does this via jobCardRepository.nextJobCardNo(), this is the
+    // only other place a JobCard gets created so it needs the same call.
+    let resolvedCustomerVehicleId: string | null = customerVehicleId || null;
+    if (!resolvedCustomerVehicleId && saveAsNewVehicleRecord) {
+      let customer = await customerRepository.findByPhone(customerPhone);
+      if (!customer) {
+        customer = await customerRepository.create({
+          fullName: customerName,
+          phone: customerPhone,
+          email: customerEmail || null,
+        });
+      }
+      const vehicle = await customerRepository.createVehicle({
+        customer: { connect: { id: customer.id } },
+        plateNo,
+        vin: vin || null,
+        model: vehicleModel || null,
+        year: vehicleYear ? Number(vehicleYear) : null,
+        mileageLastKnown: mileage ? Number(mileage) : null,
+        warrantyStartDate: warrantyStartDate ? new Date(warrantyStartDate) : null,
+        warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate) : null,
+      });
+      resolvedCustomerVehicleId = vehicle.id;
+    }
+
+    const jobCardNo = await jobCardRepository.nextJobCardNo();
+    const jobCard = await prisma.jobCard.create({
+      data: {
+        jobCardNo,
+        plateNo,
+        vin: vin || null,
+        vehicleModel: vehicleModel || null,
+        vehicleYear: vehicleYear ? Number(vehicleYear) : null,
+        mileage: mileage ? Number(mileage) : null,
+        customerName,
+        customerPhone,
+        customerEmail: customerEmail || null,
+        complaintText: complaintText || null,
+        technicianId: technicianId || null,
+        bayId: bayId || null,
+        warrantyStartDate: warrantyStartDate ? new Date(warrantyStartDate) : null,
+        warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate) : null,
+        customerVehicleId: resolvedCustomerVehicleId,
+      },
+    });
 
     try {
       const notifyEmails: string[] = await userRepository.findWorkshopManagerEmails();
@@ -145,7 +205,7 @@ router.post('/job-cards', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/job-cards/:id (detail)
-router.get('/job-cards/:id', async (req: Request, res: Response) => {
+router.get('/job-cards/:id', requirePermission('canViewJobCards'), async (req: Request, res: Response) => {
   try {
     const jobCard = await prisma.jobCard.findUnique({
       where: { id: req.params.id },
@@ -172,7 +232,7 @@ router.get('/job-cards/:id', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/job-cards/:id (update fields)
-router.patch('/job-cards/:id', async (req: Request, res: Response) => {
+router.patch('/job-cards/:id', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     // The admin UI's "Record Customer Approval" button sends `{ approve:
     // true }` — `approve` isn't a real JobCard column (`customerApprovedAt`
@@ -189,7 +249,7 @@ router.patch('/job-cards/:id', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/job-cards/:id/status (transition status)
-router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
+router.patch('/job-cards/:id/status', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     // The admin UI (JobCardDetail.tsx) sends `toStatus` (plus, from the QC
     // panel, `qcPassed`/`qcNotes`) — this route used to destructure `status`
@@ -321,7 +381,7 @@ router.patch('/job-cards/:id/status', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/job-cards/:id/assign (assign tech/bay/schedule)
-router.patch('/job-cards/:id/assign', async (req: Request, res: Response) => {
+router.patch('/job-cards/:id/assign', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     const { technicianId, bayId, scheduledStart, scheduledEnd } = req.body;
     const jobCard = await prisma.jobCard.update({
@@ -367,7 +427,7 @@ router.patch('/job-cards/:id/assign', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/job-cards/:id/parts (request part)
-router.post('/job-cards/:id/parts', async (req: Request, res: Response) => {
+router.post('/job-cards/:id/parts', requirePermission('canManagePartsIssue'), async (req: Request, res: Response) => {
   try {
     const { sparePartId, quantity, isWarranty } = req.body;
     if (!sparePartId || !quantity) { res.status(400).json({ error: 'sparePartId and quantity are required' }); return; }
@@ -398,7 +458,7 @@ router.post('/job-cards/:id/parts', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/job-cards/:id/parts/:lineId (issue/backorder/cancel part)
-router.patch('/job-cards/:id/parts/:lineId', async (req: Request, res: Response) => {
+router.patch('/job-cards/:id/parts/:lineId', requirePermission('canManagePartsIssue'), async (req: Request, res: Response) => {
   try {
     // The admin UI (JobCardDetail.tsx) sends `action: 'issue'|'backorder'|
     // 'cancel'` — this route used to read `status` instead, which was
@@ -426,7 +486,7 @@ router.patch('/job-cards/:id/parts/:lineId', async (req: Request, res: Response)
 });
 
 // POST /api/admin/workshop/job-cards/:id/invoice (generate service invoice: parts + labor)
-router.post('/job-cards/:id/invoice', async (req: Request, res: Response) => {
+router.post('/job-cards/:id/invoice', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     const jobCard = await prisma.jobCard.findUnique({
       where: { id: req.params.id },
@@ -493,7 +553,7 @@ router.post('/job-cards/:id/invoice', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/job-cards/:id/payment (record/confirm service payment)
-router.post('/job-cards/:id/payment', async (req: Request, res: Response) => {
+router.post('/job-cards/:id/payment', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     const jobCard = await prisma.jobCard.findUnique({ where: { id: req.params.id } });
     if (!jobCard) { res.status(404).json({ error: 'Job card not found' }); return; }
@@ -531,7 +591,7 @@ router.post('/job-cards/:id/payment', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/bays (list)
-router.get('/bays', async (req: Request, res: Response) => {
+router.get('/bays', requirePermission('canManageBays'), async (req: Request, res: Response) => {
   try {
     const bays = await prisma.serviceBay.findMany({ orderBy: { name: 'asc' } });
     res.json(bays);
@@ -542,7 +602,7 @@ router.get('/bays', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/bays (create)
-router.post('/bays', async (req: Request, res: Response) => {
+router.post('/bays', requirePermission('canManageBays'), async (req: Request, res: Response) => {
   try {
     const bay = await prisma.serviceBay.create({ data: req.body });
     res.status(201).json({ bay });
@@ -553,7 +613,7 @@ router.post('/bays', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/bays/:id (update)
-router.patch('/bays/:id', async (req: Request, res: Response) => {
+router.patch('/bays/:id', requirePermission('canManageBays'), async (req: Request, res: Response) => {
   try {
     const bay = await prisma.serviceBay.update({ where: { id: req.params.id }, data: req.body });
     res.json({ bay });
@@ -564,7 +624,7 @@ router.patch('/bays/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/admin/workshop/bays/:id (deactivate)
-router.delete('/bays/:id', async (req: Request, res: Response) => {
+router.delete('/bays/:id', requirePermission('canManageBays'), async (req: Request, res: Response) => {
   try {
     await prisma.serviceBay.update({ where: { id: req.params.id }, data: { isActive: false } });
     res.json({ success: true });
@@ -575,7 +635,7 @@ router.delete('/bays/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/technicians (list)
-router.get('/technicians', async (req: Request, res: Response) => {
+router.get('/technicians', requirePermission('canManageTechnicians'), async (req: Request, res: Response) => {
   try {
     const technicians = await prisma.technician.findMany({
       orderBy: { name: 'asc' },
@@ -589,7 +649,7 @@ router.get('/technicians', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/technicians (create)
-router.post('/technicians', async (req: Request, res: Response) => {
+router.post('/technicians', requirePermission('canManageTechnicians'), async (req: Request, res: Response) => {
   try {
     const technician = await prisma.technician.create({ data: req.body });
     res.status(201).json({ technician });
@@ -600,7 +660,7 @@ router.post('/technicians', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/technicians/:id (update)
-router.patch('/technicians/:id', async (req: Request, res: Response) => {
+router.patch('/technicians/:id', requirePermission('canManageTechnicians'), async (req: Request, res: Response) => {
   try {
     const technician = await prisma.technician.update({ where: { id: req.params.id }, data: req.body });
     res.json({ technician });
@@ -611,7 +671,7 @@ router.patch('/technicians/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/admin/workshop/technicians/:id (deactivate)
-router.delete('/technicians/:id', async (req: Request, res: Response) => {
+router.delete('/technicians/:id', requirePermission('canManageTechnicians'), async (req: Request, res: Response) => {
   try {
     await prisma.technician.update({ where: { id: req.params.id }, data: { isActive: false } });
     res.json({ success: true });
@@ -622,7 +682,7 @@ router.delete('/technicians/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/warranty-claims (list)
-router.get('/warranty-claims', async (req: Request, res: Response) => {
+router.get('/warranty-claims', requirePermission('canManageWarrantyClaims'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -645,7 +705,7 @@ router.get('/warranty-claims', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/workshop/warranty-claims (create)
-router.post('/warranty-claims', async (req: Request, res: Response) => {
+router.post('/warranty-claims', requirePermission('canManageWarrantyClaims'), async (req: Request, res: Response) => {
   try {
     const claim = await prisma.warrantyClaim.create({ data: req.body });
 
@@ -681,7 +741,7 @@ router.post('/warranty-claims', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/warranty-claims/:id (detail)
-router.get('/warranty-claims/:id', async (req: Request, res: Response) => {
+router.get('/warranty-claims/:id', requirePermission('canManageWarrantyClaims'), async (req: Request, res: Response) => {
   try {
     const claim = await prisma.warrantyClaim.findUnique({
       where: { id: req.params.id },
@@ -696,7 +756,7 @@ router.get('/warranty-claims/:id', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/warranty-claims/:id (update)
-router.patch('/warranty-claims/:id', async (req: Request, res: Response) => {
+router.patch('/warranty-claims/:id', requirePermission('canManageWarrantyClaims'), async (req: Request, res: Response) => {
   try {
     const claim = await prisma.warrantyClaim.update({ where: { id: req.params.id }, data: req.body });
     res.json(claim);
@@ -707,10 +767,65 @@ router.patch('/warranty-claims/:id', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/admin/workshop/warranty-claims/:id/status (transition status)
-router.patch('/warranty-claims/:id/status', async (req: Request, res: Response) => {
+router.patch('/warranty-claims/:id/status', requirePermission('canManageWarrantyClaims'), async (req: Request, res: Response) => {
   try {
-    const { status } = req.body;
-    const claim = await prisma.warrantyClaim.update({ where: { id: req.params.id }, data: { status } });
+    // WarrantyClaimDetail.tsx sends `toStatus` (plus oemPortalRef/
+    // approvedAmount/rejectionReason) — this route used to destructure
+    // `status` instead, which was always undefined, so Prisma silently
+    // dropped the status change and every Submit/Approve/Reject click was a
+    // no-op with no error surfaced and no history entry written. Mirrors
+    // the equivalent job-card status route's fix.
+    const { toStatus, oemPortalRef, approvedAmount, rejectionReason, reasonCode } = req.body ?? {};
+    if (!toStatus) { res.status(400).json({ error: 'toStatus is required' }); return; }
+
+    const current = await prisma.warrantyClaim.findUnique({ where: { id: req.params.id } });
+    if (!current) { res.status(404).json({ error: 'Warranty claim not found' }); return; }
+
+    const claimData: any = { status: toStatus };
+    if (oemPortalRef !== undefined) claimData.oemPortalRef = oemPortalRef || null;
+    if (approvedAmount !== undefined) claimData.approvedAmount = approvedAmount === '' ? null : Number(approvedAmount);
+    if (rejectionReason !== undefined) claimData.rejectionReason = rejectionReason || null;
+    if (toStatus === 'SUBMITTED' && !current.submittedAt) {
+      claimData.submittedAt = new Date();
+      claimData.submittedById = req.adminSession!.user.id;
+    }
+
+    const claim = await warrantyClaimRepository.transitionStatus(
+      req.params.id,
+      claimData,
+      { fromStatus: current.status, toStatus, changedById: req.adminSession!.user.id, reasonCode: reasonCode ?? null },
+    );
+
+    try {
+      const jobCard = await prisma.jobCard.findUnique({
+        where: { id: claim.jobCardId },
+        select: { jobCardNo: true, customerName: true, customerEmail: true, vehicleModel: true },
+      });
+      const notifyEmails = await userRepository.findWorkshopManagerEmails();
+      const recipients = [...new Set(notifyEmails)];
+      if (jobCard?.customerEmail && (toStatus === 'APPROVED' || toStatus === 'REJECTED' || toStatus === 'REIMBURSED')) {
+        recipients.push(jobCard.customerEmail);
+      }
+      await dispatchNotification({
+        type: 'warranty_claim',
+        to: recipients,
+        subject: `Warranty Claim ${toStatus.replace('_', ' ')} — ${claim.claimNo}`,
+        data: {
+          claimNo: claim.claimNo,
+          defectCode: claim.defectCode,
+          status: toStatus,
+          ...(jobCard?.customerName && { customerName: jobCard.customerName }),
+          ...(jobCard?.vehicleModel && { vehicleModel: jobCard.vehicleModel }),
+          ...(claimData.rejectionReason && { rejectionReason: claimData.rejectionReason }),
+        },
+        ctas: [
+          { label: 'Review Claim', url: `${env.urls.admin}/admin/workshop/warranty-claims/${claim.id}` },
+        ],
+      });
+    } catch (notifyError: any) {
+      console.error('[WARRANTY CLAIM STATUS NOTIFICATION ERROR]', notifyError.message);
+    }
+
     res.json(claim);
   } catch (error) {
     console.error('Update warranty claim status error:', error);
@@ -719,7 +834,7 @@ router.patch('/warranty-claims/:id/status', async (req: Request, res: Response) 
 });
 
 // GET /api/admin/workshop/vehicle-lookup (lookup by VIN/plate)
-router.get('/vehicle-lookup', async (req: Request, res: Response) => {
+router.get('/vehicle-lookup', requirePermission('canManageJobCards'), async (req: Request, res: Response) => {
   try {
     const { vin, plate } = req.query;
     if (!vin && !plate) {
@@ -747,7 +862,7 @@ router.get('/vehicle-lookup', async (req: Request, res: Response) => {
 });
 
 // GET /api/admin/workshop/parts/reorder-alerts (low stock alerts)
-router.get('/parts/reorder-alerts', async (req: Request, res: Response) => {
+router.get('/parts/reorder-alerts', requirePermission('canViewSpareParts'), async (req: Request, res: Response) => {
   try {
     // Prisma can't compare two columns of the same row in a `where` filter,
     // so fetch active parts and filter stock <= reorderPoint in JS (same

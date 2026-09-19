@@ -15,7 +15,11 @@ export default function ConvertToJobCardButton({ bookingId }: { bookingId: strin
       const res = await fetch(`/api/service-bookings/${bookingId}/convert-to-job-card`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to convert');
-      router.push(`/admin/workshop/job-cards/${data.jobCard.id}`);
+      // POST /convert-to-job-card responds with the raw JobCard (no
+      // `{jobCard}` wrapper) — reading `.jobCard.id` threw here even though
+      // the job card was created successfully server-side, leaving the
+      // advisor stuck on a "Cannot read properties of undefined" error.
+      router.push(`/admin/workshop/job-cards/${data.id}`);
     } catch (err: any) {
       setError(err.message);
       setBusy(false);

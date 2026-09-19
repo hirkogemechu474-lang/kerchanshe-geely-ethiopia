@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { convertToJobCardService } from '../services/serviceBookings/convertToJobCard.service';
 import { serviceBookingService } from '../services/serviceBookings/serviceBooking.service';
 
 const router = Router();
 
 // GET /api/service-bookings (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, requirePermission('canManageService'), async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -35,7 +35,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // GET /api/service-bookings/stats (admin aggregate stats)
-router.get('/stats', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/stats', requireAdminApiSession, requirePermission('canManageService'), async (req: Request, res: Response) => {
   try {
     const [scheduled, inProgress, completed, pending, technicians] = await Promise.all([
       prisma.serviceBooking.count({ where: { status: { in: ['scheduled', 'SCHEDULED'] } } }),
@@ -57,7 +57,7 @@ router.get('/stats', requireAdminApiSession, async (req: Request, res: Response)
 });
 
 // POST /api/service-bookings (admin create)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, requirePermission('canManageService'), async (req: Request, res: Response) => {
   try {
     const { customerName, customerPhone, customerEmail, nationalId, vehicleInfo, serviceType, date, timeSlot, vehicleYear, mileage, vin, location, notes } = req.body;
 
@@ -91,7 +91,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/service-bookings/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, requirePermission('canManageService'), async (req: Request, res: Response) => {
   try {
     const booking = await prisma.serviceBooking.findUnique({
       where: { id: req.params.id },
@@ -112,7 +112,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 // JobCard has no reverse jobCardId scalar to set on the booking (the FK
 // lives on JobCard.serviceBookingId; the service links it via serviceBookingId
 // on create, inside a transaction with the booking's status update).
-router.post('/:id/convert-to-job-card', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/:id/convert-to-job-card', requireAdminApiSession, requirePermission('canManageService'), async (req: Request, res: Response) => {
   try {
     const result = await convertToJobCardService.convert(req.params.id, req.adminSession!.user.id, req.body);
     if (!result.ok) {

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import CustomerDetail from '@/components/admin/customers/CustomerDetail';
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requirePermission('canViewJobCards');
+  const session = await requirePermission('canViewCustomers');
   const { id } = await params;
 
   const client = await serverApiClient();

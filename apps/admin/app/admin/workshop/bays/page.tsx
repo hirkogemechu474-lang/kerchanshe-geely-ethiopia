@@ -4,7 +4,7 @@ import { PageHeader, LinkButton } from '@/components/admin/ui';
 import BayBoard from '@/components/admin/workshop/BayBoard';
 
 export default async function BaySchedulingBoardPage() {
-  await requirePermission('canViewJobCards');
+  await requirePermission('canManageBays');
 
   return (
     <div className="space-y-6">

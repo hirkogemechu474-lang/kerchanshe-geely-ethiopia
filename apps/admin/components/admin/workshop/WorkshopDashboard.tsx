@@ -126,7 +126,7 @@ export default function WorkshopDashboard({ canExport }: { canExport: boolean })
         <StatTile label="Avg. Turnaround" value={formatMinutes(data.avgTurnaroundMinutes)} icon={Timer} />
         <StatTile label="Pending Approval" value={data.pendingApproval} icon={Hourglass} tone={data.pendingApproval > 0 ? 'highlight' : 'default'} />
         <StatTile label="Overdue (3+ days)" value={data.overdueCount} icon={AlertTriangle} tone={data.overdueCount > 0 ? 'highlight' : 'default'} />
-        <Link href="/admin/spare-parts">
+        <Link href="/admin/parts">
           <StatTile label="Parts Below Reorder" value={data.partsBelowReorder} icon={PackageSearch} tone={data.partsBelowReorder > 0 ? 'highlight' : 'default'} />
         </Link>
       </div>

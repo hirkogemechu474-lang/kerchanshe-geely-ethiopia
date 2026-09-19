@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/admin/ui';
 import WarrantyClaimList from '@/components/admin/workshop/WarrantyClaimList';
 
 export default async function WarrantyClaimsPage() {
-  await requirePermission('canViewJobCards');
+  await requirePermission('canManageWarrantyClaims');
 
   const client = await serverApiClient();
   const { data } = await client.get('/admin/workshop/warranty-claims', { params: { pageSize: 200 } });

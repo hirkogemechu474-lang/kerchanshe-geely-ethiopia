@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { rateLimiters } from '../utils/rateLimit';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 
 const router = Router();
 
@@ -217,8 +218,14 @@ router.post('/', rateLimiters.serviceCheckIn, async (req: Request, res: Response
   }
 });
 
-// GET /api/service-check-in/queue — get current check-in queue (unconverted bookings)
-router.get('/queue', rateLimiters.serviceCheckIn, async (req: Request, res: Response) => {
+// GET /api/service-check-in/queue — get current check-in queue (unconverted
+// bookings). Unlike /lookup and POST / above (deliberately public — see
+// apps/web/app/service-check-in/page.tsx, a self-service kiosk page that
+// only ever calls those two), this one is only ever called by the admin
+// front-desk view (ServiceCheckInList.tsx) and returns every waiting
+// customer's name/phone/vehicle — it had no auth at all, so anyone could
+// pull the day's full check-in queue with a bare curl.
+router.get('/queue', requireAdminApiSession, requirePermission('canManageServiceBookings'), rateLimiters.serviceCheckIn, async (req: Request, res: Response) => {
   try {
     const bookings = await prisma.serviceBooking.findMany({
       where: {

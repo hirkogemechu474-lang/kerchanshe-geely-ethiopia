@@ -66,6 +66,7 @@ import {
   Award,
   UserPlus,
   TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import type { AdminPermissions } from '@/types';
 import { useTheme } from './ThemeProvider';
@@ -254,6 +255,7 @@ const navSections: NavSection[] = [
           { name: 'Manage Customers', href: '/admin/customers', icon: Users, permission: 'canViewCustomers' },
           { name: 'Manage Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },
           { name: 'Manage Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },
+          { name: 'Roadside Assistance', href: '/admin/roadside-requests', icon: AlertTriangle, permission: 'canManageService' },
           { name: 'Manage Bay Schedule', href: '/admin/workshop/bays', icon: LayoutGrid, permission: 'canManageBays' },
           { name: 'Manage Technicians', href: '/admin/workshop/technicians', icon: UserCog, permission: 'canManageTechnicians' },
           { name: 'Manage Bays', href: '/admin/workshop/bays/manage', icon: Settings, permission: 'canManageBays' },

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import WarrantyClaimDetail from '@/components/admin/workshop/WarrantyClaimDetail';
 
 export default async function WarrantyClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requirePermission('canViewJobCards');
+  const session = await requirePermission('canManageWarrantyClaims');
   const { id } = await params;
   const client = await serverApiClient();
 

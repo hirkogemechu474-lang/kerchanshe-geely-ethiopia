@@ -1,11 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { requireAdminApiSession } from '../middleware/auth';
+import { requireAdminApiSession, requirePermission } from '../middleware/auth';
+
+// Every route in this file only ever required a valid admin session, never
+// checked canManageSpareParts — matching apps/admin/components/admin/
+// AdminLayout.tsx's sidebar, which gates every /admin/parts* link on that
+// one permission (it never distinguishes a separate "view" tier for this
+// area). Any authenticated admin of any role could create/edit/delete spare
+// parts and parts-CMS content via a direct API call regardless of role.
+const gate = requirePermission('canManageSpareParts');
 
 const router = Router();
 
 // GET /api/parts (admin list)
-router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -16,13 +24,21 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 
     const where: any = {};
     if (search) {
+      // SparePart has no `partNumber` column (the real field is `sku`) —
+      // filtering on it threw a PrismaClientValidationError (500) the
+      // moment any caller passed ?search=, even though the current list
+      // page never does today.
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { partNumber: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (categoryId) where.categoryId = categoryId;
-    if (brandId) where.brandId = brandId;
+    // `categoryId`/`brandId` mirror the naming used by other admin list
+    // endpoints, but SparePart's real columns are `partCategoryId` (an FK)
+    // and `brand` (a freeform string, no PartBrand relation exists) — using
+    // the wrong names here also threw on any caller that passed them.
+    if (categoryId) where.partCategoryId = categoryId;
+    if (brandId) where.brand = { contains: brandId, mode: 'insensitive' };
     if (featured === 'true') where.isFeatured = true;
     if (featured === 'false') where.isFeatured = false;
 
@@ -45,7 +61,7 @@ router.get('/', requireAdminApiSession, async (req: Request, res: Response) => {
 });
 
 // POST /api/parts (admin create)
-router.post('/', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const part = await prisma.sparePart.create({ data: req.body });
     res.status(201).json(part);
@@ -56,7 +72,7 @@ router.post('/', requireAdminApiSession, async (req: Request, res: Response) => 
 });
 
 // GET /api/parts/:id (admin detail)
-router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const part = await prisma.sparePart.findUnique({ where: { id: req.params.id }, include: { partCategory: true } });
     if (!part) { res.status(404).json({ error: 'Part not found' }); return; }
@@ -68,7 +84,7 @@ router.get('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // PUT /api/parts/:id (admin update)
-router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const part = await prisma.sparePart.update({ where: { id: req.params.id }, data: req.body });
     res.json(part);
@@ -79,7 +95,7 @@ router.put('/:id', requireAdminApiSession, async (req: Request, res: Response) =
 });
 
 // DELETE /api/parts/:id (admin delete)
-router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.sparePart.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -96,7 +112,7 @@ router.delete('/:id', requireAdminApiSession, async (req: Request, res: Response
 // prisma/schema.prisma (threw at runtime) — there's already a real,
 // dedicated `PartsPageContent` model (singleton row, same as the admin
 // content aggregator page reads via `.findFirst()`); use that instead.
-router.get('/admin/parts/content', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/parts/content', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const content = await prisma.partsPageContent.findFirst();
     res.json(content || {});
@@ -107,7 +123,7 @@ router.get('/admin/parts/content', requireAdminApiSession, async (req: Request, 
 });
 
 // PUT /api/parts/admin/parts/content
-router.put('/admin/parts/content', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/admin/parts/content', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const existing = await prisma.partsPageContent.findFirst();
     const content = existing
@@ -123,7 +139,7 @@ router.put('/admin/parts/content', requireAdminApiSession, async (req: Request, 
 // ── Brands ───────────────────────────────────────────────────────────────
 
 // GET /api/parts/admin/parts/brands
-router.get('/admin/parts/brands', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/parts/brands', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const brands = await prisma.partBrand.findMany({ orderBy: { name: 'asc' } });
     res.json(brands);
@@ -134,7 +150,7 @@ router.get('/admin/parts/brands', requireAdminApiSession, async (req: Request, r
 });
 
 // POST /api/parts/admin/parts/brands
-router.post('/admin/parts/brands', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/admin/parts/brands', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const brand = await prisma.partBrand.create({ data: req.body });
     res.status(201).json(brand);
@@ -145,7 +161,7 @@ router.post('/admin/parts/brands', requireAdminApiSession, async (req: Request, 
 });
 
 // PUT /api/parts/admin/parts/brands/:id
-router.put('/admin/parts/brands/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/admin/parts/brands/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const brand = await prisma.partBrand.update({ where: { id: req.params.id }, data: req.body });
     res.json(brand);
@@ -156,7 +172,7 @@ router.put('/admin/parts/brands/:id', requireAdminApiSession, async (req: Reques
 });
 
 // DELETE /api/parts/admin/parts/brands/:id
-router.delete('/admin/parts/brands/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/admin/parts/brands/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.partBrand.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -169,7 +185,7 @@ router.delete('/admin/parts/brands/:id', requireAdminApiSession, async (req: Req
 // ── Categories ───────────────────────────────────────────────────────────
 
 // GET /api/parts/admin/parts/categories
-router.get('/admin/parts/categories', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/parts/categories', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const categories = await prisma.partCategory.findMany({ orderBy: { name: 'asc' } });
     res.json(categories);
@@ -180,7 +196,7 @@ router.get('/admin/parts/categories', requireAdminApiSession, async (req: Reques
 });
 
 // POST /api/parts/admin/parts/categories
-router.post('/admin/parts/categories', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/admin/parts/categories', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const category = await prisma.partCategory.create({ data: req.body });
     res.status(201).json(category);
@@ -191,7 +207,7 @@ router.post('/admin/parts/categories', requireAdminApiSession, async (req: Reque
 });
 
 // PUT /api/parts/admin/parts/categories/:id
-router.put('/admin/parts/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/admin/parts/categories/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const category = await prisma.partCategory.update({ where: { id: req.params.id }, data: req.body });
     res.json(category);
@@ -202,7 +218,7 @@ router.put('/admin/parts/categories/:id', requireAdminApiSession, async (req: Re
 });
 
 // DELETE /api/parts/admin/parts/categories/:id
-router.delete('/admin/parts/categories/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/admin/parts/categories/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.partCategory.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -215,7 +231,7 @@ router.delete('/admin/parts/categories/:id', requireAdminApiSession, async (req:
 // ── Benefits ─────────────────────────────────────────────────────────────
 
 // GET /api/parts/admin/parts/benefits
-router.get('/admin/parts/benefits', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/parts/benefits', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const benefits = await prisma.partBenefit.findMany({ orderBy: { displayOrder: 'asc' } });
     res.json(benefits);
@@ -226,7 +242,7 @@ router.get('/admin/parts/benefits', requireAdminApiSession, async (req: Request,
 });
 
 // POST /api/parts/admin/parts/benefits
-router.post('/admin/parts/benefits', requireAdminApiSession, async (req: Request, res: Response) => {
+router.post('/admin/parts/benefits', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const benefit = await prisma.partBenefit.create({ data: req.body });
     res.status(201).json(benefit);
@@ -237,7 +253,7 @@ router.post('/admin/parts/benefits', requireAdminApiSession, async (req: Request
 });
 
 // PUT /api/parts/admin/parts/benefits/:id
-router.put('/admin/parts/benefits/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.put('/admin/parts/benefits/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const benefit = await prisma.partBenefit.update({ where: { id: req.params.id }, data: req.body });
     res.json(benefit);
@@ -248,7 +264,7 @@ router.put('/admin/parts/benefits/:id', requireAdminApiSession, async (req: Requ
 });
 
 // DELETE /api/parts/admin/parts/benefits/:id
-router.delete('/admin/parts/benefits/:id', requireAdminApiSession, async (req: Request, res: Response) => {
+router.delete('/admin/parts/benefits/:id', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     await prisma.partBenefit.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -259,7 +275,7 @@ router.delete('/admin/parts/benefits/:id', requireAdminApiSession, async (req: R
 });
 
 // GET /api/parts/admin/parts/low-stock-count
-router.get('/admin/parts/low-stock-count', requireAdminApiSession, async (req: Request, res: Response) => {
+router.get('/admin/parts/low-stock-count', requireAdminApiSession, gate, async (req: Request, res: Response) => {
   try {
     const count = await prisma.sparePart.count({ where: { stock: { lte: 10 } } });
     res.json({ count });
