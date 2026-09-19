@@ -41,6 +41,16 @@ export interface Dealer {
   images?: string[];
   type?: string;
   isActive?: boolean;
+  featured?: boolean;
+  rating?: number;
+  facilities?: {
+    showroom?: boolean;
+    serviceCenter?: boolean;
+    partsShop?: boolean;
+    testDriveArea?: boolean;
+    customerLounge?: boolean;
+    parking?: boolean;
+  };
 }
 
 // The Prisma Dealer model (backend/prisma/schema.prisma) nests contact info
