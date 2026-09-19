@@ -6,7 +6,26 @@ import Image from "next/image";
 import { MainLayout } from "@/components/MainLayout";
 import { getDealers, type Dealer } from "@/lib/api";
 import { validateGenericIdOrLicense } from "@/lib/idValidation";
-import { CheckCircle, Wrench, Clock, Shield, User, Car, CalendarClock, ArrowRight, CalendarCheck } from "lucide-react";
+import {
+  CheckCircle, Wrench, Clock, Shield, User, Car, CalendarClock, ArrowRight, CalendarCheck,
+  Droplet, Disc, Gauge, BatteryCharging, ScanLine, Cog, Wind, Zap, SprayCan, MoreHorizontal,
+  MapPin, Phone, Navigation,
+} from "lucide-react";
+
+const SERVICE_TYPE_ICONS: Record<string, typeof Wrench> = {
+  "Regular Maintenance": Wrench,
+  "Oil Change": Droplet,
+  "Brake Service": Disc,
+  "Tire Service": Gauge,
+  "Battery Service": BatteryCharging,
+  "Engine Diagnostics": ScanLine,
+  "Transmission Service": Cog,
+  "Air Conditioning Service": Wind,
+  "Electrical Service": Zap,
+  "Body & Paint": SprayCan,
+  "Warranty Service": Shield,
+  Other: MoreHorizontal,
+};
 
 interface ServiceFormData {
   firstName: string;
@@ -32,13 +51,11 @@ export default function ServicePage() {
   const [submitError, setSubmitError] = useState('');
   const [serviceCenters, setServiceCenters] = useState<Dealer[]>([]);
   const [bookingReference, setBookingReference] = useState<string | null>(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [vehicleModelOptions, setVehicleModelOptions] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (showBookingForm) {
-      document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [showBookingForm]);
+  const scrollToBookingForm = () => {
+    document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Fetch service centers from CMS
   useEffect(() => {
@@ -51,6 +68,25 @@ export default function ServicePage() {
       }
     }
     fetchCenters();
+  }, []);
+
+  // Model suggestions only — a customer's own vehicle may be an older or
+  // discontinued model no longer in the live catalog, so this stays a free
+  // text field rather than a hard-locked picker like the quote/test-drive
+  // pages use for vehicles being sold today.
+  useEffect(() => {
+    async function fetchVehicleNames() {
+      try {
+        const res = await fetch("/api/public/vehicles");
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data?.vehicles || [];
+        setVehicleModelOptions([...new Set(list.map((v: { name: string }) => v.name))] as string[]);
+      } catch {
+        /* silent — the field still works as plain free text */
+      }
+    }
+    fetchVehicleNames();
   }, []);
 
   const {
@@ -129,12 +165,12 @@ export default function ServicePage() {
                 Service Request Reference: <span className="font-bold">{bookingReference}</span>
               </p>
             )}
-            {submitError && <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">{submitError}</p>}
+            {submitError && <p className="mb-6 rounded-lg border border-yellow-200 dark:border-yellow-900/40 bg-yellow-50 dark:bg-yellow-900/10 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-200">{submitError}</p>}
             <div className="bg-ice dark:bg-midnight p-6 rounded-lg mb-8">
               <p className="text-sm text-steel dark:text-steel-light mb-2">
-                <strong className="text-navy">What to bring:</strong>
+                <strong className="text-navy dark:text-ice">What to bring:</strong>
               </p>
-              <ul className="text-sm text-steel text-left space-y-2 max-w-md mx-auto">
+              <ul className="text-sm text-steel dark:text-steel-light text-left space-y-2 max-w-md mx-auto">
                 <li>✓ Vehicle registration documents</li>
                 <li>✓ Service history (if available)</li>
                 <li>✓ Warranty documents (for warranty service)</li>
@@ -150,7 +186,7 @@ export default function ServicePage() {
               </button>
               <a
                 href="/parts"
-                className="border border-line dark:border-midnight-line text-navy font-semibold text-sm px-8 py-4 rounded hover:bg-ice transition-all"
+                className="border border-line dark:border-midnight-line text-navy dark:text-ice font-semibold text-sm px-8 py-4 rounded hover:bg-ice dark:hover:bg-midnight transition-all"
               >
                 Order Parts
               </a>
@@ -170,8 +206,6 @@ export default function ServicePage() {
 
   return (
     <MainLayout>
-      {!showBookingForm && (
-      <>
       {/* Hero */}
       <div className="relative min-h-[460px] md:h-[520px] bg-white dark:bg-midnight-surface overflow-hidden">
         <Image
@@ -197,7 +231,7 @@ export default function ServicePage() {
             Owning a Geely is a long-term relationship built on trust, quality, and care. Our maintenance plans, genuine parts, and nationwide support keep your vehicle running the way it was built to, wherever you are in Ethiopia.
           </p>
           <button
-            onClick={() => setShowBookingForm(true)}
+            onClick={scrollToBookingForm}
             className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all w-fit"
           >
             Book Service
@@ -271,6 +305,96 @@ export default function ServicePage() {
         </div>
       </section>
 
+      {/* Service Types We Offer */}
+      <section className="py-16">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+          <div className="text-center mb-10">
+            <div className="text-[13px] tracking-[0.14em] text-geely-blue font-bold mb-3">
+              WHAT WE OFFER
+            </div>
+            <h2 className="text-3xl font-bold text-navy dark:text-ice">Service Types We Offer</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {serviceTypes.map((type) => {
+              const Icon = SERVICE_TYPE_ICONS[type] || MoreHorizontal;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={scrollToBookingForm}
+                  className="group flex flex-col items-center text-center gap-3 bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line p-5 hover:border-geely-blue hover:shadow-xl hover:shadow-active-blue/10 hover:-translate-y-1 transition-all"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-geely-blue/10 dark:bg-blue-bright/10 flex items-center justify-center">
+                    <Icon className="text-geely-blue dark:text-blue-bright" size={22} />
+                  </div>
+                  <span className="text-sm font-bold text-navy dark:text-ice">{type}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Find a Service Center */}
+      {serviceCenters.length > 0 && (
+        <section className="py-16 bg-ice dark:bg-midnight">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
+            <div className="text-center mb-10">
+              <div className="text-[13px] tracking-[0.14em] text-geely-blue font-bold mb-3">
+                NATIONWIDE SUPPORT
+              </div>
+              <h2 className="text-3xl font-bold text-navy dark:text-ice">Find a Service Center</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {serviceCenters.map((center) => {
+                const mapsUrl = center.coordinates?.latitude != null && center.coordinates?.longitude != null
+                  ? `https://www.google.com/maps/search/?api=1&query=${center.coordinates.latitude},${center.coordinates.longitude}`
+                  : undefined;
+                const addressLine = [center.address?.area, center.address?.city || center.city].filter(Boolean).join(', ');
+                return (
+                  <div key={center.id} className="bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line p-6">
+                    <h3 className="font-bold text-navy dark:text-ice text-lg mb-3">{center.name}</h3>
+                    <div className="space-y-2 text-sm text-steel dark:text-steel-light">
+                      {addressLine && (
+                        <div className="flex items-start gap-2">
+                          <MapPin size={16} className="text-geely-blue shrink-0 mt-0.5" />
+                          <span>{addressLine}</span>
+                        </div>
+                      )}
+                      {center.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={16} className="text-geely-blue shrink-0" />
+                          <a href={`tel:${center.phone}`} className="hover:text-geely-blue transition-colors">{center.phone}</a>
+                        </div>
+                      )}
+                    </div>
+                    {center.services && center.services.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {center.services.slice(0, 4).map((s) => (
+                          <span key={s} className="text-xs font-semibold text-geely-blue bg-geely-blue/10 dark:bg-blue-bright/10 dark:text-blue-bright px-2.5 py-1 rounded-full">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {mapsUrl && (
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-geely-blue dark:text-blue-bright hover:underline mt-4"
+                      >
+                        <Navigation size={14} /> Get Directions
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Booking CTA */}
       <section className="relative overflow-hidden text-white py-24">
         <Image
@@ -290,7 +414,7 @@ export default function ServicePage() {
             Tell us about your vehicle and preferred time, and our team will confirm your appointment within 24 hours.
           </p>
           <button
-            onClick={() => setShowBookingForm(true)}
+            onClick={scrollToBookingForm}
             className="inline-flex items-center gap-2 bg-white text-navy px-8 py-4 rounded-lg font-bold hover:bg-opacity-90 transition-colors"
           >
             <CalendarCheck size={20} />
@@ -299,11 +423,8 @@ export default function ServicePage() {
           </button>
         </div>
       </section>
-      </>
-      )}
 
       {/* Form Section */}
-      {showBookingForm && (
       <section id="booking-form" className="py-16 bg-ice dark:bg-midnight">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
           <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line shadow-xl overflow-hidden">
@@ -440,12 +561,18 @@ export default function ServicePage() {
                     </label>
                     <input
                       type="text"
+                      list="vehicle-model-options"
                       {...register("vehicleModel", { required: "Vehicle model is required" })}
                       className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-midnight text-navy dark:text-ice transition-colors focus:outline-none focus:ring-4 focus:ring-geely-blue/10 focus:border-geely-blue ${
                         errors.vehicleModel ? "border-red-500" : "border-line dark:border-midnight-line"
                       }`}
                       placeholder="e.g., Geely Coolray"
                     />
+                    <datalist id="vehicle-model-options">
+                      {vehicleModelOptions.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
                     {errors.vehicleModel && (
                       <p className="text-red-500 text-xs mt-1">{errors.vehicleModel.message}</p>
                     )}
@@ -662,7 +789,6 @@ export default function ServicePage() {
           </form>
         </div>
       </section>
-      )}
     </MainLayout>
   );
 }
