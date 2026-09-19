@@ -800,7 +800,7 @@ model InAppNotification {
   id             String    @id @default(uuid())
   recipientId    String
   recipientEmail String
-  type           String    // 'lead_assignment', 'approval_required', 'signature_required', 'discount_approval', 'quotation_approved', 'quotation_rejected', 'agreement_ready', 'agreement_signed', 'payment_received', 'order_update', 'sla_breach', 'general'
+  type           String    // 'lead_assignment', 'approval_required', 'signature_required', 'discount_approval', 'quotation_approved', 'quotation_rejected', 'agreement_ready', 'agreement_signed', 'payment_received', 'order_update', 'sla_breach', 'sales_target_assigned', 'general'
   title          String
   body           String    @db.Text
   link           String?   // e.g. '/admin/quotations/xxx' or '/admin/orders/xxx'

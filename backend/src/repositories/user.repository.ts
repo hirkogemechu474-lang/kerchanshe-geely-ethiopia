@@ -146,6 +146,13 @@ export const userRepository = {
     return emails.length > 0 ? emails : ['manager@geelyethiopia.com'];
   },
 
+  async findActiveByDealerAndRoles(dealerId: string, roles: string[]) {
+    return prisma.user.findMany({
+      where: { dealerId, isActive: true, role: { in: roles } },
+      select: { id: true, name: true, email: true, role: true },
+    });
+  },
+
   async findWorkshopManagerEmails(): Promise<string[]> {
     const managers = await prisma.user.findMany({
       where: { isActive: true, role: { in: ['workshop_manager', 'service_manager', 'after_sales_manager', 'admin'] } },
