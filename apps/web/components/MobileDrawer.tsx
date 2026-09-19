@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, ChevronDown, Car, Info, ShoppingBag, Users, Newspaper, CalendarCheck, Zap, Search, Globe, Sun, Moon } from 'lucide-react';
+import { X, ChevronDown, Car, Info, ShoppingBag, Users, Newspaper, CalendarCheck, Search, Globe, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage, useTranslation } from '@/lib/i18n';
 import { useTheme } from '@/providers/ThemeProvider';
 import { withBasePath } from '@/lib/publicPath';
 import Button from '@/components/ui/Button';
+import type { VehicleRecord } from '@/services/vehicleService';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -17,10 +18,35 @@ interface MobileDrawerProps {
 
 export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: MobileDrawerProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const setLanguage = useLanguage((state) => state.setLanguage);
   const isEnglish = language === 'en';
   const { resolvedTheme, setTheme } = useTheme();
+
+  // Real published models, same source as the desktop mega-menu
+  // (VehicleDropdown via /api/public/vehicles) — this used to be a
+  // hardcoded list (Coolray/Emgrand/Monjaro/Azkarra/Okavango) that no
+  // longer matches what's actually in the catalog and linked to
+  // "Vehicle Not Found" pages.
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/vehicles')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const list: VehicleRecord[] = Array.isArray(data) ? data : data.vehicles ?? [];
+        setVehicles(list);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const modelLinks = vehicles
+    .slice()
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name))
+    .map((vehicle) => ({ name: vehicle.name, href: `/models/${vehicle.slug}` }));
 
   // Mirrors Header.tsx's top nav (Models, About Geely, Shopping Tools,
   // Owners, Media Center, Test Drive) so desktop and mobile agree — the
@@ -28,18 +54,11 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
   // even where the desktop bar itself uses a compact dropdown.
   const navigationItems = [
     {
-      title: t('common.models'),
+      title: 'Models',
       icon: <Car size={20} />,
       href: '/models',
       hasSubmenu: true,
-      submenu: [
-        { name: 'All Models', href: '/models' },
-        { name: 'Coolray', href: '/models/coolray' },
-        { name: 'Emgrand', href: '/models/emgrand' },
-        { name: 'Monjaro', href: '/models/monjaro' },
-        { name: 'Azkarra', href: '/models/azkarra' },
-        { name: 'Okavango', href: '/models/okavango' },
-      ]
+      submenu: [{ name: 'All Models', href: '/models' }, ...modelLinks],
     },
     { title: 'About Geely', icon: <Info size={20} />, href: '/about' },
     {
@@ -55,7 +74,6 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
         { name: 'Request a Quote', href: '/quote' },
       ]
     },
-    { title: 'Electric vs. Fuel', icon: <Zap size={20} />, href: '/ev-vs-fuel' },
     {
       title: 'Owners',
       icon: <Users size={20} />,
@@ -125,7 +143,7 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
                   className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-navy dark:text-ice border border-line dark:border-midnight-line rounded-lg py-2.5 hover:bg-ice dark:hover:bg-midnight transition-colors"
                 >
                   <Search size={16} />
-                  {t('common.search')}
+                  Search
                 </button>
                 <button
                   onClick={() => setLanguage(isEnglish ? 'am' : 'en')}
@@ -198,10 +216,10 @@ export function MobileDrawer({ isOpen, onClose, onSearchClick = () => {} }: Mobi
               {/* Bottom Actions */}
               <div className="border-t border-line dark:border-midnight-line p-4 space-y-3">
                 <Button href="/test-drive" onClick={onClose} variant="solid" size="lg" className="w-full">
-                  {t('common.bookTestDrive')}
+                  Book Test Drive
                 </Button>
                 <Button href="/quote" onClick={onClose} variant="outline" tone="light" size="lg" className="w-full">
-                  {t('common.getQuote')}
+                  Get Quote
                 </Button>
               </div>
             </div>

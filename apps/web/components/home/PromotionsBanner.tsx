@@ -62,7 +62,12 @@ export default function PromotionsBanner({ initialPromotions = [] }: PromotionsB
         <div className="flex items-center gap-6">
           {/* Slider */}
           <div className="flex-1 relative">
-            <div className="relative h-32 md:h-40 rounded-lg overflow-hidden bg-black/20">
+            {/* Height comes from the content column below (in normal flow),
+                not a fixed h-32/h-40 — that used to clip the title/description/
+                button whenever they needed more than 128-160px, which is what
+                made the text unreadable. The image/overlay layers are
+                absolutely positioned to fill whatever height the content sets. */}
+            <div className="relative rounded-lg overflow-hidden bg-black/20">
               {currentPromo.bannerImage ? (
                 <Image
                   src={currentPromo.bannerImage}
@@ -72,18 +77,28 @@ export default function PromotionsBanner({ initialPromotions = [] }: PromotionsB
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <Zap size={48} className="text-white/50" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/30"></div>
-              <div className="absolute inset-0 flex flex-col justify-center p-6">
-                <h3 className="text-2xl md:text-3xl font-bold mb-2">{currentPromo.title}</h3>
-                <p className="text-sm md:text-base text-white/90 mb-4 line-clamp-2">
+              {/* Darker, directional scrim (matches the main hero treatment)
+                  so the text reads reliably no matter what's behind it. */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10"></div>
+              <div className="relative z-10 flex flex-col justify-center gap-2 min-h-[200px] sm:min-h-[220px] md:min-h-[260px] p-6 md:p-8">
+                <h3
+                  className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight"
+                  style={{ textShadow: '0 1px 10px rgba(0,0,0,0.45)' }}
+                >
+                  {currentPromo.title}
+                </h3>
+                <p
+                  className="text-sm md:text-base text-white/90 leading-relaxed line-clamp-2 max-w-2xl"
+                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.45)' }}
+                >
                   {currentPromo.description}
                 </p>
                 {currentPromo.ctaButtonText && currentPromo.ctaButtonLink && (
-                  <Button href={currentPromo.ctaButtonLink} variant="solid" size="sm" className="w-fit">
+                  <Button href={currentPromo.ctaButtonLink} variant="solid" size="sm" className="w-fit mt-2">
                     {currentPromo.ctaButtonText}
                   </Button>
                 )}
