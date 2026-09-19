@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/MainLayout";
 import type { VehicleRecord } from "@/lib/vehicleData";
 import { WhatsAppInlineCTA } from "@/components/WhatsAppWidget";
 import { validateIdDocumentNumber, validateTin } from "@/lib/idValidation";
+import { withBasePath } from "@/lib/publicPath";
 import { CheckCircle, FileText, DollarSign, AlertCircle, Clock, ShieldCheck, RotateCcw, Calculator, Search, Eye, UserCheck, Mail, Copy, Check, Upload } from "lucide-react";
 
 const TIMEFRAME_LABELS: Record<string, string> = {
@@ -15,6 +16,27 @@ const TIMEFRAME_LABELS: Record<string, string> = {
   '3-6-months': '3-6 months',
   '6-months-plus': 'More than 6 months',
 };
+
+// Same resolution order as the test-drive page's vehicle picker, so a
+// vehicle missing a curated heroImageUrl still falls back to its first
+// gallery image instead of showing a blank card.
+function vehicleImageUrl(vehicle: VehicleRecord): string | null {
+  const raw =
+    vehicle.heroImageUrl ||
+    (Array.isArray(vehicle.images) && typeof vehicle.images[0] === "string"
+      ? (vehicle.images[0] as string)
+      : null);
+  if (!raw) return null;
+  return withBasePath(raw);
+}
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-geely-blue text-white text-xs font-bold">
+      {n}
+    </span>
+  );
+}
 
 interface QuoteFormData {
   title: string;
@@ -69,6 +91,7 @@ export default function QuotePage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<QuoteFormData>({
@@ -86,6 +109,7 @@ export default function QuotePage() {
 
   const watchTradeIn = watch("tradeIn");
   const watchTitle = watch("title");
+  const watchVehicleId = watch("vehicleId");
 
   useEffect(() => {
     if (!configurationParam) return;
@@ -468,36 +492,25 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       </div>
 
       {/* Benefits Section */}
-      <section className="py-12 bg-ice">
+      <section className="py-12 bg-ice dark:bg-midnight">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-midnight-surface p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FileText className="text-geely-blue" size={24} />
+            {[
+              { icon: FileText, title: "Detailed Breakdown", body: "Transparent pricing with all costs clearly outlined" },
+              { icon: DollarSign, title: "Best Price Guarantee", body: "Competitive pricing with current offers included" },
+              { icon: CheckCircle, title: "No Obligation", body: "Free quote with no commitment required" },
+            ].map(({ icon: Icon, title, body }) => (
+              <div
+                key={title}
+                className="group bg-white dark:bg-midnight-surface rounded-2xl border border-line dark:border-midnight-line p-6 text-center hover:border-geely-blue hover:shadow-xl hover:shadow-active-blue/10 hover:-translate-y-1 transition-all"
+              >
+                <div className="w-12 h-12 bg-geely-blue/10 dark:bg-blue-bright/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Icon className="text-geely-blue dark:text-blue-bright" size={24} />
+                </div>
+                <h3 className="font-bold text-navy dark:text-ice mb-2">{title}</h3>
+                <p className="text-xs text-steel dark:text-steel-light">{body}</p>
               </div>
-              <h3 className="font-bold text-navy mb-2">Detailed Breakdown</h3>
-              <p className="text-xs text-steel">
-                Transparent pricing with all costs clearly outlined
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <DollarSign className="text-geely-blue" size={24} />
-              </div>
-              <h3 className="font-bold text-navy mb-2">Best Price Guarantee</h3>
-              <p className="text-xs text-steel">
-                Competitive pricing with current offers included
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg text-center">
-              <div className="w-12 h-12 bg-geely-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="text-geely-blue" size={24} />
-              </div>
-              <h3 className="font-bold text-navy mb-2">No Obligation</h3>
-              <p className="text-xs text-steel">
-                Free quote with no commitment required
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -505,16 +518,18 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
       {/* Form Section */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-line shadow-lg overflow-hidden">
-            <div className="bg-ice p-6 border-b border-line">
-              <h2 className="text-2xl font-bold text-navy">Quote Request Form</h2>
-              <p className="text-sm text-steel mt-1">Complete the form below and we'll send you a detailed quote</p>
+          <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-midnight-surface rounded-lg border border-line dark:border-midnight-line shadow-lg overflow-hidden">
+            <div className="bg-ice dark:bg-midnight p-6 border-b border-line dark:border-midnight-line">
+              <h2 className="text-2xl font-bold text-navy dark:text-ice">Quote Request Form</h2>
+              <p className="text-sm text-steel dark:text-steel-light mt-1">Complete the form below and we'll send you a detailed quote</p>
             </div>
 
             <div className="p-6 space-y-6">
               {/* Personal Information */}
               <div>
-                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Personal Information</h3>
+                <h3 className="flex items-center gap-2.5 text-lg font-bold text-navy dark:text-ice mb-4">
+                  <StepBadge n={1} /> Personal Information
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
@@ -712,33 +727,72 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
 
               {/* Vehicle & Purchase Details */}
               <div>
-                <h3 className="text-lg font-bold text-navy dark:text-ice mb-4">Vehicle & Purchase Details</h3>
+                <h3 className="flex items-center gap-2.5 text-lg font-bold text-navy dark:text-ice mb-4">
+                  <StepBadge n={2} /> Vehicle & Purchase Details
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-navy dark:text-ice mb-2">
                       Vehicle of Interest <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      {...register("vehicleId", { required: "Please select a vehicle" })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-geely-blue ${
-                        errors.vehicleId ? "border-red-500" : "border-line dark:bg-midnight dark:text-ice dark:border-midnight-line"
-                      }`}
-                      disabled={vehiclesLoading}
-                    >
-                      <option value="">{vehiclesLoading ? "Loading vehicles..." : "Choose a vehicle"}</option>
-                      {vehicles.map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name}
-                        </option>
-                      ))}
-                    </select>
+
+                    {vehiclesLoading ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="animate-pulse rounded-lg bg-ice dark:bg-midnight h-[110px]" />
+                        ))}
+                      </div>
+                    ) : vehicles.length === 0 ? (
+                      <p className="text-sm text-steel dark:text-steel-light">No vehicles available at the moment.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {vehicles.map((vehicle) => {
+                          const img = vehicleImageUrl(vehicle);
+                          const isActive = watchVehicleId === vehicle.id;
+                          return (
+                            <button
+                              key={vehicle.id}
+                              type="button"
+                              onClick={() => setValue("vehicleId", vehicle.id, { shouldValidate: true })}
+                              className={`relative rounded-lg overflow-hidden text-left transition-all ${
+                                isActive
+                                  ? "ring-2 ring-geely-blue ring-offset-2 dark:ring-offset-midnight-surface"
+                                  : "ring-1 ring-black/10 dark:ring-white/10 hover:ring-black/30 dark:hover:ring-white/30"
+                              }`}
+                            >
+                              <div className="aspect-[3/2] bg-ice dark:bg-midnight relative overflow-hidden">
+                                {img ? (
+                                  <img src={img} alt={vehicle.name} className="w-full h-full object-cover object-center" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-steel dark:text-steel-light text-xs">
+                                    No image
+                                  </div>
+                                )}
+                              </div>
+                              <div className="px-3 py-2 bg-white dark:bg-midnight-surface">
+                                <span className="font-bold text-navy dark:text-ice text-xs sm:text-sm line-clamp-1">
+                                  {vehicle.name}
+                                </span>
+                              </div>
+                              {isActive && (
+                                <div className="absolute top-2 right-2 w-5 h-5 bg-geely-blue rounded-full flex items-center justify-center">
+                                  <CheckCircle size={12} className="text-white" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <input type="hidden" {...register("vehicleId", { required: "Please select a vehicle" })} />
                     {errors.vehicleId && (
-                      <p className="text-red-500 text-xs mt-1">{errors.vehicleId.message}</p>
+                      <p className="text-red-500 text-xs mt-2">{errors.vehicleId.message}</p>
                     )}
                     {(requestedTrim || requestedColor) && (
-                      <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                      <div className="mt-3 rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/10 px-4 py-3 text-sm text-blue-900 dark:text-blue-200">
                         <p className="font-semibold">Requested configuration</p>
-                        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-blue-800">
+                        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-blue-800 dark:text-blue-300">
                           {requestedTrim && <span>Trim: {requestedTrim}</span>}
                           {requestedColor && <span>Color: {requestedColor}</span>}
                         </div>
@@ -857,7 +911,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                       <textarea
                         {...register("tradeInDetails")}
                         rows={3}
-                        className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                        className="w-full px-4 py-3 border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg focus:outline-none focus:border-geely-blue"
                         placeholder="Please provide: Make, Model, Year, Mileage, Condition"
                       ></textarea>
                     </div>
@@ -870,7 +924,7 @@ ${data.message ? `Additional Message: ${data.message}` : ''}
                     <textarea
                       {...register("message")}
                       rows={4}
-                      className="w-full px-4 py-3 border border-line dark:border-midnight-line rounded-lg focus:outline-none focus:border-geely-blue"
+                      className="w-full px-4 py-3 border border-line dark:border-midnight-line dark:bg-midnight dark:text-ice rounded-lg focus:outline-none focus:border-geely-blue"
                       placeholder="Any specific requirements, questions, or preferred vehicle configuration?"
                     ></textarea>
                   </div>
