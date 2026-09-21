@@ -859,7 +859,7 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
 
     // Step 10: Notify sales agent, managers, and finance when payment is confirmed
     if (action === 'confirm') {
-      const notifyStaff = async (emails: string[], subject: string, data: Record<string, any>) => {
+      const notifyStaff = async (emails: string[], subject: string, data: Record<string, any>, inAppBody?: string) => {
         if (emails.length === 0) return;
         try {
           await dispatchNotification({
@@ -868,6 +868,16 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
             subject,
             data,
             ctas: [{ label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` }],
+            inApp: {
+              type: 'order_update',
+              title: subject,
+              body: inAppBody || subject,
+              link: `/admin/orders/${order.id}`,
+              orderId: order.id,
+              relatedModel: 'order',
+              relatedId: order.id,
+              priority: 'normal',
+            },
           });
         } catch (err: any) {
           console.error('[PAYMENT CONFIRM STAFF NOTIFICATION ERROR]', err.message);
@@ -894,7 +904,7 @@ router.post('/:id/payment/confirm', requireAdminApiSession, async (req: Request,
       await notifyStaff(uniqueEmails, `Payment Confirmed — ${order.orderNo}`, {
         ...baseData,
         nextStep: 'Finance must verify the payment before delivery can proceed.',
-      });
+      }, `Payment confirmed for order ${order.orderNo} (${order.customerName}). Finance must verify before delivery can proceed.`);
     }
 
     res.json(updated);
@@ -1171,6 +1181,16 @@ router.post('/:id/send-handover-countersign-link', requireAdminApiSession, async
       to: managerEmails,
       subject: `Countersign Handover — ${order.orderNo}`,
       data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName, link },
+      inApp: {
+        type: 'order_update',
+        title: 'Countersign Handover',
+        body: `Handover for order ${order.orderNo} (${order.customerName}) needs a manager countersignature.`,
+        link: `/admin/orders/${order.id}`,
+        orderId: order.id,
+        relatedModel: 'order',
+        relatedId: order.id,
+        priority: 'high',
+      },
     });
 
     res.json({ notificationSent: result.ok, notificationError: result.error });

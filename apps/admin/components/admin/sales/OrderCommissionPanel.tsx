@@ -18,12 +18,6 @@ interface OrderCommissionData {
   commissionStatus: string;
 }
 
-// Same assignable-role set as apps/admin/lib/assignSalesRep.ts's
-// ASSIGNABLE_ROLES, duplicated here because that module imports
-// next/headers (server-only) and can't be pulled into this client
-// component. Keep the two lists in sync.
-const ASSIGNABLE_ROLES = ['sales', 'sales_manager', 'general_manager', 'admin', 'sales_representative', 'super_admin'];
-
 const STATUS_TONE: Record<string, Tone> = {
   NOT_APPLICABLE: 'gray',
   PENDING: 'orange',
@@ -45,33 +39,22 @@ export default function OrderCommissionPanel({
   const [commissionRate, setCommissionRate] = useState(order.commissionRate?.toString() || '5');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [reps, setReps] = useState<{ id: string; name: string; isActive: boolean }[]>([]);
+  const [reps, setReps] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    // /api/admin/sales-reps doesn't exist — apps/admin/lib/assignSalesRep.ts's
-    // listSalesReps() (used server-side for AssignedToPanel) hits this same
-    // /api/admin/users endpoint instead. That backend route only filters by
-    // a single exact role (no "in" support), so fetch each assignable role
-    // in parallel and merge — same approach as listSalesReps().
-    Promise.all(
-      ASSIGNABLE_ROLES.map((role) =>
-        fetch(`/api/admin/users?role=${role}&pageSize=100`)
-          .then((res) => (res.ok ? res.json() : { items: [] }))
-          .catch(() => ({ items: [] }))
-      )
-    ).then((results) => {
-      const seen = new Set<string>();
-      const merged: { id: string; name: string; isActive: boolean }[] = [];
-      for (const data of results) {
-        for (const user of (data.items || []) as { id: string; name: string; isActive?: boolean }[]) {
-          if (seen.has(user.id)) continue;
-          seen.add(user.id);
-          merged.push({ id: user.id, name: user.name, isActive: user.isActive !== false });
-        }
-      }
-      merged.sort((a, b) => a.name.localeCompare(b.name));
-      setReps(merged);
-    });
+    // GET /api/admin/users requires canManageUsers, which sales/sales_manager
+    // callers of this panel don't have — that call always 403'd for them
+    // (silently swallowed below, so the dropdown just showed "Unassigned"
+    // with no reps to pick). /api/admin/sales-reps
+    // (backend/src/routes/sales-reps.routes.ts) is the same lightweight rep
+    // list gated on canManageQuotations/canManageOrders instead.
+    fetch('/api/admin/sales-reps')
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .catch(() => ({ items: [] }))
+      .then((data) => {
+        const reps = (data.items || []) as { id: string; name: string }[];
+        setReps(reps.sort((a, b) => a.name.localeCompare(b.name)));
+      });
   }, []);
 
   const dirty = salesAgentId !== (order.salesAgentId || '') || commissionRate !== (order.commissionRate?.toString() || '5');
@@ -138,7 +121,7 @@ export default function OrderCommissionPanel({
             <option value="">Unassigned</option>
             {reps.map((rep) => (
               <option key={rep.id} value={rep.id}>
-                {rep.name}{!rep.isActive ? ' (inactive)' : ''}
+                {rep.name}
               </option>
             ))}
           </select>

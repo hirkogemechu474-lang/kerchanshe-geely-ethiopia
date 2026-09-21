@@ -258,7 +258,17 @@ export default function OrderHandoverPanel({
           body: JSON.stringify({ toStatus: 'DELIVERED' }),
         });
         const statusData = await parseJsonResponse(statusRes);
-        if (!statusRes.ok) throw new Error(statusData.error || 'Unable to mark this order delivered.');
+        // DELIVERED is a terminal state backend-side (no DELIVERED ->
+        // DELIVERED transition) — a rejection here because the order was
+        // *already* delivered isn't a real failure. It happens when an
+        // earlier click's transition succeeded but the email step below
+        // then failed before this component could resync its stale
+        // order.status prop (see the resync-on-every-attempt fix in
+        // `finally`). Proceed to (re)send the email instead of surfacing a
+        // confusing "Cannot transition from DELIVERED to DELIVERED" error.
+        if (!statusRes.ok && !/cannot transition from delivered/i.test(statusData.error || '')) {
+          throw new Error(statusData.error || 'Unable to mark this order delivered.');
+        }
       }
 
       const emailRes = await fetch(`/api/orders/${order.id}/handover-email`, { method: 'POST' });
@@ -272,12 +282,17 @@ export default function OrderHandoverPanel({
             : `Delivered, but the confirmation email could not be sent${emailData.notificationError ? `: ${emailData.notificationError}` : ' — check SMTP settings.'}`
           : 'Delivered. No customer email on file, so no confirmation was sent.'
       );
-      onUpdated();
-      router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
       setBusy(false);
+      // Always resync, even on failure — otherwise a transition that
+      // actually succeeded server-side but whose email step then failed
+      // leaves this panel's order.status stale, and the next click retries
+      // the (now-invalid) DELIVERED transition instead of just resending
+      // the email.
+      onUpdated();
+      router.refresh();
     }
   };
 

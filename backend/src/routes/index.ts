@@ -60,6 +60,7 @@ import { loyaltyRoutes } from './loyalty.routes';
 import { walkInRoutes } from './walk-in.routes';
 import { salesTargetsRoutes } from './sales-targets.routes';
 import { marketingActivitiesRoutes } from './marketing-activities.routes';
+import { salesRepsRoutes } from './sales-reps.routes';
 
 const router = Router();
 
@@ -81,6 +82,7 @@ router.use('/content', contentRoutes);
 router.use('/media', mediaRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin/users', userRoutes);
+router.use('/admin/sales-reps', salesRepsRoutes);
 router.use('/promotions', promotionRoutes);
 router.use('/segments', segmentRoutes);
 router.use('/reviews', reviewRoutes);

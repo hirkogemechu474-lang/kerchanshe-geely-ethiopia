@@ -215,7 +215,7 @@ function SignatureSetupContent() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Link Expired or Invalid</h1>
           <p className="text-gray-600 text-sm mb-6">{loadError || 'This signature setup link could not be found.'}</p>
-          <Link href="/admin" className="inline-flex items-center gap-2 text-geely-blue font-medium hover:underline">
+          <Link href="/admin/analytics" className="inline-flex items-center gap-2 text-geely-blue font-medium hover:underline">
             <ArrowLeft className="w-4 h-4" /> Back to Admin
           </Link>
         </div>
@@ -243,7 +243,7 @@ function SignatureSetupContent() {
               <p className="text-gray-600 text-sm mb-6">
                 You're all set. This signature will now be used automatically when you countersign documents.
               </p>
-              <Link href="/admin" className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+              <Link href="/admin/analytics" className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
                 Back to Admin
               </Link>
             </div>

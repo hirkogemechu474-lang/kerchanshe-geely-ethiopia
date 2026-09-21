@@ -101,6 +101,16 @@ export const commissionService = {
             splitPercent,
             originalOwnerPercent: 100 - splitPercent,
           },
+          inApp: {
+            type: 'commission_update',
+            title: 'Commission Ownership Changed',
+            body: `Commission for order ${order.orderNo} was reassigned to ${newAgent?.name || 'another agent'} (${splitPercent}% split).`,
+            link: `/admin/orders/${order.id}`,
+            orderId: order.id,
+            relatedModel: 'order',
+            relatedId: order.id,
+            priority: 'normal',
+          },
         });
       }
 
@@ -235,6 +245,16 @@ export const commissionService = {
             orderNo: order.orderNo,
             amount: order.commissionAmount,
             paymentRef,
+          },
+          inApp: {
+            type: 'commission_update',
+            title: 'Commission Paid',
+            body: `Your commission of ${order.commissionAmount} for order ${order.orderNo} has been paid out (ref: ${paymentRef}).`,
+            link: `/admin/orders/${orderId}`,
+            orderId,
+            relatedModel: 'order',
+            relatedId: orderId,
+            priority: 'normal',
           },
         });
       }

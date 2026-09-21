@@ -288,6 +288,16 @@ router.post('/:id/send-quotation', requireAdminApiSession, manageGate, async (re
                 customerName: quotation.customerName,
                 vehicleModel: quotation.vehicleModel,
               },
+              inApp: {
+                type: 'quotation',
+                title: 'Quotation Sent to Customer',
+                body: `Quotation ${quotation.reference || quotation.id} for ${quotation.customerName} (${quotation.vehicleModel}) was sent to the customer.`,
+                link: `/admin/quotations/${quotation.id}`,
+                quotationId: quotation.id,
+                relatedModel: 'quotation',
+                relatedId: quotation.id,
+                priority: 'normal',
+              },
             });
           }
         } catch (agentNotifyError: any) {

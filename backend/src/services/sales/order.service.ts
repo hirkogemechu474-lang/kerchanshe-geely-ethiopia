@@ -267,6 +267,16 @@ export const orderService = {
                 ctas: [
                   { label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` },
                 ],
+                inApp: {
+                  type: 'order_update',
+                  title: 'Delivery Ready for Scheduling',
+                  body: `${order.vehicleModel} for order ${order.orderNo} (${order.customerName}) is ready — schedule the customer's delivery.`,
+                  link: `/admin/orders/${order.id}`,
+                  orderId: order.id,
+                  relatedModel: 'order',
+                  relatedId: order.id,
+                  priority: 'high',
+                },
               });
             }
           } catch (err: any) {
@@ -285,6 +295,16 @@ export const orderService = {
               ctas: [
                 { label: 'View Order', url: `${env.urls.admin}/admin/orders/${order.id}` },
               ],
+              inApp: {
+                type: 'order_update',
+                title: 'Vehicle Ready for Delivery',
+                body: `${order.vehicleModel} for order ${order.orderNo} (${order.customerName}) is ready for delivery.`,
+                link: `/admin/orders/${order.id}`,
+                orderId: order.id,
+                relatedModel: 'order',
+                relatedId: order.id,
+                priority: 'normal',
+              },
             });
           }
         } catch (err: any) {
@@ -346,6 +366,16 @@ export const orderService = {
                 to: [agent.email],
                 subject: `Vehicle Delivered — ${order.orderNo}`,
                 data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
+                inApp: {
+                  type: 'order_update',
+                  title: 'Vehicle Delivered',
+                  body: `${order.vehicleModel} for order ${order.orderNo} (${order.customerName}) has been delivered.`,
+                  link: `/admin/orders/${order.id}`,
+                  orderId: order.id,
+                  relatedModel: 'order',
+                  relatedId: order.id,
+                  priority: 'normal',
+                },
               });
             }
           } catch (agentError: any) {
@@ -362,6 +392,16 @@ export const orderService = {
               to: managerEmails,
               subject: `Vehicle Delivered — ${order.orderNo}`,
               data: { orderNo: order.orderNo, vehicleModel: order.vehicleModel, customerName: order.customerName },
+              inApp: {
+                type: 'order_update',
+                title: 'Vehicle Delivered',
+                body: `${order.vehicleModel} for order ${order.orderNo} (${order.customerName}) has been delivered.`,
+                link: `/admin/orders/${order.id}`,
+                orderId: order.id,
+                relatedModel: 'order',
+                relatedId: order.id,
+                priority: 'normal',
+              },
             });
           }
         } catch (managerError: any) {
