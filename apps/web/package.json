@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start -p 7502",
     "start:lan": "next start -H 0.0.0.0 -p 7502",
+    "start:prod": "next start -p 7501",
     "start:passenger": "node server.js",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
