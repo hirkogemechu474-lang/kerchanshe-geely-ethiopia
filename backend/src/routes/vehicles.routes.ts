@@ -4,6 +4,20 @@ import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { generateBrochurePdf } from '../services/pdf/brochure.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
 import { formatCurrency } from '../utils/formatting';
+import { deleteUploadedFile } from './upload.routes';
+
+// Best-effort orphaned-file cleanup for a Vehicle row: unlinks heroImageUrl/
+// heroVideoUrl plus every gallery image, skipping any URL still referenced
+// elsewhere in `keepUrls` (used on update, where some images are kept).
+function cleanupVehicleFiles(vehicle: { heroImageUrl?: string | null; heroVideoUrl?: string | null; images?: unknown }, keepUrls: Set<string> = new Set()) {
+  if (vehicle.heroImageUrl && !keepUrls.has(vehicle.heroImageUrl)) deleteUploadedFile(vehicle.heroImageUrl);
+  if (vehicle.heroVideoUrl && !keepUrls.has(vehicle.heroVideoUrl)) deleteUploadedFile(vehicle.heroVideoUrl);
+  if (Array.isArray(vehicle.images)) {
+    for (const url of vehicle.images) {
+      if (typeof url === 'string' && !keepUrls.has(url)) deleteUploadedFile(url);
+    }
+  }
+}
 
 const router = Router();
 
@@ -168,8 +182,26 @@ router.get('/:id', async (req: Request, res: Response) => {
 // PUT /api/vehicles/:id
 router.put('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
+    const before = await prisma.vehicle.findUnique({
+      where: { id: req.params.id },
+      select: { heroImageUrl: true, heroVideoUrl: true, images: true },
+    });
     const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: req.body });
     res.json(vehicle);
+
+    try {
+      if (before) {
+        const keepUrls = new Set<string>();
+        if (vehicle.heroImageUrl) keepUrls.add(vehicle.heroImageUrl);
+        if (vehicle.heroVideoUrl) keepUrls.add(vehicle.heroVideoUrl);
+        if (Array.isArray(vehicle.images)) {
+          for (const url of vehicle.images) if (typeof url === 'string') keepUrls.add(url);
+        }
+        cleanupVehicleFiles(before, keepUrls);
+      }
+    } catch (cleanupError: any) {
+      console.error('[VEHICLE FILE CLEANUP ERROR]', cleanupError.message);
+    }
   } catch (error: any) {
     if (error?.code === 'P2025') {
       res.status(404).json({ error: 'Vehicle not found' });
@@ -188,8 +220,13 @@ router.put('/:id', requireAdminApiSession, manageGate, async (req: Request, res:
 // DELETE /api/vehicles/:id (permanent delete)
 router.delete('/:id', requireAdminApiSession, manageGate, async (req: Request, res: Response) => {
   try {
-    await prisma.vehicle.delete({ where: { id: req.params.id } });
+    const deleted = await prisma.vehicle.delete({ where: { id: req.params.id } });
     res.json({ success: true });
+    try {
+      cleanupVehicleFiles(deleted);
+    } catch (cleanupError: any) {
+      console.error('[VEHICLE FILE CLEANUP ERROR]', cleanupError.message);
+    }
   } catch (error: any) {
     if (error?.code === 'P2025') {
       res.status(404).json({ error: 'Vehicle not found' });

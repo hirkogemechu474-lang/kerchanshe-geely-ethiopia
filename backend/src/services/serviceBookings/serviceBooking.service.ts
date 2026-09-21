@@ -87,6 +87,15 @@ export const serviceBookingService = {
             date: data.date,
             vehicleInfo: data.vehicleInfo,
           },
+          inApp: {
+            type: 'service_booking',
+            title: 'New Service Booking',
+            body: `${data.customerName} booked ${data.serviceType} for ${data.vehicleInfo} on ${data.date}.`,
+            link: `/admin/workshop/service-bookings`,
+            relatedModel: 'serviceBooking',
+            relatedId: booking.id,
+            priority: 'normal',
+          },
         });
       } catch (notifyError: any) {
         console.error('[SERVICE BOOKING STAFF NOTIFICATION ERROR]', notifyError.message);

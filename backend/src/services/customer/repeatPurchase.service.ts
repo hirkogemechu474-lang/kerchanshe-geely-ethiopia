@@ -54,6 +54,15 @@ export const repeatPurchaseService = {
               opportunityType: data.opportunityType,
               targetModel: data.targetModel,
             },
+            inApp: {
+              type: 'upgrade_opportunity',
+              title: 'New Upgrade Opportunity',
+              body: `${customer.fullName} is a candidate for a ${data.opportunityType.toLowerCase().replace('_', ' ')}${data.targetModel ? ` (${data.targetModel})` : ''}.`,
+              link: `/admin/customers/upgrade-opportunities`,
+              relatedModel: 'upgradeOpportunity',
+              relatedId: opportunity.id,
+              priority: 'normal',
+            },
           });
         }
       }

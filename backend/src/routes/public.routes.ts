@@ -1167,6 +1167,15 @@ router.post('/financing-applications', rateLimiters.contactForm, async (req: Req
             adminLink: `${env.urls.admin}/admin/financing?tab=applications`,
           },
           ctas: [{ label: 'Review Application', url: `${env.urls.admin}/admin/financing?tab=applications` }],
+          inApp: {
+            type: 'financing_application',
+            title: 'New Financing Application',
+            body: `${customerName} applied for financing on a ${vehicleModel} (requested ${requestedAmount || 0}).`,
+            link: `/admin/financing?tab=applications`,
+            relatedModel: 'financingApplication',
+            relatedId: application.id,
+            priority: 'high',
+          },
         });
       }
       if (customerEmail) {
@@ -1650,6 +1659,20 @@ router.post('/orders/:orderId/delivery-schedule', rateLimiters.contactForm, asyn
           customerName: order.customerName,
           scheduledAt: parsed.toLocaleString(),
           deliveryLocation: order.deliveryLocation ?? 'To be confirmed',
+        },
+        // `recipients` mixes the customer in with the agent/managers —
+        // createInAppNotifications only creates a row for emails that
+        // resolve to a real User, so this is a safe no-op for the customer
+        // even though they're in the same `to` array.
+        inApp: {
+          type: 'order_update',
+          title: 'Delivery Scheduled',
+          body: `Delivery for order ${order.orderNo} (${order.customerName}) scheduled for ${parsed.toLocaleString()}.`,
+          link: `/admin/orders/${order.id}`,
+          orderId: order.id,
+          relatedModel: 'order',
+          relatedId: order.id,
+          priority: 'normal',
         },
       });
     }

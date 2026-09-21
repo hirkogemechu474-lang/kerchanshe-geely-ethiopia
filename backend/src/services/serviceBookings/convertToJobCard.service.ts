@@ -68,6 +68,15 @@ export const convertToJobCardService = {
               vehicleInfo: booking.vehicleInfo,
               ...(technician?.name && { technicianName: technician.name }),
             },
+            inApp: {
+              type: 'job_card_status',
+              title: 'Job Card Assigned',
+              body: `Job card ${jobCard.jobCardNo} for ${booking.customerName} (${booking.vehicleInfo}) was created from a service booking${technician?.name ? ` and assigned to ${technician.name}` : ''}.`,
+              link: `/admin/workshop/job-cards/${jobCard.id}`,
+              relatedModel: 'jobCard',
+              relatedId: jobCard.id,
+              priority: 'normal',
+            },
           });
         }
       } catch (notifyError: any) {

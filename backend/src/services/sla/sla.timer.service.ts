@@ -148,6 +148,14 @@ export const slaTimerService = {
                 deadline: timer.deadline,
                 assignedTo: timer.assignedTo,
               },
+              inApp: {
+                type: 'sla_breach',
+                title: `SLA Breached: ${timer.stage}`,
+                body: `${timer.entityType} ${timer.entityId} breached its ${timer.stage} SLA deadline.`,
+                relatedModel: timer.entityType,
+                relatedId: timer.entityId,
+                priority: 'urgent',
+              },
             });
             escalatedCount++;
           }

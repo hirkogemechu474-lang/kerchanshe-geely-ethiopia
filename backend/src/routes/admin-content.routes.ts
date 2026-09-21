@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { contentRepository } from '../repositories/content.repository';
+import { deleteUploadedFile } from './upload.routes';
 
 // Write/single-item admin endpoints for content areas whose frontend forms
 // and repository CRUD methods already existed but were never wired up to an
@@ -89,7 +90,10 @@ router.put('/hero/:id', requirePermission('canManageContent'), async (req: Reque
 // DELETE /api/admin/hero/:id
 router.delete('/hero/:id', requirePermission('canManageContent'), async (req: Request, res: Response) => {
   try {
-    await contentRepository.deleteHeroSection(req.params.id);
+    const deleted = await contentRepository.deleteHeroSection(req.params.id);
+    deleteUploadedFile(deleted?.imageUrl);
+    deleteUploadedFile(deleted?.videoUrl);
+    deleteUploadedFile(deleted?.posterUrl);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete hero section error:', error);

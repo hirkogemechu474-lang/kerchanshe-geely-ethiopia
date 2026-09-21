@@ -92,6 +92,15 @@ export const warrantyService = {
             nextServiceDate: warranty.nextServiceDate?.toLocaleDateString(),
           },
           attachments,
+          inApp: {
+            type: 'warranty_registered',
+            title: 'Warranty Registered',
+            body: `Warranty registered for ${order.customerName} — ${order.vehicleModel} (order ${order.orderNo}).`,
+            link: `/admin/workshop/warranties/${warranty.id}`,
+            relatedModel: 'warranty',
+            relatedId: warranty.id,
+            priority: 'normal',
+          },
         });
       }
 

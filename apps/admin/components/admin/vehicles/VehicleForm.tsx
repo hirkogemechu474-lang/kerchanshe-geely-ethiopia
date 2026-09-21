@@ -25,6 +25,11 @@ interface VehicleCategoryOption {
   isActive: boolean;
 }
 
+interface VehicleBrandOption {
+  id: string;
+  name: string;
+}
+
 const EMPTY_SPECIFICATIONS = {
   engine: { type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '' },
   dimensions: { length: '', width: '', height: '', wheelbase: '', groundClearance: '', curbWeight: '', seatingCapacity: '', cargoVolume: '' },
@@ -97,6 +102,8 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
   const [currentStep, setCurrentStep] = useState(initialStep && initialStep >= 1 && initialStep <= 6 ? initialStep : 1);
   const [categories, setCategories] = useState<VehicleCategoryOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [brands, setBrands] = useState<VehicleBrandOption[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
   const [formData, setFormData] = useState({
     // Basic Information
     name: initialData?.name ?? '',
@@ -104,6 +111,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     year: initialData?.year ?? new Date().getFullYear(),
     categoryId: initialData?.categoryId ?? '',
     category: initialData?.category ?? '',
+    brandId: initialData?.brandId ?? '',
     description: initialData?.description ?? '',
     
     // Images
@@ -152,6 +160,23 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
     }
 
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    async function fetchBrands() {
+      try {
+        const response = await fetch('/api/vehicles/brands');
+        if (!response.ok) throw new Error('Failed to load brands');
+        const data = await response.json();
+        setBrands(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching vehicle brands:', error);
+      } finally {
+        setBrandsLoading(false);
+      }
+    }
+
+    fetchBrands();
   }, []);
 
   const steps = [
@@ -204,6 +229,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
         year: formData.year,
         categoryId: formData.categoryId || null,
         category: formData.category,
+        brandId: formData.brandId || null,
         description: formData.description || null,
         images: formData.images,
         heroImageUrl: formData.heroImageUrl || null,
@@ -455,6 +481,27 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
                       first.
                     </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Brand
+                  </label>
+                  <select
+                    value={formData.brandId}
+                    onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+                    disabled={brandsLoading}
+                  >
+                    <option value="">
+                      {brandsLoading ? 'Loading brands...' : 'No brand'}
+                    </option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

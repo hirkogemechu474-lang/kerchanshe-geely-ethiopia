@@ -192,6 +192,15 @@ router.post('/job-cards', requirePermission('canManageJobCards'), async (req: Re
         ctas: [
           { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${jobCard.id}` },
         ],
+        inApp: {
+          type: 'job_card_status',
+          title: 'New Job Card Opened',
+          body: `Job card ${jobCard.jobCardNo} opened for ${jobCard.customerName} (${jobCard.vehicleModel}).`,
+          link: `/admin/workshop/job-cards/${jobCard.id}`,
+          relatedModel: 'jobCard',
+          relatedId: jobCard.id,
+          priority: 'normal',
+        },
       });
     } catch (notifyError: any) {
       console.error('[JOB CARD CREATED NOTIFICATION ERROR]', notifyError.message);
@@ -334,6 +343,15 @@ router.patch('/job-cards/:id/status', requirePermission('canManageJobCards'), as
           ctas: [
             { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${current.id}` },
           ],
+          inApp: {
+            type: 'job_card_status',
+            title: 'Service Update',
+            body: `Job card ${current.jobCardNo} (${current.customerName}) is now ${statusLabels[nextStatus] || nextStatus}.`,
+            link: `/admin/workshop/job-cards/${current.id}`,
+            relatedModel: 'jobCard',
+            relatedId: current.id,
+            priority: 'normal',
+          },
         });
       } catch (statusNotifyError: any) {
         console.error('[JOB CARD STATUS NOTIFICATION ERROR]', statusNotifyError.message);
@@ -412,6 +430,15 @@ router.patch('/job-cards/:id/assign', requirePermission('canManageJobCards'), as
             ctas: [
               { label: 'View Job Card', url: `${env.urls.admin}/admin/workshop/job-cards/${jobCard.id}` },
             ],
+            inApp: {
+              type: 'job_card_status',
+              title: 'Job Card Assigned',
+              body: `Job card ${jobCard.jobCardNo} (${jobCard.customerName}) assigned${tech?.name ? ` to ${tech.name}` : ''}.`,
+              link: `/admin/workshop/job-cards/${jobCard.id}`,
+              relatedModel: 'jobCard',
+              relatedId: jobCard.id,
+              priority: 'normal',
+            },
           });
         }
       } catch (notifyError: any) {
@@ -578,6 +605,15 @@ router.post('/job-cards/:id/payment', requirePermission('canManageJobCards'), as
           customerName: jobCard.customerName,
           invoiceAmount: jobCard.invoiceAmount,
         },
+        inApp: {
+          type: 'job_card_status',
+          title: 'Payment Received',
+          body: `Payment of ${jobCard.invoiceAmount} received for job card ${jobCard.jobCardNo} (${jobCard.customerName}).`,
+          link: `/admin/workshop/job-cards/${jobCard.id}`,
+          relatedModel: 'jobCard',
+          relatedId: jobCard.id,
+          priority: 'normal',
+        },
       });
     } catch (notifyError: any) {
       console.error('[JOB CARD PAYMENT NOTIFICATION ERROR]', notifyError.message);
@@ -728,6 +764,15 @@ router.post('/warranty-claims', requirePermission('canManageWarrantyClaims'), as
         ctas: [
           { label: 'Review Claim', url: `${env.urls.admin}/admin/workshop/warranty-claims/${claim.id}` },
         ],
+        inApp: {
+          type: 'warranty_claim',
+          title: 'New Warranty Claim Drafted',
+          body: `Warranty claim ${claim.claimNo}${jobCard?.customerName ? ` for ${jobCard.customerName}` : ''} needs review.`,
+          link: `/admin/workshop/warranty-claims/${claim.id}`,
+          relatedModel: 'warrantyClaim',
+          relatedId: claim.id,
+          priority: 'normal',
+        },
       });
     } catch (notifyError: any) {
       console.error('[WARRANTY CLAIM CREATED NOTIFICATION ERROR]', notifyError.message);
@@ -821,6 +866,15 @@ router.patch('/warranty-claims/:id/status', requirePermission('canManageWarranty
         ctas: [
           { label: 'Review Claim', url: `${env.urls.admin}/admin/workshop/warranty-claims/${claim.id}` },
         ],
+        inApp: {
+          type: 'warranty_claim',
+          title: `Warranty Claim ${toStatus.replace('_', ' ')}`,
+          body: `Warranty claim ${claim.claimNo}${jobCard?.customerName ? ` for ${jobCard.customerName}` : ''} is now ${toStatus.replace('_', ' ').toLowerCase()}.`,
+          link: `/admin/workshop/warranty-claims/${claim.id}`,
+          relatedModel: 'warrantyClaim',
+          relatedId: claim.id,
+          priority: 'normal',
+        },
       });
     } catch (notifyError: any) {
       console.error('[WARRANTY CLAIM STATUS NOTIFICATION ERROR]', notifyError.message);

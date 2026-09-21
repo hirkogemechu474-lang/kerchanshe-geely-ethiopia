@@ -94,4 +94,21 @@ router.post('/', upload.single('file') as any, handleMulterError, handleUpload);
 router.post('/image', upload.single('file') as any, handleMulterError, handleUpload);
 router.post('/document', upload.single('file') as any, handleMulterError, handleUpload);
 
-export { router as uploadRoutes, UPLOAD_ROOT };
+// Best-effort disk cleanup for a URL previously returned by handleUpload
+// (always `/uploads/...`, optionally with a category subfolder). Silently
+// no-ops for anything that isn't one of our own local upload URLs (external
+// URLs, empty strings, already-missing files) so callers can pass whatever
+// value a record had without checking first.
+function deleteUploadedFile(url: unknown): void {
+  if (typeof url !== 'string' || !url.startsWith('/uploads/')) return;
+  const relativePath = url.slice('/uploads/'.length);
+  const filePath = path.join(UPLOAD_ROOT, relativePath);
+  if (!filePath.startsWith(UPLOAD_ROOT)) return;
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== 'ENOENT') {
+      console.error('[UPLOAD DELETE ERROR]', filePath, err.message);
+    }
+  });
+}
+
+export { router as uploadRoutes, UPLOAD_ROOT, deleteUploadedFile };

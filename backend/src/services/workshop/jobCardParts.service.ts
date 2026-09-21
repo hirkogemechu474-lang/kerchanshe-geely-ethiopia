@@ -79,6 +79,15 @@ export const jobCardPartsService = {
                 customerName: jobCard?.customerName,
                 vehicleModel: jobCard?.vehicleModel,
               },
+              inApp: {
+                type: 'job_card_status',
+                title: 'Part Issued',
+                body: `${part.sparePart.name} (x${part.quantity}) issued for job card ${jobCard?.jobCardNo ?? 'N/A'}.`,
+                link: `/admin/workshop/job-cards/${part.jobCardId}`,
+                relatedModel: 'jobCard',
+                relatedId: part.jobCardId,
+                priority: 'normal',
+              },
             });
           }
         }

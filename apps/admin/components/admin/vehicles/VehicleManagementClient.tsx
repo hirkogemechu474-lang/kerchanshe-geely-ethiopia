@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Download, Edit, Trash2, Eye } from 'lucide-react';
 import { Card, Button, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyState } from '@/components/admin/ui';
 import { revalidateHomepage } from '@/lib/revalidateHomepage';
+import { downloadReportCsv, tableSection } from '@/lib/reportExport';
 
 interface Vehicle {
   id: string;
@@ -174,6 +175,30 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     }).format(price);
   };
 
+  const handleExport = () => {
+    downloadReportCsv({
+      title: 'Vehicles',
+      subtitle: `${vehicles.length} of ${total} vehicle${total === 1 ? '' : 's'} — current page/filter`,
+      sections: [
+        tableSection(
+          'Vehicles',
+          ['Name', 'Model', 'Year', 'Category', 'SKU', 'Base Price', 'Final Price', 'Stock', 'Status'],
+          vehicles.map((v) => [
+            v.name,
+            v.model,
+            v.year,
+            v.category,
+            v.sku ?? '',
+            formatPrice(v.basePrice),
+            v.finalPrice != null ? formatPrice(v.finalPrice) : '',
+            v.stock,
+            getVisibility(v.status).label,
+          ])
+        ),
+      ],
+    });
+  };
+
   const totalPages = Math.ceil(total / pageSize);
   const startIndex = (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, total);
@@ -193,7 +218,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
             />
           </div>
-          <Button variant="secondary">
+          <Button variant="secondary" onClick={handleExport} disabled={vehicles.length === 0}>
             <Download className="w-5 h-5" />
             Export
           </Button>
