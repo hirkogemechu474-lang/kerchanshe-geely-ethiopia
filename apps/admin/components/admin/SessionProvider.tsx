@@ -3,6 +3,7 @@
 import { createContext, useContext } from 'react';
 import apiClient from '@/lib/apiClient';
 import type { AdminSession } from '@/lib/auth/middleware';
+import { withBasePath } from '@/lib/basePath';
 
 // Replaces next-auth/react's SessionProvider/useSession/signOut. There is no
 // real NextAuth server on this app (no app/api/auth route) — the backend
@@ -32,6 +33,11 @@ export async function signOut({ callbackUrl = '/admin/login' }: { callbackUrl?: 
   try {
     await apiClient.post('/auth/admin-logout');
   } finally {
-    window.location.href = callbackUrl;
+    // window.location.href is a real navigation, not a fetch() call — the
+    // basePath-aware fetch patch in layout.tsx doesn't touch it. A bare
+    // "/admin/login" here lands outside "/geely" entirely (this vhost's
+    // bare-domain default, not the login page), which looks exactly like
+    // "logout doesn't work" since the user never actually reaches login.
+    window.location.href = withBasePath(callbackUrl);
   }
 }

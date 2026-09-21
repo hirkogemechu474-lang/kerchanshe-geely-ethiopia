@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { PackageCheck, PenLine, Upload, CheckCircle, AlertCircle, Clock, FileText } from 'lucide-react';
 import { isPdfUrl } from '@/lib/fileType';
+import { withBasePath } from '@/lib/basePath';
 
 interface HandoverSummary {
   id: string;
@@ -194,7 +195,7 @@ export default function HandoverSigningPage() {
             </p>
 
             <a
-              href={`/api/handover/${orderId}/pdf?${tokenQs}`}
+              href={withBasePath(`/api/handover/${orderId}/pdf?${tokenQs}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-8"

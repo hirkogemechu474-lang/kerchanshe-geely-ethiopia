@@ -645,6 +645,11 @@ router.get('/promotions', async (req: Request, res: Response) => {
 router.get('/testimonials', async (req: Request, res: Response) => {
   try {
     const reviews = await prisma.review.findMany({ where: { status: 'approved' }, orderBy: { createdAt: 'desc' }, take: 20 });
+    // Bare array on purpose — app/page.tsx (homepage) already reads this as
+    // a plain array via `Array.isArray(allReviews) ? allReviews : []` and
+    // relies on the raw Review fields (isActive, isFeatured, rating).
+    // TestimonialsSection.tsx is the one that needs adapting to this shape,
+    // not the other way around.
     res.json(reviews);
   } catch (error) {
     console.error('List testimonials error:', error);

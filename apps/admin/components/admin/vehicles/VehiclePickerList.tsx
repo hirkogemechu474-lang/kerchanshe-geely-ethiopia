@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { TableCard, THead, TBody, Tr, Th, Td, EmptyTableRow } from '@/components/admin/ui';
+import { withBasePath } from '@/lib/basePath';
 
 interface PickerVehicle {
   id: string;
@@ -92,7 +93,7 @@ export default function VehiclePickerList({
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                         {thumb ? (
-                          <img src={thumb} alt={vehicle.name} className="h-full w-full object-cover" />
+                          <img src={withBasePath(thumb)} alt={vehicle.name} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">IMG</div>
                         )}

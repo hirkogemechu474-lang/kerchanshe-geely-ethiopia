@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Loader2, Image as ImageIcon, Video } from 'lucide-react';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { withBasePath } from '@/lib/basePath';
 
 export interface FileUploadProps {
   value?: string | string[];
@@ -161,9 +162,9 @@ export default function FileUpload({
             <div key={url + index} className="relative group">
               <div className={`w-full ${previewHeight} rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center`}>
                 {isImagePath(url) ? (
-                  <img src={url} alt={`Upload ${index + 1}`} className="w-full h-full object-cover" />
+                  <img src={withBasePath(url)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover" />
                 ) : isVideoPath(url) ? (
-                  <video src={url} className="w-full h-full object-cover" controls />
+                  <video src={withBasePath(url)} className="w-full h-full object-cover" controls />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-gray-500">
                     <FileText className="w-10 h-10" />

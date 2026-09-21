@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Upload, X, Image as ImageIcon, Video, FolderOpen } from 'lucide-react';
 import MediaBrowser from './MediaBrowser';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { withBasePath } from '@/lib/basePath';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.m4v'];
 function isVideoUrl(url: string): boolean {
@@ -104,7 +105,7 @@ export default function ImageUpload({
               {heroImageUrl && (
                 <div className="relative aspect-video rounded-lg border-2 border-gray-200 overflow-hidden">
                   <img
-                    src={heroImageUrl}
+                    src={withBasePath(heroImageUrl)}
                     alt="Hero"
                     className="w-full h-full object-cover"
                   />
@@ -137,7 +138,7 @@ export default function ImageUpload({
               {heroVideoUrl && (
                 <div className="relative aspect-video rounded-lg border-2 border-gray-200 overflow-hidden">
                   <video
-                    src={heroVideoUrl}
+                    src={withBasePath(heroVideoUrl)}
                     controls
                     className="w-full h-full object-cover"
                   />
@@ -226,10 +227,10 @@ export default function ImageUpload({
                 className="relative aspect-square rounded-lg border-2 border-gray-200 overflow-hidden group"
               >
                 {isVideoUrl(image) ? (
-                  <video src={image} className="w-full h-full object-cover" muted />
+                  <video src={withBasePath(image)} className="w-full h-full object-cover" muted />
                 ) : (
                   <img
-                    src={image}
+                    src={withBasePath(image)}
                     alt={`Vehicle ${index + 1}`}
                     className="w-full h-full object-cover"
                   />

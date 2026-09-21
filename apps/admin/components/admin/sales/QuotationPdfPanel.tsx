@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { FileText, Copy, Check } from 'lucide-react';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
+import { withBasePath } from '@/lib/basePath';
 
 interface VehicleColorOption {
   id: string;
@@ -301,7 +302,7 @@ export default function QuotationPdfPanel({
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <a
-              href={`/api/quotations/${quotation.id}/quotation-pdf`}
+              href={withBasePath(`/api/quotations/${quotation.id}/quotation-pdf`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"

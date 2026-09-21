@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X, Image as ImageIcon, Video, Search, Upload as UploadIcon } from 'lucide-react';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { withBasePath } from '@/lib/basePath';
 
 interface MediaAsset {
   id: string;
@@ -231,7 +232,7 @@ export default function MediaBrowser({
                         <Video size={32} className="text-steel" />
                         {asset.url && (
                           <video
-                            src={asset.url}
+                            src={withBasePath(asset.url)}
                             className="absolute inset-0 w-full h-full object-cover"
                             muted
                           />
@@ -239,7 +240,7 @@ export default function MediaBrowser({
                       </>
                     ) : (
                       <img
-                        src={asset.url}
+                        src={withBasePath(asset.url)}
                         alt={asset.altText || asset.originalName}
                         className="absolute inset-0 w-full h-full object-cover"
                       />

@@ -11,6 +11,7 @@ import {
 import type { VehicleSpecificationLists } from '@/lib/vehicle-settings-types';
 import ImageUpload from './ImageUpload';
 import MediaBrowser from './MediaBrowser';
+import { withBasePath } from '@/lib/basePath';
 
 /** Sections with a dedicated photo/video gallery, shown on the public model page beyond the generic text fields. */
 const IMAGE_GALLERY_TABS = new Set(['interior', 'exterior', 'safety', 'technology']);
@@ -77,7 +78,7 @@ function ImageThumb({ src, alt, sizeClass }: { src: string | null; alt: string; 
       {showFallback ? (
         <span className="text-gray-400 dark:text-gray-500 text-[10px] font-medium">IMG</span>
       ) : (
-        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+        <img src={withBasePath(src ?? '')} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
       )}
     </div>
   );

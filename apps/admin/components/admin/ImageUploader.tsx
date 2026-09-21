@@ -3,6 +3,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Link2, X, Loader2, Trash2, FileImage } from 'lucide-react';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { withBasePath } from '@/lib/basePath';
 
 /**
  * ImageUploader — reusable component with 3 modes:
@@ -136,7 +137,7 @@ export default function ImageUploader({
         )}
         <div className={`relative w-full ${aspectCls} rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm`}>
           <img
-            src={value}
+            src={withBasePath(value)}
             alt="preview"
             className="w-full h-full object-cover"
             onError={(e) => {

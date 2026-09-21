@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { computeQuotationTotals } from '@/lib/services/sales/quotationTotals';
+import { withBasePath } from '@/lib/basePath';
 
 interface QuotationSummary {
   reference: string;
@@ -195,7 +196,7 @@ export default function QuotationSigningPage() {
             )}
 
             <a
-              href={`/api/public/quotations/${reference}/pdf?${tokenQs}`}
+              href={withBasePath(`/api/public/quotations/${reference}/pdf?${tokenQs}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-8"
@@ -213,7 +214,7 @@ export default function QuotationSigningPage() {
                   be in touch with next steps.
                 </p>
                 <a
-                  href={`/api/public/quotations/${reference}/pdf?${tokenQs}`}
+                  href={withBasePath(`/api/public/quotations/${reference}/pdf?${tokenQs}`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"

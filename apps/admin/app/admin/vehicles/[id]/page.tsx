@@ -2,6 +2,7 @@ import { requirePermission } from '@/lib/auth/middleware';
 import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { withBasePath } from '@/lib/basePath';
 import {
   ArrowLeft,
   Car,
@@ -283,10 +284,10 @@ export default async function VehicleDetailsPage({ params }: Props) {
                   );
                 } else {
                   return (
-                    <video 
-                      controls 
+                    <video
+                      controls
                       className="w-full h-64 object-cover"
-                      src={videoUrl}
+                      src={withBasePath(videoUrl)}
                     >
                       Your browser does not support the video tag.
                     </video>
@@ -294,7 +295,7 @@ export default async function VehicleDetailsPage({ params }: Props) {
                 }
               })()
             ) : imageUrl ? (
-              <img src={imageUrl} alt={vehicle.name} className="h-64 w-full object-cover" />
+              <img src={withBasePath(imageUrl)} alt={vehicle.name} className="h-64 w-full object-cover" />
             ) : (
               <div className="flex h-64 items-center justify-center text-sm text-gray-500">
                 No media available
@@ -361,10 +362,10 @@ export default async function VehicleDetailsPage({ params }: Props) {
                       allowFullScreen
                     />
                   ) : (
-                    <video 
-                      controls 
+                    <video
+                      controls
                       className="w-full h-24 object-cover"
-                      src={videoUrl}
+                      src={withBasePath(videoUrl)}
                     >
                       Your browser does not support the video tag.
                     </video>
@@ -380,7 +381,7 @@ export default async function VehicleDetailsPage({ params }: Props) {
             {images.length > 0 ? (
               images.slice(0, 6 - videos.length).map((src, index) => (
                 <div key={`image-${index}`} className="overflow-hidden rounded-lg bg-gray-100">
-                  <img src={src} alt={`${vehicle.name} ${index + 1}`} className="h-24 w-full object-cover" />
+                  <img src={withBasePath(src)} alt={`${vehicle.name} ${index + 1}`} className="h-24 w-full object-cover" />
                 </div>
               ))
             ) : videos.length === 0 ? (

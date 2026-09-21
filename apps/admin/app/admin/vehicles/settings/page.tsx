@@ -22,6 +22,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { withBasePath } from '@/lib/basePath';
 
 /* ---------- TYPES ---------- */
 interface VehicleSettingsData {
@@ -680,7 +681,7 @@ export default function VehicleSettingsPage() {
                   <p className="text-sm text-gray-500">MP4, WebM, or MOV, up to 50 MB. Save the showcase after uploading.</p>
                 )}
               </div>
-              {formData.videoUrl && <video src={formData.videoUrl} controls preload="metadata" className="mt-5 max-h-72 w-full rounded-xl border border-gray-200 bg-black" />}
+              {formData.videoUrl && <video src={withBasePath(formData.videoUrl)} controls preload="metadata" className="mt-5 max-h-72 w-full rounded-xl border border-gray-200 bg-black" />}
             </div>
             <div className={`rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 p-6 ${!formData.vehicleId ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
@@ -708,7 +709,7 @@ export default function VehicleSettingsPage() {
                 <div className="mt-5 h-72 w-full overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-slate-100 to-slate-200">
                   {modelViewerReady ? (
                     <model-viewer
-                      src={formData.modelUrl}
+                      src={withBasePath(formData.modelUrl)}
                       alt="3D model preview"
                       camera-controls
                       auto-rotate
@@ -878,7 +879,7 @@ export default function VehicleSettingsPage() {
                             {view.imageUrl && (
                               <div className="mb-3 relative">
                                 <img
-                                  src={view.imageUrl}
+                                  src={withBasePath(view.imageUrl)}
                                   alt={view.label || 'Preview'}
                                   className="w-full h-32 object-cover rounded-lg border border-gray-300"
                                 />

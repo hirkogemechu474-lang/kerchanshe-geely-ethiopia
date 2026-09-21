@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { FileText, PenLine, Upload, CheckCircle, AlertCircle, CreditCard, Clock } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 interface OrderSummary {
   id: string;
@@ -184,7 +185,7 @@ export default function AgreementSigningPage() {
             </p>
 
             <a
-              href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
+              href={withBasePath(`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-8"
@@ -202,7 +203,7 @@ export default function AgreementSigningPage() {
                     Signed {order.signedAt ? new Date(order.signedAt).toLocaleString() : ''}. Thank you, you're ready to continue.
                   </p>
                   <a
-                    href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
+                    href={withBasePath(`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline mb-6"
@@ -231,7 +232,7 @@ export default function AgreementSigningPage() {
                     sales manager. We'll email you a payment link as soon as it's approved.
                   </p>
                   <a
-                    href={`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`}
+                    href={withBasePath(`/api/agreement/${orderId}/pdf?token=${encodeURIComponent(token)}`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"

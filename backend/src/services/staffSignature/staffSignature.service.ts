@@ -14,7 +14,11 @@ export const staffSignatureService = {
 
       await userRepository.updateSignatureSetupToken(userId, token, expiresAt);
 
-      const setupUrl = `${env.urls.admin}/signature/setup?token=${token}`;
+      // Must live under /admin — the reverse proxy in front of the admin app
+      // only routes the "/admin" prefix of its shared basePath to this app
+      // (see apps/admin/next.config.ts); a link outside that prefix falls
+      // through to the web app instead and 404s.
+      const setupUrl = `${env.urls.admin}/admin/signature/setup?token=${token}`;
 
       const emailResult = await sendEmail({
         to: user.email,

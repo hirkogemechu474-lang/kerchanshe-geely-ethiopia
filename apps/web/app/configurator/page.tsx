@@ -716,7 +716,7 @@ export default function ConfiguratorPage() {
 
                   {selectedVehicle && (
                     <a
-                      href={`/api/vehicles/${encodeURIComponent(selectedVehicle.slug)}/brochure`}
+                      href={withBasePath(`/api/vehicles/${encodeURIComponent(selectedVehicle.slug)}/brochure`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full bg-white dark:bg-midnight-surface text-navy dark:text-ice font-bold py-3 rounded-lg border-2 border-line dark:border-midnight-line hover:border-geely-blue transition-all flex items-center justify-center gap-2"

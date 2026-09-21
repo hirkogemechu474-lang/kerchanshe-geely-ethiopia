@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { CheckCircle, Search, AlertCircle, FileText } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 type StatusResult = {
   type: string;
@@ -159,9 +160,9 @@ export default function StatusPage() {
               </div>
               {result.quotationNo && (
                 <a
-                  href={`/api/public/quotations/${encodeURIComponent(result.reference)}/pdf${
+                  href={withBasePath(`/api/public/quotations/${encodeURIComponent(result.reference)}/pdf${
                     result.pdfToken ? `?token=${encodeURIComponent(result.pdfToken)}` : ''
-                  }`}
+                  }`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-geely-blue hover:underline"

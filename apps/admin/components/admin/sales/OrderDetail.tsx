@@ -20,6 +20,7 @@ import OrderTestDrivePanel from '@/components/admin/sales/OrderTestDrivePanel';
 import OrderAllocationPanel from '@/components/admin/sales/OrderAllocationPanel';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
 import { FileText, Car, User, Phone, Mail, Calendar } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 interface PdiItem {
   id: string;
@@ -518,7 +519,7 @@ export default function OrderDetail({
           <div>
             <p className="text-xs text-green-600">Verified by finance {new Date(state.paymentVerifiedAt).toLocaleString()}</p>
             <a
-              href={`/api/orders/${state.id}/receipt`}
+              href={withBasePath(`/api/orders/${state.id}/receipt`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline mt-1"

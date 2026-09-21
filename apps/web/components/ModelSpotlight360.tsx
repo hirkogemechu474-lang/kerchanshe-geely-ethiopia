@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { RotateCw, Maximize2, Minimize2, Info } from 'lucide-react';
+// basePath.ts's withBasePath (not publicPath.ts's) — it's idempotent, a
+// no-op on a path that's already prefixed. `images` here is usually
+// Model360Section's rawImageUrls, which the models/[id] page has already
+// run through its own publicMediaUrl/withBasePath — re-wrapping with the
+// non-idempotent version doubled the prefix to "/geely/geely/uploads/...",
+// which 404s (this is the main 360°/gallery viewer, so that broke the big
+// preview box, not just a thumbnail).
+import { withBasePath } from '@/lib/basePath';
 
 interface ModelSpotlight360Props {
   modelName: string;
@@ -36,11 +44,15 @@ export function ModelSpotlight360({
   const lastFrameRef = useRef(0);
   const autoRotateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Generate image URLs
+  // Generate image URLs — real DB-stored paths (e.g. "/uploads/...") need
+  // the site's basePath ("/geely" in production) prefixed, same as every
+  // other real photo on the site; without it these 404 against the Apache
+  // proxy (which only routes "/geely/*"), and the load below used to swap
+  // in a third-party placehold.co stock placeholder on that failure.
   const imageUrls = useMemo(
-    () => images ?? Array.from({ length: totalFrames }, (_, i) =>
+    () => (images ?? Array.from({ length: totalFrames }, (_, i) =>
       `${imageBasePath}/${modelName}/${String(i + 1).padStart(3, '0')}.${imageFormat}`
-    ),
+    )).map((url) => withBasePath(url)),
     [images, totalFrames, imageBasePath, modelName, imageFormat]
   );
 
@@ -48,25 +60,21 @@ export function ModelSpotlight360({
   useEffect(() => {
     const loadImages = async () => {
       setIsLoading(true);
-      const imagePromises = imageUrls.map((url, index) => {
-        return new Promise<HTMLImageElement>((resolve, reject) => {
+      const imagePromises = imageUrls.map((url) => {
+        return new Promise<HTMLImageElement | null>((resolve) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = () => resolve(img);
-          img.onerror = () => {
-            // Fallback to placeholder if image fails
-            const fallbackImg = new Image();
-            fallbackImg.src = `https://placehold.co/1200x800/0B2545/FFFFFF?text=${modelName}+Frame+${index + 1}`;
-            fallbackImg.onload = () => resolve(fallbackImg);
-            fallbackImg.onerror = reject;
-          };
+          // A genuinely broken/missing photo just drops that one frame
+          // instead of substituting a third-party stock placeholder image.
+          img.onerror = () => resolve(null);
           img.src = url;
         });
       });
 
       try {
         const images = await Promise.all(imagePromises);
-        setLoadedImages(images);
+        setLoadedImages(images.filter((img): img is HTMLImageElement => img !== null));
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading 360° images:', error);

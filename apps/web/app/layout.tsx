@@ -180,13 +180,22 @@ export default async function RootLayout({
             or fetch (already patched above). Patching setAttribute + the
             HTMLImageElement.src property setter here catches every current
             AND future <img src="/..."> use app-wide, however React ends up
-            writing it, rather than chasing individual call sites one by one. */}
+            writing it, rather than chasing individual call sites one by one.
+
+            Also covers <a href="/api/..."> document/PDF download links
+            (quotation, receipt, invoice, agreement, handover, brochure —
+            ~11 of them in this app alone): a click is a real navigation,
+            not a fetch(), so the patch above never touched these, and a
+            bare "/api/..." href doesn't just 404 — this vhost's "/api/"
+            prefix is already claimed by a completely different backend
+            (GMS) on this shared server, so the download silently opened
+            GMS's 404 response instead of the PDF. */}
         {BASE_PATH && (
           <Script
             id="img-src-basepath-patch"
             strategy="beforeInteractive"
             dangerouslySetInnerHTML={{
-              __html: `(function(){var b=${JSON.stringify(BASE_PATH)};function fix(v){if(typeof v==='string'&&v.charAt(0)==='/'&&v.charAt(1)!=='/'&&v.indexOf(b+'/')!==0&&v!==b){return b+v;}return v;}var origSetAttr=Element.prototype.setAttribute;Element.prototype.setAttribute=function(name,value){if((name==='src'||name==='srcset')&&(this.tagName==='IMG'||this.tagName==='SOURCE')){value=fix(value);}return origSetAttr.call(this,name,value);};var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(d&&d.set){Object.defineProperty(HTMLImageElement.prototype,'src',{get:d.get,set:function(v){d.set.call(this,fix(v));},configurable:true});}})();`,
+              __html: `(function(){var b=${JSON.stringify(BASE_PATH)};function fix(v){if(typeof v==='string'&&v.charAt(0)==='/'&&v.charAt(1)!=='/'&&v.indexOf(b+'/')!==0&&v!==b){return b+v;}return v;}var origSetAttr=Element.prototype.setAttribute;Element.prototype.setAttribute=function(name,value){if((name==='src'||name==='srcset')&&(this.tagName==='IMG'||this.tagName==='SOURCE')){value=fix(value);}else if(name==='href'&&this.tagName==='A'){value=fix(value);}return origSetAttr.call(this,name,value);};var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(d&&d.set){Object.defineProperty(HTMLImageElement.prototype,'src',{get:d.get,set:function(v){d.set.call(this,fix(v));},configurable:true});}})();`,
             }}
           />
         )}

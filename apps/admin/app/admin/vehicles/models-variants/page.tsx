@@ -8,6 +8,7 @@ import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import FeatureTagList from '@/components/admin/vehicles/FeatureTagList';
 import ImageUpload from '@/components/admin/vehicles/ImageUpload';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { withBasePath } from '@/lib/basePath';
 
 interface VehiclePackage {
   id: string;
@@ -53,7 +54,7 @@ function ImagePreview({ src, alt, sizeClass }: { src: string; alt: string; sizeC
       {imgError ? (
         <span className="text-gray-400 dark:text-gray-500 text-xs">IMG</span>
       ) : (
-        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+        <img src={withBasePath(src)} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
       )}
     </div>
   );

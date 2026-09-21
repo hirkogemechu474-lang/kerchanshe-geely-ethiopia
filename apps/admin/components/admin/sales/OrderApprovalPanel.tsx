@@ -6,6 +6,7 @@ import { Card, Button } from '@/components/admin/ui';
 import { FileCheck2, Upload, FileText } from 'lucide-react';
 import { isPdfUrl, resolveDocumentUrl } from '@/lib/fileType';
 import { validateTin } from '@/lib/idValidation';
+import { withBasePath } from '@/lib/basePath';
 
 // "Sales Quotation -> Approval by sales agent -> Generate Agreement ->
 // e-sign/attach" — approving unlocks a preview of the printable agreement
@@ -521,7 +522,7 @@ export default function OrderApprovalPanel({
           )}
 
           <a
-            href={`/api/orders/${order.id}/agreement`}
+            href={withBasePath(`/api/orders/${order.id}/agreement`)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { CreditCard, Upload, CheckCircle, Clock, AlertCircle, FileText, X } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 interface OrderPaymentSummary {
   id: string;
@@ -193,7 +194,7 @@ export default function OrderPaymentPage() {
                 <p className="text-sm text-steel dark:text-steel-light">Thank you, your payment has been recorded.</p>
                 {order.paymentVerifiedAt && (
                   <a
-                    href={`/api/public/orders/${orderId}/receipt?${tokenQs}`}
+                    href={withBasePath(`/api/public/orders/${orderId}/receipt?${tokenQs}`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-geely-blue hover:underline"

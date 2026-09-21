@@ -7,6 +7,7 @@ import { CheckCircle, CreditCard, LoaderCircle, ShieldCheck, ExternalLink, Arrow
 import { MainLayout } from "@/components/MainLayout";
 import { validateGenericIdOrLicense } from "@/lib/idValidation";
 import { calculateLoan } from "@/lib/financeCalculator";
+import { withBasePath } from "@/lib/basePath";
 
 function formatETB(amount: number): string {
   return new Intl.NumberFormat("en-ET", { style: "currency", currency: "ETB", minimumFractionDigits: 0 }).format(
@@ -538,7 +539,7 @@ export default function VehiclePurchasePage() {
                   {quote?.signedDocumentUrl && (
                     <>
                       {" "}
-                      <a href={quote.signedDocumentUrl} target="_blank" rel="noopener noreferrer" className="text-geely-blue hover:underline font-medium">
+                      <a href={withBasePath(quote.signedDocumentUrl)} target="_blank" rel="noopener noreferrer" className="text-geely-blue hover:underline font-medium">
                         View your signed quotation
                       </a>
                     </>
@@ -547,9 +548,9 @@ export default function VehiclePurchasePage() {
                     <>
                       {" "}
                       <a
-                        href={`/api/public/quotations/${quote.reference}/pdf${
+                        href={withBasePath(`/api/public/quotations/${quote.reference}/pdf${
                           quote.pdfToken ? `?token=${encodeURIComponent(quote.pdfToken)}` : ''
-                        }`}
+                        }`)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-geely-blue hover:underline font-medium"

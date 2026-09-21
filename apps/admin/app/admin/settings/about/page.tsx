@@ -604,6 +604,35 @@ function FeatureCardsEditor({
   );
 }
 
+// The stored Setting row only ever got partially populated over time (e.g.
+// the seed script's image-backfill pass wrote `sectionHero: { backgroundImage }`
+// and `historyTimeline: { milestones }` alone, never the rest of those
+// sections' text fields) — a shallow `{ ...DEFAULT_DATA, ...fetched }` merge
+// replaces a whole top-level section wholesale the moment the fetched value
+// has ANY of its keys, silently dropping the rest to `undefined`. Every
+// section here is a plain object (never an array or primitive at the top
+// level), so this recurses one level into each and fills in only what's
+// actually missing, without needing per-field defaults. Without this,
+// rendering e.g. `data.missionVisionValues.mission.title` throws
+// "Cannot read properties of undefined" the moment `mission` is missing —
+// the client-side crash reported on this page.
+function deepMergeDefaults(defaults: AboutContent, fetched: Partial<AboutContent>): AboutContent {
+  const result: Record<string, unknown> = { ...defaults };
+  for (const key of Object.keys(fetched) as (keyof AboutContent)[]) {
+    const fetchedValue = fetched[key];
+    const defaultValue = defaults[key];
+    if (
+      fetchedValue && typeof fetchedValue === 'object' && !Array.isArray(fetchedValue) &&
+      defaultValue && typeof defaultValue === 'object' && !Array.isArray(defaultValue)
+    ) {
+      result[key] = { ...(defaultValue as Record<string, unknown>), ...(fetchedValue as Record<string, unknown>) };
+    } else if (fetchedValue !== undefined) {
+      result[key] = fetchedValue;
+    }
+  }
+  return result as unknown as AboutContent;
+}
+
 /* ---------- Main Page ---------- */
 
 export default function AboutSettingsPage() {
@@ -619,7 +648,7 @@ export default function AboutSettingsPage() {
       .then(({ data: aboutContent }) => aboutContent)
       .then((d) => {
         if (d && typeof d === 'object') {
-          setData({ ...DEFAULT_DATA, ...(d as Partial<AboutContent>) });
+          setData(deepMergeDefaults(DEFAULT_DATA, d as Partial<AboutContent>));
         }
       })
       .finally(() => setLoading(false));

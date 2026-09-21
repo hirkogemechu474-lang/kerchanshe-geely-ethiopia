@@ -108,6 +108,21 @@ export default function PurchasePage() {
     void load();
   }, []);
 
+  // This whole page renders a "Loading..." placeholder (below) until the
+  // fetch above resolves, so a URL like /financing#banks has nothing with
+  // id="banks" in the DOM yet at the moment the browser does its one-time,
+  // automatic scroll-to-fragment on initial navigation — that scroll
+  // silently no-ops, and browsers don't retry it once the real content
+  // mounts later. Do it ourselves once `content` (and therefore the actual
+  // page, including the #banks section) is in the DOM.
+  useEffect(() => {
+    if (!content) return;
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const target = document.getElementById(hash);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [content]);
+
   if (!content) {
     return (
       <MainLayout>

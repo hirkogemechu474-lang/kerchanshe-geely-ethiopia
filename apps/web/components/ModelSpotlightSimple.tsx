@@ -2,7 +2,11 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Play, Pause } from 'lucide-react';
-import { withBasePath } from '@/lib/publicPath';
+// basePath.ts's withBasePath (not publicPath.ts's) — idempotent, so it's
+// safe even though `views[].image` here already comes pre-prefixed from
+// Model360Section (see ModelSpotlight360.tsx for the full explanation of
+// why the non-idempotent version double-prefixed and 404'd).
+import { withBasePath } from '@/lib/basePath';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ModelSpotlightSimpleProps {

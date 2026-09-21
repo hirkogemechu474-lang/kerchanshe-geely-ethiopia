@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { PackageCheck, FileText } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 // Fixed-membership checklist rows for the printed Delivery & Handover Note
 // (Kerchanshe Trading PLC draft) — mirrors backend/src/services/pdf/handover.pdf.ts's
@@ -303,7 +304,7 @@ export default function OrderHandoverPanel({
               </Button>
             )}
             <a
-              href={`/api/orders/${order.id}/handover-pdf`}
+              href={withBasePath(`/api/orders/${order.id}/handover-pdf`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline"

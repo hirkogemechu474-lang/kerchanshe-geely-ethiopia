@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Star, Shield, Filter } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -13,6 +14,19 @@ interface Testimonial {
   location?: string;
   verified?: boolean;
   createdAt: string;
+}
+
+// Shape GET /api/public/testimonials actually returns — raw Review rows
+// (backend/prisma/schema.prisma model Review), not the Testimonial shape
+// above. location/verified genuinely don't exist on this model.
+interface RawReview {
+  id: string;
+  fullName: string;
+  vehicleModel: string;
+  rating: number;
+  reviewMessage: string;
+  createdAt: string;
+  isActive: boolean;
 }
 
 interface TestimonialsSectionProps {
@@ -38,7 +52,23 @@ export default function TestimonialsSection({
     try {
       const response = await fetch('/api/public/testimonials');
       const data = await response.json();
-      setTestimonials(data.testimonials || []);
+      // GET /api/public/testimonials returns a bare array of raw Review
+      // rows (fullName/reviewMessage, not customerName/comment) — was read
+      // as `data.testimonials` (always undefined on an array) and rendered
+      // with the wrong field names, so real reviews never actually showed.
+      const rows: RawReview[] = Array.isArray(data) ? data : [];
+      setTestimonials(
+        rows
+          .filter((r) => r.isActive !== false)
+          .map((r) => ({
+            id: r.id,
+            customerName: r.fullName,
+            vehicleModel: r.vehicleModel,
+            rating: r.rating,
+            comment: r.reviewMessage,
+            createdAt: r.createdAt,
+          }))
+      );
     } catch (error) {
       console.error('Error fetching testimonials:', error);
     } finally {
@@ -134,7 +164,11 @@ export default function TestimonialsSection({
                   <div
                     className="bg-yellow-400 h-2 rounded-full"
                     style={{
-                      width: `${(ratingCounts[rating as keyof typeof ratingCounts] / testimonials.length) * 100}%`,
+                      // 0/0 (no reviews yet) is NaN, not 0 — guard it so the
+                      // bar renders at 0% instead of an invalid "NaN%".
+                      width: testimonials.length > 0
+                        ? `${(ratingCounts[rating as keyof typeof ratingCounts] / testimonials.length) * 100}%`
+                        : '0%',
                     }}
                   ></div>
                 </div>
@@ -245,9 +279,12 @@ export default function TestimonialsSection({
             <p className="text-steel dark:text-steel-light mb-6">
               Help other customers by sharing your experience with your Geely vehicle.
             </p>
-            <button className="bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all">
+            <Link
+              href="/reviews/submit"
+              className="inline-block bg-geely-blue text-white font-bold text-sm px-8 py-4 hover:bg-opacity-90 transition-all"
+            >
               Write a Review
-            </button>
+            </Link>
           </div>
         </div>
       )}

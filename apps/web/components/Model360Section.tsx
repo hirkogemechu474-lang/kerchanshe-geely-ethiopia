@@ -8,7 +8,9 @@ import { Model3DViewer } from './Model3DViewer';
 import { RotateCw, Camera, Box, Maximize2 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
-import { withBasePath } from '@/lib/publicPath';
+// basePath.ts's withBasePath (not publicPath.ts's) — idempotent, so it's
+// safe to use even on values that may already be basePath-prefixed.
+import { withBasePath } from '@/lib/basePath';
 
 interface ViewEntry {
   angle: string;
@@ -179,6 +181,10 @@ export function Model360Section({
                           : 'border-transparent group-hover:border-line dark:group-hover:border-midnight-line'
                       }`}
                     >
+                      {/* color.imageUrl is already basePath-resolved by the
+                          parent page (models/[id]/page.tsx's publicOptionColors,
+                          via publicMediaUrl) — re-wrapping it here doubled the
+                          prefix to "/geely/geely/uploads/...", which 404s. */}
                       <ImageWithFallback src={color.imageUrl as string} alt={color.name} className="w-full h-full object-cover" iconClassName="h-4 w-4" />
                     </span>
                     <span className="text-[11px] text-steel dark:text-steel-light font-semibold whitespace-nowrap">{color.name}</span>
@@ -188,6 +194,8 @@ export function Model360Section({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
+                        // Also already basePath-resolved by the parent — see the
+                        // swatch <ImageWithFallback> above for why not to re-wrap.
                         setLightbox({
                           title: color.name,
                           images: [color.imageUrl, ...color.images!].filter(Boolean) as string[],

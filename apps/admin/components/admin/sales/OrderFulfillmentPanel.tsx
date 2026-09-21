@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/admin/ui';
 import { ClipboardCheck, Receipt, FileText } from 'lucide-react';
+import { withBasePath } from '@/lib/basePath';
 
 // "PDI -> Registration -> Invoice -> Payment -> Delivery" — the two gates
 // (registration recorded, invoice generated) an order needs before it can
@@ -196,7 +197,7 @@ export default function OrderFulfillmentPanel({
             </p>
             <p className="text-xs text-gray-400">Generated {new Date(order.invoicedAt).toLocaleString()}</p>
             <a
-              href={`/api/orders/${order.id}/invoice`}
+              href={withBasePath(`/api/orders/${order.id}/invoice`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-geely-blue hover:underline mt-1"

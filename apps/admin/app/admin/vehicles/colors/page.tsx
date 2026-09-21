@@ -7,6 +7,7 @@ import VehiclePickerList from '@/components/admin/vehicles/VehiclePickerList';
 import MediaBrowser from '@/components/admin/vehicles/MediaBrowser';
 import ImageUpload from '@/components/admin/vehicles/ImageUpload';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { withBasePath } from '@/lib/basePath';
 
 interface VehicleColor {
   id: string;
@@ -71,7 +72,7 @@ function ImageThumb({ src, alt, sizeClass }: { src: string | null; alt: string; 
       {showFallback ? (
         <span className="text-gray-400 dark:text-gray-500 text-[10px] font-medium">IMG</span>
       ) : (
-        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+        <img src={withBasePath(src ?? '')} alt={alt} className="w-full h-full object-cover" onError={() => setImgError(true)} />
       )}
     </div>
   );
@@ -90,7 +91,7 @@ function ColorSwatchThumb({ color }: { color: VehicleColor }) {
   }
   return (
     <img
-      src={color.imageUrl}
+      src={withBasePath(color.imageUrl)}
       alt={color.name}
       className="w-9 h-9 rounded-lg object-cover border border-gray-300 dark:border-gray-600"
       onError={() => setImgError(true)}
