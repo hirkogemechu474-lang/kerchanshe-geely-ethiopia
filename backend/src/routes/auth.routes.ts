@@ -212,9 +212,13 @@ router.post('/admin/session', requireAdminApiSession, async (req: Request, res: 
 });
 
 // POST /api/auth/admin-logout — mirrors /logout but clears the admin cookie.
-router.post('/admin-logout', (_req: Request, res: Response) => {
-  res.clearCookie('next-auth.session-token');
-  res.clearCookie('__Secure-next-auth.session-token');
+router.post('/admin-logout', (req: Request, res: Response) => {
+  // The __Secure- prefix requires the Secure attribute on EVERY Set-Cookie
+  // for that name, including this clearing one, or browsers reject the
+  // instruction outright and the session cookie is never actually removed
+  // — logout silently no-ops while still returning { success: true }.
+  res.clearCookie('next-auth.session-token', { path: '/' });
+  res.clearCookie('__Secure-next-auth.session-token', { path: '/', secure: true, sameSite: 'lax' });
   res.json({ success: true });
 });
 

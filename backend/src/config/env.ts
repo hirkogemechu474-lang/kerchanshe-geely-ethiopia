@@ -29,7 +29,7 @@ export const env = {
   },
 
   cors: {
-    originWeb: process.env.CORS_ORIGIN_WEB || 'https://www.geelyauto.co.za',
+    originWeb: process.env.CORS_ORIGIN_WEB || 'http://localhost:7501',
     originAdmin: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:7500',
   },
 

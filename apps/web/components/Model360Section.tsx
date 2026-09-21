@@ -8,6 +8,7 @@ import { Model3DViewer } from './Model3DViewer';
 import { RotateCw, Camera, Box, Maximize2 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
+import { withBasePath } from '@/lib/publicPath';
 
 interface ViewEntry {
   angle: string;
@@ -121,27 +122,12 @@ export function Model360Section({
       }));
     }
 
-    const FALLBACK_VIEWS: Record<string, ViewEntry[]> = {
-      coolray: [
-        { angle: '0',   image: 'https://images.unsplash.com/photo-1617654112368-307921291f42?w=1200&auto=format&fit=crop', label: 'Front 3/4 View' },
-        { angle: '45',  image: 'https://images.unsplash.com/photo-1617654112371-19db41682d31?w=1200&auto=format&fit=crop', label: 'Side View' },
-        { angle: '90',  image: 'https://images.unsplash.com/photo-1617654112368-f0db409d65e0?w=1200&auto=format&fit=crop', label: 'Rear 3/4 View' },
-        { angle: 'int', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&auto=format&fit=crop', label: 'Interior' },
-      ],
-      emgrand: [
-        { angle: '0',   image: 'https://images.unsplash.com/photo-1619405399517-d7fce0f13302?w=1200&auto=format&fit=crop', label: 'Front 3/4 View' },
-        { angle: '45',  image: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=1200&auto=format&fit=crop', label: 'Side View' },
-        { angle: '90',  image: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=1200&auto=format&fit=crop', label: 'Rear 3/4 View' },
-        { angle: 'int', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&auto=format&fit=crop', label: 'Interior' },
-      ],
-    };
-
-    return FALLBACK_VIEWS[modelId] ?? [
-      { angle: '0',   image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1200&auto=format&fit=crop', label: 'Front 3/4 View' },
-      { angle: '90',  image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1200&auto=format&fit=crop', label: 'Side View' },
-      { angle: '180', image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1200&auto=format&fit=crop', label: 'Rear View' },
-      { angle: 'int', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&auto=format&fit=crop', label: 'Interior' },
-    ];
+    // No showcase views, hero image, or gallery images for this vehicle —
+    // a real, database-driven empty state (below) rather than stock photos
+    // of an unrelated car (this used to key off `modelId` for two long-gone
+    // models, "coolray"/"emgrand", falling back to a third generic stock
+    // photo set for every other model — always the wrong vehicle).
+    return [];
   };
 
   const baseViews = buildViewsFromImages();
@@ -269,7 +255,14 @@ export function Model360Section({
           </div>
         </div>
 
-        {activeTab === 'video' && showcaseVideoUrl ? (
+        {views.length === 0 && !showcaseVideoUrl && !showcaseModelUrl ? (
+          <div className="flex aspect-video items-center justify-center rounded-xl bg-mesh-blue shadow-2xl">
+            <div className="text-center text-white/90 px-6">
+              <div className="text-xs uppercase tracking-wide text-active-blue-80 mb-2">360° Showcase</div>
+              <div className="font-bold text-lg">Photos for {modelName} are coming soon</div>
+            </div>
+          </div>
+        ) : activeTab === 'video' && showcaseVideoUrl ? (
           <div className="overflow-hidden rounded-xl bg-slate-950 shadow-2xl">
             <video
               className="mx-auto aspect-video max-h-[680px] w-full object-contain"
@@ -282,7 +275,7 @@ export function Model360Section({
               preload="auto"
               aria-label={`${modelName} showcase video`}
             >
-              <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+              <track kind="captions" src={withBasePath('/captions/no-dialogue.vtt')} srcLang="en" label="English" default />
             </video>
           </div>
         ) : activeTab === '3d' && showcaseModelUrl ? (

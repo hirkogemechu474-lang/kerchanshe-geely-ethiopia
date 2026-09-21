@@ -17,6 +17,9 @@ const CONTENT_TYPES: Record<string, string> = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
 };
 
 // Files under public/uploads/ are written at runtime by staff/customer
@@ -37,7 +40,7 @@ const CONTENT_TYPES: Record<string, string> = {
 // fresh from disk with no caching anywhere, instead of Next's static
 // handler. (Not /_uploads — a leading underscore makes Next treat a folder
 // as private and exclude it from routing entirely.)
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: segments } = await params;
   if (!segments || segments.length === 0) {
     return new NextResponse('Not found', { status: 404 });
@@ -55,13 +58,41 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
     if (!stat.isFile()) {
       return new NextResponse('Not found', { status: 404 });
     }
-    const body = fs.readFileSync(resolved);
     const contentType = CONTENT_TYPES[path.extname(resolved).toLowerCase()] || 'application/octet-stream';
+
+    // Videos (hero background clips, 14-20MB+) need Range support: without
+    // it, Safari refuses to play <video> at all, and Chrome/Firefox can't
+    // seek — the whole file has to download before scrubbing works. Images/
+    // PDFs are small enough that a plain full-file response (below) is fine.
+    const range = req.headers.get('range');
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      if (match) {
+        const start = match[1] ? parseInt(match[1], 10) : 0;
+        const end = match[2] ? parseInt(match[2], 10) : stat.size - 1;
+        if (start < stat.size && end < stat.size && start <= end) {
+          const chunk = fs.readFileSync(resolved).subarray(start, end + 1);
+          return new NextResponse(chunk, {
+            status: 206,
+            headers: {
+              'Content-Type': contentType,
+              'Content-Length': String(end - start + 1),
+              'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+              'Accept-Ranges': 'bytes',
+              'Cache-Control': 'no-store',
+            },
+          });
+        }
+      }
+    }
+
+    const body = fs.readFileSync(resolved);
     return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type': contentType,
         'Content-Length': String(stat.size),
+        'Accept-Ranges': 'bytes',
         'Cache-Control': 'no-store',
       },
     });

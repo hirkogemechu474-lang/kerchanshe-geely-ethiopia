@@ -72,7 +72,7 @@ const FALLBACK_TITLE = "Geely Ethiopia | Official Distributor by Kerchanshe Grou
 const FALLBACK_OG_TITLE = "Geely Ethiopia | Official Distributor";
 const FALLBACK_DESCRIPTION = "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads.";
 const FALLBACK_OG_DESCRIPTION = "Explore the full Geely range in Ethiopia backed by nationwide dealer support and genuine parts.";
-const FALLBACK_KEYWORDS = "Geely Ethiopia, Geely cars, SUV Ethiopia, Electric vehicles Ethiopia, Kerchanshe Group Geely, Coolray, Emgrand, Monjaro";
+const FALLBACK_KEYWORDS = "Geely Ethiopia, Geely cars, SUV Ethiopia, Electric vehicles Ethiopia, Kerchanshe Group Geely, Geely EX5, Geely EX2, Geely Panda Mini";
 
 // Was a static `export const metadata` — now computed per-request from
 // admin-managed Setting['seo_settings'] (see getSeoSettings above), with the

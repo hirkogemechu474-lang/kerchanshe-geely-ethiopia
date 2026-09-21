@@ -12,6 +12,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 import apiClient from '@/lib/apiClient';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { revalidateHomepage } from '@/lib/revalidateHomepage';
 
 type FeatureCard = { icon: string; title: string; description: string; image?: string };
 type HighlightItem = { value: string; label: string };
@@ -630,6 +631,10 @@ export default function AboutSettingsPage() {
     try {
       await apiClient.post('/settings/about', data);
       setSavedAt(new Date().toLocaleTimeString());
+      // homeAbout/homeStats/homeFeatures feed the public homepage directly
+      // (see apps/web/app/page.tsx), not just the /about page — nudge its
+      // ISR cache too instead of waiting out the normal revalidate window.
+      await revalidateHomepage();
     } catch (e) {
       setError((e as { response?: { data?: { error?: string } }; message: string }).response?.data?.error || (e as Error).message);
     } finally {

@@ -3,8 +3,24 @@ import type { NextConfig } from "next";
 const rawBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const basePath = rawBasePath ? rawBasePath.replace(/\/+$/, "") : undefined;
 
+// Admin and web share the same basePath ("/geely" — admin's own pages are
+// already nested under /admin internally, e.g. /geely/admin/login, so its
+// basePath can't also be "/geely/admin" without doubling that segment).
+// That means both apps' _next/static asset URLs collide at
+// "/geely/_next/static/...", and the reverse proxy in front of them (Apache)
+// can only route that shared prefix to ONE of the two backends — it sends it
+// to web, so admin's entire JS/CSS bundle 404s in production. assetPrefix
+// gives admin's OWN build assets a distinct, admin-only path (reusing
+// "/geely/admin", which Apache already routes to this app) without touching
+// basePath/page routing at all. See the matching Apache rule in
+// httpd-ssl.conf that strips the extra "/admin" back off before it reaches
+// this server.
+const rawAssetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX || "";
+const assetPrefix = rawAssetPrefix ? rawAssetPrefix.replace(/\/+$/, "") : undefined;
+
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
+  ...(assetPrefix ? { assetPrefix } : {}),
 
   distDir: process.env.NODE_ENV === 'production' ? '.next-prod' : '.next',
 

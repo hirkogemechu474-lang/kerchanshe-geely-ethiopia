@@ -15,8 +15,10 @@ export const corsOptions: cors.CorsOptions = {
 
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
+    } else if (env.nodeEnv !== 'production') {
+      callback(null, true); // Allow all in dev
     } else {
-      callback(null, true); // Allow all in dev; restrict in production
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,

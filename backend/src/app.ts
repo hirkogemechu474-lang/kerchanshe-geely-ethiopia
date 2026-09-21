@@ -11,6 +11,11 @@ import { UPLOAD_ROOT } from './routes/upload.routes';
 
 const app = express();
 
+// Behind Apache's reverse proxy (loopback only), so req.secure needs the
+// X-Forwarded-Proto header it sets — without this, req.secure is always
+// false and every auth cookie silently loses its Secure/__Secure- prefix.
+app.set('trust proxy', 1);
+
 // ── Security & Parsing ─────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors(corsOptions));

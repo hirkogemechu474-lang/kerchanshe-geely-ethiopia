@@ -26,11 +26,13 @@ export default function FAQSection() {
     try {
       const response = await fetch('/api/public/faq');
       const data = await response.json();
-      
-      if (data.success) {
-        setFaqs(data.faqs);
-        setCategories(data.categories || []);
-      }
+
+      // The backend returns a bare array of FAQ rows (not a
+      // { success, faqs, categories } envelope) — derive categories
+      // client-side from whatever real categories are actually present.
+      const rows: FAQ[] = Array.isArray(data) ? data : [];
+      setFaqs(rows);
+      setCategories([...new Set(rows.map((f) => f.category).filter((c): c is string => Boolean(c)))]);
     } catch (error) {
       console.error('Error fetching FAQs:', error);
     } finally {

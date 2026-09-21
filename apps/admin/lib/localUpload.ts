@@ -15,7 +15,6 @@ import { randomBytes } from 'crypto';
 // video / 3D model uploads this app needs. Handling it locally sidesteps
 // that entirely — same URL shape, same result, no proxy involved.
 const UPLOAD_ROOT = path.resolve(process.cwd(), 'public', 'uploads');
-const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024;
 
 function sanitizeSegment(name: unknown): string {
   if (typeof name !== 'string' || !name) return '';
@@ -37,9 +36,6 @@ export async function handleLocalUpload(req: NextRequest): Promise<NextResponse>
   const file = formData.get('file');
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: 'File is too large. Maximum upload size is 1GB.' }, { status: 413 });
   }
 
   try {

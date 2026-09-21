@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { MainLayout } from "@/components/MainLayout";
 import { CheckCircle } from "lucide-react";
+
+interface VehicleOption {
+  slug: string;
+  name: string;
+}
 
 interface WarrantyClaimData {
   // Owner Information
@@ -38,6 +43,19 @@ interface WarrantyClaimData {
 export default function WarrantyClaimPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
+
+  // Real Geely models sold today (was a hardcoded Coolray/Emgrand/Monjaro/
+  // Azkarra/Okavango list — none of those exist in the database anymore).
+  useEffect(() => {
+    fetch('/api/public/vehicles')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setVehicleOptions(list.map((v: { slug: string; name: string }) => ({ slug: v.slug, name: v.name })));
+      })
+      .catch(() => {});
+  }, []);
 
   const {
     register,
@@ -261,11 +279,9 @@ export default function WarrantyClaimPage() {
                       }`}
                     >
                       <option value="">Select model</option>
-                      <option value="coolray">Coolray</option>
-                      <option value="emgrand">Emgrand</option>
-                      <option value="monjaro">Monjaro</option>
-                      <option value="azkarra">Azkarra</option>
-                      <option value="okavango">Okavango</option>
+                      {vehicleOptions.map((v) => (
+                        <option key={v.slug} value={v.slug}>{v.name}</option>
+                      ))}
                     </select>
                     {errors.model && (
                       <p className="text-red-500 text-xs mt-1">{errors.model.message}</p>

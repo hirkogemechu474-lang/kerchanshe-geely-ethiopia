@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Eye, Edit, Trash2, GripVertical, CheckCircle, XCircle, Image as ImageIcon, Video } from 'lucide-react';
 import { TableCard, THead, TBody, Tr, Th, Td, EmptyState, Badge, LinkButton } from '@/components/admin/ui';
+import { revalidateHomepage } from '@/lib/revalidateHomepage';
 
 interface HeroSection {
   id: string;
@@ -65,6 +66,7 @@ export default function HeroSectionList() {
 
       if (response.ok) {
         setHeroSections(heroSections.filter(h => h.id !== id));
+        await revalidateHomepage();
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to delete hero section');
@@ -87,6 +89,7 @@ export default function HeroSectionList() {
 
       if (response.ok) {
         fetchHeroSections(); // Refresh list
+        await revalidateHomepage();
       } else {
         alert('Failed to update status');
       }

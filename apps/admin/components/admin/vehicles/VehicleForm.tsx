@@ -9,6 +9,7 @@ import PricingEditor from './PricingEditor';
 import InventoryManager from './InventoryManager';
 import SeoPublishEditor from './SeoPublishEditor';
 import { withBasePath } from '@/lib/basePath';
+import { revalidateHomepage } from '@/lib/revalidateHomepage';
 
 interface VehicleFormProps {
   mode: 'create' | 'edit';
@@ -251,6 +252,7 @@ export default function VehicleForm({ mode, initialData, initialStep }: VehicleF
       }
 
       const savedVehicle = await response.json();
+      await revalidateHomepage();
 
       // Redirect to vehicle detail page (not list)
       window.location.href = withBasePath(`/admin/vehicles/${savedVehicle.id}`);

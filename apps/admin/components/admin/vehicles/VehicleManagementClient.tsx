@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Download, Edit, Trash2, Eye } from 'lucide-react';
 import { Card, Button, Badge, TableCard, THead, TBody, Tr, Th, Td, EmptyState } from '@/components/admin/ui';
+import { revalidateHomepage } from '@/lib/revalidateHomepage';
 
 interface Vehicle {
   id: string;
@@ -20,6 +21,11 @@ interface Vehicle {
   heroImageUrl: string | null;
   images: any;
   sku: string | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 interface Props {
@@ -57,6 +63,7 @@ function VehicleThumb({ src, alt, sizeClass }: { src: string | null; alt: string
 
 export default function VehicleManagementClient({ initialVehicles, totalCount }: Props) {
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -64,6 +71,16 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(totalCount);
   const pageSize = 20;
+  const isFirstRender = useRef(true);
+
+  // Real categories for the filter dropdown (was a hardcoded SUV/Sedan/
+  // Electric/Hatchback list that didn't match any actual VehicleCategory).
+  useEffect(() => {
+    fetch('/api/admin/categories')
+      .then((r) => (r.ok ? r.json() : { categories: [] }))
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => {});
+  }, []);
 
   // Fetch vehicles with filters
   async function fetchVehicles() {
@@ -75,7 +92,10 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
       });
 
       if (searchQuery) params.append('search', searchQuery);
-      if (categoryFilter !== 'all') params.append('category', categoryFilter);
+      // Backend filters on categoryId (a real VehicleCategory id), not a
+      // free-text category name — was previously sent as "category" with a
+      // hardcoded name value, which the backend silently ignored.
+      if (categoryFilter !== 'all') params.append('categoryId', categoryFilter);
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
       const response = await fetch(`/api/vehicles?${params}`);
@@ -91,12 +111,17 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
     }
   }
 
-  // Debounced search
+  // Debounced search/filter/page changes. Skips the very first render since
+  // initialVehicles/totalCount already cover that (server-rendered) — every
+  // change after that (including just paging, previously ignored here)
+  // re-fetches.
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
-      if (searchQuery !== '' || categoryFilter !== 'all' || statusFilter !== 'all') {
-        fetchVehicles();
-      }
+      fetchVehicles();
     }, 500);
 
     return () => clearTimeout(timer);
@@ -113,6 +138,7 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
       if (response.ok) {
         alert('Vehicle permanently deleted.');
         fetchVehicles();
+        await revalidateHomepage();
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to delete vehicle');
@@ -183,10 +209,9 @@ export default function VehicleManagementClient({ initialVehicles, totalCount }:
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-geely-blue"
             >
               <option value="all">All Categories</option>
-              <option value="SUV">SUV</option>
-              <option value="Sedan">Sedan</option>
-              <option value="Electric">Electric</option>
-              <option value="Hatchback">Hatchback</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
 

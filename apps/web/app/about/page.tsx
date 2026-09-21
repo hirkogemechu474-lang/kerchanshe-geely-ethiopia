@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { withBasePath } from '@/lib/publicPath';
 
 type FeatureCard = { icon: string; title: string; description: string };
 type HighlightItem = { value: string; label: string };
@@ -352,7 +353,7 @@ export default function AboutPage() {
                 className="absolute inset-0 w-full h-full object-cover"
               >
                 <source src={data.sectionHero.videoUrl} type="video/mp4" />
-                <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+                <track kind="captions" src={withBasePath('/captions/no-dialogue.vtt')} srcLang="en" label="English" default />
               </video>
             )}
             <div className="absolute inset-0 bg-black/50" />

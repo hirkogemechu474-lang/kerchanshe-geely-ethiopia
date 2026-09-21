@@ -247,7 +247,17 @@ router.get('/showcase', async (req: Request, res: Response) => {
       },
       orderBy: { sortOrder: 'asc' },
     });
-    res.json(showcases);
+    // VehicleShowcase.vehicleId is a loose string reference (no Prisma
+    // relation), so it never carries the vehicle's slug — without this,
+    // the frontend's link fallback (when a showcase has no explicit
+    // ctaLink) has only the vehicleId to build a /models/:slug URL from,
+    // which 404s since that route looks vehicles up by slug, not id.
+    const vehicleIds = [...new Set(showcases.map((s) => s.vehicleId))];
+    const vehicles = vehicleIds.length
+      ? await prisma.vehicle.findMany({ where: { id: { in: vehicleIds } }, select: { id: true, slug: true } })
+      : [];
+    const slugById = new Map(vehicles.map((v) => [v.id, v.slug]));
+    res.json(showcases.map((s) => ({ ...s, vehicleSlug: slugById.get(s.vehicleId) ?? null })));
   } catch (error) {
     console.error('Get showcase error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { useAdminSessionContext, signOut } from './SessionProvider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { withBasePath } from '@/lib/basePath';
 import {
   LayoutDashboard,
   Car,
@@ -451,7 +452,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
         <div className="h-16 flex items-center justify-between px-5 border-b border-midnight-line/70 bg-midnight/90 shrink-0 backdrop-blur-sm">
           <Link href="/admin/analytics" className="flex items-center gap-3 group min-w-0">
             <div className="w-10 h-10 shrink-0 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg shadow-black/20 group-hover:shadow-black/30 transition-all duration-300 group-hover:scale-105">
-              <img src="/assets/logos/geely-vertical-logo.svg" alt="Geely" className="w-full h-full object-contain" />
+              <img src={withBasePath('/assets/logos/geely-vertical-logo.svg')} alt="Geely" className="w-full h-full object-contain" />
             </div>
             <div className={collapsed ? 'lg:hidden' : ''}>
               <span className="text-white font-bold text-xl leading-none tracking-tight">Geely</span>

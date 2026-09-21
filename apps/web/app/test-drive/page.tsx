@@ -756,8 +756,8 @@ export default function TestDrivePage() {
           </div>
           <div className="hidden md:block md:flex-[0_0_40%] relative min-h-[300px]">
             <img
-              src="/images/vehicles/coolray-studio.png"
-              alt="Geely vehicle"
+              src="/images/vehicles/ex5/ex5-hero.jpg"
+              alt="Geely EX5"
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>

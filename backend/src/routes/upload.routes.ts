@@ -41,7 +41,7 @@ function sanitizeSegment(name: unknown): string {
 // populated on `req.body`, which silently dropped the category.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 1024 * 1024 * 1024, files: 1 },
+  limits: { files: 1 },
 });
 
 // multer emits a MulterError (e.g. LIMIT_FILE_SIZE) through Express's error-

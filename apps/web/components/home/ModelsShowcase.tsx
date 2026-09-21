@@ -24,9 +24,13 @@ interface Vehicle {
   badge?: string | null;
   isFeatured?: boolean;
   tagline?: string | null;
-  enginePower?: string | null;
-  acceleration?: string | null;
-  fuelTankCapacity?: string | null;
+  // Real per-vehicle spec sheet (Vehicle.specifications) — there are no
+  // top-level enginePower/acceleration/fuelTankCapacity columns on Vehicle,
+  // so reading those directly always returned undefined.
+  specifications?: {
+    engine?: { power?: string | null };
+    range?: { wltp?: string | null };
+  } | null;
 }
 
 function publicMediaUrl(url: string | null | undefined): string {
@@ -47,12 +51,6 @@ function categoryMatches(categorySlug: string, vehicle: Vehicle): boolean {
   return v === c;
 }
 
-const FALLBACK_CATEGORIES: Category[] = [
-  { id: "suvs", name: "SUVs", slug: "suvs", description: null },
-  { id: "sedans", name: "Sedans", slug: "sedans", description: null },
-  { id: "electric", name: "Electric", slug: "electric", description: null },
-];
-
 interface ModelsShowcaseProps {
   initialCategories?: Category[];
   initialVehicles?: Vehicle[];
@@ -60,9 +58,10 @@ interface ModelsShowcaseProps {
 
 function VehicleCard({ vehicle, size }: { vehicle: Vehicle; size: "hero" | "large" | "medium" | "small" }) {
   const specs: { label: string; value: string }[] = [];
-  if (vehicle.enginePower) specs.push({ label: "Max Power", value: vehicle.enginePower });
-  if (vehicle.acceleration) specs.push({ label: "0-100km/h Acceleration", value: vehicle.acceleration });
-  if (vehicle.fuelTankCapacity) specs.push({ label: "Fuel Tank Capacity", value: vehicle.fuelTankCapacity });
+  const enginePower = vehicle.specifications?.engine?.power;
+  const range = vehicle.specifications?.range?.wltp;
+  if (enginePower) specs.push({ label: "Max Power", value: enginePower });
+  if (range) specs.push({ label: "Range (WLTP)", value: range });
 
   const sizeClasses = {
     hero: "col-span-full",
@@ -152,9 +151,11 @@ function VehicleCard({ vehicle, size }: { vehicle: Vehicle; size: "hero" | "larg
 }
 
 export default function ModelsShowcase({ initialCategories, initialVehicles }: ModelsShowcaseProps) {
-  const [categories] = useState<Category[]>(
-    initialCategories?.length ? initialCategories : FALLBACK_CATEGORIES
-  );
+  // Real categories only — a hardcoded SUVs/Sedans/Electric fallback would
+  // never match this business's actual category slugs (e.g.
+  // "electric-vehicles") and would just show tabs that always return zero
+  // vehicles, which is worse than no tabs at all.
+  const [categories] = useState<Category[]>(initialCategories ?? []);
   const [vehicles] = useState<Vehicle[]>(initialVehicles ?? []);
   const [activeTab, setActiveTab] = useState<string>("all");
 

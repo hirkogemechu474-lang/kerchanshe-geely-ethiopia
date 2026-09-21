@@ -7,9 +7,17 @@ import PromotionsBanner from "@/components/home/PromotionsBanner";
 import FinancingSection from "@/components/home/FinancingSection";
 import { getOrganizationSchema, getWebsiteSchema } from "@/lib/schema";
 import { serverApiClient } from "@/lib/serverApiClient";
+import { withBasePathUrl } from "@/lib/basePath";
+import { env } from "@/lib/env";
 import { Metadata } from "next";
 import fs from "node:fs";
 import path from "node:path";
+
+// The real deployed origin (NEXT_PUBLIC_SITE_URL, e.g.
+// https://portal.kerchanshe.co/geely in production) — matches the
+// canonical/OG URL convention already used by app/layout.tsx, sitemap.ts
+// and robots.ts, instead of a different, unrelated domain.
+const BASE_URL = withBasePathUrl(env.app.url);
 
 // Local (/images/...) URLs come from admin-entered content and sometimes
 // point at files nobody uploaded, which used to surface as 404s on every
@@ -49,19 +57,19 @@ export const metadata: Metadata = {
   description:
     "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads. Official distributor with nationwide support.",
   keywords:
-    "Geely Ethiopia, Geely cars, SUV Ethiopia, Geely Coolray, Geely Emgrand, Electric vehicles Ethiopia, Kerchanshe Group Geely, car dealer Ethiopia",
+    "Geely Ethiopia, Geely cars, SUV Ethiopia, Geely EX5, Geely EX2, Geely Panda Mini, Electric vehicles Ethiopia, Kerchanshe Group Geely, car dealer Ethiopia",
   alternates: {
-    canonical: "https://geelyethiopia.com",
+    canonical: BASE_URL,
   },
   openGraph: {
     title: "Geely Ethiopia | Official Distributor",
     description:
       "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles, discover global engineering built for Ethiopian roads.",
-    url: "https://geelyethiopia.com",
+    url: BASE_URL,
     siteName: "Geely Ethiopia",
     images: [
       {
-        url: "https://geelyethiopia.com/images/og-home.jpg",
+        url: `${BASE_URL}/images/og-home.jpg`,
         width: 1200,
         height: 630,
         alt: "Geely Ethiopia - Official Distributor",
@@ -75,7 +83,7 @@ export const metadata: Metadata = {
     title: "Geely Ethiopia | Official Distributor",
     description:
       "Explore Geely vehicles in Ethiopia. From efficient SUVs to electric vehicles.",
-    images: ["https://geelyethiopia.com/images/og-home.jpg"],
+    images: [`${BASE_URL}/images/og-home.jpg`],
     site: "@geelyethiopia",
   },
 };
@@ -97,6 +105,7 @@ export default async function HomePage() {
     allReviews,
     financingBanksRaw,
     financingProgramsRaw,
+    aboutData,
   ] = await Promise.all([
     client.get('/public/hero').then((r) => r.data).catch(() => []),
     client.get('/public/vehicles').then((r) => r.data).catch(() => []),
@@ -106,6 +115,7 @@ export default async function HomePage() {
     client.get('/public/testimonials').then((r) => r.data).catch(() => []),
     client.get('/public/financing-banks').then((r) => r.data).catch(() => []),
     client.get('/public/financing-programs').then((r) => r.data).catch(() => []),
+    client.get('/public/about').then((r) => r.data).catch(() => null),
   ]);
 
   const initialVehicles = (Array.isArray(rawVehicles) ? rawVehicles : [])
@@ -146,15 +156,19 @@ export default async function HomePage() {
       ? approvedReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / approvedReviews.length
       : 0;
 
-  // No public endpoint exposes an admin-configurable stats blob today —
-  // falls back to the same defaults the original code used when unset.
-  const initialStats = DEFAULT_STATS;
+  // Admin → Settings → About → "Homepage Statistics" (Setting key
+  // `about_page`, field `homeStats`) is the real, editable source for these
+  // numbers — DEFAULT_STATS only covers the case where that hasn't been
+  // configured yet.
+  const initialStats = Array.isArray(aboutData?.homeStats) && aboutData.homeStats.length > 0
+    ? aboutData.homeStats
+    : DEFAULT_STATS;
 
   // Every active/published showcase, not just the first one — lets visitors
   // pick which vehicle's "Explore Every Angle" viewer they want (see
   // ShowcaseSection's vehicle tabs) instead of always seeing whichever
   // showcase happens to sort first.
-  const initialShowcases = (Array.isArray(showcaseList) ? showcaseList : []).map((showcase: any) => {
+  const curatedShowcases = (Array.isArray(showcaseList) ? showcaseList : []).map((showcase: any) => {
     const views = Array.isArray(showcase.views)
       ? (showcase.views as { angle: string; imageUrl: string; label: string }[]).map((view) => ({
           ...view,
@@ -163,6 +177,35 @@ export default async function HomePage() {
       : [];
     return { ...showcase, views };
   });
+
+  // No admin-curated 360° showcases configured yet — derive the same shape
+  // straight from real published vehicles (using their own gallery images)
+  // instead of showing a generic/unrelated placeholder. A vehicle with no
+  // images at all is skipped rather than faked.
+  const derivedShowcases = initialVehicles
+    .filter((v: any) => Array.isArray(v.images) && v.images.some((img: unknown) => typeof img === 'string' && img))
+    .map((v: any) => {
+      const images = (v.images as unknown[]).filter((img): img is string => typeof img === 'string' && img.length > 0);
+      return {
+        id: v.id,
+        vehicleId: v.id,
+        vehicleSlug: v.slug,
+        vehicleName: v.name,
+        title: `Explore the ${v.name}`,
+        subtitle: null,
+        views: images.map((imageUrl: string, index: number) => ({
+          angle: String(index),
+          imageUrl,
+          label: index === 0 ? 'Exterior' : `View ${index + 1}`,
+        })),
+        modelUrl: null,
+        ctaText: null,
+        ctaLink: `/models/${v.slug}`,
+        sortOrder: v.displayOrder ?? 0,
+      };
+    });
+
+  const initialShowcases = curatedShowcases.length > 0 ? curatedShowcases : derivedShowcases;
 
   // API responses carry dates as ISO strings already (JSON has no Date type).
   const initialNewsArticles = newsRows.map((article: any) => ({
@@ -207,7 +250,7 @@ export default async function HomePage() {
           innovation cards) → final conversion push → reference info. */}
       <HeroSection initialHeroSections={initialHeroSections} />
       <ModelsShowcase initialCategories={initialCategories} initialVehicles={initialVehicles} />
-      <SpotlightStrip />
+      <SpotlightStrip vehicleName={initialShowcases[0]?.vehicleName ?? null} />
       <AboutSection />
       <ShowcaseSection initialShowcases={initialShowcases} />
       <StatisticsSection initialStats={initialStats} />

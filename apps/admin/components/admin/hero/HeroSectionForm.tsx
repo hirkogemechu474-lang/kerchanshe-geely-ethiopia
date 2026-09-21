@@ -6,6 +6,7 @@ import { Save, Eye, ArrowLeft, Image as ImageIcon, Video, Upload } from 'lucide-
 import Link from 'next/link';
 import { Card, Button, LinkButton } from '@/components/admin/ui';
 import { uploadAndRegisterMedia } from '@/lib/mediaUpload';
+import { revalidateHomepage } from '@/lib/revalidateHomepage';
 
 interface HeroSectionFormProps {
   heroId?: string;
@@ -133,6 +134,7 @@ export default function HeroSectionForm({ heroId }: HeroSectionFormProps) {
       });
 
       if (response.ok) {
+        await revalidateHomepage();
         alert(heroId ? 'Hero section updated successfully!' : 'Hero section created successfully!');
         router.push('/admin/content/hero');
       } else {

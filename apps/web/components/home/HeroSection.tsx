@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { withBasePath } from "@/lib/publicPath";
 
 interface HeroSection {
   id: string;
@@ -143,7 +144,7 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
               style={{ filter: 'brightness(0.95)' }}
             >
               <source src={currentHero.videoUrl} type="video/mp4" />
-              <track kind="captions" src="/captions/no-dialogue.vtt" srcLang="en" label="English" default />
+              <track kind="captions" src={withBasePath('/captions/no-dialogue.vtt')} srcLang="en" label="English" default />
             </video>
           )}
           {/* Overlay for text readability, kept light so the video reads

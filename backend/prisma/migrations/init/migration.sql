@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "QuotationApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'PENDING_DISCOUNT');
 
 -- CreateEnum

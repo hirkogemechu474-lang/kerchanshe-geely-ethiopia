@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ModelSpotlightSimple } from '@/components/ModelSpotlightSimple';
 import { Model3DViewer } from '@/components/Model3DViewer';
@@ -18,6 +17,9 @@ interface ShowcaseView {
 interface Showcase {
   id: string;
   vehicleId: string;
+  // Real Vehicle.slug, used to build the /models/:slug link — vehicleId is
+  // a UUID and never resolves against the public vehicle-detail route.
+  vehicleSlug: string | null;
   vehicleName: string;
   title: string;
   subtitle: string | null;
@@ -80,21 +82,15 @@ export default function ShowcaseSection({ initialShowcases }: ShowcaseSectionPro
             </p>
           </motion.div>
 
+          {/* No vehicle currently has any 360°/gallery media configured —
+              a real, database-driven empty state rather than a stand-in
+              photo of a specific model that isn't actually being showcased. */}
           <Link href="/models" className="block group">
-            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-mesh-blue shadow-2xl">
-              <Image
-                src="/images/vehicles/ex5/ex5-hero.jpg"
-                alt="Geely vehicle showcase"
-                fill
-                sizes="(min-width: 1024px) 1280px, 100vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-4 left-4">
-                <div className="bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-lg">
-                  <div className="text-xs text-active-blue-80 mb-1">360° Showcase</div>
-                  <div className="font-bold">Geely Flagship Models</div>
-                </div>
+            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-mesh-blue shadow-2xl flex items-center justify-center">
+              <div className="text-center text-white/90 px-6">
+                <div className="text-xs uppercase tracking-wide text-active-blue-80 mb-2">360° Showcase</div>
+                <div className="font-bold text-lg">Vehicle showcases are coming soon</div>
+                <div className="text-sm text-white/70 mt-2">Browse our full model range in the meantime.</div>
               </div>
             </div>
           </Link>
@@ -197,7 +193,7 @@ export default function ShowcaseSection({ initialShowcases }: ShowcaseSectionPro
             <div className="relative aspect-[16/9] rounded-xl bg-mesh-blue shadow-2xl overflow-hidden">
               <Model3DViewer src={showcase.modelUrl} alt={showcase.vehicleName} className="h-full w-full" />
               <Link
-                href={`/models/${showcase.vehicleId}/3d-view`}
+                href={`/models/${showcase.vehicleSlug ?? showcase.vehicleId}/3d-view`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-navy/90 px-4 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-navy"
@@ -224,7 +220,7 @@ export default function ShowcaseSection({ initialShowcases }: ShowcaseSectionPro
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             <Button
-              href={showcase.ctaLink || `/models/${showcase.vehicleId}`}
+              href={showcase.ctaLink || `/models/${showcase.vehicleSlug ?? showcase.vehicleId}`}
               variant="solid"
               size="lg"
               className="group transform hover:scale-105 hover:shadow-xl"
