@@ -26,3 +26,17 @@ export async function serverApiClient() {
     },
   });
 }
+
+// For server-side fetches that only ever hit `/public/*` endpoints (no
+// per-user data, so no session cookie to forward). Calling `cookies()` — as
+// `serverApiClient()` above does — opts the *entire* route out of static
+// rendering/ISR, which is what was forcing the homepage to fully
+// server-render on every request despite its `export const revalidate = 60`.
+// A plain client without that call lets those routes stay static.
+export const publicApiClient = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});

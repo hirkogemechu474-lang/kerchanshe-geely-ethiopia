@@ -23,7 +23,7 @@ export function MapEmbedFacade({ src, title, className }: MapEmbedFacadeProps) {
     <button
       type="button"
       onClick={() => setLoaded(true)}
-      aria-label={`Load map: ${title}`}
+      aria-label={`Click to load map: ${title}`}
       className={`${className || ''} flex flex-col items-center justify-center gap-2 bg-slate-800 text-white hover:bg-slate-700 transition-colors`}
     >
       <MapPin size={28} />

@@ -129,6 +129,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
       apple: [
         { url: withBasePath('/icons/icon-152x152.png'), sizes: '152x152', type: 'image/png' },
+        { url: withBasePath('/icons/icon-192x192.png'), sizes: '180x180', type: 'image/png' },
         { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
       ],
     },
@@ -136,6 +137,18 @@ export async function generateMetadata(): Promise<Metadata> {
     // admin enters just the token (Setting['seo_settings'].googleSiteVerification),
     // Next renders it as <meta name="google-site-verification" content="...">.
     ...(seo.googleSiteVerification ? { verification: { google: seo.googleSiteVerification } } : {}),
+    // No dedicated Metadata API field for these (appleWebApp above already
+    // covers apple-mobile-web-app-*/mobile-web-app-capable). Previously
+    // hand-written as <meta> tags in this file's own <head> JSX — moved here
+    // purely to avoid duplicating them, not because that caused any bug (see
+    // page.tsx's `publicApiClient` comment for the actual metadata bug this
+    // page had).
+    other: {
+      'application-name': 'Geely Ethiopia',
+      'format-detection': 'telephone=no',
+      'msapplication-TileColor': '#0057B8',
+      'msapplication-tap-highlight': 'no',
+    },
   };
 }
 
@@ -199,20 +212,9 @@ export default async function RootLayout({
             }}
           />
         )}
-        {/* PWA Meta Tags */}
-        <meta name="application-name" content="Geely Ethiopia" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Geely Ethiopia" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#0057B8" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        
-        {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" sizes="152x152" href={withBasePath('/icons/icon-152x152.png')} />
-        <link rel="apple-touch-icon" sizes="180x180" href={withBasePath('/icons/icon-192x192.png')} />
-        <link rel="apple-touch-icon" sizes="192x192" href={withBasePath('/icons/icon-192x192.png')} />
+        {/* PWA meta tags + apple-touch-icons now come from generateMetadata()
+            above (appleWebApp / icons.apple / other) instead of being
+            hand-written here, just to avoid emitting each one twice. */}
 
         {/* Warm up the connection for the afterInteractive 3rd-party scripts
             below, so they don't pay full DNS+TLS setup cost once triggered. */}

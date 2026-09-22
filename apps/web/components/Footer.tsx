@@ -215,6 +215,8 @@ export function Footer() {
         <img
           src={withBasePath('/assets/logos/geely-logo.png')}
           alt="Geely Ethiopia"
+          width={1920}
+          height={1080}
           className="h-10 md:h-11 w-auto max-w-[140px] object-contain brightness-0 invert mb-10"
         />
 

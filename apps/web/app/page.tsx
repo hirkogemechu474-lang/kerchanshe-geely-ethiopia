@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import PromotionsBanner from "@/components/home/PromotionsBanner";
 import FinancingSection from "@/components/home/FinancingSection";
 import { getOrganizationSchema, getWebsiteSchema } from "@/lib/schema";
-import { serverApiClient } from "@/lib/serverApiClient";
+import { publicApiClient } from "@/lib/serverApiClient";
 import { withBasePathUrl } from "@/lib/basePath";
 import { env } from "@/lib/env";
 import { Metadata } from "next";
@@ -94,8 +94,11 @@ export default async function HomePage() {
 
   // Fetched server-side (in parallel) so above-the-fold homepage sections are
   // present in the initial HTML instead of popping in after client fetches —
-  // that gap was the page's LCP/layout-shift bottleneck.
-  const client = await serverApiClient();
+  // that gap was the page's LCP/layout-shift bottleneck. Every endpoint below
+  // is `/public/*` (no per-user data), so this uses the cookie-free client —
+  // forwarding the session cookie here would force this route to fully
+  // server-render on every request instead of serving prerendered/ISR HTML.
+  const client = publicApiClient;
   const [
     initialHeroSections,
     rawVehicles,

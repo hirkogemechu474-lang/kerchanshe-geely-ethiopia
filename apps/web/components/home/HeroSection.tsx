@@ -43,10 +43,19 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
     return () => clearInterval(interval);
   }, [heroSections.length]);
 
-  // Let the LCP paint (poster/text) happen before fetching the hero video.
+  // Hero videos run 14-20MB+; starting that download any earlier than the
+  // window `load` event competes with the LCP image/fonts/CSS for the same
+  // bandwidth and was measurably delaying LCP (Lighthouse's throttled
+  // network simulation showed the video request crowding out everything
+  // else). Waiting for `load` keeps it off the critical rendering path.
   useEffect(() => {
-    const id = requestAnimationFrame(() => setVideoReady(true));
-    return () => cancelAnimationFrame(id);
+    if (document.readyState === 'complete') {
+      setVideoReady(true);
+      return;
+    }
+    const onLoad = () => setVideoReady(true);
+    window.addEventListener('load', onLoad);
+    return () => window.removeEventListener('load', onLoad);
   }, []);
 
   // Default content if there's no active CMS hero content configured.
@@ -118,6 +127,7 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
               alt={currentHero.title}
               fill
               priority={currentIndex === 0}
+              fetchPriority={currentIndex === 0 ? 'high' : undefined}
               sizes="100vw"
               quality={85}
               className="object-cover scale-105"
@@ -164,6 +174,7 @@ export default function HeroSection({ initialHeroSections = [] }: HeroSectionPro
             alt={currentHero.title}
             fill
             priority={currentIndex === 0}
+            fetchPriority={currentIndex === 0 ? 'high' : undefined}
             sizes="100vw"
             quality={85}
             className="w-full h-full object-cover scale-105"

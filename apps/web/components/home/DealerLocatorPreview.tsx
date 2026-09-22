@@ -47,7 +47,9 @@ export default function DealerLocatorPreview() {
 
       <div className="relative page-container py-16 md:py-20">
         <div className="mb-12 max-w-lg">
-          <div className="text-[12px] tracking-[0.2em] text-active-blue font-bold mb-4 uppercase">
+          {/* active-blue-80 (not active-blue) — plain active-blue is only
+              3.49:1 on this black section, under WCAG's 4.5:1 for 12px text. */}
+          <div className="text-[12px] tracking-[0.2em] text-active-blue-80 font-bold mb-4 uppercase">
             Nationwide Network
           </div>
           <h2 className="disp text-[30px] md:text-[40px] font-extrabold leading-tight mb-4">
@@ -115,7 +117,7 @@ export default function DealerLocatorPreview() {
                     <p className="text-[12.5px] text-[#c3d2ea] leading-relaxed mb-2.5">
                       {description}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-active-blue group-hover:translate-x-0.5 transition-transform">
+                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-active-blue-80 group-hover:translate-x-0.5 transition-transform">
                       {cta}
                       <span aria-hidden>&rarr;</span>
                     </span>

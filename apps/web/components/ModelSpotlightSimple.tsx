@@ -156,10 +156,11 @@ export function ModelSpotlightSimple({
 
       {/* Progress Dots */}
       <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-2">
-        {views.map((_, index) => (
+        {views.map((view, index) => (
           <button
             key={index}
             onClick={() => setCurrentView(index)}
+            aria-label={`Go to ${view.label}`}
             className={`w-2 h-2 rounded-full transition-all ${
               currentView === index
                 ? 'bg-active-blue w-8'

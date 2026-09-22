@@ -23,7 +23,11 @@ const config: Config = {
         // `active-blue` / `active-blue-80` instead.
         gold: "#194BFF",
         ice: "#F6F3F5",
-        steel: "#69717B",
+        // Darkened from the guideline's literal #69717B — that value is a
+        // 4.48:1 contrast on the `ice` background, just under WCAG AA's
+        // 4.5:1, and failed Lighthouse's color-contrast audit as body text.
+        // #626A74 reads as the same steel gray but clears 4.5:1.
+        steel: "#626A74",
         ink: "#111318",
         line: "#E8E7E7",
         // Dark-mode surfaces — not swaps of the tokens above (navy/ice are
