@@ -2,11 +2,21 @@ import type { Metadata } from "next";
 // @ts-ignore: CSS module declarations may be missing in this project setup
 import "./globals.css";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/admin/ThemeProvider";
-import { BASE_PATH } from "@/lib/basePath";
+import { BASE_PATH, withBasePath } from "@/lib/basePath";
 
 export const metadata: Metadata = {
   title: "Geely Ethiopia Admin",
   description: "Geely Ethiopia Admin Panel",
+  icons: {
+    icon: [
+      { url: withBasePath('/icons/icon-192x192.png'), sizes: '192x192', type: 'image/png' },
+      { url: withBasePath('/icons/icon-512x512.png'), sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: withBasePath('/icons/icon-152x152.png'), sizes: '152x152', type: 'image/png' },
+    ],
+    shortcut: [withBasePath('/icons/icon-192x192.png')],
+  },
 };
 
 export default function RootLayout({
