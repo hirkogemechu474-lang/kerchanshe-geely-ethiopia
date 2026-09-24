@@ -638,6 +638,20 @@ function media(rel: string): string {
   return urlFor(abs);
 }
 
+/** True when a local /uploads/... URL points at a file that doesn't exist (remote URLs are assumed fine). */
+function uploadMissing(url: string | null | undefined): boolean {
+  if (!url) return true;
+  if (!url.startsWith('/uploads/')) return false;
+  const rel = decodeURIComponent(url.slice('/uploads/'.length).split('?')[0]);
+  return !fs.existsSync(path.join(UPLOAD_ROOT, rel));
+}
+
+/** An image needs replacing when it's blank, its file is gone, or it's a seed photo of a different model. */
+function needsImage(url: string | null | undefined, modelDir: string): boolean {
+  if (uploadMissing(url)) return true;
+  return !!url && url.startsWith('/uploads/seed/models/') && !url.startsWith(`/uploads/seed/models/${modelDir}/`);
+}
+
 type Highlight = { title: string; description: string; imageUrl: string };
 type SectionPatch = Partial<Record<'performance' | 'safety' | 'technology' | 'interior' | 'exterior' | 'warranty', Record<string, string | string[] | Highlight[]>>>;
 
@@ -783,8 +797,13 @@ async function seedVehicleCatalogExtras() {
     },
     sedan: {
       description: 'Geely sedans combine a refined ride, efficient powertrains and generous cabin space.',
+      image: media('models/global/images/global-kv-2.jpg'),
     },
   };
+  const brand = await prisma.vehicleBrand.findUnique({ where: { slug: 'geely' } });
+  if (brand && uploadMissing(brand.logoUrl)) {
+    await prisma.vehicleBrand.update({ where: { id: brand.id }, data: { logoUrl: media('models/global/images/geely-logo.png') } });
+  }
   for (const [slug, fill] of Object.entries(categoryFill)) {
     const cat = await prisma.vehicleCategory.findUnique({ where: { slug } });
     if (!cat) continue;
@@ -830,7 +849,17 @@ async function seedVehicleCatalogExtras() {
 
   // Manage Colors → Wheels, per vehicle, only when it has none yet.
   const seedWheelsIfEmpty = async (vehicleId: string, rows: { name: string; size: string; imageUrl?: string }[]) => {
-    if ((await prisma.vehicleWheel.count({ where: { vehicleId } })) > 0) return;
+    const existing = await prisma.vehicleWheel.findMany({ where: { vehicleId } });
+    if (existing.length > 0) {
+      // Backfill a photo onto seeded wheels that were created without one.
+      for (const w of existing) {
+        const row = rows.find((r) => r.name === w.name);
+        if (row?.imageUrl && uploadMissing(w.imageUrl)) {
+          await prisma.vehicleWheel.update({ where: { id: w.id }, data: { imageUrl: row.imageUrl, images: [row.imageUrl] } });
+        }
+      }
+      return;
+    }
     for (const [i, w] of rows.entries()) {
       await prisma.vehicleWheel.create({
         data: {
@@ -854,31 +883,127 @@ async function seedVehicleCatalogExtras() {
   }
   if (ex2) {
     await seedWheelsIfEmpty(ex2.id, [
-      { name: '15" Steel Wheels (Comfort)', size: '15"' },
-      { name: '16" Alloy Wheels (Luxury & Sport)', size: '16"' },
+      { name: '15" Steel Wheels (Comfort)', size: '15"', imageUrl: ex2Img('wheels/15-inch-steel-wheel.jpg') },
+      { name: '16" Alloy Wheels (Luxury & Sport)', size: '16"', imageUrl: ex2Img('wheels/16-inch-alloy-wheel.jpg') },
     ]);
   }
 
   // Manage Models → Accessories. Global (vehicleId null) so they apply to
-  // every model; only seeded while the table is completely empty.
+  // every model; only created while the table is completely empty. There's
+  // no accessory photography, so each gets a product illustration
+  // (media/models/global/images/accessories) until real photos are uploaded.
+  const accImg = (f: string) => media(`models/global/images/accessories/${f}.jpg`);
+  const accessories = [
+    { name: 'All-Weather Floor Mats', category: 'Interior', image: 'floor-mats', description: 'Tailored, easy-clean mats that trap mud, dust and water.' },
+    { name: 'Trunk Cargo Liner', category: 'Interior', image: 'cargo-liner', description: 'Waterproof, raised-edge liner that protects the boot floor.' },
+    { name: 'Door Sill Protectors', category: 'Exterior', image: 'door-sill', description: 'Scuff plates that guard the door sills against wear.' },
+    { name: 'Mud Flaps', category: 'Exterior', image: 'mud-flaps', description: 'Front and rear mud flaps that reduce spray and stone chips.' },
+    { name: 'Portable EV Charger (Mode 2)', category: 'Charging', image: 'portable-charger', description: 'Charge from a standard wall socket at home or on the go.' },
+    { name: '7 kW Home Wall Charger', category: 'Charging', image: 'wall-charger', description: 'Type 2 AC wallbox for faster overnight charging at home. Installation quoted separately.' },
+    { name: 'Front & Rear Dash Camera', category: 'Electronics', image: 'dash-camera', description: 'Records the road ahead and behind for peace of mind.' },
+    { name: 'Window Tint Film', category: 'Protection', image: 'window-tint', description: 'Reduces heat and glare and adds privacy.' },
+    { name: 'Paint Protection Film (Front)', category: 'Protection', image: 'paint-protection', description: 'Clear film that protects the bonnet, bumper and mirrors from stone chips.' },
+    { name: 'Indoor/Outdoor Car Cover', category: 'Protection', image: 'car-cover', description: 'Breathable cover that shields paint from sun and dust.' },
+    { name: 'Emergency Kit', category: 'Safety', image: 'emergency-kit', description: 'First-aid kit, warning triangle, tow rope and reflective vest.' },
+  ];
   if ((await prisma.vehicleAccessory.count()) === 0) {
-    const accessories = [
-      { name: 'All-Weather Floor Mats', category: 'Interior', description: 'Tailored, easy-clean mats that trap mud, dust and water.' },
-      { name: 'Trunk Cargo Liner', category: 'Interior', description: 'Waterproof, raised-edge liner that protects the boot floor.' },
-      { name: 'Door Sill Protectors', category: 'Exterior', description: 'Scuff plates that guard the door sills against wear.' },
-      { name: 'Mud Flaps', category: 'Exterior', description: 'Front and rear mud flaps that reduce spray and stone chips.' },
-      { name: 'Portable EV Charger (Mode 2)', category: 'Charging', description: 'Charge from a standard wall socket at home or on the go.' },
-      { name: '7 kW Home Wall Charger', category: 'Charging', description: 'Type 2 AC wallbox for faster overnight charging at home. Installation quoted separately.' },
-      { name: 'Front & Rear Dash Camera', category: 'Electronics', description: 'Records the road ahead and behind for peace of mind.' },
-      { name: 'Window Tint Film', category: 'Protection', description: 'Reduces heat and glare and adds privacy.' },
-      { name: 'Paint Protection Film (Front)', category: 'Protection', description: 'Clear film that protects the bonnet, bumper and mirrors from stone chips.' },
-      { name: 'Indoor/Outdoor Car Cover', category: 'Protection', description: 'Breathable cover that shields paint from sun and dust.' },
-      { name: 'Emergency Kit', category: 'Safety', description: 'First-aid kit, warning triangle, tow rope and reflective vest.' },
-    ];
-    for (const [i, a] of accessories.entries()) {
-      await prisma.vehicleAccessory.create({ data: { ...a, vehicleId: null, price: 0, inStock: true, sortOrder: i } });
+    for (const [i, { image, ...a }] of accessories.entries()) {
+      const url = accImg(image);
+      await prisma.vehicleAccessory.create({
+        data: { ...a, imageUrl: url, images: [url], vehicleId: null, price: 0, inStock: true, sortOrder: i },
+      });
+    }
+  } else {
+    for (const { name, image } of accessories) {
+      const url = accImg(image);
+      const rows = await prisma.vehicleAccessory.findMany({ where: { name } });
+      for (const row of rows) {
+        if (uploadMissing(row.imageUrl)) {
+          await prisma.vehicleAccessory.update({ where: { id: row.id }, data: { imageUrl: url, images: [url] } });
+        }
+      }
     }
   }
+
+  // Manage Models → trim images: replace blank, broken, or wrong-model
+  // photos (e.g. a Starray shot on an EX2 trim) with one of the right car.
+  const trimImages: Record<string, { dir: string; byName: Record<string, string> }> = {
+    'geely-ex5': {
+      dir: 'ex5',
+      byName: {
+        Pro: ex5Img('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵银色）left 45°.jpg'),
+        Max: ex5Img('interior/Amber Brown/jpg/（左舵棕色）Sunroof .jpg'),
+      },
+    },
+    'geely-ex2': {
+      dir: 'ex2',
+      byName: {
+        Comfort: ex2Img('exterior/exterior-star-silver-1.jpg'),
+        Luxury: ex2Img('exterior/exterior-aurora-green-2.jpg'),
+        Sport: ex2Img('exterior/exterior-star-silver-3.jpg'),
+      },
+    },
+  };
+  for (const [slug, { dir, byName }] of Object.entries(trimImages)) {
+    const vehicle = await prisma.vehicle.findUnique({ where: { slug }, include: { packages: true } });
+    for (const trim of vehicle?.packages ?? []) {
+      const replacement = byName[trim.name];
+      if (replacement && needsImage(trim.imageUrl, dir)) {
+        await prisma.vehiclePackage.update({ where: { id: trim.id }, data: { imageUrl: replacement } });
+      }
+    }
+  }
+
+  // Homepage hero slides whose poster/image file has been deleted fall back
+  // to the linked model's hero image.
+  for (const slide of await prisma.heroSection.findMany()) {
+    const slug = slide.buttonLink?.match(/\/models\/([^/?#]+)/)?.[1];
+    const linked = slug ? await prisma.vehicle.findUnique({ where: { slug }, select: { heroImageUrl: true } }) : null;
+    const fallback = linked?.heroImageUrl;
+    const data: { imageUrl?: string; posterUrl?: string } = {};
+    if (fallback && slide.imageUrl && uploadMissing(slide.imageUrl)) data.imageUrl = fallback;
+    if (fallback && slide.posterUrl && uploadMissing(slide.posterUrl)) data.posterUrl = fallback;
+    if (Object.keys(data).length) await prisma.heroSection.update({ where: { id: slide.id }, data });
+  }
+
+  // Manage Colors → interiors/colors with only one photo get the rest of
+  // their matching fixture set.
+  const topUpImages = async (
+    table: 'vehicleInterior' | 'vehicleColor',
+    slug: string,
+    name: string,
+    images: string[]
+  ) => {
+    const vehicle = await prisma.vehicle.findUnique({ where: { slug }, select: { id: true } });
+    if (!vehicle) return;
+    const delegate = prisma[table] as any;
+    const row = await delegate.findFirst({ where: { vehicleId: vehicle.id, name } });
+    const current: string[] = Array.isArray(row?.images) ? row.images : [];
+    if (!row || current.length > 1) return;
+    await delegate.update({ where: { id: row.id }, data: { images: [...new Set([...current, ...images])] } });
+  };
+  await topUpImages(
+    'vehicleInterior',
+    'geely-ex5',
+    'Amber Brown',
+    ['entire interior + seats', 'front-side interior', 'Flyme Auto', 'HUD', 'Sunroof ', 'rear seats', 'wireless charging', 'trunk'].map((f) =>
+      ex5Img(`interior/Amber Brown/jpg/（左舵棕色）${f}.jpg`)
+    )
+  );
+  await topUpImages(
+    'vehicleInterior',
+    'geely-ex5',
+    'Sapphire Blue',
+    ['（左舵蓝黑）entire interior + seats', '（左舵蓝黑）front-side interior', '（左舵蓝黑）Flyme Auto', '（左舵蓝黑） HUD', '（左舵蓝黑）passenger-side storage box', '（左舵蓝黑）trunk'].map(
+      (f) => ex5Img(`interior/Sapphire Blue/JPG/${f}.jpg`)
+    )
+  );
+  // Panda Mini placeholders use EX2 photos (no Panda Mini photography yet).
+  await topUpImages('vehicleColor', 'geely-panda-mini', 'Comet Silver', [
+    ex2Img('exterior/exterior-star-silver-1.jpg'),
+    ex2Img('exterior/exterior-star-silver-2.jpg'),
+    ex2Img('exterior/exterior-star-silver-3.jpg'),
+  ]);
 
   // Manage Sections: galleries + feature highlights (only where empty),
   // plus blank spec fields we can fill from facts already in the trims.
@@ -999,6 +1124,21 @@ async function seedVehicleCatalogExtras() {
   ].map((f) => ex2Img(`interior/${f}`));
 
   await fillSpecSections('geely-ex2', {
+    technology: {
+      images: [ex2Img('interior/interior-horizon-gray-front.jpg'), ex2Img('interior/interior-horizon-gray-passenger-view.jpg')],
+      highlights: [
+        {
+          title: 'Apple CarPlay & Android Auto',
+          description: "Your phone's maps, music and messages move onto the 14.6-inch HD touchscreen, with Bluetooth for calls and streaming.",
+          imageUrl: ex2Img('interior/interior-horizon-gray-passenger-view.jpg'),
+        },
+        {
+          title: 'Digital Instrument Cluster',
+          description: 'An 8.8-inch LCD cluster shows speed, range and driver-assistance status clearly in the driver’s line of sight.',
+          imageUrl: ex2Img('interior/interior-horizon-gray-driver-seat.jpg'),
+        },
+      ],
+    },
     interior: {
       seats: 'Fabric seats (Skyline White or Horizon Gray)',
       seatingCapacity: '5',
@@ -1059,23 +1199,84 @@ async function seedVehicleCatalogExtras() {
     },
   });
 
-  // Panda Mini: text specs only. Every photo in media/models/panda-mini is a
-  // copy of an EX2/EX5 fixture, so none are attached as Panda Mini galleries
-  // or highlights. Verify these against the official spec sheet.
+  // Panda Mini: there's no Panda Mini photography yet (every file in
+  // media/models/panda-mini is a copy of an EX2/EX5 fixture), so its
+  // galleries and highlights use EX2/EX5 photos as placeholders until real
+  // ones are uploaded. Verify the dimensions against the official spec sheet.
   await fillSpecSections('geely-panda-mini', {
     performance: { type: 'Electric Motor', fuelType: 'Electric', transmission: 'Single-Speed Automatic' },
-    exterior: { length: '3135 mm', width: '1540 mm', height: '1600 mm', wheelbase: '2015 mm' },
-    interior: { seatingCapacity: '4' },
+    exterior: {
+      length: '3135 mm',
+      width: '1540 mm',
+      height: '1600 mm',
+      wheelbase: '2015 mm',
+      images: [
+        ex2Img('exterior/exterior-star-silver-1.jpg'),
+        ex2Img('exterior/exterior-star-silver-2.jpg'),
+        ex2Img('exterior/exterior-star-silver-3.jpg'),
+        ex2Img('exterior/exterior-comet-gray-1.jpg'),
+      ],
+      highlights: [
+        {
+          title: 'Made for the City',
+          description: 'A compact footprint makes the Panda Mini easy to park and easy to thread through busy Addis Ababa traffic.',
+          imageUrl: ex2Img('exterior/exterior-star-silver-3.jpg'),
+        },
+        {
+          title: 'Two Colour Choices',
+          description: 'Choose Comet Silver or Slate Gray.',
+          imageUrl: ex2Img('exterior/exterior-comet-gray-1.jpg'),
+        },
+      ],
+    },
+    interior: {
+      seatingCapacity: '4',
+      seats: 'Cloth seats',
+      images: [
+        ex2Img('interior/interior-skyline-white-front-seat.jpg'),
+        ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
+        ex2Img('interior/interior-skyline-white-passenger-seat.jpg'),
+      ],
+      highlights: [
+        {
+          title: 'Four-Seat Cabin',
+          description: 'A practical four-seat cabin for daily commutes, school runs and errands around town.',
+          imageUrl: ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
+        },
+        {
+          title: 'Easy-Care Cloth Seats',
+          description: 'Durable cloth upholstery that stays comfortable in the heat and is simple to keep clean.',
+          imageUrl: ex2Img('interior/interior-skyline-white-front-seat.jpg'),
+        },
+      ],
+    },
+    technology: {
+      images: [ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg')],
+      highlights: [
+        {
+          title: 'Simple Charging',
+          description: 'Plug in at home overnight or top up at a public charger, and leave fuel stations behind.',
+          imageUrl: ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg'),
+        },
+      ],
+    },
   });
 
   // Vehicle-level feature tags: fill only groups that are still empty.
-  const ex2Tags = await prisma.vehicle.findUnique({ where: { slug: 'geely-ex2' }, select: { featureTags: true } });
-  if (ex2 && ex2Tags) {
-    const tags: Record<string, string[]> = (ex2Tags.featureTags as Record<string, string[]>) || {};
-    const fill: Record<string, string[]> = {
+  const tagFills: Record<string, Record<string, string[]>> = {
+    'geely-ex2': {
       comfort: ['Fabric Seats'],
       exterior: ['Front Trunk (Frunk)', 'Alloy Wheels', 'Steel Wheels'],
-    };
+    },
+    'geely-panda-mini': {
+      comfort: ['Fabric Seats'],
+      performance: ['Single-Speed Automatic Transmission'],
+    },
+  };
+  for (const [slug, fill] of Object.entries(tagFills)) {
+    const vehicle = await prisma.vehicle.findUnique({ where: { slug }, select: { id: true, featureTags: true } });
+    if (!vehicle) continue;
+    const tags: Record<string, string[]> = (vehicle.featureTags as Record<string, string[]>) || {};
     let changed = false;
     for (const [group, items] of Object.entries(fill)) {
       if (!tags[group]?.length) {
@@ -1083,7 +1284,7 @@ async function seedVehicleCatalogExtras() {
         changed = true;
       }
     }
-    if (changed) await prisma.vehicle.update({ where: { id: ex2.id }, data: { featureTags: tags } });
+    if (changed) await prisma.vehicle.update({ where: { id: vehicle.id }, data: { featureTags: tags } });
   }
 
   console.log('Seed complete: vehicle catalog extras');
