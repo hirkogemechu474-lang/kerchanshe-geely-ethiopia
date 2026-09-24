@@ -22,6 +22,9 @@ export default function VehicleSpecificationsPage() {
       try {
         const res = await fetch('/api/settings/vehicle-specifications');
         if (res.ok) setData({ ...EMPTY, ...(await res.json()) });
+        else setError(res.status === 403 ? 'You don’t have permission to view specifications.' : 'Unable to load specifications.');
+      } catch {
+        setError('Unable to load specifications.');
       } finally {
         setLoading(false);
       }

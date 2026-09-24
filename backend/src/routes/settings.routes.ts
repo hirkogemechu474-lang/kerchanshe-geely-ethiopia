@@ -16,6 +16,10 @@ const router = Router();
 // contentGate while every other route uses settingsGate.
 const settingsGate = requirePermission('canManageSettings');
 const contentGate = requirePermission('canManageContent');
+// Vehicle spec/feature reference lists back the Manage Specs / Manage
+// Features pages and the vehicle editor, which are all canManageVehicles —
+// gating them on canManageSettings silently emptied those pages.
+const vehiclesGate = requirePermission('canManageVehicles');
 
 // GET /api/settings/by-type/:type (list settings of a given type, e.g. 'policy')
 // Registered before '/:key' below just for readability — the two patterns
@@ -424,7 +428,7 @@ router.post('/vehicle-settings', requireAdminApiSession, settingsGate, async (re
   }
 });
 
-router.get('/vehicle-specifications', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/vehicle-specifications', requireAdminApiSession, vehiclesGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_specifications' } });
     if (!setting?.value) { res.json({}); return; }
@@ -439,7 +443,7 @@ router.get('/vehicle-specifications', requireAdminApiSession, settingsGate, asyn
   }
 });
 
-router.post('/vehicle-specifications', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/vehicle-specifications', requireAdminApiSession, vehiclesGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -454,7 +458,7 @@ router.post('/vehicle-specifications', requireAdminApiSession, settingsGate, asy
   }
 });
 
-router.get('/vehicle-features', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/vehicle-features', requireAdminApiSession, vehiclesGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'vehicle_features' } });
     if (!setting?.value) { res.json({}); return; }
@@ -469,7 +473,7 @@ router.get('/vehicle-features', requireAdminApiSession, settingsGate, async (req
   }
 });
 
-router.post('/vehicle-features', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/vehicle-features', requireAdminApiSession, vehiclesGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({

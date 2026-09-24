@@ -22,6 +22,9 @@ export default function VehicleFeaturesPage() {
       try {
         const res = await fetch('/api/settings/vehicle-features');
         if (res.ok) setData({ ...EMPTY, ...(await res.json()) });
+        else setError(res.status === 403 ? 'You don’t have permission to view features.' : 'Unable to load features.');
+      } catch {
+        setError('Unable to load features.');
       } finally {
         setLoading(false);
       }
