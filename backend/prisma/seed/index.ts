@@ -1,8 +1,8 @@
 // Seed script — populates demo Vehicles/Colors/Interiors/Users using the
 // real photography fixtures checked in under prisma/seed/media/ (models/,
 // users/). Safe to re-run: brand/category/vehicle/user rows are upserted by
-// their natural key, and each vehicle's colors/interiors are replaced fresh
-// every run rather than accumulating duplicates.
+// their natural key, and every child table or JSON field below is only
+// filled while it's still empty, so admin edits are never overwritten.
 //
 // Media isn't served from here — it's copied once into the app's real
 // upload root (apps/admin/public/uploads/seed/...) so the DB rows below can
@@ -624,8 +624,474 @@ async function seedAboutPageImages() {
   console.log('Seed complete: about page images filled');
 }
 
+// ── Vehicle catalog extras ──────────────────────────────────────────────────
+// Fills the admin Vehicles pages (Categories, Models/trims + accessories,
+// Specs/Features reference lists, Colors → wheels, Sections → galleries and
+// highlights) for the three real models. Every step only fills what is still
+// empty, so anything an admin has already entered is left alone. Prices are
+// 0 to match the existing trims (vehicle pricing is hidden on the site).
+
+/** /uploads/seed URL for a fixture under media/, failing loudly on a typo'd path. */
+function media(rel: string): string {
+  const abs = path.join(MEDIA_ROOT, rel);
+  if (!fs.existsSync(abs)) throw new Error(`Seed fixture missing: ${rel}`);
+  return urlFor(abs);
+}
+
+type Highlight = { title: string; description: string; imageUrl: string };
+type SectionPatch = Partial<Record<'performance' | 'safety' | 'technology' | 'interior' | 'exterior' | 'warranty', Record<string, string | string[] | Highlight[]>>>;
+
+// Mirrors normalizeToSections/toSpecificationsPayload in
+// apps/admin/lib/vehicle-specifications.ts (not imported: the backend can be
+// deployed without the admin app). The public model page still reads the
+// legacy engine/dimensions/features keys, so both shapes are written.
+function toSections(raw: any) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const e = r.engine || {};
+  const d = r.dimensions || {};
+  const f = r.features || {};
+  const arr = (v: unknown) => (Array.isArray(v) ? v : []);
+  const str = (...vals: unknown[]) => (vals.find((v) => typeof v === 'string') as string | undefined) ?? '';
+  return {
+    performance: {
+      type: '', displacement: '', power: '', torque: '', transmission: '', drivetrain: '', fuelType: '', fuelEconomy: '',
+      range: '', batteryCapacity: '', acceleration: '',
+      ...e,
+      ...(r.performance || {}),
+    },
+    safety: {
+      airbags: '', abs: '', esc: '', tpms: '', cameras: '', sensors: '', adas: '',
+      ...(r.safety || {}),
+      images: arr(r.safety?.images),
+      highlights: arr(r.safety?.highlights),
+    },
+    technology: {
+      infotainment: str(r.technology?.infotainment, f.infotainment),
+      connectivity: str(r.technology?.connectivity, f.connectivity),
+      images: arr(r.technology?.images),
+      highlights: arr(r.technology?.highlights),
+    },
+    interior: {
+      climate: str(r.interior?.climate, f.climate),
+      seats: str(r.interior?.seats, f.seats),
+      seatingCapacity: str(r.interior?.seatingCapacity, d.seatingCapacity),
+      cargoVolume: str(r.interior?.cargoVolume, d.cargoVolume),
+      images: arr(r.interior?.images),
+      highlights: arr(r.interior?.highlights),
+    },
+    exterior: {
+      lighting: str(r.exterior?.lighting, f.lighting),
+      wheels: str(r.exterior?.wheels, f.wheels),
+      length: str(r.exterior?.length, d.length),
+      width: str(r.exterior?.width, d.width),
+      height: str(r.exterior?.height, d.height),
+      wheelbase: str(r.exterior?.wheelbase, d.wheelbase),
+      groundClearance: str(r.exterior?.groundClearance, d.groundClearance),
+      curbWeight: str(r.exterior?.curbWeight, d.curbWeight),
+      images: arr(r.exterior?.images),
+      highlights: arr(r.exterior?.highlights),
+    },
+    warranty: { basic: '', powertrain: '', corrosion: '', roadside: '', maintenance: '', ...(r.warranty || {}) },
+  };
+}
+
+function toSpecPayload(s: ReturnType<typeof toSections>) {
+  return {
+    engine: { ...s.performance },
+    dimensions: {
+      length: s.exterior.length,
+      width: s.exterior.width,
+      height: s.exterior.height,
+      wheelbase: s.exterior.wheelbase,
+      groundClearance: s.exterior.groundClearance,
+      curbWeight: s.exterior.curbWeight,
+      seatingCapacity: s.interior.seatingCapacity,
+      cargoVolume: s.interior.cargoVolume,
+    },
+    features: {
+      infotainment: s.technology.infotainment,
+      connectivity: s.technology.connectivity,
+      climate: s.interior.climate,
+      seats: s.interior.seats,
+      lighting: s.exterior.lighting,
+      wheels: s.exterior.wheels,
+    },
+    safety: { ...s.safety },
+    warranty: { ...s.warranty },
+    performance: s.performance,
+    technology: s.technology,
+    interior: s.interior,
+    exterior: s.exterior,
+  };
+}
+
+/** Applies `patch` to a vehicle's specifications, only into fields that are blank ('' or an empty list). */
+async function fillSpecSections(slug: string, patch: SectionPatch) {
+  const vehicle = await prisma.vehicle.findUnique({ where: { slug }, select: { id: true, specifications: true } });
+  if (!vehicle) return;
+  const sections: Record<string, Record<string, any>> = toSections(vehicle.specifications);
+  let changed = false;
+  for (const [section, fields] of Object.entries(patch)) {
+    for (const [key, value] of Object.entries(fields ?? {})) {
+      const current = sections[section][key];
+      const blank = Array.isArray(current) ? current.length === 0 : !current;
+      if (blank) {
+        sections[section][key] = value;
+        changed = true;
+      }
+    }
+  }
+  if (!changed) return;
+  await prisma.vehicle.update({
+    where: { id: vehicle.id },
+    data: { specifications: toSpecPayload(sections as ReturnType<typeof toSections>) },
+  });
+}
+
+/** Adds any missing entries to each list in a Setting holding `{ group: string[] }` JSON. */
+async function mergeSettingLists(key: string, additions: Record<string, string[]>) {
+  const existing = await prisma.setting.findUnique({ where: { key } });
+  const current: Record<string, string[]> = existing?.value ? JSON.parse(existing.value) : {};
+  const next: Record<string, string[]> = { ...current };
+  for (const [group, items] of Object.entries(additions)) {
+    const list = Array.isArray(next[group]) ? [...next[group]] : [];
+    for (const item of items) if (!list.includes(item)) list.push(item);
+    next[group] = list;
+  }
+  await prisma.setting.upsert({
+    where: { key },
+    update: { value: JSON.stringify(next) },
+    create: { key, value: JSON.stringify(next), type: 'vehicle' },
+  });
+}
+
+async function seedVehicleCatalogExtras() {
+  const ex5Img = (rel: string) => media(`models/ex5/images/${rel}`);
+  const ex2Img = (rel: string) => media(`models/ex2/images/${rel}`);
+
+  // Categories: description + images where still empty. No new categories —
+  // /models shows every active category as a filter tab, so an empty one
+  // would be a dead filter.
+  const categoryFill: Record<string, { description: string; image?: string }> = {
+    suv: {
+      description: 'Geely SUVs pair a commanding driving position with room for family life and advanced safety as standard.',
+      image: ex5Img('exterior/Whole Exterior/GEELY EX5 EM-i/jpg/（左舵银色）left 45°.jpg'),
+    },
+    'electric-vehicles': {
+      description: "Geely's all-electric lineup: quiet, efficient and easy to charge, from compact city cars to family SUVs.",
+      image: media('models/global/images/global-kv-1.jpg'),
+    },
+    sedan: {
+      description: 'Geely sedans combine a refined ride, efficient powertrains and generous cabin space.',
+    },
+  };
+  for (const [slug, fill] of Object.entries(categoryFill)) {
+    const cat = await prisma.vehicleCategory.findUnique({ where: { slug } });
+    if (!cat) continue;
+    await prisma.vehicleCategory.update({
+      where: { id: cat.id },
+      data: {
+        description: cat.description || fill.description,
+        imageUrl: cat.imageUrl || fill.image || null,
+        heroImageUrl: cat.heroImageUrl || fill.image || null,
+      },
+    });
+  }
+
+  // Manage Specs: suggestion lists for the Performance tab.
+  await mergeSettingLists('vehicle_specifications', {
+    engine: ['Electric Motor', 'Permanent Magnet Synchronous Motor', '1.5L Petrol (EM-i Plug-in Hybrid)', '1.5L Turbo Petrol', '2.0L Turbo Petrol'],
+    transmission: ['Single-Speed Automatic', 'DHT (Dedicated Hybrid Transmission)', '7-Speed Dual-Clutch (DCT)', '8-Speed Automatic', 'CVT'],
+    fuelType: ['Electric', 'Plug-in Hybrid (PHEV)', 'Hybrid (HEV)', 'Petrol', 'Diesel'],
+    driveType: ['Front-Wheel Drive (FWD)', '4x2 (Front-Wheel Drive)', 'Rear-Wheel Drive (RWD)', 'All-Wheel Drive (AWD)', '4x4'],
+  });
+
+  // Manage Features: more reference feature names per group.
+  await mergeSettingLists('vehicle_features', {
+    safety: [
+      'Forward Collision Warning', 'Lane Departure Warning', 'Lane Change Assist', 'Door Open Warning',
+      'Intelligent High Beam Control', 'Hill Start Assist', 'Hill Descent Control', 'Front & Rear Parking Sensors',
+      'Rear View Camera', 'Front, Side & Curtain Airbags', 'Rear Collision Warning',
+    ],
+    comfort: [
+      'Fabric Seats', 'Panoramic Sunroof', 'Ambient Lighting', 'Memory Driver Seat', 'Power-Adjustable Passenger Seat',
+      'Rear Air Vents', 'Premium Audio System', 'Head-Up Display (HUD)', 'Heated Front Seats',
+    ],
+    technology: ['Flyme Auto', 'Over-the-Air (OTA) Updates', 'Geely App Remote Control', 'Voice Assistant', 'Triple-Screen Linkage'],
+    performance: ['All-Wheel Drive', 'Regenerative Braking', 'DC Fast Charging', 'Vehicle-to-Load (V2L)', 'LFP Battery'],
+    exterior: [
+      'Automatic LED Headlights', 'Full-Width LED Tail Light', 'Front Trunk (Frunk)', 'Roof Rails', 'Power Tailgate',
+      'Flush Door Handles', 'Steel Wheels',
+    ],
+  });
+
+  const ex5 = await prisma.vehicle.findUnique({ where: { slug: 'geely-ex5' }, select: { id: true } });
+  const ex2 = await prisma.vehicle.findUnique({ where: { slug: 'geely-ex2' }, select: { id: true } });
+
+  // Manage Colors → Wheels, per vehicle, only when it has none yet.
+  const seedWheelsIfEmpty = async (vehicleId: string, rows: { name: string; size: string; imageUrl?: string }[]) => {
+    if ((await prisma.vehicleWheel.count({ where: { vehicleId } })) > 0) return;
+    for (const [i, w] of rows.entries()) {
+      await prisma.vehicleWheel.create({
+        data: {
+          vehicleId,
+          name: w.name,
+          size: w.size,
+          imageUrl: w.imageUrl ?? null,
+          images: w.imageUrl ? [w.imageUrl] : [],
+          price: 0,
+          isDefault: i === 0,
+          sortOrder: i,
+        },
+      });
+    }
+  };
+  if (ex5) {
+    await seedWheelsIfEmpty(ex5.id, [
+      { name: '18" Alloy Wheels (225/55 R18)', size: '18"', imageUrl: ex5Img('exterior/Exterior Part/Wheel Hub/JPG/左舵18-inch wheels.jpg') },
+      { name: '19" Alloy Wheels', size: '19"', imageUrl: ex5Img('exterior/Exterior Part/Wheel Hub/JPG/左舵19-inch wheels.jpg') },
+    ]);
+  }
+  if (ex2) {
+    await seedWheelsIfEmpty(ex2.id, [
+      { name: '15" Steel Wheels (Comfort)', size: '15"' },
+      { name: '16" Alloy Wheels (Luxury & Sport)', size: '16"' },
+    ]);
+  }
+
+  // Manage Models → Accessories. Global (vehicleId null) so they apply to
+  // every model; only seeded while the table is completely empty.
+  if ((await prisma.vehicleAccessory.count()) === 0) {
+    const accessories = [
+      { name: 'All-Weather Floor Mats', category: 'Interior', description: 'Tailored, easy-clean mats that trap mud, dust and water.' },
+      { name: 'Trunk Cargo Liner', category: 'Interior', description: 'Waterproof, raised-edge liner that protects the boot floor.' },
+      { name: 'Door Sill Protectors', category: 'Exterior', description: 'Scuff plates that guard the door sills against wear.' },
+      { name: 'Mud Flaps', category: 'Exterior', description: 'Front and rear mud flaps that reduce spray and stone chips.' },
+      { name: 'Portable EV Charger (Mode 2)', category: 'Charging', description: 'Charge from a standard wall socket at home or on the go.' },
+      { name: '7 kW Home Wall Charger', category: 'Charging', description: 'Type 2 AC wallbox for faster overnight charging at home. Installation quoted separately.' },
+      { name: 'Front & Rear Dash Camera', category: 'Electronics', description: 'Records the road ahead and behind for peace of mind.' },
+      { name: 'Window Tint Film', category: 'Protection', description: 'Reduces heat and glare and adds privacy.' },
+      { name: 'Paint Protection Film (Front)', category: 'Protection', description: 'Clear film that protects the bonnet, bumper and mirrors from stone chips.' },
+      { name: 'Indoor/Outdoor Car Cover', category: 'Protection', description: 'Breathable cover that shields paint from sun and dust.' },
+      { name: 'Emergency Kit', category: 'Safety', description: 'First-aid kit, warning triangle, tow rope and reflective vest.' },
+    ];
+    for (const [i, a] of accessories.entries()) {
+      await prisma.vehicleAccessory.create({ data: { ...a, vehicleId: null, price: 0, inStock: true, sortOrder: i } });
+    }
+  }
+
+  // Manage Sections: galleries + feature highlights (only where empty),
+  // plus blank spec fields we can fill from facts already in the trims.
+  await fillSpecSections('geely-ex5', {
+    exterior: {
+      images: [
+        '(左舵银色)rear-left overhead view.jpg', '（左舵绿色）right 45°.jpg', '（左舵银色）car front.jpg', '（左舵银色）car rear.jpg',
+        '（左舵银色）front overhead view.jpg', '（左舵银色）left 45°.jpg', '（左舵银色）left 90°.jpg', '（左舵银色）rear right 45°.jpg',
+        '（左舵银色）right 75°.jpg',
+      ].map((f) => ex5Img(`exterior/Whole Exterior/GEELY EX5 EM-i/jpg/${f}`)),
+      highlights: [
+        {
+          title: 'Full LED Lighting',
+          description: 'Automatic LED headlights and LED daytime running lights give the EX5 a sharp, confident face and clear visibility after dark.',
+          imageUrl: ex5Img('exterior/Exterior Part/Headlights/前大灯Headlights.jpg'),
+        },
+        {
+          title: 'Full-Width Rear Light Bar',
+          description: 'A light bar runs across the full width of the tailgate, making the EX5 instantly recognisable from behind.',
+          imageUrl: ex5Img('exterior/Exterior Part/Taillights/JPG/Taillights贯穿尾灯-GEELY EX5 EM-i.jpg'),
+        },
+        {
+          title: '18" Alloy Wheels',
+          description: 'Aerodynamic 18-inch alloy wheels on 225/55 R18 tyres balance a comfortable ride with efficiency.',
+          imageUrl: ex5Img('exterior/Exterior Part/Wheel Hub/JPG/左舵18-inch wheels.jpg'),
+        },
+      ],
+    },
+    interior: {
+      images: [
+        ...['entire interior + seats', 'front-side interior', 'rear seats', 'trunk', 'storage compartment', 'carplay'].map((f) =>
+          ex5Img(`interior/Amber Brown/jpg/（左舵棕色）${f}.jpg`)
+        ),
+        ex5Img('interior/Sapphire Blue/JPG/（左舵蓝黑）entire interior + seats.jpg'),
+        ex5Img('interior/Sapphire Blue/JPG/（左舵蓝黑）front-side interior.jpg'),
+      ],
+      highlights: [
+        {
+          title: 'Flyme Auto Cockpit',
+          description: 'A 15.4-inch HD touchscreen running Flyme Auto sits alongside a 10.2-inch digital instrument cluster, with Apple CarPlay and Android Auto built in.',
+          imageUrl: ex5Img('interior/Amber Brown/jpg/（左舵棕色）Flyme Auto.jpg'),
+        },
+        {
+          title: 'Panoramic Sunroof',
+          description: 'Available on the Max trim, the panoramic sunroof fills the cabin with natural light.',
+          imageUrl: ex5Img('interior/Amber Brown/jpg/（左舵棕色）Sunroof .jpg'),
+        },
+        {
+          title: 'Wireless Charging',
+          description: 'A wireless charging pad keeps your phone topped up without a cable.',
+          imageUrl: ex5Img('interior/Amber Brown/jpg/（左舵棕色）wireless charging.jpg'),
+        },
+        {
+          title: 'Room for Everyone',
+          description: 'Spacious rear seats and a 461-litre boot make the EX5 an easy everyday family car.',
+          imageUrl: ex5Img('interior/Amber Brown/jpg/（左舵棕色）rear seats.jpg'),
+        },
+      ],
+    },
+    technology: {
+      images: [
+        ex5Img('features/OTA/GEELY EX5 EM-i左舵/GEELY EX5 EM-i左舵OTA.jpg'),
+        ex5Img('features/Geely APP remote control/Horizontal/横版.jpg'),
+        ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg'),
+      ],
+      highlights: [
+        {
+          title: 'Over-the-Air Updates',
+          description: 'Software updates arrive over the air, so infotainment and vehicle features keep improving after you drive away.',
+          imageUrl: ex5Img('features/OTA/GEELY EX5 EM-i左舵/GEELY EX5 EM-i左舵OTA.jpg'),
+        },
+        {
+          title: 'Geely App',
+          description: 'Check your vehicle status and receive update notifications from your phone with the Geely App.',
+          imageUrl: ex5Img('features/Geely APP remote control/Horizontal/横版.jpg'),
+        },
+        {
+          title: 'LFP Battery',
+          description: 'A lithium iron phosphate (LFP) battery pack built for long life, thermal stability and everyday reliability.',
+          imageUrl: ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg'),
+        },
+      ],
+    },
+    safety: {
+      images: [
+        ex5Img('features/540° panoramic parking view/JPG/（左舵棕色）540.jpg'),
+        ex5Img('features/airbags/GEELY EX5 EM-i左舵/jpg/（左舵银色）6 airbags .jpg'),
+      ],
+      highlights: [
+        {
+          title: 'Panoramic Parking View',
+          description: 'Surround-view cameras give a bird’s-eye view around the car, making tight parking spaces and narrow streets easier.',
+          imageUrl: ex5Img('features/540° panoramic parking view/JPG/（左舵棕色）540.jpg'),
+        },
+        {
+          title: 'Airbag Protection',
+          description: 'Front, side and curtain airbags help protect occupants in both rows.',
+          imageUrl: ex5Img('features/airbags/GEELY EX5 EM-i左舵/jpg/（左舵银色）6 airbags .jpg'),
+        },
+        {
+          title: 'Advanced Driver Assistance',
+          description: 'Adaptive cruise control, automatic emergency braking, lane keeping assist and blind spot detection work together to help avoid collisions.',
+          imageUrl: ex5Img('outdoor/Exterior/GEELY EX5 EM-i左舵/JPG/GEELY EX5 EM-i左舵(2).jpg'),
+        },
+      ],
+    },
+  });
+
+  const ex2Exterior = [
+    'exterior-aurora-green-1.jpg', 'exterior-aurora-green-2.jpg', 'exterior-star-silver-1.jpg', 'exterior-star-silver-2.jpg',
+    'exterior-star-silver-3.jpg', 'exterior-comet-gray-1.jpg', 'exterior-moon-white-1.jpg', 'exterior-nebula-beige-1.jpg',
+    'exterior-front-trunk.jpg',
+  ].map((f) => ex2Img(`exterior/${f}`));
+  const ex2Interior = [
+    'interior-horizon-gray-front.jpg', 'interior-horizon-gray-driver-seat.jpg', 'interior-horizon-gray-rear-seat.jpg',
+    'interior-horizon-gray-passenger-view.jpg', 'interior-skyline-white-front-seat.jpg', 'interior-skyline-white-passenger-seat.jpg',
+    'interior-skyline-white-trunk.jpg', 'interior-skyline-white-vent.jpg',
+  ].map((f) => ex2Img(`interior/${f}`));
+
+  await fillSpecSections('geely-ex2', {
+    interior: {
+      seats: 'Fabric seats (Skyline White or Horizon Gray)',
+      seatingCapacity: '5',
+      images: ex2Interior,
+      highlights: [
+        {
+          title: 'Driver-Focused Cabin',
+          description: 'A 14.6-inch HD touchscreen and 8.8-inch LCD instrument cluster put navigation, media and vehicle settings within easy reach.',
+          imageUrl: ex2Img('interior/interior-horizon-gray-front.jpg'),
+        },
+        {
+          title: 'Two Interior Themes',
+          description: 'Choose Skyline White for a light, airy cabin or Horizon Gray for a darker, easy-care finish.',
+          imageUrl: ex2Img('interior/interior-skyline-white-front-seat.jpg'),
+        },
+        {
+          title: 'Practical Boot',
+          description: 'A 375-litre boot takes the weekly shop, luggage or a pushchair with ease.',
+          imageUrl: ex2Img('interior/interior-skyline-white-trunk.jpg'),
+        },
+      ],
+    },
+    exterior: {
+      wheels: '15" steel wheels (Comfort) / 16" alloy wheels (Luxury & Sport)',
+      images: ex2Exterior,
+      highlights: [
+        {
+          title: 'Front Trunk',
+          description: 'A 70-litre front trunk adds handy storage for charging cables and small bags, on top of the 375-litre rear boot.',
+          imageUrl: ex2Img('exterior/exterior-front-trunk.jpg'),
+        },
+        {
+          title: 'Five Colourways',
+          description: 'Choose from Aurora Green, Star Silver, Comet Gray, Moon White and Nebula Beige.',
+          imageUrl: ex2Img('exterior/exterior-aurora-green-1.jpg'),
+        },
+      ],
+    },
+    safety: {
+      images: ['feature-acc.jpg', 'feature-aeb.jpg', 'feature-ldw.jpg'].map((f) => ex2Img(`features/${f}`)),
+      highlights: [
+        {
+          title: 'Adaptive Cruise Control',
+          description: 'On Luxury and Sport trims, ACC keeps a set distance from the car ahead, easing long drives and stop-start traffic.',
+          imageUrl: ex2Img('features/feature-acc.jpg'),
+        },
+        {
+          title: 'Automatic Emergency Braking',
+          description: 'On Luxury and Sport trims, AEB can brake automatically if a collision is imminent.',
+          imageUrl: ex2Img('features/feature-aeb.jpg'),
+        },
+        {
+          title: 'Lane Departure Warning',
+          description: 'On Luxury and Sport trims, the car alerts you if it begins to drift out of its lane.',
+          imageUrl: ex2Img('features/feature-ldw.jpg'),
+        },
+      ],
+    },
+  });
+
+  // Panda Mini: text specs only. Every photo in media/models/panda-mini is a
+  // copy of an EX2/EX5 fixture, so none are attached as Panda Mini galleries
+  // or highlights. Verify these against the official spec sheet.
+  await fillSpecSections('geely-panda-mini', {
+    performance: { type: 'Electric Motor', fuelType: 'Electric', transmission: 'Single-Speed Automatic' },
+    exterior: { length: '3135 mm', width: '1540 mm', height: '1600 mm', wheelbase: '2015 mm' },
+    interior: { seatingCapacity: '4' },
+  });
+
+  // Vehicle-level feature tags: fill only groups that are still empty.
+  const ex2Tags = await prisma.vehicle.findUnique({ where: { slug: 'geely-ex2' }, select: { featureTags: true } });
+  if (ex2 && ex2Tags) {
+    const tags: Record<string, string[]> = (ex2Tags.featureTags as Record<string, string[]>) || {};
+    const fill: Record<string, string[]> = {
+      comfort: ['Fabric Seats'],
+      exterior: ['Front Trunk (Frunk)', 'Alloy Wheels', 'Steel Wheels'],
+    };
+    let changed = false;
+    for (const [group, items] of Object.entries(fill)) {
+      if (!tags[group]?.length) {
+        tags[group] = items;
+        changed = true;
+      }
+    }
+    if (changed) await prisma.vehicle.update({ where: { id: ex2.id }, data: { featureTags: tags } });
+  }
+
+  console.log('Seed complete: vehicle catalog extras');
+}
+
 async function main() {
   await seedMedia();
+  await seedVehicleCatalogExtras();
   await seedNewsIfEmpty();
   await seedAboutPageImages();
 }
