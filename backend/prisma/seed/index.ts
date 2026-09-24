@@ -739,8 +739,21 @@ function toSpecPayload(s: ReturnType<typeof toSections>) {
   };
 }
 
-/** Applies `patch` to a vehicle's specifications, only into fields that are blank ('' or an empty list). */
-async function fillSpecSections(slug: string, patch: SectionPatch) {
+/** JSON.stringify with sorted object keys — Postgres jsonb doesn't keep key order, so plain stringify can't compare stored values. */
+function stableJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+      : v
+  );
+}
+
+/**
+ * Applies `patch` to a vehicle's specifications, only into fields that are
+ * blank ('' or an empty list) — or that still hold a value an earlier run of
+ * this seed wrote and later corrected, listed in `stale` by "section.key".
+ */
+async function fillSpecSections(slug: string, patch: SectionPatch, stale: Record<string, unknown[]> = {}) {
   const vehicle = await prisma.vehicle.findUnique({ where: { slug }, select: { id: true, specifications: true } });
   if (!vehicle) return;
   const sections: Record<string, Record<string, any>> = toSections(vehicle.specifications);
@@ -749,7 +762,8 @@ async function fillSpecSections(slug: string, patch: SectionPatch) {
     for (const [key, value] of Object.entries(fields ?? {})) {
       const current = sections[section][key];
       const blank = Array.isArray(current) ? current.length === 0 : !current;
-      if (blank) {
+      const outdated = (stale[`${section}.${key}`] ?? []).some((old) => stableJson(old) === stableJson(current));
+      if ((blank || outdated) && stableJson(current) !== stableJson(value)) {
         sections[section][key] = value;
         changed = true;
       }
@@ -998,12 +1012,6 @@ async function seedVehicleCatalogExtras() {
       (f) => ex5Img(`interior/Sapphire Blue/JPG/${f}.jpg`)
     )
   );
-  // Panda Mini placeholders use EX2 photos (no Panda Mini photography yet).
-  await topUpImages('vehicleColor', 'geely-panda-mini', 'Comet Silver', [
-    ex2Img('exterior/exterior-star-silver-1.jpg'),
-    ex2Img('exterior/exterior-star-silver-2.jpg'),
-    ex2Img('exterior/exterior-star-silver-3.jpg'),
-  ]);
 
   // Manage Sections: galleries + feature highlights (only where empty),
   // plus blank spec fields we can fill from facts already in the trims.
@@ -1199,68 +1207,239 @@ async function seedVehicleCatalogExtras() {
     },
   });
 
-  // Panda Mini: there's no Panda Mini photography yet (every file in
+  // Panda Mini: specs are the 2025 model (Genki Bear / Karting / Rider) as
+  // listed by data.carnewschina.com/database/geely/geely-panda-mini/2025.
+  // There's no Panda Mini photography yet (every file in
   // media/models/panda-mini is a copy of an EX2/EX5 fixture), so its
-  // galleries and highlights use EX2/EX5 photos as placeholders until real
-  // ones are uploaded. Verify the dimensions against the official spec sheet.
-  await fillSpecSections('geely-panda-mini', {
-    performance: { type: 'Electric Motor', fuelType: 'Electric', transmission: 'Single-Speed Automatic' },
-    exterior: {
-      length: '3135 mm',
-      width: '1540 mm',
-      height: '1600 mm',
-      wheelbase: '2015 mm',
-      images: [
-        ex2Img('exterior/exterior-star-silver-1.jpg'),
-        ex2Img('exterior/exterior-star-silver-2.jpg'),
-        ex2Img('exterior/exterior-star-silver-3.jpg'),
-        ex2Img('exterior/exterior-comet-gray-1.jpg'),
-      ],
-      highlights: [
-        {
-          title: 'Made for the City',
-          description: 'A compact footprint makes the Panda Mini easy to park and easy to thread through busy Addis Ababa traffic.',
-          imageUrl: ex2Img('exterior/exterior-star-silver-3.jpg'),
-        },
-        {
-          title: 'Two Colour Choices',
-          description: 'Choose Comet Silver or Slate Gray.',
-          imageUrl: ex2Img('exterior/exterior-comet-gray-1.jpg'),
-        },
-      ],
+  // galleries, trims and highlights use EX2/EX5 photos as placeholders.
+  const batteryImg = ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg');
+  const pandaOldHighlights = {
+    exterior: [
+      { title: 'Made for the City', description: 'A compact footprint makes the Panda Mini easy to park and easy to thread through busy Addis Ababa traffic.', imageUrl: ex2Img('exterior/exterior-star-silver-3.jpg') },
+      { title: 'Two Colour Choices', description: 'Choose Comet Silver or Slate Gray.', imageUrl: ex2Img('exterior/exterior-comet-gray-1.jpg') },
+    ],
+    interior: [
+      { title: 'Four-Seat Cabin', description: 'A practical four-seat cabin for daily commutes, school runs and errands around town.', imageUrl: ex2Img('interior/interior-horizon-gray-rear-seat.jpg') },
+      { title: 'Easy-Care Cloth Seats', description: 'Durable cloth upholstery that stays comfortable in the heat and is simple to keep clean.', imageUrl: ex2Img('interior/interior-skyline-white-front-seat.jpg') },
+    ],
+    technology: [
+      { title: 'Simple Charging', description: 'Plug in at home overnight or top up at a public charger, and leave fuel stations behind.', imageUrl: batteryImg },
+    ],
+  };
+  await fillSpecSections(
+    'geely-panda-mini',
+    {
+      performance: {
+        type: 'Permanent Magnet Synchronous Motor (rear-mounted)',
+        power: '30 kW',
+        torque: '110 Nm',
+        transmission: 'Single-Speed Automatic',
+        drivetrain: 'Rear-Wheel Drive (RWD)',
+        fuelType: 'Electric',
+        range: '210 km (CLTC)',
+        batteryCapacity: '17.0 kWh LFP',
+      },
+      safety: {
+        airbags: 'Driver front airbag',
+        abs: 'ABS with Electronic Brake-force Distribution (EBD)',
+        cameras: 'Rear-view camera',
+        sensors: 'Rear parking radar',
+        images: [
+          ex5Img('features/540° panoramic parking view/JPG/（左舵棕色）540.jpg'),
+          ex5Img('features/airbags/GEELY EX5 EM-i左舵/jpg/（左舵银色）6 airbags .jpg'),
+        ],
+        highlights: [
+          {
+            title: 'Rear Camera & Parking Radar',
+            description: 'A rear-view camera and rear parking radar take the guesswork out of reversing into tight city spaces.',
+            imageUrl: ex5Img('features/540° panoramic parking view/JPG/（左舵棕色）540.jpg'),
+          },
+          {
+            title: 'ABS with EBD',
+            description: 'Anti-lock brakes with electronic brake-force distribution keep stopping controlled, backed by a driver front airbag.',
+            imageUrl: ex5Img('features/airbags/GEELY EX5 EM-i左舵/jpg/（左舵银色）6 airbags .jpg'),
+          },
+        ],
+      },
+      technology: {
+        infotainment: '8" centre touchscreen, 9.2" LCD instrument panel',
+        connectivity: 'Keyless start & remote start',
+        images: [batteryImg, ex2Img('interior/interior-horizon-gray-front.jpg')],
+        highlights: [
+          {
+            title: '210 km of City Range',
+            description: 'A 17.0 kWh LFP battery gives up to 210 km (CLTC) on a charge, enough for a week of typical city driving.',
+            imageUrl: batteryImg,
+          },
+          {
+            title: 'DC Fast Charging',
+            description: 'Charge from 30% to 80% in about 30 minutes on a 22 kW DC charger, or fully overnight at home on AC in about 4.5 hours.',
+            imageUrl: ex2Img('features/feature-lifestyle-garden.jpg'),
+          },
+          {
+            title: 'Dual Screens',
+            description: 'An 8-inch centre touchscreen and a 9.2-inch LCD instrument panel keep media and driving information clear.',
+            imageUrl: ex2Img('interior/interior-horizon-gray-front.jpg'),
+          },
+        ],
+      },
+      interior: {
+        climate: 'Manual air conditioning',
+        seatingCapacity: '4',
+        seats: '',
+        images: [
+          ex2Img('interior/interior-skyline-white-front-seat.jpg'),
+          ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
+          ex2Img('interior/interior-skyline-white-passenger-seat.jpg'),
+        ],
+        highlights: [
+          {
+            title: 'Four-Seat Cabin',
+            description: 'A practical four-seat cabin for daily commutes, school runs and errands around town.',
+            imageUrl: ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
+          },
+          {
+            title: 'Three Interior Colours',
+            description: 'Choose a pink, black or green cabin to match your style.',
+            imageUrl: ex2Img('interior/interior-skyline-white-front-seat.jpg'),
+          },
+        ],
+      },
+      exterior: {
+        lighting: 'LED daytime running lights (Karting & Rider)',
+        wheels: '13" steel, 155/70 R13 (Genki Bear) / 14" steel, 155/65 R14 (Karting) / 14" alloy, 155/65 R14 (Rider)',
+        length: '3085 mm (Karting 3150 mm, Rider 3135 mm)',
+        width: '1522 mm (Karting 1540 mm, Rider 1565 mm)',
+        height: '1600 mm (Karting 1685 mm, Rider 1655 mm)',
+        wheelbase: '2015 mm',
+        curbWeight: '815 kg',
+        images: [
+          ex2Img('exterior/exterior-star-silver-1.jpg'),
+          ex2Img('exterior/exterior-star-silver-2.jpg'),
+          ex2Img('exterior/exterior-star-silver-3.jpg'),
+          ex2Img('exterior/exterior-comet-gray-1.jpg'),
+        ],
+        highlights: [
+          {
+            title: 'Made for the City',
+            description: 'At just over three metres long, the Panda Mini is easy to park and easy to thread through busy Addis Ababa traffic.',
+            imageUrl: ex2Img('exterior/exterior-star-silver-3.jpg'),
+          },
+          {
+            title: 'Four Colour Choices',
+            description: 'Choose beige, pink, white or blue.',
+            imageUrl: ex2Img('exterior/exterior-moon-white-1.jpg'),
+          },
+          {
+            title: 'Sporty Karting & Rider Trims',
+            description: 'Karting adds a Sport Appearance Package; Rider adds alloy wheels and a roof rack. Both get LED daytime running lights.',
+            imageUrl: ex2Img('exterior/exterior-aurora-green-2.jpg'),
+          },
+        ],
+      },
     },
-    interior: {
-      seatingCapacity: '4',
-      seats: 'Cloth seats',
-      images: [
-        ex2Img('interior/interior-skyline-white-front-seat.jpg'),
-        ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
-        ex2Img('interior/interior-skyline-white-passenger-seat.jpg'),
-      ],
-      highlights: [
-        {
-          title: 'Four-Seat Cabin',
-          description: 'A practical four-seat cabin for daily commutes, school runs and errands around town.',
-          imageUrl: ex2Img('interior/interior-horizon-gray-rear-seat.jpg'),
-        },
-        {
-          title: 'Easy-Care Cloth Seats',
-          description: 'Durable cloth upholstery that stays comfortable in the heat and is simple to keep clean.',
-          imageUrl: ex2Img('interior/interior-skyline-white-front-seat.jpg'),
-        },
-      ],
-    },
-    technology: {
-      images: [ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg')],
-      highlights: [
-        {
-          title: 'Simple Charging',
-          description: 'Plug in at home overnight or top up at a public charger, and leave fuel stations behind.',
-          imageUrl: ex5Img('features/Geely Battery/P145电池图片- Geely Battery.jpg'),
-        },
-      ],
-    },
-  });
+    {
+      'performance.type': ['Electric Motor'],
+      'exterior.length': ['3135 mm'],
+      'exterior.width': ['1540 mm'],
+      'exterior.height': ['1600 mm'],
+      'interior.seats': ['Cloth seats'],
+      'exterior.highlights': [pandaOldHighlights.exterior],
+      'interior.highlights': [pandaOldHighlights.interior],
+      'technology.highlights': [pandaOldHighlights.technology],
+      'technology.images': [[batteryImg]],
+    }
+  );
+
+  const panda = await prisma.vehicle.findUnique({ where: { slug: 'geely-panda-mini' }, include: { colors: true, interiors: true } });
+  if (panda) {
+    // Trims (Manage Models), only when the Panda Mini has none yet.
+    if ((await prisma.vehiclePackage.count({ where: { vehicleId: panda.id } })) === 0) {
+      const common = [
+        '17.0 kWh LFP battery, 210 km range (CLTC)',
+        '30 kW / 110 Nm rear motor, 100 km/h top speed',
+        '22 kW DC fast charging (30–80% in about 30 min)',
+        '8" centre touchscreen & 9.2" LCD instrument panel',
+        'Keyless start & remote start',
+        'Rear parking radar & rear-view camera',
+        'Driver airbag, ABS + EBD',
+        'Manual air conditioning',
+      ];
+      const trims = [
+        { name: 'Genki Bear', description: 'The core Panda Mini: 210 km of range and everything you need for the city.', features: [...common, '13" steel wheels (155/70 R13)'], imageUrl: ex2Img('exterior/exterior-star-silver-1.jpg') },
+        { name: 'Karting', description: 'Adds a sporty look and larger 14-inch wheels.', features: ['Everything in Genki Bear, plus:', 'Sport Appearance Package', 'LED daytime running lights', '14" steel wheels (155/65 R14)'], imageUrl: ex2Img('exterior/exterior-aurora-green-2.jpg') },
+        { name: 'Rider', description: 'The adventure-styled Panda Mini, with alloy wheels and a roof rack.', features: ['Everything in Genki Bear, plus:', '14" alloy wheels (155/65 R14)', 'Roof rack', 'LED daytime running lights'], imageUrl: ex2Img('exterior/exterior-star-silver-3.jpg') },
+      ];
+      for (const [i, t] of trims.entries()) {
+        await prisma.vehiclePackage.create({ data: { ...t, vehicleId: panda.id, price: 0, isDefault: i === 0, sortOrder: i } });
+      }
+    }
+
+    await seedWheelsIfEmpty(panda.id, [
+      { name: '13" Steel Wheels, 155/70 R13 (Genki Bear)', size: '13"', imageUrl: ex2Img('wheels/15-inch-steel-wheel.jpg') },
+      { name: '14" Steel Wheels, 155/65 R14 (Karting)', size: '14"', imageUrl: ex2Img('wheels/15-inch-steel-wheel.jpg') },
+      { name: '14" Alloy Wheels, 155/65 R14 (Rider)', size: '14"', imageUrl: ex2Img('wheels/16-inch-alloy-wheel.jpg') },
+    ]);
+
+    // The real body colours are beige, pink, white and blue. The seed's
+    // original "Comet Silver"/"Slate Gray" were invented placeholders — they
+    // are removed only while still untouched (same name, seed photo).
+    const placeholder = (c: { name: string; imageUrl: string | null }) =>
+      ['Comet Silver', 'Slate Gray'].includes(c.name) && !!c.imageUrl?.startsWith('/uploads/seed/models/panda-mini/');
+    const realColors = [
+      { name: 'Beige', colorCode: '#D9C8A9', images: [ex2Img('exterior/exterior-nebula-beige-1.jpg')] },
+      { name: 'Pink', colorCode: '#E8B4C0', images: [] as string[] },
+      { name: 'White', colorCode: '#F2F1EC', images: [ex2Img('exterior/exterior-moon-white-1.jpg')] },
+      { name: 'Blue', colorCode: '#8FB3D9', images: filesUnder('models/ex5/images/360/Exterior 360/glacier blue', 6).map(urlFor) },
+    ];
+    const kept = panda.colors.filter((c) => !placeholder(c));
+    if (!kept.some((c) => realColors.some((r) => r.name === c.name))) {
+      await prisma.vehicleColor.deleteMany({ where: { id: { in: panda.colors.filter(placeholder).map((c) => c.id) } } });
+      const hasDefault = kept.some((c) => c.isDefault);
+      for (const [i, c] of realColors.entries()) {
+        await prisma.vehicleColor.create({
+          data: {
+            vehicleId: panda.id,
+            name: c.name,
+            colorCode: c.colorCode,
+            imageUrl: c.images[0] ?? null,
+            images: c.images,
+            isDefault: !hasDefault && i === 0,
+            sortOrder: kept.length + i,
+          },
+        });
+      }
+    }
+
+    // Interior colours: pink, black and green. The seed's "Standard Cloth"
+    // placeholder is replaced the same way, while still untouched.
+    const interiorPlaceholder = (t: { name: string; imageUrl: string | null }) =>
+      t.name === 'Standard Cloth' && !!t.imageUrl?.startsWith('/uploads/seed/models/panda-mini/');
+    const realInteriors = [
+      { name: 'Black', images: [ex2Img('interior/interior-horizon-gray-front.jpg'), ex2Img('interior/interior-horizon-gray-rear-seat.jpg')] },
+      { name: 'Pink', images: [ex2Img('interior/interior-skyline-white-front-seat.jpg')] },
+      { name: 'Green', images: [ex2Img('interior/interior-skyline-white-passenger-seat.jpg')] },
+    ];
+    const keptInteriors = panda.interiors.filter((t) => !interiorPlaceholder(t));
+    if (!keptInteriors.some((t) => realInteriors.some((r) => r.name === t.name))) {
+      await prisma.vehicleInterior.deleteMany({ where: { id: { in: panda.interiors.filter(interiorPlaceholder).map((t) => t.id) } } });
+      const hasDefault = keptInteriors.some((t) => t.isDefault);
+      for (const [i, t] of realInteriors.entries()) {
+        await prisma.vehicleInterior.create({
+          data: {
+            vehicleId: panda.id,
+            name: t.name,
+            // Upholstery material isn't published for the Panda Mini.
+            materialType: 'Standard',
+            imageUrl: t.images[0],
+            images: t.images,
+            isDefault: !hasDefault && i === 0,
+            sortOrder: keptInteriors.length + i,
+          },
+        });
+      }
+    }
+  }
 
   // Vehicle-level feature tags: fill only groups that are still empty.
   const tagFills: Record<string, Record<string, string[]>> = {
@@ -1269,9 +1448,16 @@ async function seedVehicleCatalogExtras() {
       exterior: ['Front Trunk (Frunk)', 'Alloy Wheels', 'Steel Wheels'],
     },
     'geely-panda-mini': {
-      comfort: ['Fabric Seats'],
-      performance: ['Single-Speed Automatic Transmission'],
+      safety: ['Anti-lock Braking System (ABS)', 'Rear View Camera'],
+      comfort: ['Keyless Entry & Start'],
+      technology: ['HD Touchscreen Infotainment', 'Digital Instrument Cluster'],
+      performance: ['Single-Speed Automatic Transmission', 'Rear-Wheel Drive', 'LFP Battery', 'DC Fast Charging'],
+      exterior: ['LED Daytime Running Lights', 'Steel Wheels', 'Alloy Wheels'],
     },
+  };
+  // Tag lists an earlier run of this seed wrote and later corrected.
+  const staleTags: Record<string, Record<string, string[]>> = {
+    'geely-panda-mini': { comfort: ['Fabric Seats'], performance: ['Single-Speed Automatic Transmission'] },
   };
   for (const [slug, fill] of Object.entries(tagFills)) {
     const vehicle = await prisma.vehicle.findUnique({ where: { slug }, select: { id: true, featureTags: true } });
@@ -1279,7 +1465,9 @@ async function seedVehicleCatalogExtras() {
     const tags: Record<string, string[]> = (vehicle.featureTags as Record<string, string[]>) || {};
     let changed = false;
     for (const [group, items] of Object.entries(fill)) {
-      if (!tags[group]?.length) {
+      const stale = staleTags[slug]?.[group];
+      const outdated = !!stale && stableJson(tags[group]) === stableJson(stale);
+      if (!tags[group]?.length || outdated) {
         tags[group] = items;
         changed = true;
       }
