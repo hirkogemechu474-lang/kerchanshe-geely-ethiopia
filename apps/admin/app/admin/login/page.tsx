@@ -1,9 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useRouter } from 'next/navigation';
 import { Shield, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
+
+// Readable text for the ?error=sso_* codes the backend's SSO callback
+// redirects back with (backend/src/routes/sso.routes.ts).
+const SSO_ERRORS: Record<string, string> = {
+  sso_no_account: 'Your Kerchanshe SSO account has no Geely staff account. Ask an administrator to create one with the same email address.',
+  sso_disabled: 'Your Geely staff account is disabled. Contact an administrator.',
+  sso_email_unverified: 'Kerchanshe SSO has not verified your email address, so it can’t be used to sign in here.',
+  sso_subject_mismatch: 'This email is already linked to a different Kerchanshe SSO account. Contact an administrator.',
+  sso_expired: 'The SSO sign-in took too long or was interrupted. Please try again.',
+  sso_denied: 'Sign-in was cancelled at Kerchanshe SSO.',
+  sso_invalid_token: 'Kerchanshe SSO returned a response that could not be verified. Please try again.',
+  sso_error: 'Kerchanshe SSO sign-in failed. Please try again, or use your password.',
+};
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -17,7 +30,25 @@ export default function AdminLogin() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error');
+    if (code && SSO_ERRORS[code]) setError(SSO_ERRORS[code]);
+
+    apiClient
+      .get('/auth/sso/status')
+      .then((res) => setSsoEnabled(!!res.data?.enabled))
+      .catch(() => setSsoEnabled(false));
+  }, []);
+
+  const handleSsoLogin = () => {
+    setLoading(true);
+    // Full-page navigation, not XHR — the backend answers with a redirect
+    // to the IdP, and the callback comes back as a top-level navigation.
+    window.location.href = `${apiClient.defaults.baseURL}/auth/sso/login`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,6 +243,25 @@ export default function AdminLogin() {
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
+
+              {ssoEnabled && (
+                <>
+                  <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-gray-400">
+                    <span className="h-px flex-1 bg-gray-200" />
+                    or
+                    <span className="h-px flex-1 bg-gray-200" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSsoLogin}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 border-2 border-geely-blue text-geely-blue py-3 rounded-lg font-semibold hover:bg-geely-blue hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Shield className="w-5 h-5" />
+                    Sign in with Kerchanshe SSO
+                  </button>
+                </>
+              )}
             </form>
           ) : !otpSent ? (
             <form onSubmit={handleForgotPassword} className="space-y-6">

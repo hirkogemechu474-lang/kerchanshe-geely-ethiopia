@@ -57,6 +57,13 @@ export async function requireAdminApiSession(req: Request, res: Response, next: 
       return;
     }
 
+    // Kerchanshe SSO backchannel logout sets this cutoff; any session token
+    // issued before it is dead (see routes/sso.routes.ts).
+    if (user.sessionsRevokedAt && (decoded.iat ?? 0) * 1000 < user.sessionsRevokedAt.getTime()) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     // Build permissions (hardcoded defaults + DB overrides)
     const permissions = await getEffectivePermissions(user.role as AdminRole);
 

@@ -30,9 +30,18 @@ export default function SessionProvider({
 }
 
 export async function signOut({ callbackUrl = '/admin/login' }: { callbackUrl?: string } = {}) {
+  let ssoLogoutUrl: string | undefined;
   try {
-    await apiClient.post('/auth/admin-logout');
+    const res = await apiClient.post('/auth/admin-logout');
+    ssoLogoutUrl = res.data?.ssoLogoutUrl;
   } finally {
+    // A Kerchanshe SSO session also has to be ended at the IdP, or the next
+    // "Sign in with SSO" click signs straight back in without a prompt. The
+    // IdP sends the browser back to the login page afterwards.
+    if (ssoLogoutUrl) {
+      window.location.href = ssoLogoutUrl;
+      return;
+    }
     // window.location.href is a real navigation, not a fetch() call — the
     // basePath-aware fetch patch in layout.tsx doesn't touch it. A bare
     // "/admin/login" here lands outside "/geely" entirely (this vhost's

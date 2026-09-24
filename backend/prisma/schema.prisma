@@ -28,6 +28,14 @@ model User {
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
   lastLogin                    DateTime?
+  // Kerchanshe SSO (Mode C — an extra way into the admin portal alongside
+  // the password login). ssoSubject is the IdP's `sub`, recorded on first
+  // SSO sign-in, because a backchannel logout token names the user by `sub`
+  // only — never by email. sessionsRevokedAt is the cutoff that logout (or
+  // an IdP "sign out everywhere") sets: requireAdminApiSession rejects any
+  // admin session token issued before it.
+  ssoSubject                   String?   @unique
+  sessionsRevokedAt            DateTime?
   // On-file signature image — drawn/uploaded once via the link an admin
   // sends (see .../users/[id]/signature-link), then reused automatically
   // every time this person countersigns an agreement or handover, instead

@@ -28,6 +28,26 @@ export const env = {
     jwtSecret: process.env.JWT_SECRET || requireEnv('NEXTAUTH_SECRET'),
   },
 
+  // Kerchanshe SSO (OIDC). Off unless SSO_ENABLED=true — the password
+  // login keeps working either way. The issuer is browser-facing (the
+  // authorize/logout redirects and the `iss` claim); the internal URL is
+  // what this backend calls server-to-server for /token and /jwks.
+  sso: {
+    enabled: process.env.SSO_ENABLED === 'true',
+    issuer: (process.env.AUTH_ISSUER || '').replace(/\/+$/, ''),
+    internalUrl: (process.env.AUTH_INTERNAL_URL || process.env.AUTH_ISSUER || '').replace(/\/+$/, ''),
+    jwksUri: process.env.AUTH_JWKS_URI || '',
+    clientId: process.env.OIDC_CLIENT_ID || 'geely',
+    clientSecret: process.env.OIDC_CLIENT_SECRET || '',
+    redirectUri: process.env.OIDC_REDIRECT_URI || '',
+    scopes: process.env.OIDC_SCOPES || 'openid profile email',
+    postLogoutRedirectUri: process.env.OIDC_POST_LOGOUT_REDIRECT_URI || '',
+    // Where the browser lands after a successful SSO callback, and the
+    // login page failures are sent back to (with ?error=sso_...).
+    adminHomeUrl: process.env.SSO_ADMIN_HOME_URL || '',
+    adminLoginUrl: process.env.SSO_ADMIN_LOGIN_URL || '',
+  },
+
   cors: {
     originWeb: process.env.CORS_ORIGIN_WEB || 'http://localhost:7501',
     originAdmin: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:7500',

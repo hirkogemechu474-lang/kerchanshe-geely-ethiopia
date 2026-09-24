@@ -7,6 +7,8 @@ import { rateLimiters } from '../utils/rateLimit';
 import { requireAdminApiSession, requireCustomerSession } from '../middleware/auth';
 import { isAdminRole } from '../types/auth.types';
 import { passwordResetService } from '../services/auth/passwordReset.service';
+import { issueAdminSession, clearAdminSession, readAdminSessionToken } from '../services/auth/adminSession';
+import { buildSsoLogoutUrl } from '../services/auth/sso';
 
 const router = Router();
 
@@ -180,25 +182,7 @@ router.post('/admin-login', rateLimiters.login, async (req: Request, res: Respon
       return;
     }
 
-    await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
-
-    // requireAdminApiSession only reads `decoded.email` off this token, but
-    // the full profile keeps the payload consistent with what a real
-    // NextAuth JWT would have carried.
-    const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role },
-      env.auth.nextAuthSecret,
-      { expiresIn: '30d' }
-    );
-
-    const secure = req.secure;
-    const cookieName = secure ? '__Secure-next-auth.session-token' : 'next-auth.session-token';
-    res.cookie(cookieName, token, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    await issueAdminSession(req, res, user);
 
     res.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
@@ -213,13 +197,18 @@ router.post('/admin/session', requireAdminApiSession, async (req: Request, res: 
 
 // POST /api/auth/admin-logout — mirrors /logout but clears the admin cookie.
 router.post('/admin-logout', (req: Request, res: Response) => {
-  // The __Secure- prefix requires the Secure attribute on EVERY Set-Cookie
-  // for that name, including this clearing one, or browsers reject the
-  // instruction outright and the session cookie is never actually removed
-  // — logout silently no-ops while still returning { success: true }.
-  res.clearCookie('next-auth.session-token', { path: '/' });
-  res.clearCookie('__Secure-next-auth.session-token', { path: '/', secure: true, sameSite: 'lax' });
-  res.json({ success: true });
+  // A session that came from Kerchanshe SSO also has to end the shared SSO
+  // session, or the next "Sign in with SSO" click silently signs straight
+  // back in. The browser does that navigation; we only hand it the URL.
+  let ssoLogoutUrl: string | undefined;
+  const token = readAdminSessionToken(req);
+  if (token) {
+    const decoded = jwt.decode(token) as { sso?: boolean } | null;
+    if (decoded?.sso) ssoLogoutUrl = buildSsoLogoutUrl();
+  }
+
+  clearAdminSession(res);
+  res.json({ success: true, ...(ssoLogoutUrl ? { ssoLogoutUrl } : {}) });
 });
 
 export { router as authRoutes };

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authRoutes } from './auth.routes';
+import { ssoRoutes } from './sso.routes';
 import { vehicleRoutes } from './vehicles.routes';
 import { leadRoutes } from './leads.routes';
 import { tradeInRoutes } from './trade-in.routes';
@@ -65,6 +66,7 @@ import { salesRepsRoutes } from './sales-reps.routes';
 const router = Router();
 
 router.use('/leads', leadRoutes);
+router.use('/auth/sso', ssoRoutes);
 router.use('/auth', authRoutes);
 router.use('/vehicles', vehicleRoutes);
 router.use('/trade-in', tradeInRoutes);
