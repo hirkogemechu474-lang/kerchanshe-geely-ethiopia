@@ -5,6 +5,7 @@ import { generateBrochurePdf } from '../services/pdf/brochure.pdf';
 import { getCompanyInfo } from '../services/pdf/companyInfo';
 import { formatCurrency } from '../utils/formatting';
 import { deleteUploadedFile } from './upload.routes';
+import { sendPdf } from '../utils/sendPdf';
 
 // Best-effort orphaned-file cleanup for a Vehicle row: unlinks heroImageUrl/
 // heroVideoUrl plus every gallery image, skipping any URL still referenced
@@ -277,9 +278,7 @@ router.get('/:id/brochure', async (req: Request, res: Response) => {
       images,
     }, company);
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${vehicle.slug}-brochure.pdf"`);
-    res.send(pdfBuffer);
+    sendPdf(req, res, pdfBuffer, { filename: `${vehicle.slug}-brochure.pdf`, title: `${vehicle.name} Brochure` });
   } catch (error) {
     console.error('Brochure error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -16,6 +16,7 @@ import { auditService } from '../services/audit/audit.service';
 import fs from 'fs';
 import path from 'path';
 import { UPLOAD_ROOT } from './upload.routes';
+import { sendPdf } from '../utils/sendPdf';
 
 const router = Router();
 
@@ -388,9 +389,7 @@ router.get('/:id/quotation-pdf', requireAdminApiSession, viewGate, async (req: R
     if (quotation?.pdfUrl) {
       const result = await quotationPdfService.generatePdf(req.params.id);
       if (result.ok && result.data) {
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="quotation-${req.params.id}.pdf"`);
-        res.send(result.data);
+        sendPdf(req, res, result.data, { filename: `quotation-${req.params.id}.pdf`, title: `Sales Quotation` });
         return;
       }
     }
@@ -400,9 +399,7 @@ router.get('/:id/quotation-pdf', requireAdminApiSession, viewGate, async (req: R
       res.status(404).json({ error: result.error || 'Quotation not found or not generated yet.' });
       return;
     }
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="quotation-${req.params.id}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `quotation-${req.params.id}.pdf`, title: `Sales Quotation` });
   } catch (error) {
     console.error('Get quotation PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -5,6 +5,7 @@ import { rateLimiters } from '../utils/rateLimit';
 import { verifyLinkToken } from '../utils/secureLink';
 import { orderHandoverService } from '../services/sales/orderHandover.service';
 import { documentSignatureRepository, userRepository } from '../repositories';
+import { sendPdf } from '../utils/sendPdf';
 
 const router = Router();
 
@@ -57,9 +58,7 @@ router.get('/:orderId/pdf', async (req: Request, res: Response) => {
       res.status(result.error === 'Order not found.' ? 404 : 403).json({ error: result.error });
       return;
     }
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="handover-confirmation-${req.params.orderId}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `handover-confirmation-${req.params.orderId}.pdf`, title: `Vehicle Handover Note` });
   } catch (error) {
     console.error('Generate handover PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });

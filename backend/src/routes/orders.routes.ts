@@ -16,6 +16,7 @@ import { validateTin } from '../utils/idValidation';
 import { env } from '../config/env';
 import { rateLimiters } from '../utils/rateLimit';
 import { auditService } from '../services/audit/audit.service';
+import { sendPdf } from '../utils/sendPdf';
 
 const router = Router();
 
@@ -462,9 +463,7 @@ router.get('/:id/agreement', requireAdminApiSession, async (req: Request, res: R
     const result = await orderAgreementService.generateAgreementPdfForStaff(req.params.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate agreement PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="agreement-${order.orderNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `agreement-${order.orderNo}.pdf`, title: `Sales Agreement ${order.orderNo}` });
   } catch (error) {
     console.error('Get agreement error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -480,9 +479,7 @@ router.get('/:id/handover-pdf', requireAdminApiSession, async (req: Request, res
     const result = await orderHandoverService.generateHandoverPdfForStaff(req.params.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate handover PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="handover-${order.orderNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `handover-${order.orderNo}.pdf`, title: `Vehicle Handover Note ${order.orderNo}` });
   } catch (error) {
     console.error('Get handover PDF error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -730,9 +727,7 @@ router.get('/:id/invoice', requireAdminApiSession, async (req: Request, res: Res
     const result = await orderInvoiceService.generateInvoicePdf(req.params.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate invoice PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="invoice-${order.orderNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `invoice-${order.orderNo}.pdf`, title: `Sales Invoice ${order.orderNo}` });
   } catch (error) {
     console.error('Get invoice error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -748,9 +743,7 @@ router.get('/:id/receipt', requireAdminApiSession, async (req: Request, res: Res
     const result = await orderInvoiceService.generateReceiptPdf(req.params.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate receipt PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="receipt-${order.orderNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `receipt-${order.orderNo}.pdf`, title: `Payment Receipt ${order.orderNo}` });
   } catch (error) {
     console.error('Get receipt error:', error);
     res.status(500).json({ error: 'Internal server error' });

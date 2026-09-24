@@ -61,6 +61,7 @@ async function getManagerEmails(): Promise<string[]> {
   return cachedManagerEmails;
 }
 import { chatbotService } from '../services/chatbot/chatbot.service';
+import { sendPdf } from '../utils/sendPdf';
 
 const router = Router();
 
@@ -1077,9 +1078,7 @@ router.get('/quotations/:reference/pdf', async (req: Request, res: Response) => 
     // was expected).
     const result = await quotationPdfService.generatePdfByReference(req.params.reference);
     if (result.ok && result.data) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline; filename="quotation.pdf"');
-      res.send(result.data);
+      sendPdf(req, res, result.data, { filename: `quotation-${req.params.reference}.pdf`, title: `Sales Quotation ${req.params.reference}` });
       return;
     }
 
@@ -1573,9 +1572,7 @@ router.get('/orders/:orderId/invoice', async (req: Request, res: Response) => {
     const result = await orderInvoiceService.generateInvoicePdf(order.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate invoice PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="invoice-${order.invoiceNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `invoice-${order.invoiceNo}.pdf`, title: `Sales Invoice ${order.invoiceNo}` });
   } catch (error) {
     console.error('Get public invoice error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -1597,9 +1594,7 @@ router.get('/orders/:orderId/receipt', async (req: Request, res: Response) => {
     const result = await orderInvoiceService.generateReceiptPdf(order.id);
     if (!result.ok || !result.data) { res.status(500).json({ error: result.error || 'Failed to generate receipt PDF' }); return; }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="receipt-${order.orderNo}.pdf"`);
-    res.send(result.data);
+    sendPdf(req, res, result.data, { filename: `receipt-${order.orderNo}.pdf`, title: `Payment Receipt ${order.orderNo}` });
   } catch (error) {
     console.error('Get public receipt error:', error);
     res.status(500).json({ error: 'Internal server error' });
