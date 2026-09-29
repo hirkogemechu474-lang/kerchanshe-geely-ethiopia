@@ -278,7 +278,24 @@ router.get('/cookie-banner', async (req: Request, res: Response) => {
 router.get('/social-media', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'social_media' } });
-    res.json(setting?.value ? JSON.parse(setting.value) : {});
+    const raw = setting?.value ? JSON.parse(setting.value) : {};
+    // Only known platforms with an http(s) URL reach the site — these render
+    // as <a href> in the footer and homepage, so a javascript: or malformed
+    // value saved in admin must never be echoed back. Older rows may store
+    // {facebook: {url}} instead of a plain string.
+    const out: Record<string, unknown> = {};
+    for (const key of ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok', 'telegram']) {
+      const v = raw[key];
+      const url = typeof v === 'string' ? v : typeof v?.url === 'string' ? v.url : '';
+      if (/^https?:\/\/\S+$/i.test(url.trim())) out[key] = url.trim();
+    }
+    const section = raw.homepageSection;
+    out.homepageSection = {
+      enabled: section?.enabled !== false,
+      title: typeof section?.title === 'string' ? section.title : '',
+      subtitle: typeof section?.subtitle === 'string' ? section.subtitle : '',
+    };
+    res.json(out);
   } catch (error) {
     console.error('Get social media error:', error);
     res.status(500).json({ error: 'Internal server error' });

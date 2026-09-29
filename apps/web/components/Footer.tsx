@@ -16,6 +16,7 @@ interface SocialMediaLinks {
   youtube?: string;
   linkedin?: string;
   tiktok?: string;
+  telegram?: string;
 }
 
 interface FooterVehicle {
@@ -141,7 +142,7 @@ export function Footer() {
           if (d) {
             // Accept both flat-object and newer {facebook:{url:...}} shape
             const flat: SocialMediaLinks = {};
-            for (const k of ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok']) {
+            for (const k of ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok', 'telegram']) {
               const v = d[k];
               if (!v) continue;
               if (typeof v === 'string') flat[k as keyof SocialMediaLinks] = v;
@@ -197,6 +198,7 @@ export function Footer() {
     { key: 'youtube', Icon: Youtube, label: 'YouTube', hover: 'hover:bg-red-600' },
     { key: 'linkedin', Icon: Linkedin, label: 'LinkedIn', hover: 'hover:bg-blue-700' },
     { key: 'tiktok', Icon: Music, label: 'TikTok', hover: 'hover:bg-black' },
+    { key: 'telegram', Icon: Send, label: 'Telegram', hover: 'hover:bg-sky-500' },
   ];
 
   const anySocial = Object.values(socialMedia).some((v) => !!v);
@@ -348,6 +350,7 @@ export function Footer() {
         {/* Bottom bar — socials, legal, copyright */}
         <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2 flex-wrap order-2 sm:order-1">
+            {anySocial && <span className="text-xs font-semibold uppercase tracking-wider text-white/60 mr-1">Follow us</span>}
             {socials
               .filter(({ key }) => anySocial && !!socialMedia[key])
               .map(({ key, Icon, label, hover }) => (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Facebook, Instagram, Twitter, Youtube, Linkedin, Music, ExternalLink } from 'lucide-react';
+import { Save, Facebook, Instagram, Twitter, Youtube, Linkedin, Music, Send, ExternalLink } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function SocialMediaPage() {
@@ -17,7 +17,16 @@ export default function SocialMediaPage() {
     twitter: '',
     youtube: '',
     linkedin: '',
-    tiktok: ''
+    tiktok: '',
+    telegram: ''
+  });
+  // Homepage "Follow us" section — stored alongside the links in the same
+  // social_media Setting (nested, so the footer's per-platform reader
+  // ignores it).
+  const [homepageSection, setHomepageSection] = useState({
+    enabled: true,
+    title: 'Follow Geely Ethiopia',
+    subtitle: 'News, launches, offers and owner stories — straight from our official channels.'
   });
 
   useEffect(() => {
@@ -28,8 +37,9 @@ export default function SocialMediaPage() {
     try {
       const response = await fetch('/api/settings/social-media');
       if (response.ok) {
-        const data = await response.json();
-        setSocialMedia(data);
+        const { homepageSection: section, ...links } = await response.json();
+        setSocialMedia(prev => ({ ...prev, ...links }));
+        if (section && typeof section === 'object') setHomepageSection(prev => ({ ...prev, ...section }));
       }
     } catch (error) {
       console.error('Error fetching social media:', error);
@@ -44,7 +54,7 @@ export default function SocialMediaPage() {
       const response = await fetch('/api/settings/social-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(socialMedia)
+        body: JSON.stringify({ ...socialMedia, homepageSection })
       });
 
       if (response.ok) {
@@ -126,6 +136,15 @@ export default function SocialMediaPage() {
       bgColor: 'bg-gray-50',
       placeholder: 'https://tiktok.com/@geelyethiopia',
       example: 'https://tiktok.com/@YourAccount'
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      icon: Send,
+      color: 'text-sky-500',
+      bgColor: 'bg-sky-50',
+      placeholder: 'https://t.me/geelyethiopia',
+      example: 'https://t.me/YourChannel'
     }
   ] as const;
 
@@ -145,6 +164,46 @@ export default function SocialMediaPage() {
             <Save size={20} />
             {saving ? 'Saving...' : 'Save Links'}
           </button>
+        </div>
+
+        {/* Homepage section */}
+        <div className="bg-white rounded-lg border p-6 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-lg">Homepage Section</h3>
+              <p className="text-sm text-gray-500">
+                A &quot;Follow us&quot; section on the homepage showing every platform with a link below. The footer icons always show.
+              </p>
+            </div>
+            <label className="inline-flex items-center gap-2 text-sm font-medium shrink-0">
+              <input
+                type="checkbox"
+                checked={homepageSection.enabled}
+                onChange={(e) => setHomepageSection(prev => ({ ...prev, enabled: e.target.checked }))}
+              />
+              Show on homepage
+            </label>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section title</label>
+              <input
+                type="text"
+                value={homepageSection.title}
+                onChange={(e) => setHomepageSection(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section subtitle</label>
+              <input
+                type="text"
+                value={homepageSection.subtitle}
+                onChange={(e) => setHomepageSection(prev => ({ ...prev, subtitle: e.target.value }))}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-geely-blue focus:border-transparent"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Social Media Links */}
@@ -196,7 +255,7 @@ export default function SocialMediaPage() {
                   {value && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm text-green-800">Active - Will appear on website</span>
+                      <span className="text-sm text-green-800">Active - Shows in the footer{homepageSection.enabled ? ' and homepage section' : ''}</span>
                     </div>
                   )}
 
@@ -269,7 +328,7 @@ export default function SocialMediaPage() {
         {/* Statistics (Optional) */}
         <div className="bg-white rounded-lg border p-6">
           <h3 className="font-bold text-lg mb-4">Active Platforms</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {platforms.map((platform) => {
               const Icon = platform.icon;
               const isActive = !!socialMedia[platform.id as keyof typeof socialMedia];

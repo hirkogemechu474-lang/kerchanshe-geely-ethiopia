@@ -44,6 +44,7 @@ const DealerLocatorPreview = dynamic(() => import("@/components/home/DealerLocat
 const CustomerReviews = dynamic(() => import("@/components/home/CustomerReviews"), { ssr: true });
 const FAQSection = dynamic(() => import("@/components/home/FAQSection"), { ssr: true });
 const NewsSection = dynamic(() => import("@/components/home/NewsSection"), { ssr: true });
+const SocialMediaSection = dynamic(() => import("@/components/home/SocialMediaSection"), { ssr: true });
 
 const DEFAULT_STATS = [
   { label: 'Vehicles Sold', value: '10,000+' },
@@ -109,6 +110,7 @@ export default async function HomePage() {
     financingBanksRaw,
     financingProgramsRaw,
     aboutData,
+    socialMedia,
   ] = await Promise.all([
     client.get('/public/hero').then((r) => r.data).catch(() => []),
     client.get('/public/vehicles').then((r) => r.data).catch(() => []),
@@ -119,6 +121,7 @@ export default async function HomePage() {
     client.get('/public/financing-banks').then((r) => r.data).catch(() => []),
     client.get('/public/financing-programs').then((r) => r.data).catch(() => []),
     client.get('/public/about').then((r) => r.data).catch(() => null),
+    client.get('/public/social-media').then((r) => r.data).catch(() => null),
   ]);
 
   const initialVehicles = (Array.isArray(rawVehicles) ? rawVehicles : [])
@@ -250,7 +253,8 @@ export default async function HomePage() {
           spotlight) → brand story (about/showcase) → credibility (stats/
           trust) → promotions → financing (how to pay for it) → social proof
           (reviews) → location & services (map + after-sale/roadside/
-          innovation cards) → final conversion push → reference info. */}
+          innovation cards) → final conversion push → reference info →
+          social channels (Admin → Settings → Social Media). */}
       <HeroSection initialHeroSections={initialHeroSections} />
       <ModelsShowcase initialCategories={initialCategories} initialVehicles={initialVehicles} />
       <SpotlightStrip vehicleName={initialShowcases[0]?.vehicleName ?? null} />
@@ -265,6 +269,7 @@ export default async function HomePage() {
       <CTAStrip />
       <FAQSection />
       <NewsSection initialArticles={initialNewsArticles} />
+      <SocialMediaSection data={socialMedia} />
     </MainLayout>
   );
 }
