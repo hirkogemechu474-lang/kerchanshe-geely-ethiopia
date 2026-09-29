@@ -218,16 +218,16 @@ const navSections: NavSection[] = [
         label: 'Company',
         items: [
           { name: 'Manage About Page', href: '/admin/settings/about', icon: UserCircle2, permission: 'canManageContent' },
-          { name: 'Manage Business Info', href: '/admin/settings/business-settings', icon: Building, permission: 'canManageSettings' },
-          { name: 'Manage Contact Info', href: '/admin/settings/contact-information', icon: Phone, permission: 'canManageSettings' },
-          { name: 'Manage Social Media', href: '/admin/settings/social-media', icon: Share2, permission: 'canManageSettings' },
+          { name: 'Manage Business Info', href: '/admin/settings/business-settings', icon: Building, permission: 'canManageContent' },
+          { name: 'Manage Contact Info', href: '/admin/settings/contact-information', icon: Phone, permission: 'canManageContent' },
+          { name: 'Manage Social Media', href: '/admin/settings/social-media', icon: Share2, permission: 'canManageContent' },
         ],
       },
       {
         label: 'Legal',
         items: [
-          { name: 'Manage Policies', href: '/admin/settings/policies', icon: FileText, permission: 'canManageSettings' },
-          { name: 'Manage Cookie Banner', href: '/admin/settings/cookie-banner', icon: Cookie, permission: 'canManageSettings' },
+          { name: 'Manage Policies', href: '/admin/settings/policies', icon: FileText, permission: 'canManageContent' },
+          { name: 'Manage Cookie Banner', href: '/admin/settings/cookie-banner', icon: Cookie, permission: 'canManageContent' },
         ],
       },
     ],

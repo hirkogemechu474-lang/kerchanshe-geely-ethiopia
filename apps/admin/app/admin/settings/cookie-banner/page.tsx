@@ -14,7 +14,7 @@ interface CookieBannerConfig {
 }
 
 export default function CookieBannerSettingsPage() {
-  useAdminAuth('canManageSettings');
+  useAdminAuth('canManageContent');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -6,7 +6,7 @@ import { Save, FileText, Shield, Cookie } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function PoliciesPage() {
-  useAdminAuth('canManageSettings');
+  useAdminAuth('canManageContent');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

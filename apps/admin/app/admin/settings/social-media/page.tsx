@@ -6,7 +6,7 @@ import { Save, Facebook, Instagram, Twitter, Youtube, Linkedin, Music, ExternalL
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function SocialMediaPage() {
-  useAdminAuth('canManageSettings');
+  useAdminAuth('canManageContent');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

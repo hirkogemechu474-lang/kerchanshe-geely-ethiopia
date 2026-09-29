@@ -89,7 +89,7 @@ const DEFAULT_DATA: ContactInformation = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactInformationPage() {
-  useAdminAuth('canManageSettings');
+  useAdminAuth('canManageContent');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<ContactInformation>(DEFAULT_DATA);

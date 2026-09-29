@@ -9,11 +9,12 @@ const router = Router();
 // authenticated staff member of any role could read/overwrite any site
 // setting. canManageSettings matches AdminLayout.tsx's settings-related nav
 // items and every /admin/settings/* page's own requirePermission/
-// useAdminAuth('canManageSettings') guard, with one deliberate exception:
-// /admin/settings/about uses canManageContent instead (matching both its own
-// nav entry and apps/admin/app/admin/settings/about/page.tsx's
-// useAdminAuth('canManageContent')) — so the '/about' routes below use
-// contentGate while every other route uses settingsGate.
+// useAdminAuth('canManageSettings') guard, with deliberate exceptions: the
+// public-facing company/legal pages (about, business-settings,
+// contact-information, social-media, policies, cookie-banner) use
+// canManageContent instead so the Marketing role can maintain them — matching
+// their AdminLayout.tsx nav entries and each page's useAdminAuth guard. Those
+// routes use contentGate; every other route uses settingsGate.
 const settingsGate = requirePermission('canManageSettings');
 const contentGate = requirePermission('canManageContent');
 // Vehicle spec/feature reference lists back the Manage Specs / Manage
@@ -42,7 +43,7 @@ router.get('/by-type/:type', requireAdminApiSession, settingsGate, async (req: R
 // '/:key' matches any single segment, 'social-media'/'policies' included).
 
 // GET /api/settings/social-media (get social links)
-router.get('/social-media', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/social-media', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'social_media' } });
     if (!setting?.value) { res.json({}); return; }
@@ -58,7 +59,7 @@ router.get('/social-media', requireAdminApiSession, settingsGate, async (req: Re
 });
 
 // POST /api/settings/social-media (update social links)
-router.post('/social-media', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/social-media', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -74,7 +75,7 @@ router.post('/social-media', requireAdminApiSession, settingsGate, async (req: R
 });
 
 // GET /api/settings/policies (get policies)
-router.get('/policies', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/policies', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'policies' } });
     if (!setting?.value) { res.json({}); return; }
@@ -90,7 +91,7 @@ router.get('/policies', requireAdminApiSession, settingsGate, async (req: Reques
 });
 
 // POST /api/settings/policies (update policies)
-router.post('/policies', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/policies', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -119,7 +120,7 @@ router.post('/policies', requireAdminApiSession, settingsGate, async (req: Reque
 // the pre-existing financing-page-content route's own naming mismatch).
 
 // GET /api/settings/business-settings
-router.get('/business-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/business-settings', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'business_settings' } });
     if (!setting?.value) { res.json({}); return; }
@@ -135,7 +136,7 @@ router.get('/business-settings', requireAdminApiSession, settingsGate, async (re
 });
 
 // POST /api/settings/business-settings
-router.post('/business-settings', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/business-settings', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -151,7 +152,7 @@ router.post('/business-settings', requireAdminApiSession, settingsGate, async (r
 });
 
 // GET /api/settings/contact-information
-router.get('/contact-information', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/contact-information', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'contact_information' } });
     if (!setting?.value) { res.json({}); return; }
@@ -167,7 +168,7 @@ router.get('/contact-information', requireAdminApiSession, settingsGate, async (
 });
 
 // POST /api/settings/contact-information
-router.post('/contact-information', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/contact-information', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({
@@ -548,7 +549,7 @@ router.post('/warranty-page', requireAdminApiSession, settingsGate, async (req: 
   }
 });
 
-router.get('/cookie-banner', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.get('/cookie-banner', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'cookie_banner' } });
     if (!setting?.value) { res.json({}); return; }
@@ -563,7 +564,7 @@ router.get('/cookie-banner', requireAdminApiSession, settingsGate, async (req: R
   }
 });
 
-router.post('/cookie-banner', requireAdminApiSession, settingsGate, async (req: Request, res: Response) => {
+router.post('/cookie-banner', requireAdminApiSession, contentGate, async (req: Request, res: Response) => {
   try {
     const value = JSON.stringify(req.body ?? {});
     const setting = await prisma.setting.upsert({

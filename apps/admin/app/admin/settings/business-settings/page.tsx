@@ -86,7 +86,7 @@ const TIMEZONE_OPTIONS = [
 ];
 
 export default function BusinessSettingsPage() {
-  useAdminAuth('canManageSettings');
+  useAdminAuth('canManageContent');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
