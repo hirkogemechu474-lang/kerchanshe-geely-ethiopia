@@ -253,6 +253,10 @@ const navSections: NavSection[] = [
         items: [
           { name: 'Workshop BI', href: '/admin/workshop/bi-dashboard', icon: BarChart3, permission: 'canViewExecutiveDashboards' },
           { name: 'Manage Job Cards', href: '/admin/workshop/job-cards', icon: ClipboardList, permission: 'canViewJobCards' },
+          // Opens the orders list, where each order's Pre-Delivery Inspection
+          // checklist lives — workshop roles don't have the sales-side
+          // "Manage Orders" link but perform the PDI.
+          { name: 'Pre-Delivery Inspection', href: '/admin/orders', icon: ListChecks, permission: 'canPerformQC' },
           { name: 'Manage Customers', href: '/admin/customers', icon: Users, permission: 'canViewCustomers' },
           { name: 'Manage Warranty Claims', href: '/admin/workshop/warranty-claims', icon: ShieldCheck, permission: 'canManageWarrantyClaims' },
           { name: 'Manage Service Bookings', href: '/admin/service-bookings', icon: Wrench, permission: 'canManageService' },

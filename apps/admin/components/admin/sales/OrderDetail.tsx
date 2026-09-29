@@ -175,6 +175,9 @@ export default function OrderDetail({
   const [error, setError] = useState('');
   const [totalPrice, setTotalPrice] = useState(state.totalPrice?.toString() || '');
   const canCountersign = permissions.canManageQuotations && permissions.canCountersignAgreements;
+  // PDI is performed by the workshop (canPerformQC) as well as sales — must
+  // match the backend's pdiGate on PATCH /api/orders/:id/pdi.
+  const canManagePdi = permissions.canManageQuotations || permissions.canPerformQC;
 
   const refresh = async () => {
     const res = await fetch(`/api/orders/${state.id}`);
@@ -435,7 +438,7 @@ export default function OrderDetail({
                 <PdiItemRow
                   key={item.id}
                   item={item}
-                  canManage={permissions.canManageQuotations}
+                  canManage={canManagePdi}
                   busy={busy}
                   onSetResult={setPdiResult}
                 />
@@ -451,6 +454,7 @@ export default function OrderDetail({
                 </span>
               )}
             </p>
+            {canManagePdi && <PdiEmailPanel orderId={state.id} hasCustomerEmail={Boolean(state.customerEmail)} />}
           </>
         )}
       </Card>
@@ -700,6 +704,97 @@ export default function OrderDetail({
           ))}
         </ol>
       </Card>
+    </div>
+  );
+}
+
+// Optional "Email PDI report" action for the inspector — sends the current
+// checklist progress (and any failed items) to the chosen recipients. The
+// automatic email only fires once every item is complete; this lets the
+// inspector share progress or failures along the way.
+function PdiEmailPanel({ orderId, hasCustomerEmail }: { orderId: string; hasCustomerEmail: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [recipients, setRecipients] = useState<string[]>(['sales']);
+  const [extraEmails, setExtraEmails] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const options = [
+    { value: 'sales', label: 'Sales consultant' },
+    { value: 'workshop', label: 'Workshop / after-sales managers' },
+    ...(hasCustomerEmail ? [{ value: 'customer', label: 'Customer' }] : []),
+  ];
+
+  const toggle = (value: string) =>
+    setRecipients((prev) => (prev.includes(value) ? prev.filter((r) => r !== value) : [...prev, value]));
+
+  const send = async () => {
+    setSending(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pdi/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipients, extraEmails, message }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Email could not be sent');
+      setStatus({ ok: true, text: `PDI report sent to ${data.sentTo.join(', ')}` });
+      setMessage('');
+      setExtraEmails('');
+    } catch (err: any) {
+      setStatus({ ok: false, text: err.message });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={() => { setOpen(true); setStatus(null); }}>
+          <Mail className="w-4 h-4 mr-1.5" /> Email PDI report
+        </Button>
+        {status && <span className={`text-xs ${status.ok ? 'text-green-600' : 'text-red-600'}`}>{status.text}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <p className="text-xs font-medium text-gray-700">Send the current PDI progress by email</p>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        {options.map((o) => (
+          <label key={o.value} className="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" checked={recipients.includes(o.value)} onChange={() => toggle(o.value)} />
+            {o.label}
+          </label>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={extraEmails}
+        onChange={(e) => setExtraEmails(e.target.value)}
+        placeholder="Other email addresses (optional, comma-separated)"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+      />
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={2}
+        placeholder="Message (optional)"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" onClick={send} disabled={sending || (recipients.length === 0 && !extraEmails.trim())}>
+          {sending ? 'Sending…' : 'Send email'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={sending}>
+          Cancel
+        </Button>
+        {status && <span className={`text-xs ${status.ok ? 'text-green-600' : 'text-red-600'}`}>{status.text}</span>}
+      </div>
     </div>
   );
 }

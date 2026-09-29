@@ -1,11 +1,11 @@
-import { requirePermission } from '@/lib/auth/middleware';
+import { requireAnyPermission } from '@/lib/auth/middleware';
 import { serverApiClient } from '@/lib/serverApiClient';
 import { notFound } from 'next/navigation';
 import OrderDetail from '@/components/admin/sales/OrderDetail';
 import { env } from '@/lib/env';
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requirePermission('canViewQuotations');
+  const session = await requireAnyPermission(['canViewQuotations', 'canPerformQC']);
   const { id } = await params;
   const webAppUrl = env.app.url.replace(/\/$/, '');
 

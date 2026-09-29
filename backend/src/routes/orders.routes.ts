@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { requireAdminApiSession, requirePermission } from '../middleware/auth';
 import { orderService } from '../services/sales/order.service';
@@ -693,9 +693,20 @@ router.post('/:id/reject-agreement', requireAdminApiSession, async (req: Request
   }
 });
 
+// PDI is done by the workshop (canPerformQC: service, service/workshop/
+// after-sales managers) as well as the sales team that owns the order.
+function pdiGate(req: Request, res: Response, next: NextFunction): void {
+  const perms = req.adminSession?.user?.permissions;
+  if (!perms?.canManageQuotations && !perms?.canPerformQC) {
+    res.status(403).json({ error: 'Forbidden: insufficient permissions' });
+    return;
+  }
+  next();
+}
+
 // PATCH /api/orders/:id/pdi (set PDI item result: PENDING/PASS/FAIL/NA,
 // optionally with failure-evidence photos/notes)
-router.patch('/:id/pdi', requireAdminApiSession, async (req: Request, res: Response) => {
+router.patch('/:id/pdi', requireAdminApiSession, pdiGate, async (req: Request, res: Response) => {
   try {
     const { itemId, result: itemResult, photoUrls, notes } = req.body;
     const VALID_RESULTS = ['PENDING', 'PASS', 'FAIL', 'NA'];
@@ -714,6 +725,34 @@ router.patch('/:id/pdi', requireAdminApiSession, async (req: Request, res: Respo
     res.json(result.data);
   } catch (error) {
     console.error('Update PDI item error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders/:id/pdi/email (optional PDI progress report by email)
+router.post('/:id/pdi/email', requireAdminApiSession, pdiGate, async (req: Request, res: Response) => {
+  try {
+    const VALID_RECIPIENTS = ['sales', 'workshop', 'customer'] as const;
+    const recipients = (Array.isArray(req.body.recipients) ? req.body.recipients : [])
+      .filter((r: unknown): r is typeof VALID_RECIPIENTS[number] => VALID_RECIPIENTS.includes(r as any));
+    const extraEmails = (typeof req.body.extraEmails === 'string' ? req.body.extraEmails.split(/[,;\s]+/) : [])
+      .map((e: string) => e.trim())
+      .filter(Boolean);
+    const invalid = extraEmails.filter((e: string) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    if (invalid.length > 0) { res.status(400).json({ error: `Invalid email address: ${invalid.join(', ')}` }); return; }
+    if (extraEmails.length > 10) { res.status(400).json({ error: 'At most 10 extra email addresses.' }); return; }
+    if (recipients.length === 0 && extraEmails.length === 0) { res.status(400).json({ error: 'Choose at least one recipient.' }); return; }
+
+    const result = await orderService.emailPdiReport(req.params.id, {
+      recipients,
+      extraEmails,
+      message: typeof req.body.message === 'string' ? req.body.message.slice(0, 2000) : undefined,
+      senderName: req.adminSession!.user.name,
+    });
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    res.json(result.data);
+  } catch (error) {
+    console.error('Email PDI report error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

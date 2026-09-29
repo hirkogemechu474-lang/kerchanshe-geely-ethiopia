@@ -507,6 +507,95 @@ export const orderService = {
     }
   },
 
+  // Optional, inspector-triggered PDI report email (the automatic one above
+  // only fires at 100% complete). Staff recipients get the admin link;
+  // the customer gets the same summary without internal notes or links.
+  async emailPdiReport(
+    orderId: string,
+    opts: { recipients: Array<'sales' | 'workshop' | 'customer'>; extraEmails?: string[]; message?: string; senderName?: string }
+  ): Promise<{ ok: boolean; data?: { sentTo: string[] }; error?: string }> {
+    try {
+      const order = await salesOrderRepository.findByIdWithPdiItems(orderId);
+      if (!order) return { ok: false, error: 'Order not found.' };
+      const items = order.pdiItems ?? [];
+      if (items.length === 0) return { ok: false, error: 'This order has no PDI checklist yet.' };
+
+      const count = (r: string) => items.filter((p: any) => p.result === r).length;
+      const done = count('PASS') + count('NA');
+      const failed = items.filter((p: any) => p.result === 'FAIL');
+      const pending = items.filter((p: any) => p.result === 'PENDING');
+      const status = failed.length > 0
+        ? 'Delivery blocked — failed items need repair and reinspection'
+        : done === items.length ? 'All items complete — ready for delivery preparation' : 'Inspection in progress';
+
+      const summary: Record<string, string> = {
+        orderNo: order.orderNo,
+        customerName: order.customerName,
+        vehicleModel: order.vehicleModel,
+        ...(order.vehicleAllocation?.vin && { vin: order.vehicleAllocation.vin }),
+        progress: `${done} / ${items.length} complete (Pass ${count('PASS')}, N/A ${count('NA')}, Failed ${failed.length}, Pending ${pending.length})`,
+        status,
+      };
+      const failedList = failed.map((p: any) => (p.notes ? `${p.label} — ${p.notes}` : p.label)).join('; ');
+      const note = opts.message?.trim();
+      const subject = `PDI Report — ${order.orderNo}`;
+
+      const staffEmails: string[] = [];
+      if (opts.recipients.includes('sales') && order.salesAgentId) {
+        const agent = await prisma.user.findUnique({ where: { id: order.salesAgentId }, select: { email: true } });
+        if (agent?.email) staffEmails.push(agent.email);
+      }
+      if (opts.recipients.includes('workshop')) staffEmails.push(...(await userRepository.findWorkshopManagerEmails()));
+      staffEmails.push(...(opts.extraEmails ?? []));
+      const staffTo = [...new Set(staffEmails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+      const customerTo = opts.recipients.includes('customer') && order.customerEmail ? [order.customerEmail] : [];
+      if (staffTo.length === 0 && customerTo.length === 0) return { ok: false, error: 'No recipients with an email address were selected.' };
+
+      const adminLink = `${env.urls.admin}/admin/orders/${order.id}`;
+      if (staffTo.length > 0) {
+        const res = await dispatchNotification({
+          type: 'order_status',
+          to: staffTo,
+          subject,
+          data: {
+            ...summary,
+            ...(failedList && { failedItems: failedList }),
+            ...(pending.length > 0 && { pendingItems: pending.map((p: any) => p.label).join('; ') }),
+            ...(note && { message: note }),
+            ...(opts.senderName && { sentBy: opts.senderName }),
+          },
+          ctas: [{ label: 'View Order', url: adminLink }],
+          inApp: {
+            type: 'order_update',
+            title: subject,
+            body: `${summary.progress}. ${status}.`,
+            link: `/admin/orders/${order.id}`,
+            orderId: order.id,
+            relatedModel: 'order',
+            relatedId: order.id,
+            priority: failed.length > 0 ? 'high' : 'normal',
+          },
+        });
+        if (!res.ok) return { ok: false, error: res.error || 'Email could not be sent.' };
+      }
+      if (customerTo.length > 0) {
+        const res = await dispatchNotification({
+          type: 'order_status',
+          to: customerTo,
+          subject: `Your vehicle's pre-delivery inspection — ${order.orderNo}`,
+          greetingName: order.customerName,
+          data: { ...summary, ...(note && { message: note }) },
+        });
+        if (!res.ok) return { ok: false, error: res.error || 'Customer email could not be sent.' };
+      }
+
+      return { ok: true, data: { sentTo: [...staffTo, ...customerTo] } };
+    } catch (error: any) {
+      console.error('[PDI REPORT EMAIL ERROR]', error.message);
+      return { ok: false, error: 'Failed to send PDI report.' };
+    }
+  },
+
   async getOrderWithPdiItems(id: string): Promise<{ ok: boolean; data?: any; error?: string }> {
     try {
       const order = await salesOrderRepository.findByIdWithPdiItems(id);

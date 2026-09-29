@@ -1,9 +1,9 @@
-import { requirePermission } from '@/lib/auth/middleware';
+import { requireAnyPermission } from '@/lib/auth/middleware';
 import { PageHeader } from '@/components/admin/ui';
 import OrdersList from '@/components/admin/sales/OrdersList';
 
 export default async function OrdersPage() {
-  await requirePermission('canViewQuotations');
+  await requireAnyPermission(['canViewQuotations', 'canPerformQC']);
 
   return (
     <div className="space-y-6">

@@ -74,6 +74,14 @@ export async function requirePermission(permission: string): Promise<AdminSessio
   return session;
 }
 
+export async function requireAnyPermission(permissions: string[]): Promise<AdminSession> {
+  const session = await requireAuth();
+  if (!permissions.some((p) => session.permissions[p as keyof AdminPermissions])) {
+    redirect('/admin/unauthorized');
+  }
+  return session;
+}
+
 export function withAuth(handler: any) {
   return handler;
 }
