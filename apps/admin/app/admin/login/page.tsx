@@ -102,8 +102,8 @@ export default function AdminLogin() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (newPassword.length < 10) {
+      setError('Password must be at least 10 characters, with a letter and a number');
       return;
     }
 

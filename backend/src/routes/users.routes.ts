@@ -21,7 +21,7 @@ router.use(requirePermission('canManageUsers'));
 const VALID_STAFF_ROLES = [
   'super_admin', 'admin', 'manager', 'sales', 'service', 'marketing',
   'service_advisor', 'service_manager', 'gm_geely', 'sales_manager',
-  'after_sales_manager', 'sales_representative', 'workshop_manager', 'viewer',
+  'after_sales_manager', 'sales_representative', 'workshop_manager', 'reception', 'viewer',
 ];
 
 // Full shape NewUserForm/EditUserForm/RolesPermissionsManager read from —
@@ -103,6 +103,8 @@ router.post('/', async (req: Request, res: Response) => {
         title: title || null,
         dealerId: dealerId || null,
         isActive: isActive ?? true,
+        // An admin chose this password, so the owner must replace it at first login.
+        mustChangePassword: true,
       },
       select: USER_DETAIL_SELECT,
     });

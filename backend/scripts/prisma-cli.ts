@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+// Same rule as src/config/env.ts: .env.production when NODE_ENV=production.
+dotenv.config({ path: path.resolve(process.cwd(), process.env.NODE_ENV === 'production' ? '.env.production' : '.env') });
 
 import { spawnSync } from 'child_process';
 import { buildDatabaseUrl } from '../src/config/buildDatabaseUrl';

@@ -184,7 +184,7 @@ router.post('/admin-login', rateLimiters.login, async (req: Request, res: Respon
 
     await issueAdminSession(req, res, user);
 
-    res.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword } });
   } catch (error) {
     console.error('Admin login error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -193,6 +193,27 @@ router.post('/admin-login', rateLimiters.login, async (req: Request, res: Respon
 
 router.post('/admin/session', requireAdminApiSession, async (req: Request, res: Response) => {
   res.json({ user: req.adminSession!.user });
+});
+
+// POST /api/auth/admin/change-password — signed-in staff choose their own
+// password (also how a provisioned account clears mustChangePassword).
+router.post('/admin/change-password', rateLimiters.login, requireAdminApiSession, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Current password and new password are required.' });
+      return;
+    }
+    const result = await passwordResetService.changePassword(req.adminSession!.user.id, currentPassword, newPassword);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Admin change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // POST /api/auth/admin-logout — mirrors /logout but clears the admin cookie.

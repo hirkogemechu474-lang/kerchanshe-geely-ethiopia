@@ -18,6 +18,7 @@ export default function WalkInForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [leadNote, setLeadNote] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +38,13 @@ export default function WalkInForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save registration');
+      setLeadNote(
+        data.lead
+          ? `Sales lead ${data.lead.reference ?? ''} ${data.lead.existing ? 'was already open and is now linked' : 'opened'}${data.lead.assignedToName ? `; ${data.lead.assignedToName} has been notified.` : '.'}`
+          : 'The sales lead could not be opened automatically. Use "Open lead" in the list.'
+      );
       setSuccess(true);
-      setTimeout(() => router.push('/admin/walk-ins'), 1200);
+      setTimeout(() => router.push('/admin/walk-ins'), 2500);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -58,7 +64,7 @@ export default function WalkInForm() {
         )}
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3 py-2">
-            Registration saved successfully!
+            Registration saved successfully! {leadNote}
           </div>
         )}
 

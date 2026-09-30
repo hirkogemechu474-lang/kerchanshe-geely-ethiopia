@@ -14,6 +14,7 @@ export enum AdminRole {
   AFTER_SALES_MANAGER = 'after_sales_manager',
   SALES_REPRESENTATIVE = 'sales_representative',
   WORKSHOP_MANAGER = 'workshop_manager',
+  RECEPTION = 'reception',
   CUSTOMER = 'customer',
   DEALER = 'dealer',
 }
@@ -110,7 +111,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   AdminRole.SERVICE_ADVISOR, AdminRole.SERVICE_MANAGER,
   AdminRole.GM_GEELY, AdminRole.SALES_MANAGER,
   AdminRole.AFTER_SALES_MANAGER, AdminRole.SALES_REPRESENTATIVE,
-  AdminRole.WORKSHOP_MANAGER,
+  AdminRole.WORKSHOP_MANAGER, AdminRole.RECEPTION,
 ];
 
 export const PUBLIC_ROLES: AdminRole[] = [AdminRole.CUSTOMER, AdminRole.DEALER];

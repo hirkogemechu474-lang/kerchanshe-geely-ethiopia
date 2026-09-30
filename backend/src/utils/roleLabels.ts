@@ -22,6 +22,7 @@ const PRINTABLE_ROLE_LABELS: Record<string, string> = {
   workshop_manager: 'Workshop Manager',
   service: 'Service Technician',
   service_advisor: 'Service Advisor',
+  reception: 'Customer Attendant',
   marketing: 'Marketing',
   viewer: 'Viewer',
 };

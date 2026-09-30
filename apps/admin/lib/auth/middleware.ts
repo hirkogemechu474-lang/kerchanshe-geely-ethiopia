@@ -12,6 +12,7 @@ export interface AdminSession {
   role: AdminRole;
   permissions: AdminPermissions;
   expires: string;
+  mustChangePassword?: boolean;
   user: {
     id: string;
     name: string;
@@ -19,6 +20,7 @@ export interface AdminSession {
     role: AdminRole;
     permissions: AdminPermissions;
     expires: string;
+    mustChangePassword?: boolean;
   };
 }
 
@@ -53,7 +55,8 @@ export const getSession = cache(async (): Promise<AdminSession | null> => {
       role: user.role,
       permissions,
       expires,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, permissions, expires },
+      mustChangePassword: Boolean(user.mustChangePassword),
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, permissions, expires, mustChangePassword: Boolean(user.mustChangePassword) },
     };
   } catch {
     return null;

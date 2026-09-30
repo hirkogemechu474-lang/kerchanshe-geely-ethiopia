@@ -8,6 +8,7 @@ export enum AdminRole {
   SERVICE = 'service',
   MARKETING = 'marketing',
   SERVICE_ADVISOR = 'service_advisor',
+  RECEPTION = 'reception',
   SERVICE_MANAGER = 'service_manager',
   GM_GEELY = 'gm_geely',
   SALES_MANAGER = 'sales_manager',
@@ -360,6 +361,17 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermissions> = {
     canViewQuotations: true,
   },
 
+  // ── Reception / Customer Attendant: front desk — registers walk-in
+  //    visitors, looks up customers, books test drives, checks the day's
+  //    showroom visits. No quotation/order/price access. ──
+  reception: {
+    ...defaultPermissions,
+    canViewVehicles: true,
+    canManageTestDrives: true, canViewTestDrives: true,
+    canManageCustomers: true, canViewCustomers: true,
+    canManageShowroomVisits: true,
+  },
+
   // ── Marketing: content, promotions, reviews, news ──
   marketing: {
     ...defaultPermissions,
@@ -393,7 +405,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   AdminRole.SERVICE_ADVISOR, AdminRole.SERVICE_MANAGER,
   AdminRole.GM_GEELY, AdminRole.SALES_MANAGER,
   AdminRole.AFTER_SALES_MANAGER, AdminRole.SALES_REPRESENTATIVE,
-  AdminRole.WORKSHOP_MANAGER,
+  AdminRole.WORKSHOP_MANAGER, AdminRole.RECEPTION,
 ];
 
 export const PUBLIC_ROLES: AdminRole[] = [AdminRole.CUSTOMER, AdminRole.DEALER];
@@ -441,6 +453,7 @@ export function roleLabel(role: string): string {
     service: 'Service',
     marketing: 'Marketing',
     service_advisor: 'Service Advisor',
+    reception: 'Customer Attendant',
     service_manager: 'Service Manager',
     gm_geely: 'GM Geely',
     sales_manager: 'Sales Manager',
@@ -469,6 +482,7 @@ export const ROLE_OPTIONS = [
   { value: 'workshop_manager', label: 'Workshop Manager', description: 'Workshop floor — job cards, bays, technicians, QC' },
   { value: 'service', label: 'Service Technician', description: 'Performs PDI, repairs, quality checks, warranty work' },
   { value: 'service_advisor', label: 'Service Advisor', description: 'Customer-facing — service bookings, communication, job cards' },
+  { value: 'reception', label: 'Customer Attendant', description: 'Front desk — walk-in registration, customer lookup, test drives, showroom visits' },
   { value: 'marketing', label: 'Marketing', description: 'Content, promotions, news, reviews management' },
   { value: 'viewer', label: 'Viewer', description: 'Read-only — can view analytics, reports, and all data' },
 ];
@@ -481,6 +495,7 @@ export const ROLE_DESCRIPTIONS: Record<string, string> = {
   service: 'Technician — performs PDI, workshop repairs, quality checks, warranty work',
   marketing: 'Marketing team — manages content, promotions, news, reviews',
   service_advisor: 'Service advisor — manages service bookings, customer communication, job cards',
+  reception: 'Customer attendant — registers walk-in visitors, looks up customers, books test drives, checks showroom visits',
   service_manager: 'Service department head — manages workshop operations, parts, warranty claims',
   gm_geely: 'General Manager — full oversight of all departments and operations',
   sales_manager: 'Sales department head — manages sales team, approves/ countersigns quotations & agreements',

@@ -1,8 +1,8 @@
-import { requirePermission } from '@/lib/auth/middleware';
+import { requireAnyPermission } from '@/lib/auth/middleware';
 import ShowroomVisitsList from '@/components/admin/showroom-visits/ShowroomVisitsList';
 
 export default async function AdminShowroomVisitsPage() {
-  await requirePermission('canViewQuotations');
+  await requireAnyPermission(['canViewQuotations', 'canManageShowroomVisits']);
 
   return (
     <div className="space-y-6">

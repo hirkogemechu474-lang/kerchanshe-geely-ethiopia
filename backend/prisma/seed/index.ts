@@ -392,7 +392,14 @@ async function seedMedia() {
     { name: 'Solomon Bekele', email: 'gm@geelyethiopia.com', role: 'gm_geely', avatar: 'gm-geely.svg', hash: passwordHash2 },
     { name: 'Rahel Getachew', email: 'after.sales@geelyethiopia.com', role: 'after_sales_manager', avatar: 'after-sales-manager.svg', hash: passwordHash2 },
   ];
-  for (const u of demoUsers) {
+  // These accounts share published default passwords (see above), so they
+  // must never exist on a production database. Set SEED_DEMO_USERS=1 to
+  // override on purpose (e.g. a disposable staging copy).
+  const createDemoUsers = process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO_USERS === '1';
+  if (!createDemoUsers) {
+    console.warn('NODE_ENV=production: skipping demo users (they use published default passwords). Create real accounts with scripts/provision-uat-users.ts.');
+  }
+  for (const u of createDemoUsers ? demoUsers : []) {
     await prisma.user.upsert({
       where: { email: u.email },
       update: {},
@@ -402,6 +409,7 @@ async function seedMedia() {
         passwordHash: u.hash,
         role: u.role,
         isActive: true,
+        mustChangePassword: true,
         avatarUrl: urlFor(path.join(usersDir, u.avatar)),
       },
     });
@@ -410,7 +418,7 @@ async function seedMedia() {
   console.log('Seed complete:', {
     brand: brand.slug,
     vehicles: [ex5.slug, ex2.slug, panda.slug],
-    users: demoUsers.length,
+    users: createDemoUsers ? demoUsers.length : 0,
   });
 }
 

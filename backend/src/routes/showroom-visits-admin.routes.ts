@@ -1,5 +1,5 @@
-import { Router, Request, Response } from 'express';
-import { requireAdminApiSession, requirePermission } from '../middleware/auth';
+import { Router, Request, Response, NextFunction } from 'express';
+import { requireAdminApiSession } from '../middleware/auth';
 import { showroomVisitRepository } from '../repositories';
 
 // Admin-only showroom-visit routes, kept in a file separate from
@@ -20,7 +20,16 @@ router.use(requireAdminApiSession);
 // field, which turns out to be unused anywhere in the frontend today.
 // Matching the page's real guard here (rather than the unused field) avoids
 // 403ing a role that can currently load the page fine.
-router.use(requirePermission('canViewQuotations'));
+// Customer attendants (reception) have no quotation access but do run the
+// front desk, so canManageShowroomVisits also opens this list.
+router.use((req: Request, res: Response, next: NextFunction) => {
+  const perms = req.adminSession?.user?.permissions;
+  if (!perms?.canViewQuotations && !perms?.canManageShowroomVisits) {
+    res.status(403).json({ error: 'Forbidden: insufficient permissions' });
+    return;
+  }
+  next();
+});
 
 // GET /api/admin/showroom-visits (admin list) — see
 // apps/admin/components/admin/showroom-visits/ShowroomVisitsList.tsx for

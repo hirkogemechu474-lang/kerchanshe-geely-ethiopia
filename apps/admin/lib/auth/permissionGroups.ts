@@ -29,6 +29,7 @@ export function roleLabel(role: string): string {
     service: 'Service',
     marketing: 'Marketing',
     service_advisor: 'Service Advisor',
+    reception: 'Customer Attendant',
     service_manager: 'Service Manager',
     gm_geely: 'GM Geely',
     sales_manager: 'Sales Manager',

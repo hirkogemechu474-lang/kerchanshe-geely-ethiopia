@@ -13,6 +13,11 @@ model User {
   email                        String    @unique
   name                         String
   passwordHash                 String
+  // True for accounts whose password was set by someone else (admin-created,
+  // provisioned for UAT/go-live): the admin portal forces the owner to choose
+  // their own before doing anything else. Cleared on change/reset.
+  mustChangePassword           Boolean   @default(false)
+  passwordChangedAt            DateTime?
   role                         String
   // Display job title printed on approved/signed documents (e.g. "Sales
   // Manager", "General Manager") — distinct from `role`, which is the
@@ -2382,6 +2387,9 @@ model WalkInRegistration {
   notes           String?
   registeredById  String
   registeredBy    User      @relation(fields: [registeredById], references: [id])
+  // The sales lead (Quotation) opened from this walk-in — plain id, no FK, so
+  // deleting either record never blocks the other.
+  quotationId     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

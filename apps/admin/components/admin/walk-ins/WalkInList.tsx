@@ -12,6 +12,7 @@ interface WalkIn {
   vehicleInterest: string | null;
   notes: string | null;
   registeredBy: { id: string; name: string; email: string };
+  lead: { reference: string | null; assignedToName: string | null } | null;
   createdAt: string;
 }
 
@@ -53,6 +54,17 @@ export default function WalkInList() {
     fetchItems(1, search);
   };
 
+  const [creatingLeadId, setCreatingLeadId] = useState<string | null>(null);
+  const createLead = async (id: string) => {
+    setCreatingLeadId(id);
+    try {
+      await fetch(`/api/walk-ins/${id}/lead`, { method: 'POST' });
+      await fetchItems(page, search);
+    } finally {
+      setCreatingLeadId(null);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     await fetch(`/api/walk-ins/${deleteId}`, { method: 'DELETE' });
@@ -86,15 +98,16 @@ export default function WalkInList() {
             <Th>Email</Th>
             <Th>Vehicle Interest</Th>
             <Th>Registered By</Th>
+            <Th>Sales Lead</Th>
             <Th>Date</Th>
             <Th className="w-20"></Th>
           </Tr>
         </THead>
         <TBody>
           {loading ? (
-            <EmptyTableRow colSpan={7} message="Loading..." />
+            <EmptyTableRow colSpan={8} message="Loading..." />
           ) : items.length === 0 ? (
-            <EmptyTableRow colSpan={7} message="No walk-in registrations yet." />
+            <EmptyTableRow colSpan={8} message="No walk-in registrations yet." />
           ) : (
             items.map((item) => (
               <Tr key={item.id}>
@@ -103,6 +116,18 @@ export default function WalkInList() {
                 <Td>{item.email || '—'}</Td>
                 <Td>{item.vehicleInterest || '—'}</Td>
                 <Td>{item.registeredBy.name}</Td>
+                <Td>
+                  {item.lead ? (
+                    <span className="text-xs">
+                      <span className="font-medium">{item.lead.reference ?? 'Opened'}</span>
+                      {item.lead.assignedToName && <span className="text-gray-500"> · {item.lead.assignedToName}</span>}
+                    </span>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => createLead(item.id)} disabled={creatingLeadId === item.id}>
+                      {creatingLeadId === item.id ? 'Opening...' : 'Open lead'}
+                    </Button>
+                  )}
+                </Td>
                 <Td>{new Date(item.createdAt).toLocaleDateString()}</Td>
                 <Td>
                   <button

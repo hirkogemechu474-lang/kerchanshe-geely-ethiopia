@@ -17,6 +17,7 @@ declare global {
           role: AdminRole;
           permissions: AdminPermissions;
           dealerId?: string;
+          mustChangePassword?: boolean;
         };
       };
       customerSession?: {
@@ -75,6 +76,7 @@ export async function requireAdminApiSession(req: Request, res: Response, next: 
         role: user.role as AdminRole,
         permissions,
         dealerId: user.dealerId ?? undefined,
+        mustChangePassword: user.mustChangePassword,
       },
     };
 

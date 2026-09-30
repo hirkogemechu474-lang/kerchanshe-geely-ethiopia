@@ -4,6 +4,21 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { sendEmail } from '../email/smtp';
 import { env } from '../../config/env';
+import { isAdminRole } from '../../types/auth.types';
+
+// Published in backend/prisma/seed/index.ts — must never be reusable as a
+// real password.
+const KNOWN_DEFAULT_PASSWORDS = ['ChangeMe123!', 'TestUser123!'];
+
+// Staff password rule: 10+ characters, at least one letter and one digit, not
+// a known default. Returns an error message, or null when acceptable.
+export function validateStaffPassword(password: unknown): string | null {
+  if (typeof password !== 'string' || password.length < 10) return 'Password must be at least 10 characters long.';
+  if (password.length > 128) return 'Password is too long.';
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'Password must contain at least one letter and one number.';
+  if (KNOWN_DEFAULT_PASSWORDS.some((d) => d.toLowerCase() === password.toLowerCase())) return 'That password is a known default — choose a different one.';
+  return null;
+}
 
 export const passwordResetService = {
   async requestReset(email: string): Promise<{ ok: boolean; error?: string }> {
@@ -62,6 +77,11 @@ export const passwordResetService = {
         return { ok: false, error: 'Invalid or expired OTP code.' };
       }
 
+      if (isAdminRole(user.role)) {
+        const policyError = validateStaffPassword(newPassword);
+        if (policyError) return { ok: false, error: policyError };
+      }
+
       const hashedPassword = await bcrypt.hash(newPassword, 12);
 
       await prisma.user.update({
@@ -70,6 +90,8 @@ export const passwordResetService = {
           passwordHash: hashedPassword,
           otpCode: null,
           otpExpiry: null,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
         },
       });
 
@@ -92,11 +114,19 @@ export const passwordResetService = {
         return { ok: false, error: 'Current password is incorrect.' };
       }
 
+      if (isAdminRole(user.role)) {
+        const policyError = validateStaffPassword(newPassword);
+        if (policyError) return { ok: false, error: policyError };
+      }
+      if (await bcrypt.compare(newPassword, user.passwordHash)) {
+        return { ok: false, error: 'Choose a password different from your current one.' };
+      }
+
       const hashedPassword = await bcrypt.hash(newPassword, 12);
 
       await prisma.user.update({
         where: { id: userId },
-        data: { passwordHash: hashedPassword },
+        data: { passwordHash: hashedPassword, mustChangePassword: false, passwordChangedAt: new Date() },
       });
 
       return { ok: true };

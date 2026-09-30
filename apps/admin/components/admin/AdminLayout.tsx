@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useAdminSessionContext, signOut } from './SessionProvider';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { withBasePath } from '@/lib/basePath';
 import {
   LayoutDashboard,
@@ -244,6 +244,7 @@ const navSections: NavSection[] = [
           { name: 'Manage Quotations', href: '/admin/quotations', icon: FileText, permission: 'canViewQuotations' },
           { name: 'Manage Orders', href: '/admin/orders', icon: ShoppingCart, permission: 'canManageOrders' },
           { name: 'Walk-in Registrations', href: '/admin/walk-ins', icon: UserPlus, permission: 'canManageTestDrives' },
+          { name: 'Showroom Visits', href: '/admin/showroom-visits', icon: Users, permission: 'canManageShowroomVisits' },
           { name: 'Manage Parts Requests', href: '/admin/parts-requests', icon: FileText, permission: 'canManageSpareParts' },
           { name: 'Manage Messages', href: '/admin/messages', icon: MessageSquare, permission: 'canViewMessages' },
         ],
@@ -297,6 +298,7 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   // so this is available on the very first render — no hydration flash.
   const session = useAdminSessionContext();
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -348,6 +350,15 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
   // Use the hydrated session when available, fall back to server-provided data
   const user = session?.user ?? initialUser;
   const permissions = session?.user?.permissions ?? initialUser?.permissions;
+
+  // A provisioned account (temporary password set by an admin) may only use
+  // the change-password page until its owner picks their own password.
+  const mustChangePassword = Boolean(session?.user?.mustChangePassword);
+  useEffect(() => {
+    if (mustChangePassword && pathname !== '/admin/change-password') {
+      router.replace('/admin/change-password');
+    }
+  }, [mustChangePassword, pathname, router]);
 
   const matchesItem = (item: MenuItem, q: string) => {
     if (item.permission && permissions) {
@@ -730,6 +741,20 @@ function AdminLayout({ children, initialUser }: AdminLayoutProps) {
                         {userRole}
                       </div>
                     </div>
+                    <Link
+                      href="/admin/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <UserCircle2 className="w-4 h-4" /> Your profile
+                    </Link>
+                    <Link
+                      href="/admin/change-password"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4" /> Change password
+                    </Link>
                     <Link
                       href="/"
                       target="_blank"

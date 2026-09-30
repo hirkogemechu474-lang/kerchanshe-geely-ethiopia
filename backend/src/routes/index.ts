@@ -117,10 +117,13 @@ router.use('/sync', syncRoutes);
 router.use('/chatbot', chatbotRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin/parts-requests', partRequestRoutes);
+// Must come before categoriesRoutes: that router is mounted at bare '/admin' with a
+// blanket canManageVehicles gate, which would 403 this router's own (different)
+// permission check for any role without vehicle management, e.g. reception.
+router.use('/admin/showroom-visits', showroomVisitAdminRoutes);
 router.use('/admin', categoriesRoutes);
 router.use('/admin', adminContentRoutes);
 router.use('/admin/role-permissions', rolePermissionsRoutes);
-router.use('/admin/showroom-visits', showroomVisitAdminRoutes);
 router.use('/admin', vehicleConfigRoutes);
 router.use('/admin/documents', documentsRoutes);
 router.use('/reports', reportsRoutes);
